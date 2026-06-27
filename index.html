@@ -6,156 +6,64 @@
   <title>Wonky Wings</title>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
-
     body {
-      width: 100vw;
-      height: 100vh;
-      overflow: hidden;
-      background: #051e30;
-      font-family: "Segoe UI", sans-serif;
-      user-select: none;
+      width:100vw; height:100vh; overflow:hidden;
+      background:#020d1a;
+      font-family:"Segoe UI",sans-serif;
+      user-select:none;
     }
-
-    /* Globe vult het hele scherm */
-    #globe {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      display: block;
-    }
-
-    /* Wonky zweeft boven de globe */
+    #globe { position:absolute; top:0; left:0; display:block; }
     #wonky {
-      position: absolute;
-      width: 140px;
-      pointer-events: none;
-      z-index: 10;
-      filter: drop-shadow(3px 6px 14px rgba(0,0,0,0.7));
-      transform-origin: center center;
+      position:fixed; width:140px; pointer-events:none; z-index:10;
+      filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));
+      transform-origin:center center;
     }
-
-    /* HUD bovenin — transparant over de globe */
     #hud-top {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 18px 28px;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0) 100%);
-      z-index: 20;
-      pointer-events: none;
+      position:fixed; top:0; left:0; right:0;
+      display:flex; justify-content:space-between; align-items:center;
+      padding:18px 28px;
+      background:linear-gradient(to bottom,rgba(0,0,0,0.5),rgba(0,0,0,0));
+      z-index:20; pointer-events:none;
     }
-
-    #titel {
-      color: #fff;
-      font-size: 1.5rem;
-      font-weight: 900;
-      letter-spacing: 2px;
-      text-shadow: 0 2px 10px rgba(0,0,0,0.8);
-    }
-    #titel span { color: #ffd700; }
-
-    #score-box {
-      color: #ffd700;
-      font-size: 1.2rem;
-      font-weight: 800;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.8);
-    }
-
-    /* Opdracht onderin — transparant over de globe */
+    #titel { color:#fff; font-size:1.5rem; font-weight:900; letter-spacing:2px; text-shadow:0 2px 10px rgba(0,0,0,0.8); }
+    #titel span { color:#ffd700; }
+    #score-box { color:#ffd700; font-size:1.2rem; font-weight:800; text-shadow:0 2px 8px rgba(0,0,0,0.8); }
     #hud-bottom {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding-bottom: 24px;
-      background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 100%);
-      z-index: 20;
-      pointer-events: none;
+      position:fixed; bottom:0; left:0; right:0;
+      display:flex; flex-direction:column; align-items:center; padding-bottom:24px;
+      background:linear-gradient(to top,rgba(0,0,0,0.55),rgba(0,0,0,0));
+      z-index:20; pointer-events:none;
     }
-
     #opdracht {
-      background: rgba(0, 0, 0, 0.45);
-      backdrop-filter: blur(14px);
-      border: 2px solid rgba(255,255,255,0.18);
-      border-radius: 28px;
-      padding: 12px 52px;
-      text-align: center;
+      background:rgba(0,0,0,0.45); backdrop-filter:blur(14px);
+      border:2px solid rgba(255,255,255,0.18); border-radius:28px;
+      padding:12px 52px; text-align:center;
     }
-
-    #opdracht .label {
-      color: rgba(255,255,255,0.65);
-      font-size: 0.9rem;
-      letter-spacing: 1px;
-      margin-bottom: 2px;
-    }
-
-    #opdracht .landnaam {
-      color: #ffd700;
-      font-size: 2.4rem;
-      font-weight: 900;
-      text-shadow: 0 2px 16px rgba(0,0,0,0.6);
-      letter-spacing: 1px;
-    }
-
-    #hint {
-      margin-top: 8px;
-      color: rgba(255,255,255,0.35);
-      font-size: 0.78rem;
-      letter-spacing: 0.5px;
-    }
-
-    /* Land hover label */
+    #opdracht .label { color:rgba(255,255,255,0.65); font-size:0.9rem; letter-spacing:1px; margin-bottom:2px; }
+    #opdracht .landnaam { color:#ffd700; font-size:2.4rem; font-weight:900; text-shadow:0 2px 16px rgba(0,0,0,0.6); }
+    #hint { margin-top:8px; color:rgba(255,255,255,0.35); font-size:0.78rem; }
     #land-hover {
-      position: fixed;
-      background: rgba(0,0,0,0.65);
-      color: #fff;
-      font-size: 0.9rem;
-      font-weight: 600;
-      padding: 4px 16px;
-      border-radius: 12px;
-      pointer-events: none;
-      white-space: nowrap;
-      opacity: 0;
-      transition: opacity 0.2s;
-      z-index: 30;
-      transform: translate(-50%, -130%);
+      position:fixed; background:rgba(0,0,0,0.65); color:#fff;
+      font-size:0.9rem; font-weight:600; padding:4px 16px; border-radius:12px;
+      pointer-events:none; white-space:nowrap; opacity:0; transition:opacity 0.2s;
+      z-index:30; transform:translate(-50%,-180%);
     }
-
-    /* Feedback midden in beeld */
     #feedback {
-      position: fixed;
-      top: 42%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 3.5rem;
-      font-weight: 900;
-      pointer-events: none;
-      opacity: 0;
-      text-shadow: 0 4px 20px rgba(0,0,0,0.8);
-      z-index: 30;
-      transition: opacity 0.3s;
+      position:fixed; top:42%; left:50%; transform:translate(-50%,-50%);
+      font-size:3.5rem; font-weight:900; pointer-events:none; opacity:0;
+      text-shadow:0 4px 20px rgba(0,0,0,0.8); z-index:30; transition:opacity 0.3s;
     }
   </style>
 </head>
 <body>
-
-<!-- Canvas = de hele globe -->
 <canvas id="globe"></canvas>
 <img id="wonky" src="images/Wonky.png" alt="Wonky"/>
 <div id="land-hover"></div>
 <div id="feedback"></div>
-
-<!-- HUD bovenin -->
 <div id="hud-top">
   <div id="titel">Wonky <span>Wings</span></div>
   <div id="score-box">Score: <span id="score">0</span></div>
 </div>
-
-<!-- Opdracht onderin -->
 <div id="hud-bottom">
   <div id="opdracht">
     <div class="label">✈ Vlieg naar...</div>
@@ -172,329 +80,282 @@ const ctx     = canvas.getContext('2d');
 const wonkyEl = document.getElementById('wonky');
 const hoverEl = document.getElementById('land-hover');
 
-// Globe vult het volledige scherm
 let W, H, R, CX, CY;
-
 function herbereken() {
-  W  = window.innerWidth;
-  H  = window.innerHeight;
-  // Straal = iets groter dan het halve scherm zodat de bol overloopt (close-up gevoel)
-  R  = Math.min(W, H) * 0.58;
-  CX = W / 2;
-  // Middelpunt wat lager, zodat de bol "omhoog" lijkt te komen
-  CY = H * 0.56;
-  canvas.width  = W;
-  canvas.height = H;
+  W = window.innerWidth; H = window.innerHeight;
+  R = Math.min(W,H)*0.58; CX = W/2; CY = H*0.56;
+  canvas.width = W; canvas.height = H;
 }
-
 herbereken();
 window.addEventListener('resize', herbereken);
 
-let rotY = 0;
-const rotX    = 0.30;
-const AUTO_ROT = 0.003;
+let rotY = 0, rotX = 0.30;
+let rotYsnelheid = 0, rotXsnelheid = 0;
+const ROT_SNELHEID = 0.018, ROT_VERTRAGING = 0.92;
 
 // ── 3D helpers ────────────────────────────────────────
 function lonLatTo3D(lon, lat) {
-  const lo = lon * Math.PI / 180;
-  const la = lat * Math.PI / 180;
+  const lo = lon*Math.PI/180, la = lat*Math.PI/180;
+  return [Math.cos(la)*Math.sin(lo), Math.sin(la), Math.cos(la)*Math.cos(lo)];
+}
+
+function rotate([x,y,z]) {
+  const cy=Math.cos(rotY),sy=Math.sin(rotY);
+  const xr=x*cy+z*sy, zr=-x*sy+z*cy;
+  const cx=Math.cos(rotX),sx=Math.sin(rotX);
+  return [xr, y*cx-zr*sx, y*sx+zr*cx];
+}
+
+function toScreen([x,y,z]) {
+  return [CX+x*R, CY-y*R, z];
+}
+
+// ── Lijnstuk knippen op bolrand (z=0 vlak) ───────────
+// Geeft het snijpunt terug waar z=0 precies ligt
+function knipPunt(p1, p2) {
+  // Lineaire interpolatie: vind t zodat z=0
+  const t = p1[2] / (p1[2] - p2[2]);
   return [
-    Math.cos(la) * Math.sin(lo),
-    Math.sin(la),
-    Math.cos(la) * Math.cos(lo)
+    p1[0] + t*(p2[0]-p1[0]),
+    p1[1] + t*(p2[1]-p1[1]),
+    0
   ];
 }
 
-function rotate([x, y, z]) {
-  const cy = Math.cos(rotY), sy = Math.sin(rotY);
-  const xr =  x*cy + z*sy;
-  const zr = -x*sy + z*cy;
-  const cx = Math.cos(rotX), sx = Math.sin(rotX);
-  const yr2 =  y*cx - zr*sx;
-  const zr2 =  y*sx + zr*cx;
-  return [xr, yr2, zr2];
-}
-
-// ── Landkleuren op basis van type ────────────────────
-// Geef elk land een kleur passend bij zijn geografie
-const LAND_KLEUREN = {
-  // Woestijn / droog
-  'Egypte':        '#c8a96e',
-  'Algerije':      '#c9a85c',
-  'Libië':         '#cdb06a',
-  'Saoedi-Arabië': '#d4aa62',
-  'Iran':          '#c4a06a',
-  'Irak':          '#c8a870',
-  'Mongolië':      '#b8a878',
-  // Poolgebied / toendra
-  'Rusland':       '#7a9e7a',
-  'Canada':        '#6e9e6e',
-  'IJsland':       '#7a9080',
-  'Noorwegen':     '#6a9870',
-  'Finland':       '#5e9468',
-  'Zweden':        '#639668',
-  // Tropisch / jungle
-  'Brazilië':      '#2e8b44',
-  'Indonesië':     '#2a8840',
-  'Nigeria':       '#3a9048',
-  'Kenia':         '#4a9640',
-  'Colombia':      '#348a44',
-  // Gematigd groen (Europa)
-  'default':       '#4a9e5c',
-};
-
-function getLandKleur(naam) {
-  return LAND_KLEUREN[naam] || LAND_KLEUREN['default'];
-}
-
-// ── Polygon tekenen ───────────────────────────────────
-const ZICHT = 0.01;
-const MAX_SPRONG = 120;
-
+// ── Ring tekenen MET correcte knipping op bolrand ─────
 function tekenRing(ring) {
   if (!ring || ring.length < 3) return;
-  const pts = ring.map(([lon, lat]) => {
-    const [x, y, z] = rotate(lonLatTo3D(lon, lat));
-    return { sx: CX + x*R, sy: CY - y*R, vis: z > ZICHT };
-  });
 
-  let pen = false, vx = 0, vy = 0;
-  for (const p of pts) {
-    if (!p.vis) { pen = false; continue; }
-    if (!pen) { ctx.moveTo(p.sx, p.sy); pen = true; }
-    else if (Math.hypot(p.sx-vx, p.sy-vy) > MAX_SPRONG) { ctx.moveTo(p.sx, p.sy); }
-    else { ctx.lineTo(p.sx, p.sy); }
-    vx = p.sx; vy = p.sy;
+  // Zet alle punten om naar geroteerde 3D
+  const pts3d = ring.map(([lon,lat]) => rotate(lonLatTo3D(lon,lat)));
+
+  let first = true;
+
+  for (let i = 0; i < pts3d.length; i++) {
+    const curr = pts3d[i];
+    const next = pts3d[(i+1) % pts3d.length];
+
+    const currVis = curr[2] > 0;
+    const nextVis = next[2] > 0;
+
+    if (currVis) {
+      const [sx,sy] = toScreen(curr);
+      if (first) { ctx.moveTo(sx,sy); first=false; }
+      else ctx.lineTo(sx,sy);
+    }
+
+    // Overgang: knip op bolrand
+    if (currVis !== nextVis) {
+      const snij = knipPunt(curr, next);
+      const [sx,sy] = toScreen(snij);
+      if (currVis) {
+        // Gaat weg van ons: lijn naar rand, dan pen omhoog
+        ctx.lineTo(sx,sy);
+        first = true;
+      } else {
+        // Komt naar ons: pen neer op rand
+        ctx.moveTo(sx,sy);
+        first = false;
+      }
+    }
   }
 }
 
-function tekenLand(rings, vul, rand, lijnDikte) {
+function tekenLand(rings, vul, rand, dikte) {
   ctx.beginPath();
   for (const ring of rings) tekenRing(ring);
-  ctx.fillStyle   = vul;
-  ctx.fill('evenodd');
-  ctx.strokeStyle = rand;
-  ctx.lineWidth   = lijnDikte || 0.8;
-  ctx.stroke();
+  ctx.fillStyle=vul; ctx.fill('evenodd');
+  ctx.strokeStyle=rand; ctx.lineWidth=dikte||0.8; ctx.stroke();
 }
+
+// ── Landkleuren ───────────────────────────────────────
+const LAND_KLEUREN = {
+  'Egypte':'#c8a96e','Algerije':'#c9a85c','Libië':'#cdb06a',
+  'Saoedi-Arabië':'#d4aa62','Iran':'#c4a06a','Irak':'#c8a870',
+  'Mongolië':'#b8a878','Rusland':'#7a9e7a','Canada':'#6e9e6e',
+  'IJsland':'#7a9080','Noorwegen':'#6a9870','Finland':'#5e9468',
+  'Zweden':'#639668','Brazilië':'#2e8b44','Indonesië':'#2a8840',
+  'Nigeria':'#3a9048','Kenia':'#4a9640','Colombia':'#348a44',
+  'default':'#4a9e5c',
+};
+function getLandKleur(n) { return LAND_KLEUREN[n]||LAND_KLEUREN['default']; }
 
 // ── Globe tekenen ─────────────────────────────────────
 function drawGlobe() {
-  ctx.clearRect(0, 0, W, H);
+  ctx.clearRect(0,0,W,H);
 
-  // Achtergrond: diepe ruimtelucht
-  const bg = ctx.createRadialGradient(W*0.5, H*0.3, 100, W*0.5, H*0.5, Math.max(W,H));
-  bg.addColorStop(0,   '#1a4a7a');
-  bg.addColorStop(0.5, '#0a2a50');
-  bg.addColorStop(1,   '#020d1a');
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, W, H);
+  // Achtergrond
+  const bg=ctx.createRadialGradient(W*.5,H*.3,100,W*.5,H*.5,Math.max(W,H));
+  bg.addColorStop(0,'#1a4a7a'); bg.addColorStop(.5,'#0a2a50'); bg.addColorStop(1,'#020d1a');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
 
-  // Clip alles binnen de bol
+  // Clip
   ctx.save();
-  ctx.beginPath();
-  ctx.arc(CX, CY, R, 0, Math.PI*2);
-  ctx.clip();
+  ctx.beginPath(); ctx.arc(CX,CY,R,0,Math.PI*2); ctx.clip();
 
-  // Oceaan met dieptegradiënt
-  const og = ctx.createRadialGradient(CX - R*0.3, CY - R*0.3, R*0.1, CX, CY, R);
-  og.addColorStop(0,   '#6dd5fa');
-  og.addColorStop(0.3, '#2193b0');
-  og.addColorStop(0.7, '#1565c0');
-  og.addColorStop(1,   '#0a3a6e');
-  ctx.beginPath();
-  ctx.arc(CX, CY, R, 0, Math.PI*2);
-  ctx.fillStyle = og;
-  ctx.fill();
+  // Oceaan
+  const og=ctx.createRadialGradient(CX-R*.3,CY-R*.3,R*.1,CX,CY,R);
+  og.addColorStop(0,'#6dd5fa'); og.addColorStop(.3,'#2193b0');
+  og.addColorStop(.7,'#1565c0'); og.addColorStop(1,'#0a3a6e');
+  ctx.beginPath(); ctx.arc(CX,CY,R,0,Math.PI*2);
+  ctx.fillStyle=og; ctx.fill();
 
-  // Landen tekenen
-  for (const feature of GEOJSON.features) {
-    const dutch     = feature.properties.dutch || feature.properties.name;
-    const isTarget  = dutch === huidigLand;
-    const isHover   = feature === hoverLand;
-    let vulKleur, randKleur, lijnDikte;
-
-    if (isTarget) {
-      vulKleur  = '#f5c518';
-      randKleur = '#b8780a';
-      lijnDikte = 1.5;
-    } else if (isHover) {
-      vulKleur  = '#ffe566';
-      randKleur = '#c8960a';
-      lijnDikte = 1.2;
-    } else {
-      vulKleur  = getLandKleur(dutch);
-      randKleur = '#1a4a22';
-      lijnDikte = 0.6;
-    }
-
-    const geom = feature.geometry;
-    if (geom.type === 'Polygon') {
-      tekenLand(geom.coordinates, vulKleur, randKleur, lijnDikte);
-    } else if (geom.type === 'MultiPolygon') {
-      for (const poly of geom.coordinates) tekenLand(poly, vulKleur, randKleur, lijnDikte);
-    }
+  // Landen
+  for (const f of GEOJSON.features) {
+    const dutch=f.properties.dutch||f.properties.name;
+    const isT=dutch===huidigLand, isH=f===hoverLand;
+    let vul,rand,dikte;
+    if(isT){vul='#f5c518';rand='#b8780a';dikte=1.5;}
+    else if(isH){vul='#ffe566';rand='#c8960a';dikte=1.2;}
+    else{vul=getLandKleur(dutch);rand='#1a4a22';dikte=0.6;}
+    const g=f.geometry;
+    if(g.type==='Polygon') tekenLand(g.coordinates,vul,rand,dikte);
+    else if(g.type==='MultiPolygon') for(const p of g.coordinates) tekenLand(p,vul,rand,dikte);
   }
 
-  // Subtiele breedtegraden
-  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-  ctx.lineWidth   = 0.5;
-  for (let lat = -60; lat <= 60; lat += 30) {
+  // Breedtegraden
+  ctx.strokeStyle='rgba(255,255,255,0.06)'; ctx.lineWidth=0.5;
+  for(let lat=-60;lat<=60;lat+=30){
     ctx.beginPath();
-    for (let lon = -180; lon <= 181; lon += 4) {
-      const [x, y, z] = rotate(lonLatTo3D(lon, lat));
-      if (z < ZICHT) continue;
-      const sx = CX + x*R, sy = CY - y*R;
-      lon === -180 ? ctx.moveTo(sx, sy) : ctx.lineTo(sx, sy);
+    let first=true;
+    for(let lon=-180;lon<=180;lon+=3){
+      const [x,y,z]=rotate(lonLatTo3D(lon,lat));
+      if(z<=0){first=true;continue;}
+      const sx=CX+x*R,sy=CY-y*R;
+      first?ctx.moveTo(sx,sy):ctx.lineTo(sx,sy);
+      first=false;
     }
     ctx.stroke();
   }
 
-  ctx.restore(); // einde clip
+  ctx.restore();
 
-  // Glans bovenop de bol (buiten clip zodat hij mooi rond is)
-  const hl = ctx.createRadialGradient(CX - R*0.35, CY - R*0.38, R*0.05, CX - R*0.18, CY - R*0.25, R*0.7);
-  hl.addColorStop(0,   'rgba(255,255,255,0.28)');
-  hl.addColorStop(0.4, 'rgba(255,255,255,0.05)');
-  hl.addColorStop(1,   'rgba(0,0,0,0)');
-  ctx.beginPath();
-  ctx.arc(CX, CY, R, 0, Math.PI*2);
-  ctx.fillStyle = hl;
-  ctx.fill();
+  // Glans
+  const hl=ctx.createRadialGradient(CX-R*.35,CY-R*.38,R*.05,CX-R*.18,CY-R*.25,R*.7);
+  hl.addColorStop(0,'rgba(255,255,255,0.28)');
+  hl.addColorStop(.4,'rgba(255,255,255,0.05)');
+  hl.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.beginPath(); ctx.arc(CX,CY,R,0,Math.PI*2);
+  ctx.fillStyle=hl; ctx.fill();
 
-  // Donkere rand / atmosfeer
-  const atm = ctx.createRadialGradient(CX, CY, R*0.70, CX, CY, R*1.02);
-  atm.addColorStop(0,   'rgba(0,0,0,0)');
-  atm.addColorStop(0.7, 'rgba(0,20,60,0.3)');
-  atm.addColorStop(1,   'rgba(0,10,40,0.85)');
-  ctx.beginPath();
-  ctx.arc(CX, CY, R*1.02, 0, Math.PI*2);
-  ctx.fillStyle = atm;
-  ctx.fill();
+  // Atmosfeer
+  const atm=ctx.createRadialGradient(CX,CY,R*.70,CX,CY,R*1.02);
+  atm.addColorStop(0,'rgba(0,0,0,0)');
+  atm.addColorStop(.7,'rgba(0,20,60,0.3)');
+  atm.addColorStop(1,'rgba(0,10,40,0.85)');
+  ctx.beginPath(); ctx.arc(CX,CY,R*1.02,0,Math.PI*2);
+  ctx.fillStyle=atm; ctx.fill();
 }
 
-// ── Wonky ─────────────────────────────────────────────
-let wonkyLon = 5, wonkyLat = 52;
-const TURBO_S = 2.5, NORM_S = 0.6;
-const keys = {};
-
-document.addEventListener('keydown', e => {
-  keys[e.key] = true;
-  if ([' ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
+// ── Besturing ─────────────────────────────────────────
+const keys={};
+document.addEventListener('keydown',e=>{
+  keys[e.key]=true;
+  if([' ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
 });
-document.addEventListener('keyup', e => { keys[e.key] = false; });
+document.addEventListener('keyup',e=>{ keys[e.key]=false; });
 
-let hoverLand = null;
+let wonkySchermX=0, wonkySchermY=0;
+const MAX_DRIFT=0.12, DRIFT_S=0.08;
+let wonkyLon=5, wonkyLat=48;
+let hoverLand=null;
 
-function updateWonky() {
-  const s = keys['Shift'] ? TURBO_S : NORM_S;
-  let dx = 0, dy = 0;
-  if (keys['ArrowLeft'])  dx = -1;
-  if (keys['ArrowRight']) dx =  1;
-  if (keys['ArrowUp'])    dy =  1;
-  if (keys['ArrowDown'])  dy = -1;
+function updateSpel() {
+  const s=keys['Shift']?0.025:0.010;
+  let dx=0,dy=0;
+  if(keys['ArrowLeft'])  dx=-1;
+  if(keys['ArrowRight']) dx= 1;
+  if(keys['ArrowUp'])    dy= 1;
+  if(keys['ArrowDown'])  dy=-1;
 
-  wonkyLon += dx * s;
-  wonkyLat  = Math.max(-85, Math.min(85, wonkyLat + dy * s * 0.65));
-  if (wonkyLon >  180) wonkyLon -= 360;
-  if (wonkyLon < -180) wonkyLon += 360;
+  rotYsnelheid += -dx*s;
+  rotXsnelheid += -dy*s*0.6;
+  rotYsnelheid *= ROT_VERTRAGING;
+  rotXsnelheid *= ROT_VERTRAGING;
+  rotX = Math.max(-0.2, Math.min(0.8, rotX+rotXsnelheid));
+  rotY += rotYsnelheid;
 
-  const [wx, wy, wz] = rotate(lonLatTo3D(wonkyLon, wonkyLat));
-  const sx = CX + wx * R;
-  const sy = CY - wy * R;
-  const zichtbaar = wz > 0;
+  // Wonky drift
+  wonkySchermX += (dx*MAX_DRIFT - wonkySchermX)*DRIFT_S;
+  wonkySchermY += (-dy*MAX_DRIFT*0.6 - wonkySchermY)*DRIFT_S;
 
-  // Wonky zweeft 70px boven het oppervlak
-  const hoogte = 70;
-  wonkyEl.style.left    = (sx - 70) + 'px';
-  wonkyEl.style.top     = (sy - 90 - hoogte * wz) + 'px';
-  wonkyEl.style.opacity = zichtbaar ? '1' : '0';
+  const wx=W*(0.5+wonkySchermX);
+  const wy=H*(0.46+wonkySchermY);
+  wonkyEl.style.left=(wx-70)+'px';
+  wonkyEl.style.top=(wy-70)+'px';
 
-  const scaleX  = dx < 0 ? -1 : 1;
-  const rotatie = dx * 14 - dy * 9;
-  wonkyEl.style.transform = `scaleX(${scaleX}) rotate(${rotatie}deg)`;
+  const scaleX=dx<0?-1:1;
+  const rot=dx*14-dy*9;
+  wonkyEl.style.transform=`scaleX(${scaleX}) rotate(${rot}deg)`;
 
-  // Hover label volgt Wonky
-  hoverLand = getLandOnderWonky();
-  if (hoverLand && zichtbaar) {
-    const naam = hoverLand.properties.dutch || hoverLand.properties.name;
-    hoverEl.textContent   = naam;
-    hoverEl.style.opacity = '1';
-    hoverEl.style.left    = sx + 'px';
-    hoverEl.style.top     = (sy - hoogte * wz) + 'px';
+  // Wonky lon/lat = middelpunt van de globe
+  wonkyLon=(-rotY*180/Math.PI)%360;
+  wonkyLat=(rotX-0.30)*(180/Math.PI)*1.5;
+  wonkyLat=Math.max(-85,Math.min(85,wonkyLat));
+
+  // Hover
+  hoverLand=getLandOnderWonky();
+  if(hoverLand){
+    hoverEl.textContent=hoverLand.properties.dutch||hoverLand.properties.name;
+    hoverEl.style.opacity='1';
+    hoverEl.style.left=wx+'px';
+    hoverEl.style.top=wy+'px';
   } else {
-    hoverEl.style.opacity = '0';
+    hoverEl.style.opacity='0';
   }
 }
 
-// ── Land detectie ─────────────────────────────────────
-function getLandOnderWonky() {
-  let beste = null, besteAfstand = 12;
-  for (const f of GEOJSON.features) {
-    const polys = f.geometry.type === 'Polygon'
-      ? [f.geometry.coordinates]
-      : f.geometry.coordinates;
-    for (const poly of polys) {
-      if (!poly[0] || poly[0].length < 3) continue;
-      let sumLon = 0, sumLat = 0, n = 0;
-      for (const [lo, la] of poly[0]) { sumLon += lo; sumLat += la; n++; }
-      if (!n) continue;
-      const dist = Math.hypot(wonkyLon - sumLon/n, wonkyLat - sumLat/n);
-      if (dist < besteAfstand) { besteAfstand = dist; beste = f; }
+function getLandOnderWonky(){
+  let beste=null, besteDist=12;
+  for(const f of GEOJSON.features){
+    const polys=f.geometry.type==='Polygon'?[f.geometry.coordinates]:f.geometry.coordinates;
+    for(const poly of polys){
+      if(!poly[0]||poly[0].length<3) continue;
+      let sLon=0,sLat=0,n=0;
+      for(const [lo,la] of poly[0]){sLon+=lo;sLat+=la;n++;}
+      if(!n) continue;
+      const d=Math.hypot(wonkyLon-sLon/n,wonkyLat-sLat/n);
+      if(d<besteDist){besteDist=d;beste=f;}
     }
   }
   return beste;
 }
 
-// ── Spel logica ───────────────────────────────────────
-const LANDEN = [
-  'Frankrijk','Duitsland','Spanje','Italië','Nederland',
+// ── Spel ──────────────────────────────────────────────
+const LANDEN=['Frankrijk','Duitsland','Spanje','Italië','Nederland',
   'België','Polen','Zweden','Noorwegen','Denemarken',
-  'Portugal','Oostenrijk','Zwitserland','Griekenland','Ierland'
-];
+  'Portugal','Oostenrijk','Zwitserland','Griekenland','Ierland'];
+let huidigLand='Frankrijk',score=0,wachten=false;
+document.getElementById('land-naam').textContent=huidigLand;
 
-let huidigLand = 'Frankrijk';
-let score      = 0;
-let wachten    = false;
-
-document.getElementById('land-naam').textContent = huidigLand;
-
-function nieuwLand() {
-  const opties = LANDEN.filter(l => l !== huidigLand);
-  huidigLand   = opties[Math.floor(Math.random() * opties.length)];
-  document.getElementById('land-naam').textContent = huidigLand;
+function nieuwLand(){
+  const o=LANDEN.filter(l=>l!==huidigLand);
+  huidigLand=o[Math.floor(Math.random()*o.length)];
+  document.getElementById('land-naam').textContent=huidigLand;
 }
 
-function toonFeedback(tekst, kleur) {
-  const el = document.getElementById('feedback');
-  el.textContent   = tekst;
-  el.style.color   = kleur;
-  el.style.opacity = '1';
-  setTimeout(() => { el.style.opacity = '0'; }, 1400);
+function toonFeedback(t,k){
+  const el=document.getElementById('feedback');
+  el.textContent=t; el.style.color=k; el.style.opacity='1';
+  setTimeout(()=>{el.style.opacity='0';},1400);
 }
 
-document.addEventListener('keydown', e => {
-  if (e.key === ' ' && !wachten) {
-    const naam = hoverLand && (hoverLand.properties.dutch || hoverLand.properties.name);
-    if (naam === huidigLand) {
-      score += 100;
-      document.getElementById('score').textContent = score;
-      toonFeedback('🎉 Goed zo!', '#ffd700');
-      wachten = true;
-      setTimeout(() => { nieuwLand(); wachten = false; }, 1500);
+document.addEventListener('keydown',e=>{
+  if(e.key===' '&&!wachten){
+    const naam=hoverLand&&(hoverLand.properties.dutch||hoverLand.properties.name);
+    if(naam===huidigLand){
+      score+=100;
+      document.getElementById('score').textContent=score;
+      toonFeedback('🎉 Goed zo!','#ffd700');
+      wachten=true;
+      setTimeout(()=>{nieuwLand();wachten=false;},1500);
     } else {
-      toonFeedback('❌ Mis!', '#ff6b6b');
+      toonFeedback('❌ Mis!','#ff6b6b');
     }
   }
 });
 
-// ── Game loop ─────────────────────────────────────────
-function loop() {
-  rotY += AUTO_ROT;
-  drawGlobe();
-  updateWonky();
-  requestAnimationFrame(loop);
-}
+function loop(){ updateSpel(); drawGlobe(); requestAnimationFrame(loop); }
 loop();
 </script>
 </body>
