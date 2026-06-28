@@ -236,51 +236,48 @@ function knipPunt(p1,p2){
 function tekenRing(ring){
   if(!ring||ring.length<3) return;
 
-  // Detecteer datumgrens-oversteek: als twee opeenvolgende punten
-  // meer dan 180 graden lon van elkaar liggen, splitsen we de ring
-  // in twee stukken die apart getekend worden
-  const coords = ring;
-  const n = coords.length;
-
-  // Verwerk de ring als aaneengesloten segmenten
-  // met knipping op bolrand EN datumgrens
-  const pts = coords.map(([lon,lat]) => {
-    const p3 = roteerPunt(lonLatTo3D(lon,lat), rotM);
-    return { p3, sx: CX+p3[0]*R, sy: CY-p3[1]*R, vis: p3[2]>0, lon, lat };
-  });
-
-  let pen=false, vx=0, vy=0;
-  for(let i=0;i<n;i++){
-    const curr=pts[i], next=pts[(i+1)%n];
-
-    // Check datumgrens-sprong (lon verschil > 180 graden)
-    const dLon = Math.abs(curr.lon - next.lon);
-    const datumGrens = dLon > 180;
-
-    if(curr.vis){
-      const sx=curr.sx, sy=curr.sy;
-      if(!pen){
-        ctx.moveTo(sx,sy); pen=true;
-      } else {
-        ctx.lineTo(sx,sy);
-      }
-      vx=sx; vy=sy;
-    }
-
-    // Knip op bolrand (zichtbaar/onzichtbaar overgang)
-    if(curr.vis !== next.vis && !datumGrens){
-      const s=knipPunt(curr.p3, next.p3);
-      const sx=CX+s[0]*R, sy=CY-s[1]*R;
-      if(curr.vis){
-        ctx.lineTo(sx,sy); pen=false;
-      } else {
-        ctx.moveTo(sx,sy); pen=true; vx=sx; vy=sy;
+  // Stap 1: splits ring bij datumgrens-oversteek (lon sprong > 180°)
+  // zodat we nooit een lijn dwars over de bol trekken
+  const segmenten = [[]];
+  for(let i=0; i<ring.length; i++){
+    segmenten[segmenten.length-1].push(ring[i]);
+    if(i < ring.length-1){
+      const dLon = Math.abs(ring[i][0] - ring[i+1][0]);
+      if(dLon > 180){
+        // Datumgrens: begin nieuw segment
+        segmenten.push([]);
       }
     }
+  }
 
-    // Datumgrens: pen omhoog, begin opnieuw
-    if(datumGrens){
-      pen=false;
+  // Stap 2: teken elk segment apart met bolrand-knipping
+  for(const seg of segmenten){
+    if(seg.length < 2) continue;
+    const pts = seg.map(([lon,lat]) => {
+      const p3 = roteerPunt(lonLatTo3D(lon,lat), rotM);
+      return { p3, sx: CX+p3[0]*R, sy: CY-p3[1]*R, vis: p3[2]>0 };
+    });
+
+    let pen=false, vx=0, vy=0;
+    for(let i=0; i<pts.length; i++){
+      const curr=pts[i];
+      const next=pts[(i+1)%pts.length];
+      const cv=curr.vis, nv=next.vis;
+
+      if(cv){
+        const sx=curr.sx, sy=curr.sy;
+        if(!pen){ ctx.moveTo(sx,sy); pen=true; }
+        else { ctx.lineTo(sx,sy); }
+        vx=sx; vy=sy;
+      }
+
+      // Knip exact op bolrand bij overgang
+      if(cv !== nv && i < pts.length-1){
+        const s = knipPunt(curr.p3, next.p3);
+        const sx=CX+s[0]*R, sy=CY-s[1]*R;
+        if(cv){ ctx.lineTo(sx,sy); pen=false; }
+        else  { ctx.moveTo(sx,sy); pen=true; vx=sx; vy=sy; }
+      }
     }
   }
 }
@@ -370,30 +367,28 @@ function tekenIJskap(poolLat, straal) {
 // ── Focusstip tekenen ─────────────────────────────────
 function tekenFocusStip(sx, sy) {
   const nu = Date.now();
-  const puls = 0.6 + 0.4 * Math.sin(nu / 400);
+  // Puls gaat van 0 naar 1 naar 0 (sinus)
+  const puls = (Math.sin(nu / 400) + 1) / 2;
 
-  // Buitenste gloed - wit/lichtblauw
-  const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, 20);
-  grad.addColorStop(0,   `rgba(255,255,255,${0.85*puls})`);
-  grad.addColorStop(0.35,`rgba(180,230,255,${0.55*puls})`);
-  grad.addColorStop(0.7, `rgba(100,180,255,${0.25*puls})`);
-  grad.addColorStop(1,   'rgba(50,130,255,0)');
+  // Pulserende gloed: van binnen transparant naar buiten, dan weer weg
+  // De straal van de gloed pulseert mee
+  const maxR = 22;
+  const gloedR = 10 + puls * 12; // straal pulseert van 10 naar 22
+
+  const grad = ctx.createRadialGradient(sx, sy, 2, sx, sy, gloedR);
+  grad.addColorStop(0,   `rgba(255,255,255,0)`);           // kern: transparant (vaste kern tekenen we apart)
+  grad.addColorStop(0.3, `rgba(200,230,255,${0.5*puls})`); // binnen gloed
+  grad.addColorStop(0.6, `rgba(150,200,255,${0.7*puls})`); // piek gloed
+  grad.addColorStop(1,   `rgba(100,170,255,0)`);            // buiten: transparant
   ctx.beginPath();
-  ctx.arc(sx, sy, 20, 0, Math.PI*2);
+  ctx.arc(sx, sy, gloedR, 0, Math.PI*2);
   ctx.fillStyle = grad;
   ctx.fill();
 
-  // Ringje
+  // Vaste witte kern - altijd zichtbaar, niet pulserend
   ctx.beginPath();
-  ctx.arc(sx, sy, 8, 0, Math.PI*2);
-  ctx.strokeStyle = `rgba(255,255,255,${0.9*puls})`;
-  ctx.lineWidth = 2;
-  ctx.stroke();
-
-  // Kern stipje
-  ctx.beginPath();
-  ctx.arc(sx, sy, 3, 0, Math.PI*2);
-  ctx.fillStyle = `rgba(255,255,255,${puls})`;
+  ctx.arc(sx, sy, 3.5, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(255,255,255,0.95)';
   ctx.fill();
 }
 
