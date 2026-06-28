@@ -226,96 +226,66 @@ function tekenLand(rings,vul,rand,dikte){
 
 // ── IJskap tekenen ────────────────────────────────────
 function tekenIJskap(poolLat, straal) {
-  const noordpool = poolLat > 0;
-  const [px,py,pz] = roteerPunt(lonLatTo3D(0, poolLat), rotM);
-
-  // Vaste "willekeurige" offsets per laag voor grillige, onvoorspelbare randen
-  // Gesimuleerde noise met veel verschillende frequenties
-  function ijsGolf(lonRad, laagIndex) {
-    const seed = laagIndex * 1.7;
-    return (
-      Math.sin(lonRad*1  + seed*0.3) * 2.8 +
-      Math.sin(lonRad*2  + seed*1.1) * 2.2 +
-      Math.sin(lonRad*3  + seed*0.7) * 1.8 +
-      Math.sin(lonRad*5  + seed*1.9) * 1.4 +
-      Math.sin(lonRad*7  + seed*0.5) * 1.1 +
-      Math.sin(lonRad*9  + seed*2.3) * 0.9 +
-      Math.sin(lonRad*13 + seed*1.3) * 0.7 +
-      Math.sin(lonRad*17 + seed*0.9) * 0.5 +
-      Math.sin(lonRad*23 + seed*1.7) * 0.4 +
-      Math.sin(lonRad*31 + seed*2.1) * 0.3
-    );
-  }
-
-  const lagen = [
-    { offset: -1,   alpha: 0.12 },
-    { offset: 1.5,  alpha: 0.16 },
-    { offset: 3.5,  alpha: 0.20 },
-    { offset: 5.5,  alpha: 0.26 },
-    { offset: 7.5,  alpha: 0.33 },
-    { offset: 9.5,  alpha: 0.42 },
-    { offset: 11.5, alpha: 0.55 },
-    { offset: 13.0, alpha: 0.72 },
+  // Vaste coördinaten die de echte arctische ijsgrens benaderen
+  // Loopt langs de kusten van Canada, Groenland, Noorwegen, Rusland
+  // Groenland wordt aan de zuidkant omzeild
+  const ijsGrens = [
+    // Start boven Rusland, langs Siberië
+    [180, 72], [170, 70], [160, 68], [150, 70], [140, 72],
+    [130, 73], [120, 74], [110, 73], [100, 72], [90, 73],
+    [80, 74],
+    // Boven Noorwegen / Spitsbergen
+    [70, 75], [60, 75], [50, 73], [40, 72], [30, 72],
+    [20, 73], [10, 73], [0, 72],
+    // Boven IJsland richting Groenland - hier omhoog blijven
+    [-10, 73], [-15, 75], [-20, 77], [-25, 79],
+    // Boven Groenland: langs de noordkust (niet over Groenland heen)
+    [-30, 82], [-40, 83], [-50, 83], [-60, 82],
+    // Langs Noord-Canada
+    [-70, 80], [-75, 78], [-80, 77], [-85, 76],
+    [-90, 74], [-95, 73], [-100, 72], [-110, 71],
+    [-120, 71], [-130, 70], [-140, 70], [-150, 71],
+    // Terug naar Rusland via Alaska/Beringstraat
+    [-160, 67], [-170, 67], [-180, 69],
+    // Sluiten
+    [180, 72]
   ];
 
-  for(let li = 0; li < lagen.length; li++) {
-    const laag = lagen[li];
-    const stappen = 120;
-    const randPunten = [];
+  const schermPunten = ijsGrens.map(([lon, lat]) => {
+    const [x,y,z] = roteerPunt(lonLatTo3D(lon, lat), rotM);
+    return { sx: CX+x*R, sy: CY-y*R };
+  });
 
-    for(let i=0; i<=stappen; i++){
-      const frac = i / stappen;
-      const lon = frac * 360 - 180;
-      const lonRad = lon * Math.PI / 180;
-      const golf = ijsGolf(lonRad, li);
-
-      const lat = noordpool
-        ? Math.min(88, (90 - straal + laag.offset) + golf)
-        : Math.max(-88, (-90 + straal - laag.offset) - golf);
-
-      const [x,y,z] = roteerPunt(lonLatTo3D(lon, lat), rotM);
-      if(z > 0.01) randPunten.push({ sx: CX+x*R, sy: CY-y*R });
-    }
-
-    if(randPunten.length < 4) continue;
-
-    ctx.beginPath();
-    // Teken met quadratic curves voor vloeiende maar grillige rand
-    ctx.moveTo(randPunten[0].sx, randPunten[0].sy);
-    for(let i=1; i<randPunten.length-1; i++){
-      const mx = (randPunten[i].sx + randPunten[i+1].sx) / 2;
-      const my = (randPunten[i].sy + randPunten[i+1].sy) / 2;
-      ctx.quadraticCurveTo(randPunten[i].sx, randPunten[i].sy, mx, my);
-    }
-    if(pz > 0.01) ctx.lineTo(CX+px*R, CY-py*R);
-    ctx.closePath();
-
-    // Kleur: buiten blauwachtig, binnen wit
-    const wit = Math.min(255, 200 + li * 8);
-    const blauw = 255;
-    ctx.fillStyle = `rgba(${wit},${wit+3},${blauw},${laag.alpha})`;
-    ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(schermPunten[0].sx, schermPunten[0].sy);
+  for(let i = 1; i < schermPunten.length - 1; i++){
+    const mx = (schermPunten[i].sx + schermPunten[i+1].sx) / 2;
+    const my = (schermPunten[i].sy + schermPunten[i+1].sy) / 2;
+    ctx.quadraticCurveTo(schermPunten[i].sx, schermPunten[i].sy, mx, my);
   }
+  ctx.closePath();
 
-  // Zachte witte gloed in het midden
-  if(pz > 0.05) {
-    const kern = ctx.createRadialGradient(
-      CX+px*R, CY-py*R, 0,
-      CX+px*R, CY-py*R, R*0.10
-    );
-    kern.addColorStop(0,   'rgba(255,255,255,0.60)');
-    kern.addColorStop(0.6, 'rgba(245,250,255,0.25)');
-    kern.addColorStop(1,   'rgba(230,245,255,0.0)');
-    ctx.beginPath();
-    ctx.arc(CX+px*R, CY-py*R, R*0.10, 0, Math.PI*2);
-    ctx.fillStyle = kern;
-    ctx.fill();
-  }
+  const [px,py,pz] = roteerPunt(lonLatTo3D(0, poolLat), rotM);
+  const midX = pz > 0 ? CX+px*R : CX;
+  const midY = pz > 0 ? CY-py*R : CY - R*0.3;
+  const grad = ctx.createRadialGradient(midX, midY, 0, midX, midY, R*0.45);
+  grad.addColorStop(0,   'rgba(238,250,255,0.97)');
+  grad.addColorStop(0.5, 'rgba(218,240,253,0.95)');
+  grad.addColorStop(0.8, 'rgba(198,228,250,0.90)');
+  grad.addColorStop(1,   'rgba(178,215,245,0.80)');
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(160,210,240,0.45)';
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
 }
 
 // ── Landkleuren ───────────────────────────────────────
 const LAND_KLEUREN = {
-  'Groenland':'#d8eef8','Greenland':'#d8eef8','Groenland':'#d8eef8',
+  // Arctische gebieden - wit/ijsblauw
+  'Groenland':'#ddeef8','Greenland':'#ddeef8',
+  'Antarctica':'#e8f4fa',
+
   'Egypte':'#c8a96e','Algerije':'#c9a85c','Libië':'#cdb06a',
   'Saoedi-Arabië':'#d4aa62','Iran':'#c4a06a','Irak':'#c8a870',
   'Mongolië':'#b8a878','Rusland':'#7a9e7a','Canada':'#6e9e6e',
@@ -326,7 +296,12 @@ const LAND_KLEUREN = {
   'Pakistan':'#b8a870','Afghanistan':'#c0a868','Ivoorkust':'#3a8840',
   'default':'#4a9e5c',
 };
-function getLandKleur(n){return LAND_KLEUREN[n]||LAND_KLEUREN['default'];}
+function getLandKleur(naam, lat) {
+  if(LAND_KLEUREN[naam]) return LAND_KLEUREN[naam];
+  // Arctische gebieden automatisch ijsblauw
+  if(lat !== undefined && lat > 67) return '#c8dff0';
+  return LAND_KLEUREN['default'];
+}
 
 // ── Globe tekenen ─────────────────────────────────────
 function drawGlobe() {
@@ -354,15 +329,24 @@ function drawGlobe() {
     let vul,rand,dikte;
     if(isT){vul='#f5c518';rand='#b8780a';dikte=1.5;}
     else if(isH){vul='#ffe566';rand='#c8960a';dikte=1.2;}
-    else{vul=getLandKleur(dutch);rand='#1a4a22';dikte=0.6;}
+    else{
+      // Bereken gemiddelde breedtegraad van dit land voor arctische check
+      const geom2=f.geometry;
+      const polys2=geom2.type==="Polygon"?[geom2.coordinates]:geom2.coordinates;
+      let sumLat2=0,nLat2=0;
+      if(polys2[0]&&polys2[0][0]) for(const [,la] of polys2[0][0]){sumLat2+=la;nLat2++;}
+      const avgLat=nLat2>0?sumLat2/nLat2:0;
+      vul=getLandKleur(dutch,avgLat);rand=avgLat>65?'#88aabb':'#1a4a22';dikte=0.6;
+    }
     const g=f.geometry;
     if(g.type==='Polygon') tekenLand(g.coordinates,vul,rand,dikte);
     else if(g.type==='MultiPolygon') for(const p of g.coordinates) tekenLand(p,vul,rand,dikte);
   }
 
-  // IJskappen (na landen zodat ze er bovenop liggen)
-  tekenIJskap( 90, 18);  // Noordpool: straal ~18 graden
-  tekenIJskap(-90, 15);  // Zuidpool (Antarctica): straal ~15 graden
+  // (ijskap wordt hieronder getekend, na landen)
+
+  // IJskap Noordpool - over landen heen, landen eronder bedekt
+  tekenIJskap(90, 17);
 
   // Breedtegraden
   ctx.strokeStyle='rgba(255,255,255,0.06)'; ctx.lineWidth=0.5;
