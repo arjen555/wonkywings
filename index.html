@@ -89,73 +89,94 @@ function herbereken() {
 herbereken();
 window.addEventListener('resize', herbereken);
 
-let rotY = 0, rotX = 0.30;
-let rotYsnelheid = 0, rotXsnelheid = 0;
-const ROT_SNELHEID = 0.018, ROT_VERTRAGING = 0.92;
+// ── Wonky's positie in de wereld (lon/lat) ────────────
+// Dit is de kern: de globe draait zodat deze positie
+// altijd in het midden van het scherm staat.
+let wonkyLon =  5.0;   // start boven Europa
+let wonkyLat = 48.0;
+let lonSnelheid = 0;
+let latSnelheid = 0;
+const VERTRAGING = 0.88;
 
-// ── 3D helpers ────────────────────────────────────────
+// ── Omreken: lon/lat → rotatie matrix ────────────────
+// In plaats van rotX/rotY bij te houden, berekenen we
+// elke frame opnieuw de rotatiematrix vanuit wonkyLon/wonkyLat.
+// Zo staat wonkyLon/wonkyLat altijd precies in het midden.
+function maakRotMatrix(lon, lat) {
+  const lo = lon * Math.PI / 180;
+  const la = lat * Math.PI / 180;
+
+  // Stap 1: roteer om Y-as zodat lon in het midden staat
+  const cosY = Math.cos(-lo), sinY = Math.sin(-lo);
+  // Stap 2: roteer om X-as zodat lat in het midden staat
+  const cosX = Math.cos(la),  sinX = Math.sin(la);
+
+  // Gecombineerde matrix (Y dan X rotatie)
+  return { cosY, sinY, cosX, sinX };
+}
+
+function roteerPunt([x,y,z], m) {
+  // Y-as rotatie
+  const xr =  x*m.cosY + z*m.sinY;
+  const zr = -x*m.sinY + z*m.cosY;
+  // X-as rotatie  
+  const yr2 =  y*m.cosX - zr*m.sinX;
+  const zr2 =  y*m.sinX + zr*m.cosX;
+  return [xr, yr2, zr2];
+}
+
 function lonLatTo3D(lon, lat) {
   const lo = lon*Math.PI/180, la = lat*Math.PI/180;
   return [Math.cos(la)*Math.sin(lo), Math.sin(la), Math.cos(la)*Math.cos(lo)];
 }
 
-function rotate([x,y,z]) {
-  const cy=Math.cos(rotY),sy=Math.sin(rotY);
-  const xr=x*cy+z*sy, zr=-x*sy+z*cy;
-  const cx=Math.cos(rotX),sx=Math.sin(rotX);
-  return [xr, y*cx-zr*sx, y*sx+zr*cx];
-}
-
-function toScreen([x,y,z]) {
-  return [CX+x*R, CY-y*R, z];
-}
-
-// ── Lijnstuk knippen op bolrand (z=0 vlak) ───────────
-// Geeft het snijpunt terug waar z=0 precies ligt
+// ── Knip lijnstuk op bolrand ──────────────────────────
 function knipPunt(p1, p2) {
-  // Lineaire interpolatie: vind t zodat z=0
   const t = p1[2] / (p1[2] - p2[2]);
-  return [
-    p1[0] + t*(p2[0]-p1[0]),
-    p1[1] + t*(p2[1]-p1[1]),
-    0
-  ];
+  return [p1[0]+t*(p2[0]-p1[0]), p1[1]+t*(p2[1]-p1[1]), 0];
 }
 
-// ── Ring tekenen MET correcte knipping op bolrand ─────
+// ── Ring tekenen ──────────────────────────────────────
+let rotM; // huidige rotatiematrix, elke frame opnieuw berekend
+
 function tekenRing(ring) {
   if (!ring || ring.length < 3) return;
+  const pts = ring.map(([lon,lat]) => roteerPunt(lonLatTo3D(lon,lat), rotM));
 
-  // Zet alle punten om naar geroteerde 3D
-  const pts3d = ring.map(([lon,lat]) => rotate(lonLatTo3D(lon,lat)));
+  let penNeer = false;
+  let vx = 0, vy = 0;
 
-  let first = true;
-
-  for (let i = 0; i < pts3d.length; i++) {
-    const curr = pts3d[i];
-    const next = pts3d[(i+1) % pts3d.length];
-
+  for (let i = 0; i < pts.length; i++) {
+    const curr = pts[i];
+    const next = pts[(i+1) % pts.length];
     const currVis = curr[2] > 0;
     const nextVis = next[2] > 0;
 
     if (currVis) {
-      const [sx,sy] = toScreen(curr);
-      if (first) { ctx.moveTo(sx,sy); first=false; }
-      else ctx.lineTo(sx,sy);
+      const sx = CX + curr[0]*R;
+      const sy = CY - curr[1]*R;
+      if (!penNeer) {
+        ctx.moveTo(sx, sy);
+        penNeer = true;
+      } else {
+        const sprong = Math.hypot(sx-vx, sy-vy);
+        sprong > R*0.5 ? ctx.moveTo(sx,sy) : ctx.lineTo(sx,sy);
+      }
+      vx = sx; vy = sy;
     }
 
-    // Overgang: knip op bolrand
+    // Overgang zichtbaar ↔ onzichtbaar: knip op rand
     if (currVis !== nextVis) {
       const snij = knipPunt(curr, next);
-      const [sx,sy] = toScreen(snij);
+      const sx = CX + snij[0]*R;
+      const sy = CY - snij[1]*R;
       if (currVis) {
-        // Gaat weg van ons: lijn naar rand, dan pen omhoog
-        ctx.lineTo(sx,sy);
-        first = true;
+        ctx.lineTo(sx, sy);
+        penNeer = false;
       } else {
-        // Komt naar ons: pen neer op rand
-        ctx.moveTo(sx,sy);
-        first = false;
+        ctx.moveTo(sx, sy);
+        penNeer = true;
+        vx = sx; vy = sy;
       }
     }
   }
@@ -219,9 +240,9 @@ function drawGlobe() {
     ctx.beginPath();
     let first=true;
     for(let lon=-180;lon<=180;lon+=3){
-      const [x,y,z]=rotate(lonLatTo3D(lon,lat));
+      const [x,y,z]=roteerPunt(lonLatTo3D(lon,lat), rotM);
       if(z<=0){first=true;continue;}
-      const sx=CX+x*R,sy=CY-y*R;
+      const sx=CX+x*R, sy=CY-y*R;
       first?ctx.moveTo(sx,sy):ctx.lineTo(sx,sy);
       first=false;
     }
@@ -256,55 +277,63 @@ document.addEventListener('keydown',e=>{
 document.addEventListener('keyup',e=>{ keys[e.key]=false; });
 
 let wonkySchermX=0, wonkySchermY=0;
-const MAX_DRIFT=0.12, DRIFT_S=0.08;
-let wonkyLon=5, wonkyLat=48;
+const MAX_DRIFT=0.10, DRIFT_S=0.08;
 let hoverLand=null;
 
 function updateSpel() {
-  const s=keys['Shift']?0.025:0.010;
-  let dx=0,dy=0;
+  const s = keys['Shift'] ? 1.8 : 0.7; // graden per frame
+  let dx=0, dy=0;
   if(keys['ArrowLeft'])  dx=-1;
   if(keys['ArrowRight']) dx= 1;
-  if(keys['ArrowUp'])    dy= 1;
-  if(keys['ArrowDown'])  dy=-1;
+  if(keys['ArrowUp'])    dy= 1;   // omhoog = breedtegraad stijgt = noordwaarts
+  if(keys['ArrowDown'])  dy=-1;   // omlaag = breedtegraad daalt = zuidwaarts
 
-  rotYsnelheid += -dx*s;
-  rotXsnelheid += -dy*s*0.6;
-  rotYsnelheid *= ROT_VERTRAGING;
-  rotXsnelheid *= ROT_VERTRAGING;
-  rotX = Math.max(-0.2, Math.min(0.8, rotX+rotXsnelheid));
-  rotY += rotYsnelheid;
+  // Versnelling in graden
+  lonSnelheid += dx * s * 0.15;
+  latSnelheid += dy * s * 0.15;
 
-  // Wonky drift
-  wonkySchermX += (dx*MAX_DRIFT - wonkySchermX)*DRIFT_S;
+  // Afremmen
+  lonSnelheid *= VERTRAGING;
+  latSnelheid *= VERTRAGING;
+
+  // Positie bijwerken
+  wonkyLon += lonSnelheid;
+  wonkyLat += latSnelheid;
+
+  // Grenzen
+  if(wonkyLon >  180) wonkyLon -= 360;
+  if(wonkyLon < -180) wonkyLon += 360;
+  wonkyLat = Math.max(-89, Math.min(89, wonkyLat));
+
+  // Bereken rotatiematrix voor deze positie
+  rotM = maakRotMatrix(wonkyLon, wonkyLat);
+
+  // Wonky drift op scherm
+  wonkySchermX += ( dx*MAX_DRIFT - wonkySchermX)*DRIFT_S;
   wonkySchermY += (-dy*MAX_DRIFT*0.6 - wonkySchermY)*DRIFT_S;
 
-  const wx=W*(0.5+wonkySchermX);
-  const wy=H*(0.46+wonkySchermY);
-  wonkyEl.style.left=(wx-70)+'px';
-  wonkyEl.style.top=(wy-70)+'px';
+  const wx = W*(0.5 + wonkySchermX);
+  const wy = H*(0.46 + wonkySchermY);
+  wonkyEl.style.left = (wx-70)+'px';
+  wonkyEl.style.top  = (wy-70)+'px';
 
-  const scaleX=dx<0?-1:1;
-  const rot=dx*14-dy*9;
-  wonkyEl.style.transform=`scaleX(${scaleX}) rotate(${rot}deg)`;
-
-  // Wonky lon/lat = middelpunt van de globe
-  wonkyLon=(-rotY*180/Math.PI)%360;
-  wonkyLat=(rotX-0.30)*(180/Math.PI)*1.5;
-  wonkyLat=Math.max(-85,Math.min(85,wonkyLat));
+  const scaleX = dx < 0 ? -1 : 1;
+  const rot = dx*14 - dy*9;
+  wonkyEl.style.transform = `scaleX(${scaleX}) rotate(${rot}deg)`;
 
   // Hover
-  hoverLand=getLandOnderWonky();
+  hoverLand = getLandOnderWonky();
   if(hoverLand){
-    hoverEl.textContent=hoverLand.properties.dutch||hoverLand.properties.name;
-    hoverEl.style.opacity='1';
-    hoverEl.style.left=wx+'px';
-    hoverEl.style.top=wy+'px';
+    hoverEl.textContent   = hoverLand.properties.dutch||hoverLand.properties.name;
+    hoverEl.style.opacity = '1';
+    hoverEl.style.left    = wx+'px';
+    hoverEl.style.top     = wy+'px';
   } else {
-    hoverEl.style.opacity='0';
+    hoverEl.style.opacity = '0';
   }
 }
 
+// ── Land detectie ─────────────────────────────────────
 function getLandOnderWonky(){
   let beste=null, besteDist=12;
   for(const f of GEOJSON.features){
@@ -314,7 +343,11 @@ function getLandOnderWonky(){
       let sLon=0,sLat=0,n=0;
       for(const [lo,la] of poly[0]){sLon+=lo;sLat+=la;n++;}
       if(!n) continue;
-      const d=Math.hypot(wonkyLon-sLon/n,wonkyLat-sLat/n);
+      // Rekening houden met datumgrens
+      let dLon = wonkyLon - sLon/n;
+      if(dLon >  180) dLon -= 360;
+      if(dLon < -180) dLon += 360;
+      const d=Math.hypot(dLon, wonkyLat-sLat/n);
       if(d<besteDist){besteDist=d;beste=f;}
     }
   }
@@ -325,7 +358,7 @@ function getLandOnderWonky(){
 const LANDEN=['Frankrijk','Duitsland','Spanje','Italië','Nederland',
   'België','Polen','Zweden','Noorwegen','Denemarken',
   'Portugal','Oostenrijk','Zwitserland','Griekenland','Ierland'];
-let huidigLand='Frankrijk',score=0,wachten=false;
+let huidigLand='Frankrijk', score=0, wachten=false;
 document.getElementById('land-naam').textContent=huidigLand;
 
 function nieuwLand(){
@@ -355,6 +388,7 @@ document.addEventListener('keydown',e=>{
   }
 });
 
+// ── Loop ──────────────────────────────────────────────
 function loop(){ updateSpel(); drawGlobe(); requestAnimationFrame(loop); }
 loop();
 </script>
