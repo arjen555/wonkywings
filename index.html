@@ -226,29 +226,29 @@ function tekenLand(rings,vul,rand,dikte){
 
 // ── IJskap tekenen ────────────────────────────────────
 function tekenIJskap(poolLat, straal) {
-  // Vaste coördinaten die de echte arctische ijsgrens benaderen
-  // Loopt langs de kusten van Canada, Groenland, Noorwegen, Rusland
-  // Groenland wordt aan de zuidkant omzeild
+  // Pool zichtbaarheidscheck
+  const [px,py,pz] = roteerPunt(lonLatTo3D(0, 90), rotM);
+  if(pz < 0) return;  // Pool helemaal achter bol: niet tekenen
+
+  // IJsgrens minimaal 75N zodat hij niet over Europa overlapt
+  // Echte arctische ijsgrens zomer: ~75-80N
   const ijsGrens = [
-    // Start boven Rusland, langs Siberië
-    [180, 72], [170, 70], [160, 68], [150, 70], [140, 72],
-    [130, 73], [120, 74], [110, 73], [100, 72], [90, 73],
-    [80, 74],
-    // Boven Noorwegen / Spitsbergen
-    [70, 75], [60, 75], [50, 73], [40, 72], [30, 72],
-    [20, 73], [10, 73], [0, 72],
-    // Boven IJsland richting Groenland - hier omhoog blijven
-    [-10, 73], [-15, 75], [-20, 77], [-25, 79],
-    // Boven Groenland: langs de noordkust (niet over Groenland heen)
-    [-30, 82], [-40, 83], [-50, 83], [-60, 82],
-    // Langs Noord-Canada
-    [-70, 80], [-75, 78], [-80, 77], [-85, 76],
-    [-90, 74], [-95, 73], [-100, 72], [-110, 71],
-    [-120, 71], [-130, 70], [-140, 70], [-150, 71],
-    // Terug naar Rusland via Alaska/Beringstraat
-    [-160, 67], [-170, 67], [-180, 69],
-    // Sluiten
-    [180, 72]
+    // Siberië
+    [180, 76], [170, 74], [160, 73], [150, 74], [140, 76],
+    [130, 77], [120, 78], [110, 77], [100, 76], [90, 77],
+    // Barentszzee / Spitsbergen
+    [80, 78], [70, 78], [60, 77], [50, 76], [40, 76],
+    [30, 76], [20, 77], [10, 77], [0, 76],
+    // Richting Groenland - langs de noordkust
+    [-10, 77], [-15, 79], [-20, 81], [-25, 82],
+    [-30, 83], [-40, 84], [-50, 84], [-60, 83],
+    // Noord-Canada
+    [-70, 81], [-75, 80], [-80, 79], [-85, 78],
+    [-90, 77], [-95, 76], [-100, 75], [-110, 75],
+    [-120, 75], [-130, 74], [-140, 74], [-150, 75],
+    // Beringstraat
+    [-160, 72], [-170, 72], [-180, 74],
+    [180, 76]
   ];
 
   const schermPunten = ijsGrens.map(([lon, lat]) => {
@@ -265,10 +265,8 @@ function tekenIJskap(poolLat, straal) {
   }
   ctx.closePath();
 
-  const [px,py,pz] = roteerPunt(lonLatTo3D(0, poolLat), rotM);
-  const midX = pz > 0 ? CX+px*R : CX;
-  const midY = pz > 0 ? CY-py*R : CY - R*0.3;
-  const grad = ctx.createRadialGradient(midX, midY, 0, midX, midY, R*0.45);
+  const midX = CX+px*R, midY = CY-py*R;
+  const grad = ctx.createRadialGradient(midX, midY, 0, midX, midY, R*0.42);
   grad.addColorStop(0,   'rgba(238,250,255,0.97)');
   grad.addColorStop(0.5, 'rgba(218,240,253,0.95)');
   grad.addColorStop(0.8, 'rgba(198,228,250,0.90)');
