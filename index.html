@@ -235,23 +235,52 @@ function knipPunt(p1,p2){
 
 function tekenRing(ring){
   if(!ring||ring.length<3) return;
-  const pts=ring.map(([lon,lat])=>roteerPunt(lonLatTo3D(lon,lat),rotM));
+
+  // Detecteer datumgrens-oversteek: als twee opeenvolgende punten
+  // meer dan 180 graden lon van elkaar liggen, splitsen we de ring
+  // in twee stukken die apart getekend worden
+  const coords = ring;
+  const n = coords.length;
+
+  // Verwerk de ring als aaneengesloten segmenten
+  // met knipping op bolrand EN datumgrens
+  const pts = coords.map(([lon,lat]) => {
+    const p3 = roteerPunt(lonLatTo3D(lon,lat), rotM);
+    return { p3, sx: CX+p3[0]*R, sy: CY-p3[1]*R, vis: p3[2]>0, lon, lat };
+  });
+
   let pen=false, vx=0, vy=0;
-  for(let i=0;i<pts.length;i++){
-    const curr=pts[i], next=pts[(i+1)%pts.length];
-    const cv=curr[2]>0, nv=next[2]>0;
-    if(cv){
-      const sx=CX+curr[0]*R, sy=CY-curr[1]*R;
-      if(!pen){ctx.moveTo(sx,sy);pen=true;}
-      else if(Math.hypot(sx-vx,sy-vy)>R*0.5){ctx.moveTo(sx,sy);}
-      else{ctx.lineTo(sx,sy);}
-      vx=sx;vy=sy;
+  for(let i=0;i<n;i++){
+    const curr=pts[i], next=pts[(i+1)%n];
+
+    // Check datumgrens-sprong (lon verschil > 180 graden)
+    const dLon = Math.abs(curr.lon - next.lon);
+    const datumGrens = dLon > 180;
+
+    if(curr.vis){
+      const sx=curr.sx, sy=curr.sy;
+      if(!pen){
+        ctx.moveTo(sx,sy); pen=true;
+      } else {
+        ctx.lineTo(sx,sy);
+      }
+      vx=sx; vy=sy;
     }
-    if(cv!==nv){
-      const s=knipPunt(curr,next);
+
+    // Knip op bolrand (zichtbaar/onzichtbaar overgang)
+    if(curr.vis !== next.vis && !datumGrens){
+      const s=knipPunt(curr.p3, next.p3);
       const sx=CX+s[0]*R, sy=CY-s[1]*R;
-      if(cv){ctx.lineTo(sx,sy);pen=false;}
-      else{ctx.moveTo(sx,sy);pen=true;vx=sx;vy=sy;}
+      if(curr.vis){
+        ctx.lineTo(sx,sy); pen=false;
+      } else {
+        ctx.moveTo(sx,sy); pen=true; vx=sx; vy=sy;
+      }
+    }
+
+    // Datumgrens: pen omhoog, begin opnieuw
+    if(datumGrens){
+      pen=false;
     }
   }
 }
@@ -341,26 +370,31 @@ function tekenIJskap(poolLat, straal) {
 // ── Focusstip tekenen ─────────────────────────────────
 function tekenFocusStip(sx, sy) {
   const nu = Date.now();
-  const puls = 0.6 + 0.4 * Math.sin(nu / 300); // pulserend
+  const puls = 0.6 + 0.4 * Math.sin(nu / 400);
 
-  // Buitenste gloed
-  const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, 18);
-  grad.addColorStop(0,   `rgba(255,255,100,${0.9*puls})`);
-  grad.addColorStop(0.4, `rgba(255,200,0,${0.6*puls})`);
-  grad.addColorStop(1,   'rgba(255,150,0,0)');
+  // Buitenste gloed - wit/lichtblauw
+  const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, 20);
+  grad.addColorStop(0,   `rgba(255,255,255,${0.85*puls})`);
+  grad.addColorStop(0.35,`rgba(180,230,255,${0.55*puls})`);
+  grad.addColorStop(0.7, `rgba(100,180,255,${0.25*puls})`);
+  grad.addColorStop(1,   'rgba(50,130,255,0)');
   ctx.beginPath();
-  ctx.arc(sx, sy, 18, 0, Math.PI*2);
+  ctx.arc(sx, sy, 20, 0, Math.PI*2);
   ctx.fillStyle = grad;
   ctx.fill();
 
+  // Ringje
+  ctx.beginPath();
+  ctx.arc(sx, sy, 8, 0, Math.PI*2);
+  ctx.strokeStyle = `rgba(255,255,255,${0.9*puls})`;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
   // Kern stipje
   ctx.beginPath();
-  ctx.arc(sx, sy, 4, 0, Math.PI*2);
+  ctx.arc(sx, sy, 3, 0, Math.PI*2);
   ctx.fillStyle = `rgba(255,255,255,${puls})`;
   ctx.fill();
-  ctx.strokeStyle = 'rgba(200,150,0,0.8)';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
 }
 
 // ── Globe tekenen ─────────────────────────────────────
