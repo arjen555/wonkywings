@@ -233,61 +233,84 @@ function knipPunt(p1,p2){
   return [p1[0]+t*(p2[0]-p1[0]), p1[1]+t*(p2[1]-p1[1]), 0];
 }
 
-function tekenRing(ring){
+function tekenRing(ring, subPaden){
+  // Bouw aaneengesloten zichtbare sub-paden op
+  // Elk sub-pad is een array van schermcoördinaten
   if(!ring||ring.length<3) return;
 
-  // Stap 1: splits ring bij datumgrens-oversteek (lon sprong > 180°)
-  // zodat we nooit een lijn dwars over de bol trekken
-  const segmenten = [[]];
-  for(let i=0; i<ring.length; i++){
-    segmenten[segmenten.length-1].push(ring[i]);
-    if(i < ring.length-1){
-      const dLon = Math.abs(ring[i][0] - ring[i+1][0]);
-      if(dLon > 180){
-        // Datumgrens: begin nieuw segment
-        segmenten.push([]);
+  const n = ring.length;
+  const pts = ring.map(([lon,lat]) => {
+    const p3 = roteerPunt(lonLatTo3D(lon,lat), rotM);
+    return { p3, sx: CX+p3[0]*R, sy: CY-p3[1]*R, vis: p3[2] > 0 };
+  });
+
+  let huidigPad = null;
+
+  for(let i = 0; i < n; i++){
+    const curr = pts[i];
+    const next = pts[(i+1) % n];
+
+    if(curr.vis){
+      if(!huidigPad){
+        huidigPad = [];
+        // Als vorig punt onzichtbaar was: voeg knippunt toe als begin
+        const prev = pts[(i - 1 + n) % n];
+        if(!prev.vis){
+          const s = knipPunt(prev.p3, curr.p3);
+          huidigPad.push([CX+s[0]*R, CY-s[1]*R]);
+        }
       }
+      huidigPad.push([curr.sx, curr.sy]);
+    }
+
+    // Overgang zichtbaar → onzichtbaar: sluit sub-pad af
+    if(curr.vis && !next.vis && huidigPad){
+      const s = knipPunt(curr.p3, next.p3);
+      huidigPad.push([CX+s[0]*R, CY-s[1]*R]);
+      subPaden.push(huidigPad);
+      huidigPad = null;
     }
   }
-
-  // Stap 2: teken elk segment apart met bolrand-knipping
-  for(const seg of segmenten){
-    if(seg.length < 2) continue;
-    const pts = seg.map(([lon,lat]) => {
-      const p3 = roteerPunt(lonLatTo3D(lon,lat), rotM);
-      return { p3, sx: CX+p3[0]*R, sy: CY-p3[1]*R, vis: p3[2]>0 };
-    });
-
-    let pen=false, vx=0, vy=0;
-    for(let i=0; i<pts.length; i++){
-      const curr=pts[i];
-      const next=pts[(i+1)%pts.length];
-      const cv=curr.vis, nv=next.vis;
-
-      if(cv){
-        const sx=curr.sx, sy=curr.sy;
-        if(!pen){ ctx.moveTo(sx,sy); pen=true; }
-        else { ctx.lineTo(sx,sy); }
-        vx=sx; vy=sy;
-      }
-
-      // Knip exact op bolrand bij overgang
-      if(cv !== nv && i < pts.length-1){
-        const s = knipPunt(curr.p3, next.p3);
-        const sx=CX+s[0]*R, sy=CY-s[1]*R;
-        if(cv){ ctx.lineTo(sx,sy); pen=false; }
-        else  { ctx.moveTo(sx,sy); pen=true; vx=sx; vy=sy; }
-      }
-    }
+  // Resterende punten
+  if(huidigPad && huidigPad.length >= 2){
+    subPaden.push(huidigPad);
   }
 }
 
-function tekenLand(rings,vul,rand,dikte){
-  ctx.beginPath();
-  for(const r of rings) tekenRing(r);
-  ctx.fillStyle=vul; ctx.fill('evenodd');
-  ctx.strokeStyle=rand; ctx.lineWidth=dikte||0.8; ctx.stroke();
+function tekenLand(rings, vul, rand, dikte){
+  // Verzamel alle sub-paden van alle ringen
+  const subPaden = [];
+  for(const r of rings) tekenRing(r, subPaden);
+  if(subPaden.length === 0) return;
+
+  // Teken elk sub-pad apart voor fill (voorkomt dwarse lijnen)
+  ctx.fillStyle = vul;
+  for(const pad of subPaden){
+    if(pad.length < 2) continue;
+    ctx.beginPath();
+    ctx.moveTo(pad[0][0], pad[0][1]);
+    for(let i = 1; i < pad.length; i++){
+      ctx.lineTo(pad[i][0], pad[i][1]);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Stroke apart: één doorlopend pad voor de randen
+  ctx.strokeStyle = rand;
+  ctx.lineWidth = dikte || 0.8;
+  for(const pad of subPaden){
+    if(pad.length < 2) continue;
+    ctx.beginPath();
+    ctx.moveTo(pad[0][0], pad[0][1]);
+    for(let i = 1; i < pad.length; i++){
+      ctx.lineTo(pad[i][0], pad[i][1]);
+    }
+    ctx.stroke();
+  }
 }
+
+
 
 const LAND_KLEUREN = {
   // Arctische gebieden - wit/ijsblauw
