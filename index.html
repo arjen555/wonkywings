@@ -16,152 +16,96 @@
     /* ── STARTSCHERM ───────────────────────────────── */
     #startscherm {
       position:fixed; inset:0; z-index:100;
-      overflow:hidden;
-      display:flex; flex-direction:row;
-      background: linear-gradient(135deg, #0a2a4a 0%, #051e30 100%);
-    }
-
-    /* Linkerhelft: Timbo */
-    #start-links {
-      flex: 0 0 80%;
-      position:relative;
-      overflow:hidden;
-    }
-    #start-timbo {
-      width:100%; height:100%;
-      object-fit:cover;
-      object-position:center center;
-      display:block;
-    }
-    /* Zachte overgang naar rechts */
-    #start-links::after {
-      content:'';
-      position:absolute; inset:0;
-      background: linear-gradient(to right, transparent 60%, #051e30 100%);
-      pointer-events:none;
-    }
-
-    /* Rechterhelft: menu */
-    #start-rechts {
-      flex: 1;
       display:flex; flex-direction:column;
       align-items:center; justify-content:center;
-      padding:20px 18px;
-      gap:10px;
-      background: linear-gradient(135deg, #051e30 0%, #0a2a4a 100%);
-      position:relative;
-      overflow-y:auto;
+      background: radial-gradient(ellipse at 50% 30%, #1a6fa8 0%, #0a3d62 50%, #051e30 100%);
+      overflow:hidden;
     }
-    /* Decoratieve sterren achtergrond */
-    #start-rechts::before {
-      content:'';
+    #start-bg {
       position:absolute; inset:0;
-      background-image:
-        radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px),
-        radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px);
-      background-size: 60px 60px, 30px 30px;
-      background-position: 0 0, 15px 15px;
+      background-image: url('images/Timbo.png');
+      background-size: cover;
+      background-position: center top;
+      opacity: 0.35;
       pointer-events:none;
     }
-
+    #start-content {
+      position:relative; z-index:2;
+      display:flex; flex-direction:column;
+      align-items:center; gap:16px;
+      width:100%; max-width:900px;
+      padding:20px;
+    }
     #start-titel {
-      font-size:1.8rem; font-weight:900; color:#fff;
-      letter-spacing:1px; text-align:center;
-      text-shadow: 0 4px 20px rgba(0,0,0,0.8), 0 0 40px rgba(30,144,255,0.4);
-      position:relative;
+      font-size:4rem; font-weight:900;
+      color:#fff; letter-spacing:3px;
+      text-shadow: 0 4px 20px rgba(0,0,0,0.8), 0 0 60px rgba(30,144,255,0.5);
     }
     #start-titel span { color:#ffd700; }
     #start-subtitel {
-      font-size:0.62rem; color:rgba(255,255,255,0.6);
-      letter-spacing:1.5px; text-transform:uppercase;
-      text-align:center; position:relative;
+      font-size:1.2rem; color:rgba(255,255,255,0.75);
+      letter-spacing:2px; text-transform:uppercase;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+      margin-bottom:8px;
     }
-
     #naam-rij {
-      display:flex; flex-direction:column; gap:4px;
-      width:100%; position:relative;
+      display:flex; gap:12px; align-items:center;
+      background:rgba(0,0,0,0.4); backdrop-filter:blur(10px);
+      border:2px solid rgba(255,255,255,0.2); border-radius:16px;
+      padding:10px 20px;
     }
-    #naam-rij label {
-      color:rgba(255,255,255,0.7); font-size:0.8rem;
-      font-weight:600; letter-spacing:0.5px;
-    }
+    #naam-rij label { color:rgba(255,255,255,0.8); font-size:0.95rem; }
     #naam-input {
-      background:rgba(255,255,255,0.1); border:2px solid rgba(255,255,255,0.2);
-      color:#fff; font-size:0.82rem; padding:6px 12px; border-radius:10px;
-      outline:none; width:100%;
-      transition: border-color 0.2s, background 0.2s;
+      background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3);
+      color:#fff; font-size:1rem; padding:6px 14px; border-radius:10px;
+      outline:none; min-width:180px;
     }
-    #naam-input::placeholder { color:rgba(255,255,255,0.35); }
-    #naam-input:focus { border-color:rgba(255,215,0,0.6); background:rgba(255,255,255,0.15); }
+    #naam-input::placeholder { color:rgba(255,255,255,0.4); }
+    #naam-input:focus { border-color:rgba(255,215,0,0.6); background:rgba(255,255,255,0.2); }
 
-    /* Level bolletjes */
-    #level-lijst {
-      display:flex; flex-direction:column; gap:6px;
-      width:100%; position:relative;
+    /* Levels grid */
+    #levels-grid {
+      display:grid; grid-template-columns:repeat(5,1fr);
+      gap:12px; width:100%;
     }
-
-    .level-bol {
-      display:flex; flex-direction:row; align-items:center;
-      gap:10px;
-      background:rgba(255,255,255,0.06);
-      border:2px solid rgba(255,255,255,0.12);
-      border-radius:60px;
-      padding:7px 12px 7px 7px;
-      transition:background 0.2s, border-color 0.2s, transform 0.2s;
+    .level-kaart {
+      background:rgba(0,0,0,0.45); backdrop-filter:blur(12px);
+      border:2px solid rgba(255,255,255,0.15); border-radius:20px;
+      padding:16px 10px; text-align:center;
+      transition: transform 0.2s, border-color 0.2s;
     }
-    .level-bol:hover:not(.level-bol-binnenkort) {
-      background:rgba(255,255,255,0.12);
-      border-color:rgba(255,215,0,0.45);
-      transform:translateX(4px);
+    .level-kaart:hover { transform:translateY(-4px); border-color:rgba(255,215,0,0.5); }
+    .level-nr {
+      font-size:2rem; font-weight:900; color:#ffd700;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.6);
     }
-    .level-bol-binnenkort {
-      opacity:0.5; cursor:default;
-    }
-
-    /* Getal cirkel links */
-    .bol-nr {
-      width:34px; height:34px; border-radius:50%;
-      background:linear-gradient(135deg, #1a5fa8, #0a3d6e);
-      border:2px solid rgba(255,255,255,0.25);
+    .level-naam {
+      font-size:0.75rem; color:rgba(255,255,255,0.85);
+      font-weight:600; letter-spacing:0.5px;
+      margin:4px 0 12px; min-height:32px;
       display:flex; align-items:center; justify-content:center;
-      font-size:1rem; font-weight:900; color:#ffd700;
-      flex-shrink:0;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     }
-    .level-bol-binnenkort .bol-nr {
-      background:linear-gradient(135deg, #2a4060, #1a2a40);
-    }
-    .bol-water .bol-nr {
-      background:linear-gradient(135deg, #1a6080, #0a3050);
-    }
-
-    /* Naam en knoppen */
-    .bol-inhoud { flex:1; }
-    .bol-naam {
-      font-size:0.72rem; font-weight:700; color:#fff;
-      margin-bottom:4px; letter-spacing:0.3px;
-    }
-    .bol-binnenkort-tekst {
-      font-size:0.72rem; color:rgba(255,255,255,0.45);
-      font-style:italic;
-    }
-    .bol-btns { display:flex; gap:6px; }
-
+    .level-btns { display:flex; flex-direction:column; gap:8px; }
     .btn-speel {
-      background:linear-gradient(135deg,#f5c518,#e0a800);
-      color:#000; font-weight:800; font-size:0.65rem;
-      border:none; border-radius:7px; padding:4px 9px;
-      cursor:pointer; transition:opacity 0.2s; letter-spacing:0.3px;
-      white-space:nowrap;
+      background:linear-gradient(135deg, #f5c518, #e0a800);
+      color:#000; font-weight:800; font-size:0.85rem;
+      border:none; border-radius:12px; padding:8px 0;
+      cursor:pointer; transition:opacity 0.2s;
+      letter-spacing:0.5px;
     }
     .btn-speel:hover { opacity:0.85; }
     .btn-verken {
-      background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.25);
-      color:#fff; font-weight:600; font-size:0.62rem;
-      border-radius:7px; padding:4px 8px;
-      cursor:pointer; transition:background 0.2s; white-space:nowrap;
+      background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.25);
+      color:#fff; font-weight:600; font-size:0.8rem;
+      border-radius:12px; padding:7px 0;
+      cursor:pointer; transition:background 0.2s;
+      letter-spacing:0.5px;
     }
     .btn-verken:hover { background:rgba(255,255,255,0.22); }
+    .level-info {
+      font-size:0.68rem; color:rgba(255,255,255,0.45);
+      margin-top:6px;
+    }
 
     /* ── SPELSCHERM ────────────────────────────────── */
     #spelscherm { display:none; }
@@ -245,13 +189,8 @@
 
 <!-- ── STARTSCHERM ─────────────────────────────────── -->
 <div id="startscherm">
-  <!-- Links: Timbo -->
-  <div id="start-links">
-    <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
-  </div>
-
-  <!-- Rechts: menu -->
-  <div id="start-rechts">
+  <div id="start-bg"></div>
+  <div id="start-content">
     <div id="start-titel">Wonky <span>Wings</span></div>
     <div id="start-subtitel">✈ Vliegenderwijs topografie leren ✈</div>
 
@@ -260,8 +199,8 @@
       <input id="naam-input" type="text" placeholder="Vul je naam in..." maxlength="20" autocomplete="off"/>
     </div>
 
-    <div id="level-lijst">
-      <!-- Dynamisch gebouwd -->
+    <div id="levels-grid">
+      <!-- Level kaarten worden dynamisch gebouwd -->
     </div>
   </div>
 </div>
@@ -291,7 +230,7 @@
       <div class="label" id="opdracht-label">✈ Vlieg naar...</div>
       <div class="landnaam" id="land-naam">...</div>
     </div>
-    <div id="hint">Pijltjestoetsen &nbsp;·&nbsp; SHIFT = turbo &nbsp;·&nbsp; SPATIE = vlaggetje droppen &nbsp;·&nbsp; CTRL = zoom (3 standen)</div>
+    <div id="hint">Pijltjestoetsen &nbsp;·&nbsp; SHIFT = turbo &nbsp;·&nbsp; SPATIE = vlaggetje droppen</div>
   </div>
 
   <div id="voortgang">
@@ -309,84 +248,55 @@ const LEVELS = {
     naam: 'Europa Starter',
     landen: ["Frankrijk", "Duitsland", "Spanje", "Italië", "Nederland", "België", "Polen", "Zweden", "Noorwegen", "Denemarken", "Portugal", "Oostenrijk", "Zwitserland", "Griekenland", "Ierland"],
     altijd_alle: true,
-    beschrijving: '15 Europese landen',
-    beschikbaar: true
+    beschrijving: '15 Europese landen'
   },
   2: {
     naam: 'Europa Prof',
     landen: ["Rusland", "Duitsland", "Verenigd Koninkrijk", "Frankrijk", "Italië", "Spanje", "Oekraïne", "Polen", "Roemenië", "Nederland", "België", "Zweden", "Tsjechië", "Portugal", "Griekenland", "Hongarije", "Oostenrijk", "Wit-Rusland", "Zwitserland", "Bulgarije", "Servië", "Denemarken", "Noorwegen", "Finland", "Slowakije", "Ierland", "Kroatië", "Bosnië-Herzegovina", "Moldavië", "Litouwen", "Albanië", "Slovenië", "Letland", "Noord-Macedonië", "Estland", "Luxemburg", "Montenegro", "Malta", "IJsland", "Andorra", "Liechtenstein", "Monaco", "San Marino", "Vaticaanstad"],
     altijd_alle: false,
-    beschrijving: '44 Europese landen',
-    beschikbaar: true
+    beschrijving: '44 Europese landen'
   },
   3: {
     naam: 'Wereld Starter',
     landen: ["Frankrijk", "Spanje", "Nederland", "Italië", "Duitsland", "Verenigd Koninkrijk", "Turkije", "Verenigde Staten", "Canada", "Mexico", "Brazilië", "China", "India", "Japan", "Indonesië", "Australië", "Egypte", "Zuid-Afrika", "Rusland"],
     altijd_alle: false,
-    beschrijving: '19 wereldlanden',
-    beschikbaar: true
+    beschrijving: '19 wereldlanden'
   },
   4: {
     naam: 'Wereld Prof',
     landen: ["Frankrijk", "Spanje", "Nederland", "Italië", "Duitsland", "Verenigd Koninkrijk", "Turkije", "Verenigde Staten", "Canada", "Mexico", "Brazilië", "China", "India", "Japan", "Indonesië", "Australië", "Egypte", "Zuid-Afrika", "Rusland", "Portugal", "Nieuw-Zeeland", "Zweden", "Noorwegen", "Finland", "Polen", "Denemarken", "Ierland", "IJsland", "Griekenland", "Argentinië", "Peru", "Chili", "Saoedi-Arabië", "Marokko", "Nigeria", "Namibië", "Algerije", "Antarctica", "België", "Roemenië", "Wit-Rusland", "Mongolië", "Iran", "Vietnam", "Groenland"],
     altijd_alle: false,
-    beschrijving: '45 wereldlanden',
-    beschikbaar: true
+    beschrijving: '45 wereldlanden'
   },
   5: {
-    naam: 'Water Wonder',
-    landen: [],
-    altijd_alle: false,
-    beschrijving: 'Wereldzeeën, rivieren & meren',
-    beschikbaar: false
-  },
-  6: {
     naam: 'Wie alles kent!',
     landen: ["Indonesië", "Maleisië", "Chili", "Bolivia", "Peru", "Argentinië", "Dhekelia", "Cyprus", "India", "China", "Israël", "Palestina", "Libanon", "Ethiopië", "Zuid-Soedan", "Somalië", "Kenia", "Malawi", "Tanzania", "Syrië", "Somaliland", "Frankrijk", "Suriname", "Guyana", "Zuid-Korea", "Noord-Korea", "Marokko", "Westelijke Sahara", "Costa Rica", "Nicaragua", "Congo-Brazzaville", "Congo-Kinshasa", "Bhutan", "Oekraïne", "Wit-Rusland", "Namibië", "Zuid-Afrika", "Saint-Martin", "Sint Maarten", "Oman", "Oezbekistan", "Kazachstan", "Tadzjikistan", "Litouwen", "Brazilië", "Uruguay", "Mongolië", "Rusland", "Tsjechië", "Duitsland", "Estland", "Letland", "Noorwegen", "Zweden", "Finland", "Vietnam", "Cambodja", "Luxemburg", "Verenigde Arabische Emiraten", "België", "Georgië", "Noord-Macedonië", "Albanië", "Azerbeidzjan", "Kosovo", "Turkije", "Spanje", "Laos", "Kirgizië", "Armenië", "Denemarken", "Libië", "Tunesië", "Roemenië", "Hongarije", "Slowakije", "Polen", "Ierland", "Verenigd Koninkrijk", "Griekenland", "Zambia", "Sierra Leone", "Guinee", "Liberia", "Centraal-Afrikaanse Republiek", "Soedan", "Djibouti", "Eritrea", "Oostenrijk", "Irak", "Italië", "Zwitserland", "Iran", "Nederland", "Liechtenstein", "Ivoorkust", "Servië", "Mali", "Senegal", "Nigeria", "Benin", "Angola", "Kroatië", "Slovenië", "Qatar", "Saoedi-Arabië", "Botswana", "Zimbabwe", "Pakistan", "Bulgarije", "Thailand", "San Marino", "Haïti", "Dominicaanse Republiek", "Tsjaad", "Koeweit", "El Salvador", "Guatemala", "East Timor", "Brunei", "Monaco", "Algerije", "Mozambique", "Eswatini", "Burundi", "Rwanda", "Myanmar", "Bangladesh", "Andorra", "Afghanistan", "Montenegro", "Bosnië-Herzegovina", "Oeganda", "US Naval Base Guantanamo Bay", "Cuba", "Honduras", "Ecuador", "Colombia", "Paraguay", "Brazilian Island", "Portugal", "Moldavië", "Turkmenistan", "Jordanië", "Nepal", "Lesotho", "Kameroen", "Gabon", "Niger", "Burkina Faso", "Togo", "Ghana", "Guinee-Bissau", "Gibraltar", "Verenigde Staten", "Canada", "Mexico", "Belize", "Panama", "Venezuela", "Papoea-Nieuw-Guinea", "Egypte", "Jemen", "Mauritanië", "Equatoriaal-Guinea", "Gambia", "Hong Kong S.A.R.", "Vaticaanstad", "Northern Cyprus", "Cyprus No Mans Area", "Siachen Glacier", "Bajkonoer", "Akrotiri", "Southern Patagonian Ice Field", "Bir Tawil", "Antarctica", "Australië", "Greenland", "Fiji", "Nieuw-Zeeland", "New Caledonia", "Madagaskar", "Filipijnen", "Sri Lanka", "Curaçao", "Aruba", "The Bahamas", "Turks and Caicos Islands", "Taiwan", "Japan", "Saint Pierre and Miquelon", "IJsland", "Pitcairn Islands", "French Polynesia", "French Southern and Antarctic Lands", "Seychelles", "Kiribati", "Marshall Islands", "Trinidad en Tobago", "Grenada", "Saint Vincent and the Grenadines", "Barbados", "Saint Lucia", "Dominica", "United States Minor Outlying Islands", "Montserrat", "Antigua en Barbuda", "Saint Kitts and Nevis", "United States Virgin Islands", "Saint Barthelemy", "Puerto Rico", "Anguilla", "British Virgin Islands", "Jamaica", "Cayman Islands", "Bermuda", "Heard Island and McDonald Islands", "Saint Helena", "Mauritius", "Comoren", "São Tomé and Principe", "Kaapverdië", "Malta", "Jersey", "Guernsey", "Isle of Man", "Aland", "Faroe Islands", "Indian Ocean Territories", "British Indian Ocean Territory", "Singapore", "Norfolk Island", "Cook Islands", "Tonga", "Wallis and Futuna", "Samoa", "Solomon Islands", "Tuvalu", "Maldiven", "Nauru", "Federated States of Micronesia", "South Georgia and the Islands", "Falkland Islands", "Vanuatu", "Niue", "American Samoa", "Palau", "Guam", "Northern Mariana Islands", "Bahrein", "Coral Sea Islands", "Spratly Islands", "Clipperton Island", "Macao S.A.R", "Ashmore and Cartier Islands", "Bajo Nuevo Bank (Petrel Is.)", "Serranilla Bank", "Scarborough Reef"],
     altijd_alle: false,
-    beschrijving: 'Alle landen ter wereld',
-    beschikbaar: true
+    beschrijving: 'Alle landen ter wereld'
   }
 };
 
 // ── Startscherm opbouwen ──────────────────────────────
 const LEVEL_ICONEN = ['🌍','🗺️','✈️','🌐','🏆'];
 function bouwStartscherm() {
-  const lijst = document.getElementById('level-lijst');
-  lijst.innerHTML = '';
-
-  const WATER_ICOON = '🌊';
-
-  for(let nr = 1; nr <= 6; nr++){
+  const grid = document.getElementById('levels-grid');
+  grid.innerHTML = '';
+  for(let nr = 1; nr <= 5; nr++){
     const lv = LEVELS[nr];
-    const bol = document.createElement('div');
-    const isWater = nr === 5;
-    const isBinnenkort = !lv.beschikbaar;
-
-    bol.className = 'level-bol' +
-      (isBinnenkort ? ' level-bol-binnenkort' : '') +
-      (isWater ? ' bol-water' : '');
-
-    let inhoud;
-    if(isBinnenkort){
-      inhoud = `<div class="bol-naam">${lv.naam}</div>
-                <div class="bol-binnenkort-tekst">🚧 Binnenkort beschikbaar</div>`;
-    } else {
-      inhoud = `<div class="bol-naam">${lv.naam}</div>
-                <div class="bol-btns">
-                  <button class="btn-speel" onclick="startSpel(${nr},'spelen')">▶ Spelen</button>
-                  <button class="btn-verken" onclick="startSpel(${nr},'verkennen')">🔍 Verkennen</button>
-                </div>`;
-    }
-
-    bol.innerHTML = `
-      <div class="bol-nr">${isWater ? WATER_ICOON : nr}</div>
-      <div class="bol-inhoud">${inhoud}</div>
+    const kaart = document.createElement('div');
+    kaart.className = 'level-kaart';
+    kaart.innerHTML = `
+      <div class="level-nr">${LEVEL_ICONEN[nr-1]} ${nr}</div>
+      <div class="level-naam">${lv.naam}</div>
+      <div class="level-btns">
+        <button class="btn-speel" onclick="startSpel(${nr}, 'spelen')">▶ Spelen</button>
+        <button class="btn-verken" onclick="startSpel(${nr}, 'verkennen')">🔍 Verkennen</button>
+      </div>
+      <div class="level-info">${lv.beschrijving}</div>
     `;
-    lijst.appendChild(bol);
+    grid.appendChild(kaart);
   }
 }
-bouwStartscherm();
 bouwStartscherm();
 
 // ── Spel staat ────────────────────────────────────────
@@ -400,36 +310,6 @@ let spelerNaam = '';
 let wachten = false;
 let spelActief = false;
 
-// ── Zoom staat ────────────────────────────────────────
-let zoomStand = 0;         // 0=normaal, 1=dichterbij, 2=landview
-let zoomFactor = 1.0;
-const ZOOM_STANDEN = [1.0, 2.2, 4.5];
-const ZOOM_SNELHEID = 0.07;
-
-// Bestandsnaam helper: verwijder accenten voor PNG lookup
-function landNaarBestand(naam) {
-  return naam
-    .replace(/ë/g,'e').replace(/é/g,'e').replace(/è/g,'e').replace(/ê/g,'e')
-    .replace(/ï/g,'i').replace(/í/g,'i').replace(/î/g,'i')
-    .replace(/ö/g,'o').replace(/ó/g,'o').replace(/ô/g,'o')
-    .replace(/ü/g,'u').replace(/ú/g,'u').replace(/û/g,'u')
-    .replace(/ä/g,'a').replace(/á/g,'a').replace(/à/g,'a').replace(/â/g,'a')
-    .replace(/ñ/g,'n').replace(/ç/g,'c')
-    .replace(/\s+/g,'_');
-}
-
-// Cache voor beschikbare landillustraties
-const landIllustraties = {};
-function laadIllustratie(landnaam) {
-  if(landIllustraties[landnaam] !== undefined) return;
-  landIllustraties[landnaam] = null; // bezig met laden
-  const bestand = landNaarBestand(landnaam);
-  const img = new Image();
-  img.onload = () => { landIllustraties[landnaam] = img; };
-  img.onerror = () => { landIllustraties[landnaam] = false; }; // niet beschikbaar
-  img.src = `images/landen/${bestand}.png`;
-}
-
 function startSpel(levelNr, modus) {
   spelerNaam = document.getElementById('naam-input').value.trim() || 'Speler';
   huidigLevel = levelNr;
@@ -437,7 +317,6 @@ function startSpel(levelNr, modus) {
   score = 0;
 
   const lv = LEVELS[levelNr];
-  if(!lv.beschikbaar) return; // binnenkort beschikbaar
   // Kies landen voor deze ronde
   if(modus === 'verkennen'){
     spelLanden = [...lv.landen]; // alle landen van dit level bij verkennen
@@ -456,11 +335,9 @@ function startSpel(levelNr, modus) {
   huidigLandIdx = 0;
   huidigLand = spelLanden[0];
 
-  // Zoom standaard op stand 1 voor Europa levels (1 en 2)
+  // Zoom: europa levels starten ingezoomd
   zoomStand = (levelNr <= 2) ? 1 : 0;
   zoomFactor = ZOOM_STANDEN[zoomStand];
-
-  // Laad illustraties voor alle landen van dit level alvast
   for(const naam of spelLanden) laadIllustratie(naam);
 
   // UI updaten
@@ -480,7 +357,7 @@ function startSpel(levelNr, modus) {
     modBadge.innerHTML = '';
     document.getElementById('opdracht-label').textContent = '✈ Vlieg naar...';
     document.getElementById('land-naam').textContent = huidigLand;
-    document.getElementById('hint').textContent = 'Pijltjestoetsen · SHIFT = turbo · SPATIE = vlaggetje droppen';
+    document.getElementById('hint').textContent = 'Pijltjestoetsen · SHIFT = turbo · SPATIE = vlaggetje droppen · CTRL = zoom';
   }
 
   updateVoortgang();
@@ -489,7 +366,13 @@ function startSpel(levelNr, modus) {
 
   if(!globeGestart){
     globeGestart = true;
-    rotM = maakRotMatrix(wonkyLon, wonkyLat);
+    // Zoom animatie
+  const doelZoom = ZOOM_STANDEN[zoomStand];
+  zoomFactor += (doelZoom - zoomFactor) * ZOOM_SNELHEID;
+  R = Math.min(W,H) * 0.58 * zoomFactor;
+  CY = H * 0.56;
+
+  rotM = maakRotMatrix(wonkyLon, wonkyLat);
     loop();
   }
 }
@@ -538,11 +421,8 @@ let globeGestart = false;
 let W, H, R, CX, CY;
 function herbereken() {
   W = window.innerWidth; H = window.innerHeight;
+  R = Math.min(W,H)*0.58; CX = W/2; CY = H*0.56;
   canvas.width = W; canvas.height = H;
-  // R, CX, CY worden elke frame berekend in updateSpel
-  CX = W / 2;
-  CY = H * 0.56;
-  R = Math.min(W, H) * 0.58; // basis, wordt vermenigvuldigd met zoomFactor
 }
 window.addEventListener('resize', herbereken);
 
@@ -571,19 +451,26 @@ function knipPunt(p1,p2){
 }
 
 function tekenRing(ring, subPaden){
+  // Bouw aaneengesloten zichtbare sub-paden op
+  // Elk sub-pad is een array van schermcoördinaten
   if(!ring||ring.length<3) return;
+
   const n = ring.length;
   const pts = ring.map(([lon,lat]) => {
     const p3 = roteerPunt(lonLatTo3D(lon,lat), rotM);
     return { p3, sx: CX+p3[0]*R, sy: CY-p3[1]*R, vis: p3[2] > 0 };
   });
+
   let huidigPad = null;
+
   for(let i = 0; i < n; i++){
     const curr = pts[i];
     const next = pts[(i+1) % n];
+
     if(curr.vis){
       if(!huidigPad){
         huidigPad = [];
+        // Als vorig punt onzichtbaar was: voeg knippunt toe als begin
         const prev = pts[(i - 1 + n) % n];
         if(!prev.vis){
           const s = knipPunt(prev.p3, curr.p3);
@@ -592,6 +479,8 @@ function tekenRing(ring, subPaden){
       }
       huidigPad.push([curr.sx, curr.sy]);
     }
+
+    // Overgang zichtbaar → onzichtbaar: sluit sub-pad af
     if(curr.vis && !next.vis && huidigPad){
       const s = knipPunt(curr.p3, next.p3);
       huidigPad.push([CX+s[0]*R, CY-s[1]*R]);
@@ -599,138 +488,65 @@ function tekenRing(ring, subPaden){
       huidigPad = null;
     }
   }
-  if(huidigPad && huidigPad.length >= 2) subPaden.push(huidigPad);
+  // Resterende punten
+  if(huidigPad && huidigPad.length >= 2){
+    subPaden.push(huidigPad);
+  }
 }
 
 function tekenLand(rings, vul, rand, dikte){
-  if(!rings || rings.length === 0) return;
-  
-  // Buitenste ring (index 0) = landvorm
-  // Overige rings (index 1+) = gaten (meren, etc.)
-  // Aanpak: teken buitenring gevuld, dan gaten in oceaankleur eroverheen
-  
-  const buitenPaden = [];
-  tekenRing(rings[0], buitenPaden);
-  
-  if(buitenPaden.length === 0) return;
-  
-  // Vul buitenring
+  // Verzamel alle sub-paden van alle ringen
+  const subPaden = [];
+  for(const r of rings) tekenRing(r, subPaden);
+  if(subPaden.length === 0) return;
+
+  // Teken elk sub-pad apart voor fill (voorkomt dwarse lijnen)
   ctx.fillStyle = vul;
-  for(const pad of buitenPaden){
+  for(const pad of subPaden){
     if(pad.length < 2) continue;
     ctx.beginPath();
     ctx.moveTo(pad[0][0], pad[0][1]);
-    for(let i = 1; i < pad.length; i++) ctx.lineTo(pad[i][0], pad[i][1]);
+    for(let i = 1; i < pad.length; i++){
+      ctx.lineTo(pad[i][0], pad[i][1]);
+    }
     ctx.closePath();
     ctx.fill();
   }
-  
-  // Teken gaten (holes) in oceaankleur - zo verdwijnen de "meren"
-  if(rings.length > 1){
-    // Bepaal oceaankleur op dit punt (simpel: blauw)
-    ctx.fillStyle = '#2193b0';
-    for(let h = 1; h < rings.length; h++){
-      const gatPaden = [];
-      tekenRing(rings[h], gatPaden);
-      for(const pad of gatPaden){
-        if(pad.length < 2) continue;
-        ctx.beginPath();
-        ctx.moveTo(pad[0][0], pad[0][1]);
-        for(let i = 1; i < pad.length; i++) ctx.lineTo(pad[i][0], pad[i][1]);
-        ctx.closePath();
-        ctx.fill();
-      }
-    }
-  }
-  
-  // Rand
+
+  // Stroke apart: één doorlopend pad voor de randen
   ctx.strokeStyle = rand;
   ctx.lineWidth = dikte || 0.8;
-  for(const pad of buitenPaden){
+  for(const pad of subPaden){
     if(pad.length < 2) continue;
     ctx.beginPath();
     ctx.moveTo(pad[0][0], pad[0][1]);
-    for(let i = 1; i < pad.length; i++) ctx.lineTo(pad[i][0], pad[i][1]);
+    for(let i = 1; i < pad.length; i++){
+      ctx.lineTo(pad[i][0], pad[i][1]);
+    }
     ctx.stroke();
   }
 }
 
+const LAND_KLEUREN = {
+  // Arctische gebieden - wit/ijsblauw
+  'Groenland':'#ddeef8','Greenland':'#ddeef8',
+  'Antarctica':'#e8f4fa',
 
-function tekenLandIllustratie(feature, img) {
-  const geom = feature.geometry;
-  
-  // Vind de GROOTSTE polygoon (voor landen met eilanden/overzeese gebieden)
-  let grootstePoly = null;
-  let grootsteOppervlak = 0;
-  
-  const polysLijst = geom.type==='Polygon' ? [geom.coordinates] : geom.coordinates;
-  for(const poly of polysLijst){
-    if(!poly[0] || poly[0].length < 3) continue;
-    // Schat oppervlak via aantal punten × gemiddelde afstand (simpele heuristiek)
-    const ring = poly[0];
-    let oppervlak = 0;
-    for(let i=0;i<ring.length-1;i++){
-      oppervlak += Math.abs(ring[i][0]*ring[i+1][1] - ring[i+1][0]*ring[i][1]);
-    }
-    if(oppervlak > grootsteOppervlak){
-      grootsteOppervlak = oppervlak;
-      grootstePoly = poly;
-    }
-  }
-  
-  if(!grootstePoly) return;
-  
-  // Bereken bounding box van ALLEEN de grootste polygoon op scherm
-  let minX=Infinity, maxX=-Infinity, minY=Infinity, maxY=-Infinity;
-  let heeftPunten = false;
-  const ringPts = [];
-
-  for(const [lon,lat] of grootstePoly[0]){
-    const [x,y,z] = roteerPunt(lonLatTo3D(lon,lat), rotM);
-    if(z > 0.01){
-      const sx = CX+x*R, sy = CY-y*R;
-      minX=Math.min(minX,sx); maxX=Math.max(maxX,sx);
-      minY=Math.min(minY,sy); maxY=Math.max(maxY,sy);
-      heeftPunten = true;
-      ringPts.push({sx, sy, vis:true});
-    }
-  }
-
-  if(!heeftPunten || maxX-minX < 5 || maxY-minY < 5) return;
-
-  ctx.save();
-
-  // Clip binnen de grootste polygoon
-  ctx.beginPath();
-  let pen = false;
-  for(const p of ringPts){
-    if(!pen){ ctx.moveTo(p.sx, p.sy); pen=true; }
-    else ctx.lineTo(p.sx, p.sy);
-  }
-  ctx.closePath();
-  ctx.clip();
-
-  // Schaal illustratie zodat het de landvorm vult (cover)
-  const breedte = maxX - minX;
-  const hoogte = maxY - minY;
-  const imgRatio = img.width / img.height;
-  const landRatio = breedte / hoogte;
-  
-  let drawW, drawH;
-  if(imgRatio > landRatio){
-    drawH = hoogte;
-    drawW = hoogte * imgRatio;
-  } else {
-    drawW = breedte;
-    drawH = breedte / imgRatio;
-  }
-  const drawX = minX + (breedte - drawW) / 2;
-  const drawY = minY + (hoogte - drawH) / 2;
-
-  ctx.globalAlpha = 0.93;
-  ctx.drawImage(img, drawX, drawY, drawW, drawH);
-  ctx.globalAlpha = 1.0;
-  ctx.restore();
+  'Egypte':'#c8a96e','Algerije':'#c9a85c','Libië':'#cdb06a',
+  'Saoedi-Arabië':'#d4aa62','Iran':'#c4a06a','Irak':'#c8a870',
+  'Mongolië':'#b8a878','Rusland':'#7a9e7a','Canada':'#6e9e6e',
+  'IJsland':'#c8dde8','Groenland':'#ddeef5','Noorwegen':'#6a9870','Finland':'#5e9468',
+  'Zweden':'#639668','Brazilië':'#2e8b44','Indonesië':'#2a8840',
+  'Nigeria':'#3a9048','Kenia':'#4a9640','Colombia':'#348a44',
+  'Kazachstan':'#b8b86a','Turkmenistan':'#c4b870','Oezbekistan':'#c0b468',
+  'Pakistan':'#b8a870','Afghanistan':'#c0a868','Ivoorkust':'#3a8840',
+  'default':'#4a9e5c',
+};
+function getLandKleur(naam, lat) {
+  if(LAND_KLEUREN[naam]) return LAND_KLEUREN[naam];
+  // Arctische gebieden automatisch ijsblauw
+  if(lat !== undefined && lat > 67) return '#c8dff0';
+  return LAND_KLEUREN['default'];
 }
 
 function tekenIJskap(poolLat, straal) {
@@ -891,14 +707,12 @@ function drawGlobe(){
 
   tekenIJskap(90,17);
 
-  // Bij zoom stand 2: toon landillustratie
+  // Landillustratie bij zoom stand >= 1
   if(zoomStand >= 1 && hoverLand){
-    const dutch = hoverLand.properties.dutch || hoverLand.properties.name;
+    const dutch = hoverLand.properties.dutch||hoverLand.properties.name;
     laadIllustratie(dutch);
-    const illustratie = landIllustraties[dutch];
-    if(illustratie){
-      tekenLandIllustratie(hoverLand, illustratie);
-    }
+    const ill = landIllustraties[dutch];
+    if(ill) tekenLandIllustratie(hoverLand, ill);
   }
 
   ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=0.5;
@@ -952,38 +766,42 @@ const keys={};
 document.addEventListener('keydown',e=>{
   keys[e.key]=true;
   if([' ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
-  // Ctrl = zoom toggle
-  if(e.key==='Control'){
-    e.preventDefault();
-    zoomStand = (zoomStand + 1) % 3;
-  }
+  if(e.key==='Control'){ e.preventDefault(); zoomStand=(zoomStand+1)%3; }
 });
 document.addEventListener('keyup',e=>{keys[e.key]=false;});
+
+// ── Zoom ──────────────────────────────────────────────
+let zoomStand = 0;   // 0=normaal, 1=dichterbij, 2=landview
+let zoomFactor = 1.0;
+const ZOOM_STANDEN = [1.0, 2.2, 4.5];
+const ZOOM_SNELHEID = 0.07;
+
+// Bestandsnamen helper voor landillustraties
+function landNaarBestand(naam) {
+  return naam
+    .replace(/ë/g,'e').replace(/é/g,'e').replace(/è/g,'e')
+    .replace(/ï/g,'i').replace(/ö/g,'o').replace(/ü/g,'u')
+    .replace(/á/g,'a').replace(/à/g,'a').replace(/â/g,'a')
+    .replace(/ä/g,'a').replace(/ñ/g,'n').replace(/ç/g,'c')
+    .replace(/é/g,'e').replace(/ê/g,'e');
+}
+
+const landIllustraties = {};
+function laadIllustratie(naam) {
+  if(landIllustraties[naam] !== undefined) return;
+  landIllustraties[naam] = null;
+  const img = new Image();
+  img.onload = () => { landIllustraties[naam] = img; };
+  img.onerror = () => { landIllustraties[naam] = false; };
+  img.src = 'images/landen/' + landNaarBestand(naam) + '.png';
+}
 
 let wonkySchermX=0;
 const MAX_DRIFT=0.10,DRIFT_S=0.08;
 
 function updateSpel(){
   if(!spelActief) return;
-
-  // Zoom animatie: vloeiend naar doel-factor (3 standen)
-  const doelZoom = ZOOM_STANDEN[zoomStand];
-  if(Math.abs(zoomFactor - doelZoom) > 0.01){
-    zoomFactor += (doelZoom - zoomFactor) * ZOOM_SNELHEID;
-  } else {
-    zoomFactor = doelZoom;
-  }
-  // Herbereken R en middelpunt op basis van huidige zoom
-  const basisR = Math.min(W, H) * 0.58;
-  R = basisR * zoomFactor;
-  CX = W / 2;
-  // Bij inzoomen verschuift het midden licht zodat land goed zichtbaar is
-  CY = H * (0.56 - (zoomFactor - 1) * 0.04);
-  if(CY < H * 0.35) CY = H * 0.35;
-
-  // Besturing langzamer bij inzoomen
-  const zoomVertraging = 1 / zoomFactor;
-  const s = (keys['Shift'] ? 1.8 : 0.7) * zoomVertraging;
+  const s=keys['Shift']?1.8:0.7;
   let dx=0,dy=0;
   if(keys['ArrowLeft']) dx=-1;
   if(keys['ArrowRight'])dx= 1;
