@@ -291,7 +291,7 @@
       <div class="label" id="opdracht-label">✈ Vlieg naar...</div>
       <div class="landnaam" id="land-naam">...</div>
     </div>
-    <div id="hint">Pijltjestoetsen &nbsp;·&nbsp; SHIFT = turbo &nbsp;·&nbsp; SPATIE = vlaggetje droppen &nbsp;·&nbsp; CTRL = zoom</div>
+    <div id="hint">Pijltjestoetsen &nbsp;·&nbsp; SHIFT = turbo &nbsp;·&nbsp; SPATIE = vlaggetje droppen &nbsp;·&nbsp; CTRL = zoom (3 standen)</div>
   </div>
 
   <div id="voortgang">
@@ -401,11 +401,10 @@ let wachten = false;
 let spelActief = false;
 
 // ── Zoom staat ────────────────────────────────────────
-let zoomAan = false;
-let zoomFactor = 1.0;      // huidig: 1.0 = normaal, 2.2 = ingezoomd
-const ZOOM_NORMAAL = 1.0;
-const ZOOM_IN = 2.2;
-const ZOOM_SNELHEID = 0.06; // hoe snel de zoom animatie gaat
+let zoomStand = 0;         // 0=normaal, 1=dichterbij, 2=landview
+let zoomFactor = 1.0;
+const ZOOM_STANDEN = [1.0, 2.2, 4.5];
+const ZOOM_SNELHEID = 0.07;
 
 // Bestandsnaam helper: verwijder accenten voor PNG lookup
 function landNaarBestand(naam) {
@@ -457,9 +456,9 @@ function startSpel(levelNr, modus) {
   huidigLandIdx = 0;
   huidigLand = spelLanden[0];
 
-  // Zoom standaard aan voor Europa levels (1 en 2)
-  zoomAan = (levelNr <= 2);
-  zoomFactor = zoomAan ? ZOOM_IN : ZOOM_NORMAAL;
+  // Zoom standaard op stand 1 voor Europa levels (1 en 2)
+  zoomStand = (levelNr <= 2) ? 1 : 0;
+  zoomFactor = ZOOM_STANDEN[zoomStand];
 
   // Laad illustraties voor alle landen van dit level alvast
   for(const naam of spelLanden) laadIllustratie(naam);
@@ -571,26 +570,19 @@ function knipPunt(p1,p2){
 }
 
 function tekenRing(ring, subPaden){
-  // Bouw aaneengesloten zichtbare sub-paden op
-  // Elk sub-pad is een array van schermcoördinaten
   if(!ring||ring.length<3) return;
-
   const n = ring.length;
   const pts = ring.map(([lon,lat]) => {
     const p3 = roteerPunt(lonLatTo3D(lon,lat), rotM);
     return { p3, sx: CX+p3[0]*R, sy: CY-p3[1]*R, vis: p3[2] > 0 };
   });
-
   let huidigPad = null;
-
   for(let i = 0; i < n; i++){
     const curr = pts[i];
     const next = pts[(i+1) % n];
-
     if(curr.vis){
       if(!huidigPad){
         huidigPad = [];
-        // Als vorig punt onzichtbaar was: voeg knippunt toe als begin
         const prev = pts[(i - 1 + n) % n];
         if(!prev.vis){
           const s = knipPunt(prev.p3, curr.p3);
@@ -599,8 +591,6 @@ function tekenRing(ring, subPaden){
       }
       huidigPad.push([curr.sx, curr.sy]);
     }
-
-    // Overgang zichtbaar → onzichtbaar: sluit sub-pad af
     if(curr.vis && !next.vis && huidigPad){
       const s = knipPunt(curr.p3, next.p3);
       huidigPad.push([CX+s[0]*R, CY-s[1]*R]);
@@ -608,116 +598,136 @@ function tekenRing(ring, subPaden){
       huidigPad = null;
     }
   }
-  // Resterende punten
-  if(huidigPad && huidigPad.length >= 2){
-    subPaden.push(huidigPad);
-  }
+  if(huidigPad && huidigPad.length >= 2) subPaden.push(huidigPad);
 }
 
 function tekenLand(rings, vul, rand, dikte){
-  // Verzamel alle sub-paden van alle ringen
-  const subPaden = [];
-  for(const r of rings) tekenRing(r, subPaden);
-  if(subPaden.length === 0) return;
-
-  // Teken elk sub-pad apart voor fill (voorkomt dwarse lijnen)
+  if(!rings || rings.length === 0) return;
+  
+  // Buitenste ring (index 0) = landvorm
+  // Overige rings (index 1+) = gaten (meren, etc.)
+  // Aanpak: teken buitenring gevuld, dan gaten in oceaankleur eroverheen
+  
+  const buitenPaden = [];
+  tekenRing(rings[0], buitenPaden);
+  
+  if(buitenPaden.length === 0) return;
+  
+  // Vul buitenring
   ctx.fillStyle = vul;
-  for(const pad of subPaden){
+  for(const pad of buitenPaden){
     if(pad.length < 2) continue;
     ctx.beginPath();
     ctx.moveTo(pad[0][0], pad[0][1]);
-    for(let i = 1; i < pad.length; i++){
-      ctx.lineTo(pad[i][0], pad[i][1]);
-    }
+    for(let i = 1; i < pad.length; i++) ctx.lineTo(pad[i][0], pad[i][1]);
     ctx.closePath();
     ctx.fill();
   }
-
-  // Stroke apart: één doorlopend pad voor de randen
+  
+  // Teken gaten (holes) in oceaankleur - zo verdwijnen de "meren"
+  if(rings.length > 1){
+    // Bepaal oceaankleur op dit punt (simpel: blauw)
+    ctx.fillStyle = '#2193b0';
+    for(let h = 1; h < rings.length; h++){
+      const gatPaden = [];
+      tekenRing(rings[h], gatPaden);
+      for(const pad of gatPaden){
+        if(pad.length < 2) continue;
+        ctx.beginPath();
+        ctx.moveTo(pad[0][0], pad[0][1]);
+        for(let i = 1; i < pad.length; i++) ctx.lineTo(pad[i][0], pad[i][1]);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+  }
+  
+  // Rand
   ctx.strokeStyle = rand;
   ctx.lineWidth = dikte || 0.8;
-  for(const pad of subPaden){
+  for(const pad of buitenPaden){
     if(pad.length < 2) continue;
     ctx.beginPath();
     ctx.moveTo(pad[0][0], pad[0][1]);
-    for(let i = 1; i < pad.length; i++){
-      ctx.lineTo(pad[i][0], pad[i][1]);
-    }
+    for(let i = 1; i < pad.length; i++) ctx.lineTo(pad[i][0], pad[i][1]);
     ctx.stroke();
   }
 }
 
-const LAND_KLEUREN = {
-  // Arctische gebieden - wit/ijsblauw
-  'Groenland':'#ddeef8','Greenland':'#ddeef8',
-  'Antarctica':'#e8f4fa',
-
-  'Egypte':'#c8a96e','Algerije':'#c9a85c','Libië':'#cdb06a',
-  'Saoedi-Arabië':'#d4aa62','Iran':'#c4a06a','Irak':'#c8a870',
-  'Mongolië':'#b8a878','Rusland':'#7a9e7a','Canada':'#6e9e6e',
-  'IJsland':'#c8dde8','Groenland':'#ddeef5','Noorwegen':'#6a9870','Finland':'#5e9468',
-  'Zweden':'#639668','Brazilië':'#2e8b44','Indonesië':'#2a8840',
-  'Nigeria':'#3a9048','Kenia':'#4a9640','Colombia':'#348a44',
-  'Kazachstan':'#b8b86a','Turkmenistan':'#c4b870','Oezbekistan':'#c0b468',
-  'Pakistan':'#b8a870','Afghanistan':'#c0a868','Ivoorkust':'#3a8840',
-  'default':'#4a9e5c',
-};
-function getLandKleur(naam, lat) {
-  if(LAND_KLEUREN[naam]) return LAND_KLEUREN[naam];
-  // Arctische gebieden automatisch ijsblauw
-  if(lat !== undefined && lat > 67) return '#c8dff0';
-  return LAND_KLEUREN['default'];
-}
 
 function tekenLandIllustratie(feature, img) {
-  // Clip de illustratie binnen de landvorm
   const geom = feature.geometry;
-  const polys = geom.type==='Polygon' ? [geom.coordinates] : geom.coordinates;
-
-  // Vind bounding box van het land op scherm
-  let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+  
+  // Vind de GROOTSTE polygoon (voor landen met eilanden/overzeese gebieden)
+  let grootstePoly = null;
+  let grootsteOppervlak = 0;
+  
+  const polysLijst = geom.type==='Polygon' ? [geom.coordinates] : geom.coordinates;
+  for(const poly of polysLijst){
+    if(!poly[0] || poly[0].length < 3) continue;
+    // Schat oppervlak via aantal punten × gemiddelde afstand (simpele heuristiek)
+    const ring = poly[0];
+    let oppervlak = 0;
+    for(let i=0;i<ring.length-1;i++){
+      oppervlak += Math.abs(ring[i][0]*ring[i+1][1] - ring[i+1][0]*ring[i][1]);
+    }
+    if(oppervlak > grootsteOppervlak){
+      grootsteOppervlak = oppervlak;
+      grootstePoly = poly;
+    }
+  }
+  
+  if(!grootstePoly) return;
+  
+  // Bereken bounding box van ALLEEN de grootste polygoon op scherm
+  let minX=Infinity, maxX=-Infinity, minY=Infinity, maxY=-Infinity;
   let heeftPunten = false;
+  const ringPts = [];
 
-  ctx.save();
-  ctx.beginPath();
-
-  for(const poly of polys){
-    for(const ring of poly){
-      if(!ring||ring.length<3) continue;
-      const pts = ring.map(([lon,lat])=>{
-        const p3=roteerPunt(lonLatTo3D(lon,lat),rotM);
-        return {sx:CX+p3[0]*R, sy:CY-p3[1]*R, vis:p3[2]>0};
-      });
-      let pen=false;
-      for(let i=0;i<pts.length;i++){
-        const curr=pts[i], next=pts[(i+1)%pts.length];
-        if(curr.vis){
-          if(!pen){ctx.moveTo(curr.sx,curr.sy);pen=true;}
-          else ctx.lineTo(curr.sx,curr.sy);
-          minX=Math.min(minX,curr.sx); maxX=Math.max(maxX,curr.sx);
-          minY=Math.min(minY,curr.sy); maxY=Math.max(maxY,curr.sy);
-          heeftPunten=true;
-        }
-        if(curr.vis!==next.vis){
-          const s=knipPunt(curr.p3||roteerPunt(lonLatTo3D(0,0),rotM), next.p3||roteerPunt(lonLatTo3D(0,0),rotM));
-        }
-      }
-      ctx.closePath();
+  for(const [lon,lat] of grootstePoly[0]){
+    const [x,y,z] = roteerPunt(lonLatTo3D(lon,lat), rotM);
+    if(z > 0.01){
+      const sx = CX+x*R, sy = CY-y*R;
+      minX=Math.min(minX,sx); maxX=Math.max(maxX,sx);
+      minY=Math.min(minY,sy); maxY=Math.max(maxY,sy);
+      heeftPunten = true;
+      ringPts.push({sx, sy, vis:true});
     }
   }
 
-  if(!heeftPunten){ctx.restore();return;}
+  if(!heeftPunten || maxX-minX < 5 || maxY-minY < 5) return;
 
-  // Clip binnen landvorm
+  ctx.save();
+
+  // Clip binnen de grootste polygoon
+  ctx.beginPath();
+  let pen = false;
+  for(const p of ringPts){
+    if(!pen){ ctx.moveTo(p.sx, p.sy); pen=true; }
+    else ctx.lineTo(p.sx, p.sy);
+  }
+  ctx.closePath();
   ctx.clip();
 
-  // Teken illustratie geschaald naar de bounding box
-  const marge = 10;
-  ctx.globalAlpha = 0.92;
-  ctx.drawImage(img,
-    minX-marge, minY-marge,
-    (maxX-minX)+marge*2, (maxY-minY)+marge*2
-  );
+  // Schaal illustratie zodat het de landvorm vult (cover)
+  const breedte = maxX - minX;
+  const hoogte = maxY - minY;
+  const imgRatio = img.width / img.height;
+  const landRatio = breedte / hoogte;
+  
+  let drawW, drawH;
+  if(imgRatio > landRatio){
+    drawH = hoogte;
+    drawW = hoogte * imgRatio;
+  } else {
+    drawW = breedte;
+    drawH = breedte / imgRatio;
+  }
+  const drawX = minX + (breedte - drawW) / 2;
+  const drawY = minY + (hoogte - drawH) / 2;
+
+  ctx.globalAlpha = 0.93;
+  ctx.drawImage(img, drawX, drawY, drawW, drawH);
   ctx.globalAlpha = 1.0;
   ctx.restore();
 }
@@ -880,8 +890,8 @@ function drawGlobe(){
 
   tekenIJskap(90,17);
 
-  // Bij inzoomen: toon landillustratie van hoverLand als beschikbaar
-  if(zoomFactor > 1.3 && hoverLand){
+  // Bij zoom stand 2: toon landillustratie
+  if(zoomStand >= 1 && hoverLand){
     const dutch = hoverLand.properties.dutch || hoverLand.properties.name;
     laadIllustratie(dutch);
     const illustratie = landIllustraties[dutch];
@@ -944,7 +954,7 @@ document.addEventListener('keydown',e=>{
   // Ctrl = zoom toggle
   if(e.key==='Control'){
     e.preventDefault();
-    zoomAan = !zoomAan;
+    zoomStand = (zoomStand + 1) % 3;
   }
 });
 document.addEventListener('keyup',e=>{keys[e.key]=false;});
@@ -955,17 +965,22 @@ const MAX_DRIFT=0.10,DRIFT_S=0.08;
 function updateSpel(){
   if(!spelActief) return;
 
-  // Zoom animatie: vloeiend naar doel-factor
-  const doelZoom = zoomAan ? ZOOM_IN : ZOOM_NORMAAL;
+  // Zoom animatie: vloeiend naar doel-factor (3 standen)
+  const doelZoom = ZOOM_STANDEN[zoomStand];
   if(Math.abs(zoomFactor - doelZoom) > 0.01){
     zoomFactor += (doelZoom - zoomFactor) * ZOOM_SNELHEID;
   } else {
     zoomFactor = doelZoom;
   }
   // Herbereken R op basis van huidige zoom
-  R = Math.min(W,H)*0.58 * zoomFactor;
-  // Middelpunt iets lager bij inzoomen zodat land meer in beeld komt
-  CY = H * (0.52 + (zoomFactor - 1) * 0.08);
+  const basisR = Math.min(W, H) * 0.58;
+  R = basisR * zoomFactor;
+  // Bij hoge zoom: middelpunt zodat het huidige land zichtbaar blijft
+  // Wonky staat altijd in het midden van de globe (dat is het ontwerp),
+  // dus CX/CY hoeft niet te verschuiven - de globe is gewoon groter.
+  // Maar CY verschuift licht omhoog zodat we meer van het land zien.
+  CX = W / 2;
+  CY = H * 0.5;
 
   // Besturing langzamer bij inzoomen
   const zoomVertraging = 1 / zoomFactor;
