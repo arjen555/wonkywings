@@ -538,10 +538,11 @@ let globeGestart = false;
 let W, H, R, CX, CY;
 function herbereken() {
   W = window.innerWidth; H = window.innerHeight;
-  // R wordt dynamisch berekend in de loop op basis van zoomFactor
-  R = Math.min(W,H)*0.58 * zoomFactor;
-  CX = W/2; CY = H*0.52;
   canvas.width = W; canvas.height = H;
+  // R, CX, CY worden elke frame berekend in updateSpel
+  CX = W / 2;
+  CY = H * 0.56;
+  R = Math.min(W, H) * 0.58; // basis, wordt vermenigvuldigd met zoomFactor
 }
 window.addEventListener('resize', herbereken);
 
@@ -972,15 +973,13 @@ function updateSpel(){
   } else {
     zoomFactor = doelZoom;
   }
-  // Herbereken R op basis van huidige zoom
+  // Herbereken R en middelpunt op basis van huidige zoom
   const basisR = Math.min(W, H) * 0.58;
   R = basisR * zoomFactor;
-  // Bij hoge zoom: middelpunt zodat het huidige land zichtbaar blijft
-  // Wonky staat altijd in het midden van de globe (dat is het ontwerp),
-  // dus CX/CY hoeft niet te verschuiven - de globe is gewoon groter.
-  // Maar CY verschuift licht omhoog zodat we meer van het land zien.
   CX = W / 2;
-  CY = H * 0.5;
+  // Bij inzoomen verschuift het midden licht zodat land goed zichtbaar is
+  CY = H * (0.56 - (zoomFactor - 1) * 0.04);
+  if(CY < H * 0.35) CY = H * 0.35;
 
   // Besturing langzamer bij inzoomen
   const zoomVertraging = 1 / zoomFactor;
