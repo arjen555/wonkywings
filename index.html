@@ -17,100 +17,151 @@
     #startscherm {
       position:fixed; inset:0; z-index:100;
       overflow:hidden;
-      background:#051e30;
+      display:flex; flex-direction:row;
+      background: linear-gradient(135deg, #0a2a4a 0%, #051e30 100%);
     }
-    #start-bg {
+
+    /* Linkerhelft: Timbo */
+    #start-links {
+      flex: 0 0 52%;
+      position:relative;
+      overflow:hidden;
+    }
+    #start-timbo {
+      width:100%; height:100%;
+      object-fit:cover;
+      object-position:center center;
+      display:block;
+    }
+    /* Zachte overgang naar rechts */
+    #start-links::after {
+      content:'';
       position:absolute; inset:0;
-      background-image: url('images/Timbo.png');
-      background-size: cover;
-      background-position: center center;
+      background: linear-gradient(to right, transparent 60%, #051e30 100%);
       pointer-events:none;
     }
-    /* Titel + naam bovenin */
-    #start-header {
-      position:absolute; top:0; left:0; right:0;
-      display:flex; flex-direction:column; align-items:center;
-      padding:28px 0 0;
-      z-index:5; pointer-events:none;
+
+    /* Rechterhelft: menu */
+    #start-rechts {
+      flex: 1;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      padding:32px 40px;
+      gap:18px;
+      background: linear-gradient(135deg, #051e30 0%, #0a2a4a 100%);
+      position:relative;
+      overflow-y:auto;
     }
+    /* Decoratieve sterren achtergrond */
+    #start-rechts::before {
+      content:'';
+      position:absolute; inset:0;
+      background-image:
+        radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px),
+        radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px);
+      background-size: 60px 60px, 30px 30px;
+      background-position: 0 0, 15px 15px;
+      pointer-events:none;
+    }
+
     #start-titel {
-      font-size:3.8rem; font-weight:900;
-      color:#fff; letter-spacing:3px;
-      text-shadow: 0 4px 20px rgba(0,0,0,0.9), 0 0 60px rgba(30,144,255,0.5);
-      pointer-events:none;
+      font-size:3.2rem; font-weight:900; color:#fff;
+      letter-spacing:2px; text-align:center;
+      text-shadow: 0 4px 20px rgba(0,0,0,0.8), 0 0 40px rgba(30,144,255,0.4);
+      position:relative;
     }
     #start-titel span { color:#ffd700; }
     #start-subtitel {
-      font-size:1rem; color:rgba(255,255,255,0.8);
+      font-size:0.85rem; color:rgba(255,255,255,0.6);
       letter-spacing:2px; text-transform:uppercase;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.9);
-      margin-top:4px; pointer-events:none;
+      text-align:center; position:relative;
     }
-    #naam-rij {
-      display:flex; gap:10px; align-items:center;
-      background:rgba(0,0,0,0.5); backdrop-filter:blur(10px);
-      border:2px solid rgba(255,255,255,0.2); border-radius:16px;
-      padding:8px 18px; margin-top:12px;
-      pointer-events:all;
-    }
-    #naam-rij label { color:rgba(255,255,255,0.85); font-size:0.9rem; }
-    #naam-input {
-      background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3);
-      color:#fff; font-size:0.95rem; padding:5px 12px; border-radius:10px;
-      outline:none; min-width:160px;
-    }
-    #naam-input::placeholder { color:rgba(255,255,255,0.4); }
-    #naam-input:focus { border-color:rgba(255,215,0,0.7); background:rgba(255,255,255,0.2); }
 
-    /* Level cirkels langs parabool */
-    .level-cirkel {
-      position:absolute;
-      width:150px; height:150px;
-      border-radius:50%;
-      background:rgba(10,40,80,0.55);
-      backdrop-filter:blur(12px);
-      border:3px solid rgba(255,255,255,0.3);
-      display:flex; flex-direction:column;
-      align-items:center; justify-content:center;
-      gap:6px;
-      transform:translate(-50%,-50%);
-      transition:transform 0.25s, border-color 0.25s, background 0.25s;
-      cursor:default;
-      z-index:5;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15);
+    #naam-rij {
+      display:flex; flex-direction:column; gap:6px;
+      width:100%; max-width:320px; position:relative;
     }
-    .level-cirkel:hover {
-      transform:translate(-50%,-50%) scale(1.12);
-      border-color:rgba(255,215,0,0.7);
-      background:rgba(10,40,80,0.72);
+    #naam-rij label {
+      color:rgba(255,255,255,0.7); font-size:0.8rem;
+      font-weight:600; letter-spacing:0.5px;
     }
-    .level-cirkel .lc-nr {
-      font-size:1.6rem; font-weight:900; color:#ffd700;
-      text-shadow:0 2px 8px rgba(0,0,0,0.7);
-      line-height:1;
+    #naam-input {
+      background:rgba(255,255,255,0.1); border:2px solid rgba(255,255,255,0.2);
+      color:#fff; font-size:1rem; padding:8px 16px; border-radius:12px;
+      outline:none; width:100%;
+      transition: border-color 0.2s, background 0.2s;
     }
-    .level-cirkel .lc-naam {
-      font-size:0.62rem; font-weight:700; color:rgba(255,255,255,0.9);
-      text-align:center; letter-spacing:0.3px;
-      line-height:1.2; padding:0 8px;
+    #naam-input::placeholder { color:rgba(255,255,255,0.35); }
+    #naam-input:focus { border-color:rgba(255,215,0,0.6); background:rgba(255,255,255,0.15); }
+
+    /* Level bolletjes */
+    #level-lijst {
+      display:flex; flex-direction:column; gap:10px;
+      width:100%; max-width:340px; position:relative;
     }
-    .level-cirkel .lc-btns {
-      display:flex; flex-direction:column; gap:5px; width:110px;
+
+    .level-bol {
+      display:flex; flex-direction:row; align-items:center;
+      gap:14px;
+      background:rgba(255,255,255,0.06);
+      border:2px solid rgba(255,255,255,0.12);
+      border-radius:60px;
+      padding:10px 16px 10px 10px;
+      transition:background 0.2s, border-color 0.2s, transform 0.2s;
     }
+    .level-bol:hover:not(.level-bol-binnenkort) {
+      background:rgba(255,255,255,0.12);
+      border-color:rgba(255,215,0,0.45);
+      transform:translateX(4px);
+    }
+    .level-bol-binnenkort {
+      opacity:0.5; cursor:default;
+    }
+
+    /* Getal cirkel links */
+    .bol-nr {
+      width:46px; height:46px; border-radius:50%;
+      background:linear-gradient(135deg, #1a5fa8, #0a3d6e);
+      border:2px solid rgba(255,255,255,0.25);
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.3rem; font-weight:900; color:#ffd700;
+      flex-shrink:0;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    .level-bol-binnenkort .bol-nr {
+      background:linear-gradient(135deg, #2a4060, #1a2a40);
+    }
+    .bol-water .bol-nr {
+      background:linear-gradient(135deg, #1a6080, #0a3050);
+    }
+
+    /* Naam en knoppen */
+    .bol-inhoud { flex:1; }
+    .bol-naam {
+      font-size:0.82rem; font-weight:700; color:#fff;
+      margin-bottom:6px; letter-spacing:0.3px;
+    }
+    .bol-binnenkort-tekst {
+      font-size:0.72rem; color:rgba(255,255,255,0.45);
+      font-style:italic;
+    }
+    .bol-btns { display:flex; gap:6px; }
+
     .btn-speel {
       background:linear-gradient(135deg,#f5c518,#e0a800);
       color:#000; font-weight:800; font-size:0.72rem;
-      border:none; border-radius:10px; padding:5px 0;
+      border:none; border-radius:8px; padding:5px 12px;
       cursor:pointer; transition:opacity 0.2s; letter-spacing:0.3px;
+      white-space:nowrap;
     }
     .btn-speel:hover { opacity:0.85; }
     .btn-verken {
-      background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3);
+      background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.25);
       color:#fff; font-weight:600; font-size:0.68rem;
-      border-radius:10px; padding:4px 0;
-      cursor:pointer; transition:background 0.2s;
+      border-radius:8px; padding:5px 10px;
+      cursor:pointer; transition:background 0.2s; white-space:nowrap;
     }
-    .btn-verken:hover { background:rgba(255,255,255,0.28); }
+    .btn-verken:hover { background:rgba(255,255,255,0.22); }
 
     /* ── SPELSCHERM ────────────────────────────────── */
     #spelscherm { display:none; }
@@ -194,19 +245,25 @@
 
 <!-- ── STARTSCHERM ─────────────────────────────────── -->
 <div id="startscherm">
-  <div id="start-bg"></div>
+  <!-- Links: Timbo -->
+  <div id="start-links">
+    <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
+  </div>
 
-  <div id="start-header">
+  <!-- Rechts: menu -->
+  <div id="start-rechts">
     <div id="start-titel">Wonky <span>Wings</span></div>
     <div id="start-subtitel">✈ Vliegenderwijs topografie leren ✈</div>
+
     <div id="naam-rij">
       <label for="naam-input">Jouw naam:</label>
       <input id="naam-input" type="text" placeholder="Vul je naam in..." maxlength="20" autocomplete="off"/>
     </div>
-  </div>
 
-  <!-- Level cirkels worden dynamisch geplaatst -->
-  <div id="level-cirkels"></div>
+    <div id="level-lijst">
+      <!-- Dynamisch gebouwd -->
+    </div>
+  </div>
 </div>
 
 <!-- ── SPELSCHERM ──────────────────────────────────── -->
@@ -252,71 +309,84 @@ const LEVELS = {
     naam: 'Europa Starter',
     landen: ["Frankrijk", "Duitsland", "Spanje", "Italië", "Nederland", "België", "Polen", "Zweden", "Noorwegen", "Denemarken", "Portugal", "Oostenrijk", "Zwitserland", "Griekenland", "Ierland"],
     altijd_alle: true,
-    beschrijving: '15 Europese landen'
+    beschrijving: '15 Europese landen',
+    beschikbaar: true
   },
   2: {
     naam: 'Europa Prof',
     landen: ["Rusland", "Duitsland", "Verenigd Koninkrijk", "Frankrijk", "Italië", "Spanje", "Oekraïne", "Polen", "Roemenië", "Nederland", "België", "Zweden", "Tsjechië", "Portugal", "Griekenland", "Hongarije", "Oostenrijk", "Wit-Rusland", "Zwitserland", "Bulgarije", "Servië", "Denemarken", "Noorwegen", "Finland", "Slowakije", "Ierland", "Kroatië", "Bosnië-Herzegovina", "Moldavië", "Litouwen", "Albanië", "Slovenië", "Letland", "Noord-Macedonië", "Estland", "Luxemburg", "Montenegro", "Malta", "IJsland", "Andorra", "Liechtenstein", "Monaco", "San Marino", "Vaticaanstad"],
     altijd_alle: false,
-    beschrijving: '44 Europese landen'
+    beschrijving: '44 Europese landen',
+    beschikbaar: true
   },
   3: {
     naam: 'Wereld Starter',
     landen: ["Frankrijk", "Spanje", "Nederland", "Italië", "Duitsland", "Verenigd Koninkrijk", "Turkije", "Verenigde Staten", "Canada", "Mexico", "Brazilië", "China", "India", "Japan", "Indonesië", "Australië", "Egypte", "Zuid-Afrika", "Rusland"],
     altijd_alle: false,
-    beschrijving: '19 wereldlanden'
+    beschrijving: '19 wereldlanden',
+    beschikbaar: true
   },
   4: {
     naam: 'Wereld Prof',
     landen: ["Frankrijk", "Spanje", "Nederland", "Italië", "Duitsland", "Verenigd Koninkrijk", "Turkije", "Verenigde Staten", "Canada", "Mexico", "Brazilië", "China", "India", "Japan", "Indonesië", "Australië", "Egypte", "Zuid-Afrika", "Rusland", "Portugal", "Nieuw-Zeeland", "Zweden", "Noorwegen", "Finland", "Polen", "Denemarken", "Ierland", "IJsland", "Griekenland", "Argentinië", "Peru", "Chili", "Saoedi-Arabië", "Marokko", "Nigeria", "Namibië", "Algerije", "Antarctica", "België", "Roemenië", "Wit-Rusland", "Mongolië", "Iran", "Vietnam", "Groenland"],
     altijd_alle: false,
-    beschrijving: '45 wereldlanden'
+    beschrijving: '45 wereldlanden',
+    beschikbaar: true
   },
   5: {
+    naam: 'Water Wonder',
+    landen: [],
+    altijd_alle: false,
+    beschrijving: 'Wereldzeeën, rivieren & meren',
+    beschikbaar: false
+  },
+  6: {
     naam: 'Wie alles kent!',
     landen: ["Indonesië", "Maleisië", "Chili", "Bolivia", "Peru", "Argentinië", "Dhekelia", "Cyprus", "India", "China", "Israël", "Palestina", "Libanon", "Ethiopië", "Zuid-Soedan", "Somalië", "Kenia", "Malawi", "Tanzania", "Syrië", "Somaliland", "Frankrijk", "Suriname", "Guyana", "Zuid-Korea", "Noord-Korea", "Marokko", "Westelijke Sahara", "Costa Rica", "Nicaragua", "Congo-Brazzaville", "Congo-Kinshasa", "Bhutan", "Oekraïne", "Wit-Rusland", "Namibië", "Zuid-Afrika", "Saint-Martin", "Sint Maarten", "Oman", "Oezbekistan", "Kazachstan", "Tadzjikistan", "Litouwen", "Brazilië", "Uruguay", "Mongolië", "Rusland", "Tsjechië", "Duitsland", "Estland", "Letland", "Noorwegen", "Zweden", "Finland", "Vietnam", "Cambodja", "Luxemburg", "Verenigde Arabische Emiraten", "België", "Georgië", "Noord-Macedonië", "Albanië", "Azerbeidzjan", "Kosovo", "Turkije", "Spanje", "Laos", "Kirgizië", "Armenië", "Denemarken", "Libië", "Tunesië", "Roemenië", "Hongarije", "Slowakije", "Polen", "Ierland", "Verenigd Koninkrijk", "Griekenland", "Zambia", "Sierra Leone", "Guinee", "Liberia", "Centraal-Afrikaanse Republiek", "Soedan", "Djibouti", "Eritrea", "Oostenrijk", "Irak", "Italië", "Zwitserland", "Iran", "Nederland", "Liechtenstein", "Ivoorkust", "Servië", "Mali", "Senegal", "Nigeria", "Benin", "Angola", "Kroatië", "Slovenië", "Qatar", "Saoedi-Arabië", "Botswana", "Zimbabwe", "Pakistan", "Bulgarije", "Thailand", "San Marino", "Haïti", "Dominicaanse Republiek", "Tsjaad", "Koeweit", "El Salvador", "Guatemala", "East Timor", "Brunei", "Monaco", "Algerije", "Mozambique", "Eswatini", "Burundi", "Rwanda", "Myanmar", "Bangladesh", "Andorra", "Afghanistan", "Montenegro", "Bosnië-Herzegovina", "Oeganda", "US Naval Base Guantanamo Bay", "Cuba", "Honduras", "Ecuador", "Colombia", "Paraguay", "Brazilian Island", "Portugal", "Moldavië", "Turkmenistan", "Jordanië", "Nepal", "Lesotho", "Kameroen", "Gabon", "Niger", "Burkina Faso", "Togo", "Ghana", "Guinee-Bissau", "Gibraltar", "Verenigde Staten", "Canada", "Mexico", "Belize", "Panama", "Venezuela", "Papoea-Nieuw-Guinea", "Egypte", "Jemen", "Mauritanië", "Equatoriaal-Guinea", "Gambia", "Hong Kong S.A.R.", "Vaticaanstad", "Northern Cyprus", "Cyprus No Mans Area", "Siachen Glacier", "Bajkonoer", "Akrotiri", "Southern Patagonian Ice Field", "Bir Tawil", "Antarctica", "Australië", "Greenland", "Fiji", "Nieuw-Zeeland", "New Caledonia", "Madagaskar", "Filipijnen", "Sri Lanka", "Curaçao", "Aruba", "The Bahamas", "Turks and Caicos Islands", "Taiwan", "Japan", "Saint Pierre and Miquelon", "IJsland", "Pitcairn Islands", "French Polynesia", "French Southern and Antarctic Lands", "Seychelles", "Kiribati", "Marshall Islands", "Trinidad en Tobago", "Grenada", "Saint Vincent and the Grenadines", "Barbados", "Saint Lucia", "Dominica", "United States Minor Outlying Islands", "Montserrat", "Antigua en Barbuda", "Saint Kitts and Nevis", "United States Virgin Islands", "Saint Barthelemy", "Puerto Rico", "Anguilla", "British Virgin Islands", "Jamaica", "Cayman Islands", "Bermuda", "Heard Island and McDonald Islands", "Saint Helena", "Mauritius", "Comoren", "São Tomé and Principe", "Kaapverdië", "Malta", "Jersey", "Guernsey", "Isle of Man", "Aland", "Faroe Islands", "Indian Ocean Territories", "British Indian Ocean Territory", "Singapore", "Norfolk Island", "Cook Islands", "Tonga", "Wallis and Futuna", "Samoa", "Solomon Islands", "Tuvalu", "Maldiven", "Nauru", "Federated States of Micronesia", "South Georgia and the Islands", "Falkland Islands", "Vanuatu", "Niue", "American Samoa", "Palau", "Guam", "Northern Mariana Islands", "Bahrein", "Coral Sea Islands", "Spratly Islands", "Clipperton Island", "Macao S.A.R", "Ashmore and Cartier Islands", "Bajo Nuevo Bank (Petrel Is.)", "Serranilla Bank", "Scarborough Reef"],
     altijd_alle: false,
-    beschrijving: 'Alle landen ter wereld'
+    beschrijving: 'Alle landen ter wereld',
+    beschikbaar: true
   }
 };
 
 // ── Startscherm opbouwen ──────────────────────────────
 const LEVEL_ICONEN = ['🌍','🗺️','✈️','🌐','🏆'];
 function bouwStartscherm() {
-  const container = document.getElementById('level-cirkels');
-  container.innerHTML = '';
+  const lijst = document.getElementById('level-lijst');
+  lijst.innerHTML = '';
 
-  // Parabool: level 1 rechtsonder, level 5 linksboven
-  // Volgt het rookspoor van Wonky in de afbeelding
-  // Posities als % van schermgrootte
-  // Parabool langs rookspoor Wonky: level 1 linksonder, level 5 rechtsboven
-  // X buigt als een parabool (niet recht), Y daalt gelijkmatig
-  const posities = [
-    { x: 18, y: 80 },  // Level 1: linksonder
-    { x: 32, y: 65 },  // Level 2
-    { x: 50, y: 52 },  // Level 3: midden (diepste punt parabool)
-    { x: 68, y: 38 },  // Level 4
-    { x: 78, y: 24 },  // Level 5: rechtsboven
-  ];
+  const WATER_ICOON = '🌊';
 
-  for(let nr = 1; nr <= 5; nr++){
+  for(let nr = 1; nr <= 6; nr++){
     const lv = LEVELS[nr];
-    const pos = posities[nr-1];
-    const cirkel = document.createElement('div');
-    cirkel.className = 'level-cirkel';
-    cirkel.style.left = pos.x + '%';
-    cirkel.style.top  = pos.y + '%';
-    cirkel.innerHTML = `
-      <div class="lc-nr">${nr}</div>
-      <div class="lc-naam">${lv.naam}</div>
-      <div class="lc-btns">
-        <button class="btn-speel" onclick="startSpel(${nr}, 'spelen')">▶ Spelen</button>
-        <button class="btn-verken" onclick="startSpel(${nr}, 'verkennen')">🔍 Verkennen</button>
-      </div>
+    const bol = document.createElement('div');
+    const isWater = nr === 5;
+    const isBinnenkort = !lv.beschikbaar;
+
+    bol.className = 'level-bol' +
+      (isBinnenkort ? ' level-bol-binnenkort' : '') +
+      (isWater ? ' bol-water' : '');
+
+    let inhoud;
+    if(isBinnenkort){
+      inhoud = `<div class="bol-naam">${lv.naam}</div>
+                <div class="bol-binnenkort-tekst">🚧 Binnenkort beschikbaar</div>`;
+    } else {
+      inhoud = `<div class="bol-naam">${lv.naam}</div>
+                <div class="bol-btns">
+                  <button class="btn-speel" onclick="startSpel(${nr},'spelen')">▶ Spelen</button>
+                  <button class="btn-verken" onclick="startSpel(${nr},'verkennen')">🔍 Verkennen</button>
+                </div>`;
+    }
+
+    bol.innerHTML = `
+      <div class="bol-nr">${isWater ? WATER_ICOON : nr}</div>
+      <div class="bol-inhoud">${inhoud}</div>
     `;
-    container.appendChild(cirkel);
+    lijst.appendChild(bol);
   }
 }
+bouwStartscherm();
 bouwStartscherm();
 
 // ── Spel staat ────────────────────────────────────────
@@ -337,6 +407,7 @@ function startSpel(levelNr, modus) {
   score = 0;
 
   const lv = LEVELS[levelNr];
+  if(!lv.beschikbaar) return; // binnenkort beschikbaar
   // Kies landen voor deze ronde
   if(modus === 'verkennen'){
     spelLanden = [...lv.landen]; // alle landen van dit level bij verkennen
