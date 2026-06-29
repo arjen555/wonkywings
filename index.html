@@ -16,96 +16,101 @@
     /* ── STARTSCHERM ───────────────────────────────── */
     #startscherm {
       position:fixed; inset:0; z-index:100;
-      display:flex; flex-direction:column;
-      align-items:center; justify-content:center;
-      background: radial-gradient(ellipse at 50% 30%, #1a6fa8 0%, #0a3d62 50%, #051e30 100%);
       overflow:hidden;
+      background:#051e30;
     }
     #start-bg {
       position:absolute; inset:0;
       background-image: url('images/Timbo.png');
       background-size: cover;
-      background-position: center top;
-      opacity: 0.35;
+      background-position: center center;
       pointer-events:none;
     }
-    #start-content {
-      position:relative; z-index:2;
-      display:flex; flex-direction:column;
-      align-items:center; gap:16px;
-      width:100%; max-width:900px;
-      padding:20px;
+    /* Titel + naam bovenin */
+    #start-header {
+      position:absolute; top:0; left:0; right:0;
+      display:flex; flex-direction:column; align-items:center;
+      padding:28px 0 0;
+      z-index:5; pointer-events:none;
     }
     #start-titel {
-      font-size:4rem; font-weight:900;
+      font-size:3.8rem; font-weight:900;
       color:#fff; letter-spacing:3px;
-      text-shadow: 0 4px 20px rgba(0,0,0,0.8), 0 0 60px rgba(30,144,255,0.5);
+      text-shadow: 0 4px 20px rgba(0,0,0,0.9), 0 0 60px rgba(30,144,255,0.5);
+      pointer-events:none;
     }
     #start-titel span { color:#ffd700; }
     #start-subtitel {
-      font-size:1.2rem; color:rgba(255,255,255,0.75);
+      font-size:1rem; color:rgba(255,255,255,0.8);
       letter-spacing:2px; text-transform:uppercase;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.8);
-      margin-bottom:8px;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+      margin-top:4px; pointer-events:none;
     }
     #naam-rij {
-      display:flex; gap:12px; align-items:center;
-      background:rgba(0,0,0,0.4); backdrop-filter:blur(10px);
+      display:flex; gap:10px; align-items:center;
+      background:rgba(0,0,0,0.5); backdrop-filter:blur(10px);
       border:2px solid rgba(255,255,255,0.2); border-radius:16px;
-      padding:10px 20px;
+      padding:8px 18px; margin-top:12px;
+      pointer-events:all;
     }
-    #naam-rij label { color:rgba(255,255,255,0.8); font-size:0.95rem; }
+    #naam-rij label { color:rgba(255,255,255,0.85); font-size:0.9rem; }
     #naam-input {
       background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3);
-      color:#fff; font-size:1rem; padding:6px 14px; border-radius:10px;
-      outline:none; min-width:180px;
+      color:#fff; font-size:0.95rem; padding:5px 12px; border-radius:10px;
+      outline:none; min-width:160px;
     }
     #naam-input::placeholder { color:rgba(255,255,255,0.4); }
-    #naam-input:focus { border-color:rgba(255,215,0,0.6); background:rgba(255,255,255,0.2); }
+    #naam-input:focus { border-color:rgba(255,215,0,0.7); background:rgba(255,255,255,0.2); }
 
-    /* Levels grid */
-    #levels-grid {
-      display:grid; grid-template-columns:repeat(5,1fr);
-      gap:12px; width:100%;
+    /* Level cirkels langs parabool */
+    .level-cirkel {
+      position:absolute;
+      width:150px; height:150px;
+      border-radius:50%;
+      background:rgba(10,40,80,0.55);
+      backdrop-filter:blur(12px);
+      border:3px solid rgba(255,255,255,0.3);
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      gap:6px;
+      transform:translate(-50%,-50%);
+      transition:transform 0.25s, border-color 0.25s, background 0.25s;
+      cursor:default;
+      z-index:5;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15);
     }
-    .level-kaart {
-      background:rgba(0,0,0,0.45); backdrop-filter:blur(12px);
-      border:2px solid rgba(255,255,255,0.15); border-radius:20px;
-      padding:16px 10px; text-align:center;
-      transition: transform 0.2s, border-color 0.2s;
+    .level-cirkel:hover {
+      transform:translate(-50%,-50%) scale(1.12);
+      border-color:rgba(255,215,0,0.7);
+      background:rgba(10,40,80,0.72);
     }
-    .level-kaart:hover { transform:translateY(-4px); border-color:rgba(255,215,0,0.5); }
-    .level-nr {
-      font-size:2rem; font-weight:900; color:#ffd700;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+    .level-cirkel .lc-nr {
+      font-size:1.6rem; font-weight:900; color:#ffd700;
+      text-shadow:0 2px 8px rgba(0,0,0,0.7);
+      line-height:1;
     }
-    .level-naam {
-      font-size:0.75rem; color:rgba(255,255,255,0.85);
-      font-weight:600; letter-spacing:0.5px;
-      margin:4px 0 12px; min-height:32px;
-      display:flex; align-items:center; justify-content:center;
+    .level-cirkel .lc-naam {
+      font-size:0.62rem; font-weight:700; color:rgba(255,255,255,0.9);
+      text-align:center; letter-spacing:0.3px;
+      line-height:1.2; padding:0 8px;
     }
-    .level-btns { display:flex; flex-direction:column; gap:8px; }
+    .level-cirkel .lc-btns {
+      display:flex; flex-direction:column; gap:5px; width:110px;
+    }
     .btn-speel {
-      background:linear-gradient(135deg, #f5c518, #e0a800);
-      color:#000; font-weight:800; font-size:0.85rem;
-      border:none; border-radius:12px; padding:8px 0;
-      cursor:pointer; transition:opacity 0.2s;
-      letter-spacing:0.5px;
+      background:linear-gradient(135deg,#f5c518,#e0a800);
+      color:#000; font-weight:800; font-size:0.72rem;
+      border:none; border-radius:10px; padding:5px 0;
+      cursor:pointer; transition:opacity 0.2s; letter-spacing:0.3px;
     }
     .btn-speel:hover { opacity:0.85; }
     .btn-verken {
-      background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.25);
-      color:#fff; font-weight:600; font-size:0.8rem;
-      border-radius:12px; padding:7px 0;
+      background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3);
+      color:#fff; font-weight:600; font-size:0.68rem;
+      border-radius:10px; padding:4px 0;
       cursor:pointer; transition:background 0.2s;
-      letter-spacing:0.5px;
     }
-    .btn-verken:hover { background:rgba(255,255,255,0.22); }
-    .level-info {
-      font-size:0.68rem; color:rgba(255,255,255,0.45);
-      margin-top:6px;
-    }
+    .btn-verken:hover { background:rgba(255,255,255,0.28); }
 
     /* ── SPELSCHERM ────────────────────────────────── */
     #spelscherm { display:none; }
@@ -190,19 +195,18 @@
 <!-- ── STARTSCHERM ─────────────────────────────────── -->
 <div id="startscherm">
   <div id="start-bg"></div>
-  <div id="start-content">
+
+  <div id="start-header">
     <div id="start-titel">Wonky <span>Wings</span></div>
     <div id="start-subtitel">✈ Vliegenderwijs topografie leren ✈</div>
-
     <div id="naam-rij">
       <label for="naam-input">Jouw naam:</label>
       <input id="naam-input" type="text" placeholder="Vul je naam in..." maxlength="20" autocomplete="off"/>
     </div>
-
-    <div id="levels-grid">
-      <!-- Level kaarten worden dynamisch gebouwd -->
-    </div>
   </div>
+
+  <!-- Level cirkels worden dynamisch geplaatst -->
+  <div id="level-cirkels"></div>
 </div>
 
 <!-- ── SPELSCHERM ──────────────────────────────────── -->
@@ -279,22 +283,38 @@ const LEVELS = {
 // ── Startscherm opbouwen ──────────────────────────────
 const LEVEL_ICONEN = ['🌍','🗺️','✈️','🌐','🏆'];
 function bouwStartscherm() {
-  const grid = document.getElementById('levels-grid');
-  grid.innerHTML = '';
+  const container = document.getElementById('level-cirkels');
+  container.innerHTML = '';
+
+  // Parabool: level 1 rechtsonder, level 5 linksboven
+  // Volgt het rookspoor van Wonky in de afbeelding
+  // Posities als % van schermgrootte
+  // Parabool langs rookspoor Wonky: level 1 linksonder, level 5 rechtsboven
+  // X buigt als een parabool (niet recht), Y daalt gelijkmatig
+  const posities = [
+    { x: 18, y: 80 },  // Level 1: linksonder
+    { x: 32, y: 65 },  // Level 2
+    { x: 50, y: 52 },  // Level 3: midden (diepste punt parabool)
+    { x: 68, y: 38 },  // Level 4
+    { x: 78, y: 24 },  // Level 5: rechtsboven
+  ];
+
   for(let nr = 1; nr <= 5; nr++){
     const lv = LEVELS[nr];
-    const kaart = document.createElement('div');
-    kaart.className = 'level-kaart';
-    kaart.innerHTML = `
-      <div class="level-nr">${LEVEL_ICONEN[nr-1]} ${nr}</div>
-      <div class="level-naam">${lv.naam}</div>
-      <div class="level-btns">
+    const pos = posities[nr-1];
+    const cirkel = document.createElement('div');
+    cirkel.className = 'level-cirkel';
+    cirkel.style.left = pos.x + '%';
+    cirkel.style.top  = pos.y + '%';
+    cirkel.innerHTML = `
+      <div class="lc-nr">${nr}</div>
+      <div class="lc-naam">${lv.naam}</div>
+      <div class="lc-btns">
         <button class="btn-speel" onclick="startSpel(${nr}, 'spelen')">▶ Spelen</button>
         <button class="btn-verken" onclick="startSpel(${nr}, 'verkennen')">🔍 Verkennen</button>
       </div>
-      <div class="level-info">${lv.beschrijving}</div>
     `;
-    grid.appendChild(kaart);
+    container.appendChild(cirkel);
   }
 }
 bouwStartscherm();
