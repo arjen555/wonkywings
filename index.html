@@ -291,7 +291,7 @@
       <div class="label" id="opdracht-label">✈ Vlieg naar...</div>
       <div class="landnaam" id="land-naam">...</div>
     </div>
-    <div id="hint">Pijltjestoetsen &nbsp;·&nbsp; SHIFT = turbo &nbsp;·&nbsp; SPATIE = vlaggetje droppen</div>
+    <div id="hint">Pijltjestoetsen &nbsp;·&nbsp; SHIFT = turbo &nbsp;·&nbsp; SPATIE = vlaggetje droppen &nbsp;·&nbsp; CTRL = zoom</div>
   </div>
 
   <div id="voortgang">
@@ -400,6 +400,37 @@ let spelerNaam = '';
 let wachten = false;
 let spelActief = false;
 
+// ── Zoom staat ────────────────────────────────────────
+let zoomAan = false;
+let zoomFactor = 1.0;      // huidig: 1.0 = normaal, 2.2 = ingezoomd
+const ZOOM_NORMAAL = 1.0;
+const ZOOM_IN = 2.2;
+const ZOOM_SNELHEID = 0.06; // hoe snel de zoom animatie gaat
+
+// Bestandsnaam helper: verwijder accenten voor PNG lookup
+function landNaarBestand(naam) {
+  return naam
+    .replace(/ë/g,'e').replace(/é/g,'e').replace(/è/g,'e').replace(/ê/g,'e')
+    .replace(/ï/g,'i').replace(/í/g,'i').replace(/î/g,'i')
+    .replace(/ö/g,'o').replace(/ó/g,'o').replace(/ô/g,'o')
+    .replace(/ü/g,'u').replace(/ú/g,'u').replace(/û/g,'u')
+    .replace(/ä/g,'a').replace(/á/g,'a').replace(/à/g,'a').replace(/â/g,'a')
+    .replace(/ñ/g,'n').replace(/ç/g,'c')
+    .replace(/\s+/g,'_');
+}
+
+// Cache voor beschikbare landillustraties
+const landIllustraties = {};
+function laadIllustratie(landnaam) {
+  if(landIllustraties[landnaam] !== undefined) return;
+  landIllustraties[landnaam] = null; // bezig met laden
+  const bestand = landNaarBestand(landnaam);
+  const img = new Image();
+  img.onload = () => { landIllustraties[landnaam] = img; };
+  img.onerror = () => { landIllustraties[landnaam] = false; }; // niet beschikbaar
+  img.src = `images/landen/${bestand}.png`;
+}
+
 function startSpel(levelNr, modus) {
   spelerNaam = document.getElementById('naam-input').value.trim() || 'Speler';
   huidigLevel = levelNr;
@@ -425,6 +456,13 @@ function startSpel(levelNr, modus) {
 
   huidigLandIdx = 0;
   huidigLand = spelLanden[0];
+
+  // Zoom standaard aan voor Europa levels (1 en 2)
+  zoomAan = (levelNr <= 2);
+  zoomFactor = zoomAan ? ZOOM_IN : ZOOM_NORMAAL;
+
+  // Laad illustraties voor alle landen van dit level alvast
+  for(const naam of spelLanden) laadIllustratie(naam);
 
   // UI updaten
   document.getElementById('startscherm').style.display = 'none';
@@ -501,7 +539,9 @@ let globeGestart = false;
 let W, H, R, CX, CY;
 function herbereken() {
   W = window.innerWidth; H = window.innerHeight;
-  R = Math.min(W,H)*0.58; CX = W/2; CY = H*0.56;
+  // R wordt dynamisch berekend in de loop op basis van zoomFactor
+  R = Math.min(W,H)*0.58 * zoomFactor;
+  CX = W/2; CY = H*0.52;
   canvas.width = W; canvas.height = H;
 }
 window.addEventListener('resize', herbereken);
@@ -627,6 +667,59 @@ function getLandKleur(naam, lat) {
   // Arctische gebieden automatisch ijsblauw
   if(lat !== undefined && lat > 67) return '#c8dff0';
   return LAND_KLEUREN['default'];
+}
+
+function tekenLandIllustratie(feature, img) {
+  // Clip de illustratie binnen de landvorm
+  const geom = feature.geometry;
+  const polys = geom.type==='Polygon' ? [geom.coordinates] : geom.coordinates;
+
+  // Vind bounding box van het land op scherm
+  let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+  let heeftPunten = false;
+
+  ctx.save();
+  ctx.beginPath();
+
+  for(const poly of polys){
+    for(const ring of poly){
+      if(!ring||ring.length<3) continue;
+      const pts = ring.map(([lon,lat])=>{
+        const p3=roteerPunt(lonLatTo3D(lon,lat),rotM);
+        return {sx:CX+p3[0]*R, sy:CY-p3[1]*R, vis:p3[2]>0};
+      });
+      let pen=false;
+      for(let i=0;i<pts.length;i++){
+        const curr=pts[i], next=pts[(i+1)%pts.length];
+        if(curr.vis){
+          if(!pen){ctx.moveTo(curr.sx,curr.sy);pen=true;}
+          else ctx.lineTo(curr.sx,curr.sy);
+          minX=Math.min(minX,curr.sx); maxX=Math.max(maxX,curr.sx);
+          minY=Math.min(minY,curr.sy); maxY=Math.max(maxY,curr.sy);
+          heeftPunten=true;
+        }
+        if(curr.vis!==next.vis){
+          const s=knipPunt(curr.p3||roteerPunt(lonLatTo3D(0,0),rotM), next.p3||roteerPunt(lonLatTo3D(0,0),rotM));
+        }
+      }
+      ctx.closePath();
+    }
+  }
+
+  if(!heeftPunten){ctx.restore();return;}
+
+  // Clip binnen landvorm
+  ctx.clip();
+
+  // Teken illustratie geschaald naar de bounding box
+  const marge = 10;
+  ctx.globalAlpha = 0.92;
+  ctx.drawImage(img,
+    minX-marge, minY-marge,
+    (maxX-minX)+marge*2, (maxY-minY)+marge*2
+  );
+  ctx.globalAlpha = 1.0;
+  ctx.restore();
 }
 
 function tekenIJskap(poolLat, straal) {
@@ -787,6 +880,16 @@ function drawGlobe(){
 
   tekenIJskap(90,17);
 
+  // Bij inzoomen: toon landillustratie van hoverLand als beschikbaar
+  if(zoomFactor > 1.3 && hoverLand){
+    const dutch = hoverLand.properties.dutch || hoverLand.properties.name;
+    laadIllustratie(dutch);
+    const illustratie = landIllustraties[dutch];
+    if(illustratie){
+      tekenLandIllustratie(hoverLand, illustratie);
+    }
+  }
+
   ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=0.5;
   for(let lat=-60;lat<=60;lat+=30){
     ctx.beginPath();let first=true;
@@ -838,6 +941,11 @@ const keys={};
 document.addEventListener('keydown',e=>{
   keys[e.key]=true;
   if([' ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
+  // Ctrl = zoom toggle
+  if(e.key==='Control'){
+    e.preventDefault();
+    zoomAan = !zoomAan;
+  }
 });
 document.addEventListener('keyup',e=>{keys[e.key]=false;});
 
@@ -846,7 +954,22 @@ const MAX_DRIFT=0.10,DRIFT_S=0.08;
 
 function updateSpel(){
   if(!spelActief) return;
-  const s=keys['Shift']?1.8:0.7;
+
+  // Zoom animatie: vloeiend naar doel-factor
+  const doelZoom = zoomAan ? ZOOM_IN : ZOOM_NORMAAL;
+  if(Math.abs(zoomFactor - doelZoom) > 0.01){
+    zoomFactor += (doelZoom - zoomFactor) * ZOOM_SNELHEID;
+  } else {
+    zoomFactor = doelZoom;
+  }
+  // Herbereken R op basis van huidige zoom
+  R = Math.min(W,H)*0.58 * zoomFactor;
+  // Middelpunt iets lager bij inzoomen zodat land meer in beeld komt
+  CY = H * (0.52 + (zoomFactor - 1) * 0.08);
+
+  // Besturing langzamer bij inzoomen
+  const zoomVertraging = 1 / zoomFactor;
+  const s = (keys['Shift'] ? 1.8 : 0.7) * zoomVertraging;
   let dx=0,dy=0;
   if(keys['ArrowLeft']) dx=-1;
   if(keys['ArrowRight'])dx= 1;
