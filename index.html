@@ -239,6 +239,7 @@ let wachten=false, spelActief=false, globeGestart=false;
 
 // ── Zoom ─────────────────────────────────────────────
 let zoomStand = 0;
+let zoomRichting = 1; // 1 = inzoomen, -1 = uitzoomen (voor 0-1-2-1-0 cyclus)
 const ZOOM_STANDEN = [1.0, 2.2, 4.5];
 const ZOOM_NAMEN = ['Wereld', 'Dichterbij', 'Landview'];
 let zoomFactor = 1.0;
@@ -486,7 +487,7 @@ function tekenLandIllustratie(feature,img,zoomstandActief){
   // (de clip-vorm blijft exact het land - de illustratie mag eroverheen lekken)
   let drawBreedte = breedte, drawHoogte = hoogte;
   // Bij landview (stand 2): illustratie moet minimaal 65% van de schermhoogte vullen
-  const minGewensteHoogte = H * 0.65;
+  const minGewensteHoogte = H * 0.85;
   if(zoomstandActief >= 2 && hoogte < minGewensteHoogte){
     const opschaal = minGewensteHoogte / hoogte;
     drawBreedte = breedte * opschaal;
@@ -655,7 +656,10 @@ document.addEventListener('keydown',e=>{
   if([' ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
   // Z = zoom toggle (3 standen)
   if(e.key==='z'||e.key==='Z'){
-    zoomStand=(zoomStand+1)%3;
+    zoomRichting = zoomRichting || 1;
+    zoomStand += zoomRichting;
+    if(zoomStand >= 2){ zoomStand = 2; zoomRichting = -1; }
+    if(zoomStand <= 0){ zoomStand = 0; zoomRichting = 1; }
     document.getElementById('zoom-indicator').textContent='🔍 '+ZOOM_NAMEN[zoomStand];
   }
 });
@@ -668,7 +672,7 @@ const MAX_DRIFT=0.035, DRIFT_S=0.08;  // Wonky blijft dichter bij de focusstip
 let laatsteDx = 0;          // vorige horizontale richting (-1, 0, 1)
 let inOmbocht = false;      // bezig met richting omkeren?
 let ombochtTimer = 0;
-const OMBOCHT_DUUR = 220;   // ms vertraging bij omkeren - 3 fasen elk goed zichtbaar
+const OMBOCHT_DUUR = 75;    // ms vertraging bij omkeren - 3 fasen elk goed zichtbaar
 
 // ── Vlag-drop animatie timer ──────────────────────────
 let dropAnimatieActief = false;
