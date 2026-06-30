@@ -451,7 +451,7 @@ function tekenIJskap(poolLat,straal){
 }
 
 // ── Landillustratie ───────────────────────────────────
-function tekenLandIllustratie(feature,img){
+function tekenLandIllustratie(feature,img,zoomstandActief){
   const geom=feature.geometry;
   const polysLijst=geom.type==='Polygon'?[geom.coordinates]:geom.coordinates;
   let grootstePoly=null,grootsteN=0;
@@ -471,19 +471,41 @@ function tekenLandIllustratie(feature,img){
     }
   }
   if(ringPts.length<3||maxX-minX<5||maxY-minY<5) return;
+
+  // Clip ALTIJD binnen de exacte landvorm
   ctx.save();
   ctx.beginPath();
   ctx.moveTo(ringPts[0][0],ringPts[0][1]);
   for(let i=1;i<ringPts.length;i++) ctx.lineTo(ringPts[i][0],ringPts[i][1]);
   ctx.closePath(); ctx.clip();
-  const breedte=maxX-minX,hoogte=maxY-minY;
-  const imgRatio=img.width/img.height,landRatio=breedte/hoogte;
-  let drawW,drawH;
-  if(imgRatio>landRatio){drawH=hoogte;drawW=hoogte*imgRatio;}
-  else{drawW=breedte;drawH=breedte/imgRatio;}
-  ctx.globalAlpha=0.93;
-  ctx.drawImage(img,minX+(breedte-drawW)/2,minY+(hoogte-drawH)/2,drawW,drawH);
-  ctx.globalAlpha=1.0; ctx.restore();
+
+  const breedte=maxX-minX, hoogte=maxY-minY;
+
+  // Adaptieve schaal: bij landview (stand 2) zorgen dat kleine landen
+  // tenminste ~45% van de schermhoogte vullen qua ILLUSTRATIE
+  // (de clip-vorm blijft exact het land - de illustratie mag eroverheen lekken)
+  let drawBreedte = breedte, drawHoogte = hoogte;
+  // Bij landview (stand 2): illustratie moet minimaal 65% van de schermhoogte vullen
+  const minGewensteHoogte = H * 0.65;
+  if(zoomstandActief >= 2 && hoogte < minGewensteHoogte){
+    const opschaal = minGewensteHoogte / hoogte;
+    drawBreedte = breedte * opschaal;
+    drawHoogte  = hoogte  * opschaal;
+  }
+
+  const cMidX = minX + breedte/2;
+  const cMidY = minY + hoogte/2;
+
+  const imgRatio = img.width/img.height;
+  const landRatio = drawBreedte/drawHoogte;
+  let drawW, drawH;
+  if(imgRatio > landRatio){ drawH = drawHoogte; drawW = drawHoogte*imgRatio; }
+  else { drawW = drawBreedte; drawH = drawBreedte/imgRatio; }
+
+  ctx.globalAlpha = 0.93;
+  ctx.drawImage(img, cMidX - drawW/2, cMidY - drawH/2, drawW, drawH);
+  ctx.globalAlpha = 1.0;
+  ctx.restore();
 }
 
 // ── Focusstip ─────────────────────────────────────────
@@ -580,7 +602,7 @@ function drawGlobe(){
     const dutch=hoverLand.properties.dutch||hoverLand.properties.name;
     laadIllustratie(dutch);
     const ill=landIllustraties[dutch];
-    if(ill) tekenLandIllustratie(hoverLand,ill);
+    if(ill) tekenLandIllustratie(hoverLand,ill,zoomStand);
   }
 
   // Breedtegraden
@@ -646,7 +668,7 @@ const MAX_DRIFT=0.035, DRIFT_S=0.08;  // Wonky blijft dichter bij de focusstip
 let laatsteDx = 0;          // vorige horizontale richting (-1, 0, 1)
 let inOmbocht = false;      // bezig met richting omkeren?
 let ombochtTimer = 0;
-const OMBOCHT_DUUR = 900;   // ms vertraging bij omkeren - 3 fasen elk goed zichtbaar
+const OMBOCHT_DUUR = 220;   // ms vertraging bij omkeren - 3 fasen elk goed zichtbaar
 
 // ── Vlag-drop animatie timer ──────────────────────────
 let dropAnimatieActief = false;
