@@ -239,11 +239,14 @@ let wachten=false, spelActief=false, globeGestart=false;
 
 // ── Zoom ─────────────────────────────────────────────
 let zoomStand = 0;
-let zoomRichting = 1; // 1 = inzoomen, -1 = uitzoomen (voor 0-1-2-1-0 cyclus)
-const ZOOM_STANDEN = [1.0, 2.2, 4.5];
-const ZOOM_NAMEN = ['Wereld', 'Dichterbij', 'Landview'];
+let zoomRichting = 1; // 1=inzoomen, -1=uitzoomen (cyclus 0-1-2-3-2-1-0)
+// Stand 3 is dynamisch: berekend zodat het huidige land 50% schermhoogte vult
+const ZOOM_STANDEN_BASIS = [1.0, 2.2, 4.5, null]; // null = dynamisch
+const ZOOM_NAMEN = ['Wereld', 'Dichterbij', 'Landview', 'Close-up'];
 let zoomFactor = 1.0;
+let zoomStand3Factor = 4.5; // dynamisch berekende factor voor stand 3
 const ZOOM_SNELHEID = 0.07;
+const DOEL_LAND_HOOGTE_FRACTIE = 0.50; // land moet 50% schermhoogte vullen in stand 3
 
 // ── Illustraties ──────────────────────────────────────
 const landIllustraties = {};
@@ -281,7 +284,8 @@ function startSpel(levelNr, modus) {
 
   // Zoom: Europa levels starten ingezoomd
   zoomStand = (levelNr<=2) ? 1 : 0;
-  zoomFactor = ZOOM_STANDEN[zoomStand];
+  zoomRichting = 1;
+  zoomFactor = ZOOM_STANDEN_BASIS[zoomStand];
   for(const naam of spelLanden) laadIllustratie(naam);
 
   document.getElementById('startscherm').style.display='none';
@@ -329,6 +333,7 @@ function nieuwLand(){
   huidigLand=spelLanden[huidigLandIdx];
   document.getElementById('land-naam').textContent=huidigLand;
   updateVoortgang(); wachten=false;
+  if(zoomStand===3) berekenStand3Zoom();
 }
 
 // ── Canvas & variabelen ───────────────────────────────
@@ -509,6 +514,40 @@ function tekenLandIllustratie(feature,img,zoomstandActief){
   ctx.restore();
 }
 
+
+// ── Dynamische zoom voor stand 3: land vult 50% schermhoogte ──
+function berekenStand3Zoom() {
+  if(!hoverLand){ zoomStand3Factor = ZOOM_STANDEN_BASIS[2] * 1.8; return; }
+
+  const geom = hoverLand.geometry;
+  const polysLijst = geom.type==='Polygon' ? [geom.coordinates] : geom.coordinates;
+  let grootstePoly=null, grootsteN=0;
+  for(const poly of polysLijst){
+    if(poly[0] && poly[0].length>grootsteN){ grootsteN=poly[0].length; grootstePoly=poly; }
+  }
+  if(!grootstePoly){ zoomStand3Factor = ZOOM_STANDEN_BASIS[2]*1.8; return; }
+
+  // Meet de hoogte van het land in graden breedtegraad (lat-bereik)
+  let minLat=Infinity, maxLat=-Infinity;
+  for(const [lon,lat] of grootstePoly[0]){
+    minLat=Math.min(minLat,lat); maxLat=Math.max(maxLat,lat);
+  }
+  const landHoogteGraden = Math.max(0.05, maxLat-minLat);
+
+  // Bij zoomFactor=1: hoeveel pixels is 1 breedtegraad op het scherm?
+  // R_basis = Math.min(W,H)*0.58, bol-omtrek komt overeen met 180 graden (pool naar pool)
+  const basisR = Math.min(W,H)*0.58;
+  const pixelsPerGraadBasis = (basisR * Math.PI) / 180; // ruwe schatting
+
+  const huidigeHoogtePx = landHoogteGraden * pixelsPerGraadBasis;
+  const gewensteHoogtePx = H * DOEL_LAND_HOOGTE_FRACTIE;
+
+  let benodigdeZoom = gewensteHoogtePx / Math.max(1, huidigeHoogtePx);
+  // Begrens binnen redelijke grenzen
+  benodigdeZoom = Math.max(ZOOM_STANDEN_BASIS[2], Math.min(40, benodigdeZoom));
+  zoomStand3Factor = benodigdeZoom;
+}
+
 // ── Focusstip ─────────────────────────────────────────
 function tekenFocusStip(sx,sy){
   const puls=(Math.sin(Date.now()/400)+1)/2;
@@ -658,7 +697,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='z'||e.key==='Z'){
     zoomRichting = zoomRichting || 1;
     zoomStand += zoomRichting;
-    if(zoomStand >= 2){ zoomStand = 2; zoomRichting = -1; }
+    if(zoomStand >= 3){ zoomStand = 3; zoomRichting = -1; berekenStand3Zoom(); }
     if(zoomStand <= 0){ zoomStand = 0; zoomRichting = 1; }
     document.getElementById('zoom-indicator').textContent='🔍 '+ZOOM_NAMEN[zoomStand];
   }
@@ -672,7 +711,7 @@ const MAX_DRIFT=0.035, DRIFT_S=0.08;  // Wonky blijft dichter bij de focusstip
 let laatsteDx = 0;          // vorige horizontale richting (-1, 0, 1)
 let inOmbocht = false;      // bezig met richting omkeren?
 let ombochtTimer = 0;
-const OMBOCHT_DUUR = 75;    // ms vertraging bij omkeren - 3 fasen elk goed zichtbaar
+const OMBOCHT_DUUR = 130;   // ms vertraging bij omkeren - 3 fasen elk goed zichtbaar
 
 // ── Vlag-drop animatie timer ──────────────────────────
 let dropAnimatieActief = false;
@@ -821,7 +860,7 @@ function toonPunten(p){
 }
 
 document.addEventListener('keydown',e=>{
-  if(e.key===' '&&!wachten&&spelActief&&huidigModus==='spelen'){
+  if(e.key===' '&&!wachten&&spelActief&&huidigModus==='spelen'&&zoomStand!==3){
     const wx=W*(0.5+wonkySchermX);
     const wy=focusSy-90;
     dropAnimatieActief=true;
