@@ -198,7 +198,6 @@
     <div id="hint">Pijltjestoetsen · SHIFT = turbo · SPATIE = vlaggetje droppen · Z = zoom</div>
   </div>
   <div id="voortgang"><div id="ronde-display"></div></div>
-  <div id="debug-overlay" style="position:fixed;bottom:10px;left:10px;background:rgba(0,0,0,0.8);color:#0f0;font-family:monospace;font-size:11px;padding:8px;z-index:50;pointer-events:none;white-space:pre;"></div>
 </div>
 
 <script>
@@ -459,39 +458,49 @@ function tekenIJskap(poolLat,straal){
 function tekenLandIllustratie(feature,img,zoomstandActief){
   const geom=feature.geometry;
   const polysLijst=geom.type==='Polygon'?[geom.coordinates]:geom.coordinates;
-  let grootstePoly=null,grootsteN=0;
-  for(const poly of polysLijst){
-    if(poly[0]&&poly[0].length>grootsteN){grootsteN=poly[0].length;grootstePoly=poly;}
-  }
-  if(!grootstePoly) return;
+
+  // Stap 1: bereken de TOTALE bounding box van ALLE polygonen samen
+  // (inclusief alle eilanden) voor de illustratie-plaatsing
   let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
-  const ringPts=[];
-  for(const [lon,lat] of grootstePoly[0]){
-    const [x,y,z]=roteerPunt(lonLatTo3D(lon,lat),rotM);
-    if(z>0.01){
-      const sx=CX+x*R,sy=CY-y*R;
-      minX=Math.min(minX,sx);maxX=Math.max(maxX,sx);
-      minY=Math.min(minY,sy);maxY=Math.max(maxY,sy);
-      ringPts.push([sx,sy]);
+  let heeftPunten = false;
+  for(const poly of polysLijst){
+    if(!poly[0]) continue;
+    for(const [lon,lat] of poly[0]){
+      const [x,y,z]=roteerPunt(lonLatTo3D(lon,lat),rotM);
+      if(z>0.01){
+        const sx=CX+x*R,sy=CY-y*R;
+        minX=Math.min(minX,sx);maxX=Math.max(maxX,sx);
+        minY=Math.min(minY,sy);maxY=Math.max(maxY,sy);
+        heeftPunten=true;
+      }
     }
   }
-  if(ringPts.length<3||maxX-minX<5||maxY-minY<5) return;
+  if(!heeftPunten||maxX-minX<5||maxY-minY<5) return;
 
-  // Clip ALTIJD binnen de exacte landvorm
+  // Stap 2: clip-pad = ALLE polygonen samen (zodat ook eilanden meedoen)
   ctx.save();
   ctx.beginPath();
-  ctx.moveTo(ringPts[0][0],ringPts[0][1]);
-  for(let i=1;i<ringPts.length;i++) ctx.lineTo(ringPts[i][0],ringPts[i][1]);
-  ctx.closePath(); ctx.clip();
+  for(const poly of polysLijst){
+    if(!poly[0]||poly[0].length<3) continue;
+    let pen=false;
+    for(const [lon,lat] of poly[0]){
+      const [x,y,z]=roteerPunt(lonLatTo3D(lon,lat),rotM);
+      if(z>0.01){
+        const sx=CX+x*R,sy=CY-y*R;
+        if(!pen){ctx.moveTo(sx,sy);pen=true;}
+        else ctx.lineTo(sx,sy);
+      } else { pen=false; }
+    }
+    ctx.closePath();
+  }
+  ctx.clip();
 
+  // Stap 3: stretch-to-fit over de VOLLEDIGE bounding box
+  // Illustratie wordt uitgerekt van uiterst-links/boven tot uiterst-rechts/onder
   const breedte=maxX-minX, hoogte=maxY-minY;
-
-  // "Stretch to fit": illustratie vult EXACT de bounding box van het land,
-  // zowel breedte als hoogte - geen ruimte verloren, geen overlek.
-  // De illustratie wordt dus niet-proportioneel uitgerekt indien nodig.
-  ctx.globalAlpha = 0.93;
+  ctx.globalAlpha=0.93;
   ctx.drawImage(img, minX, minY, breedte, hoogte);
-  ctx.globalAlpha = 1.0;
+  ctx.globalAlpha=1.0;
   ctx.restore();
 }
 
@@ -631,8 +640,6 @@ function drawGlobe(){
     laadIllustratie(dutch);
     const ill=landIllustraties[dutch];
     if(ill) tekenLandIllustratie(hoverLand,ill,zoomStand);
-    // TIJDELIJKE DEBUG INFO
-    window.__debugInfo = { dutch, R: Math.round(R), zoomFactor: zoomFactor.toFixed(2), zoomStand, hasImg: !!ill };
   }
 
   // Breedtegraden
@@ -876,15 +883,7 @@ document.addEventListener('keydown',e=>{
 });
 
 // ── Loop ──────────────────────────────────────────────
-function loop(){
-  updateSpel(); drawGlobe();
-  if(window.__debugInfo){
-    const d = window.__debugInfo;
-    document.getElementById('debug-overlay').textContent =
-      `land: ${d.dutch}\nR: ${d.R}\nzoomFactor: ${d.zoomFactor}\nzoomStand: ${d.zoomStand}\nimg geladen: ${d.hasImg}`;
-  }
-  requestAnimationFrame(loop);
-}
+function loop(){ updateSpel(); drawGlobe(); requestAnimationFrame(loop); }
 </script>
 </body>
 </html>
