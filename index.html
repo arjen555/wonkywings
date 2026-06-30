@@ -487,29 +487,11 @@ function tekenLandIllustratie(feature,img,zoomstandActief){
 
   const breedte=maxX-minX, hoogte=maxY-minY;
 
-  // Adaptieve schaal: bij landview (stand 2) zorgen dat kleine landen
-  // tenminste ~45% van de schermhoogte vullen qua ILLUSTRATIE
-  // (de clip-vorm blijft exact het land - de illustratie mag eroverheen lekken)
-  let drawBreedte = breedte, drawHoogte = hoogte;
-  // Bij landview (stand 2): illustratie moet minimaal 65% van de schermhoogte vullen
-  const minGewensteHoogte = H * 0.85;
-  if(zoomstandActief >= 2 && hoogte < minGewensteHoogte){
-    const opschaal = minGewensteHoogte / hoogte;
-    drawBreedte = breedte * opschaal;
-    drawHoogte  = hoogte  * opschaal;
-  }
-
-  const cMidX = minX + breedte/2;
-  const cMidY = minY + hoogte/2;
-
-  const imgRatio = img.width/img.height;
-  const landRatio = drawBreedte/drawHoogte;
-  let drawW, drawH;
-  if(imgRatio > landRatio){ drawH = drawHoogte; drawW = drawHoogte*imgRatio; }
-  else { drawW = drawBreedte; drawH = drawBreedte/imgRatio; }
-
+  // "Stretch to fit": illustratie vult EXACT de bounding box van het land,
+  // zowel breedte als hoogte - geen ruimte verloren, geen overlek.
+  // De illustratie wordt dus niet-proportioneel uitgerekt indien nodig.
   ctx.globalAlpha = 0.93;
-  ctx.drawImage(img, cMidX - drawW/2, cMidY - drawH/2, drawW, drawH);
+  ctx.drawImage(img, minX, minY, breedte, hoogte);
   ctx.globalAlpha = 1.0;
   ctx.restore();
 }
