@@ -172,6 +172,9 @@
 <div id="spelscherm">
   <canvas id="globe"></canvas>
   <img id="wonky" src="images/Wonky.png" alt="Wonky"/>
+  <img id="wonky-frontaal" src="images/Timbo_frontaal.png" alt="Wonky frontaal" style="position:fixed;width:130px;pointer-events:none;z-index:11;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));"/>
+  <img id="wonky-turbo" src="images/Timbo_turbo.png" alt="Wonky turbo" style="position:fixed;width:140px;pointer-events:none;z-index:10;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
+  <img id="wonky-dropt" src="images/Timbo_dropt.png" alt="Wonky dropt" style="position:fixed;width:140px;pointer-events:none;z-index:10;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
   <img id="vlag-valt" src="images/vlag_valt.png" alt="vlag"/>
   <img id="vlag-grond" src="images/vlag_grond.png" alt="vlag"/>
   <div id="land-hover"></div>
@@ -638,6 +641,17 @@ document.addEventListener('keyup',e=>{ keys[e.key]=false; });
 let wonkySchermX=0;
 const MAX_DRIFT=0.10, DRIFT_S=0.08;
 
+// ── Richting-omkeer animatie ──────────────────────────
+let laatsteDx = 0;          // vorige horizontale richting (-1, 0, 1)
+let inOmbocht = false;      // bezig met richting omkeren?
+let ombochtTimer = 0;
+const OMBOCHT_DUUR = 350;   // ms vertraging bij omkeren
+
+// ── Vlag-drop animatie timer ──────────────────────────
+let dropAnimatieActief = false;
+let dropAnimatieTimer = 0;
+const DROP_ANIMATIE_DUUR = 600;
+
 function updateSpel(){
   if(!spelActief) return;
 
@@ -648,14 +662,33 @@ function updateSpel(){
   CX=W/2; CY=H*0.56;
 
   // Besturing
-  const s=(keys['Shift']?1.8:0.7)/zoomFactor;
+  const turbo = keys['Shift'];
+  const s=(turbo?1.8:0.7)/zoomFactor;
   let dx=0,dy=0;
   if(keys['ArrowLeft'])  dx=-1;
   if(keys['ArrowRight']) dx= 1;
   if(keys['ArrowUp'])    dy= 1;
   if(keys['ArrowDown'])  dy=-1;
 
-  lonSnelheid+=dx*s*0.15; latSnelheid+=dy*s*0.15;
+  // Detecteer richting-omkeer (links<->rechts wissel)
+  if(dx !== 0 && laatsteDx !== 0 && dx !== laatsteDx && !inOmbocht){
+    inOmbocht = true;
+    ombochtTimer = performance.now();
+  }
+  if(dx !== 0) laatsteDx = dx;
+
+  // Tijdens ombocht: even geen nieuwe input, vaart remt af
+  let effDx = dx, effDy = dy;
+  if(inOmbocht){
+    const verstreken = performance.now() - ombochtTimer;
+    if(verstreken < OMBOCHT_DUUR){
+      effDx = 0; // geen versnelling tijdens de bocht
+    } else {
+      inOmbocht = false;
+    }
+  }
+
+  lonSnelheid+=effDx*s*0.15; latSnelheid+=effDy*s*0.15;
   lonSnelheid*=VERTRAGING; latSnelheid*=VERTRAGING;
   wonkyLon+=lonSnelheid; wonkyLat+=latSnelheid;
   if(wonkyLon>180) wonkyLon-=360; if(wonkyLon<-180) wonkyLon+=360;
@@ -670,9 +703,39 @@ function updateSpel(){
   // Wonky positie
   wonkySchermX+=(dx*MAX_DRIFT-wonkySchermX)*DRIFT_S;
   const wx=W*(0.5+wonkySchermX), wy=focusSy-90;
-  wonkyEl.style.left=(wx-70)+'px'; wonkyEl.style.top=(wy-70)+'px';
-  const scaleX=dx<0?1:-1;
-  wonkyEl.style.transform=`scaleX(${scaleX}) rotate(${dx*14-dy*12}deg)`;
+
+  const wonkyFrontaal = document.getElementById('wonky-frontaal');
+  const wonkyTurbo = document.getElementById('wonky-turbo');
+  const wonkyDropt = document.getElementById('wonky-dropt');
+
+  // Tijdens ombocht: toon frontale afbeelding
+  const toontFrontaal = inOmbocht && (performance.now() - ombochtTimer) < OMBOCHT_DUUR;
+
+  if(dropAnimatieActief){
+    // Vlag droppen heeft prioriteit
+    wonkyEl.style.display='none'; wonkyFrontaal.style.display='none'; wonkyTurbo.style.display='none';
+    wonkyDropt.style.display='block';
+    wonkyDropt.style.left=(wx-70)+'px'; wonkyDropt.style.top=(wy-70)+'px';
+    if(performance.now()-dropAnimatieTimer > DROP_ANIMATIE_DUUR) dropAnimatieActief=false;
+  } else if(toontFrontaal){
+    wonkyEl.style.display='none'; wonkyTurbo.style.display='none'; wonkyDropt.style.display='none';
+    wonkyFrontaal.style.display='block';
+    wonkyFrontaal.style.left=(wx-65)+'px'; wonkyFrontaal.style.top=(wy-65)+'px';
+  } else if(turbo){
+    wonkyEl.style.display='none'; wonkyFrontaal.style.display='none'; wonkyDropt.style.display='none';
+    wonkyTurbo.style.display='block';
+    wonkyTurbo.style.left=(wx-70)+'px'; wonkyTurbo.style.top=(wy-70)+'px';
+    const scaleX=dx<0?1:-1;
+    // dy>0 (omhoog/noord) = neus omhoog, dy<0 (omlaag/zuid) = neus omlaag
+    wonkyTurbo.style.transform=`scaleX(${scaleX}) rotate(${dx*14+dy*12}deg)`;
+  } else {
+    wonkyFrontaal.style.display='none'; wonkyTurbo.style.display='none'; wonkyDropt.style.display='none';
+    wonkyEl.style.display='block';
+    wonkyEl.style.left=(wx-70)+'px'; wonkyEl.style.top=(wy-70)+'px';
+    const scaleX=dx<0?1:-1;
+    // Gefixed: dy>0 (omhoog) = neus omhoog (+rot), dy<0 (omlaag) = neus omlaag (-rot)
+    wonkyEl.style.transform=`scaleX(${scaleX}) rotate(${dx*14+dy*12}deg)`;
+  }
 
   // Landdetectie
   hoverLand=getLandOpPunt(wonkyLon,wonkyLat);
@@ -697,8 +760,10 @@ function toonPunten(p){
 
 document.addEventListener('keydown',e=>{
   if(e.key===' '&&!wachten&&spelActief&&huidigModus==='spelen'){
-    const wx=parseFloat(wonkyEl.style.left)+70;
-    const wy=parseFloat(wonkyEl.style.top)+70;
+    const wx=W*(0.5+wonkySchermX);
+    const wy=focusSy-90;
+    dropAnimatieActief=true;
+    dropAnimatieTimer=performance.now();
     dropVlag(wx,wy,focusSx,focusSy);
     wachten=true;
     setTimeout(()=>{
