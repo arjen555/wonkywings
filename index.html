@@ -459,25 +459,34 @@ function tekenLandIllustratie(feature,img,zoomstandActief){
   const geom=feature.geometry;
   const polysLijst=geom.type==='Polygon'?[geom.coordinates]:geom.coordinates;
 
-  // Stap 1: bereken de TOTALE bounding box van ALLE polygonen samen
-  // (inclusief alle eilanden) voor de illustratie-plaatsing
-  let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
-  let heeftPunten = false;
+  // Stap 1: vind de grootste polygoon (vasteland) voor de PLAATSING van de illustratie
+  let grootstePoly=null, grootsteOpp=0;
   for(const poly of polysLijst){
-    if(!poly[0]) continue;
-    for(const [lon,lat] of poly[0]){
-      const [x,y,z]=roteerPunt(lonLatTo3D(lon,lat),rotM);
-      if(z>0.01){
-        const sx=CX+x*R,sy=CY-y*R;
-        minX=Math.min(minX,sx);maxX=Math.max(maxX,sx);
-        minY=Math.min(minY,sy);maxY=Math.max(maxY,sy);
-        heeftPunten=true;
-      }
+    if(!poly[0]||poly[0].length<3) continue;
+    // Schat oppervlak via shoelace formule in lon/lat ruimte
+    let opp=0;
+    for(let i=0,j=poly[0].length-1;i<poly[0].length;j=i++){
+      opp+=Math.abs((poly[0][j][0]-poly[0][i][0])*(poly[0][j][1]+poly[0][i][1]));
+    }
+    if(opp>grootsteOpp){ grootsteOpp=opp; grootstePoly=poly; }
+  }
+  if(!grootstePoly) return;
+
+  // Bounding box van ALLEEN het vasteland (grootste polygoon) voor plaatsing
+  let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+  let heeftPunten=false;
+  for(const [lon,lat] of grootstePoly[0]){
+    const [x,y,z]=roteerPunt(lonLatTo3D(lon,lat),rotM);
+    if(z>0.01){
+      const sx=CX+x*R,sy=CY-y*R;
+      minX=Math.min(minX,sx);maxX=Math.max(maxX,sx);
+      minY=Math.min(minY,sy);maxY=Math.max(maxY,sy);
+      heeftPunten=true;
     }
   }
   if(!heeftPunten||maxX-minX<5||maxY-minY<5) return;
 
-  // Stap 2: clip-pad = ALLE polygonen samen (zodat ook eilanden meedoen)
+  // Stap 2: clip = ALLE polygonen (inclusief eilanden zichtbaar)
   ctx.save();
   ctx.beginPath();
   for(const poly of polysLijst){
@@ -495,8 +504,7 @@ function tekenLandIllustratie(feature,img,zoomstandActief){
   }
   ctx.clip();
 
-  // Stap 3: stretch-to-fit over de VOLLEDIGE bounding box
-  // Illustratie wordt uitgerekt van uiterst-links/boven tot uiterst-rechts/onder
+  // Stap 3: stretch-to-fit op bounding box van het VASTELAND
   const breedte=maxX-minX, hoogte=maxY-minY;
   ctx.globalAlpha=0.93;
   ctx.drawImage(img, minX, minY, breedte, hoogte);
