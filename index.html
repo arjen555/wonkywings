@@ -733,10 +733,14 @@ function updateSpel(){
 
     if(ombochtFractie < 0.28){
       // Fase 1: naar_frontaal - oude vliegrichting draait in
+      // laatsteDx = NIEUWE eindrichting. Oude richting was dus het tegenovergestelde.
+      // Timbo_naar_frontaal.png kijkt standaard naar LINKS (basis = niet gespiegeld)
+      // Als oude richting LINKS was (dus nieuwe = rechts, draaitNaarLinks=false): GEEN spiegel
+      // Als oude richting RECHTS was (dus nieuwe = links, draaitNaarLinks=true): WEL spiegel
       wonkyFrontaal.style.display='none';
       wonkyNaarFrontaal.style.display='block';
       wonkyNaarFrontaal.style.left=(wx-67)+'px'; wonkyNaarFrontaal.style.top=(wy-67)+'px';
-      const sc = draaitNaarLinks ? 1 : -1;
+      const sc = draaitNaarLinks ? -1 : 1;
       wonkyNaarFrontaal.style.transform = `scaleX(${sc})`;
     } else if(ombochtFractie < 0.72){
       // Fase 2: volledig frontaal (langste fase, het "moment" van de bocht)
@@ -748,7 +752,7 @@ function updateSpel(){
       wonkyFrontaal.style.display='none';
       wonkyNaarFrontaal.style.display='block';
       wonkyNaarFrontaal.style.left=(wx-67)+'px'; wonkyNaarFrontaal.style.top=(wy-67)+'px';
-      const sc = draaitNaarLinks ? -1 : 1;
+      const sc = draaitNaarLinks ? 1 : -1;
       wonkyNaarFrontaal.style.transform = `scaleX(${sc})`;
     }
   } else if(turbo){
