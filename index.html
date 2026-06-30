@@ -173,6 +173,7 @@
   <canvas id="globe"></canvas>
   <img id="wonky" src="images/Wonky.png" alt="Wonky"/>
   <img id="wonky-frontaal" src="images/Timbo_frontaal.png" alt="Wonky frontaal" style="position:fixed;width:130px;pointer-events:none;z-index:11;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));"/>
+  <img id="wonky-naar-frontaal" src="images/Timbo_naar_frontaal.png" alt="Wonky naar frontaal" style="position:fixed;width:135px;pointer-events:none;z-index:11;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
   <img id="wonky-turbo" src="images/Timbo_turbo.png" alt="Wonky turbo" style="position:fixed;width:140px;pointer-events:none;z-index:10;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
   <img id="wonky-dropt" src="images/Timbo_dropt.png" alt="Wonky dropt" style="position:fixed;width:140px;pointer-events:none;z-index:10;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
   <img id="vlag-valt" src="images/vlag_valt.png" alt="vlag"/>
@@ -645,7 +646,7 @@ const MAX_DRIFT=0.035, DRIFT_S=0.08;  // Wonky blijft dichter bij de focusstip
 let laatsteDx = 0;          // vorige horizontale richting (-1, 0, 1)
 let inOmbocht = false;      // bezig met richting omkeren?
 let ombochtTimer = 0;
-const OMBOCHT_DUUR = 600;   // ms vertraging bij omkeren (langer = meer frontaal zichtbaar)
+const OMBOCHT_DUUR = 900;   // ms vertraging bij omkeren - 3 fasen elk goed zichtbaar
 
 // ── Vlag-drop animatie timer ──────────────────────────
 let dropAnimatieActief = false;
@@ -704,34 +705,63 @@ function updateSpel(){
   // zodat Wonky synchroon blijft met de focusstip tijdens een ombocht
   const driftDoel = Math.max(-1, Math.min(1, lonSnelheid * 3)) * MAX_DRIFT;
   wonkySchermX+=(driftDoel-wonkySchermX)*DRIFT_S;
-  const wx=W*(0.5+wonkySchermX), wy=focusSy-90;
+  // Wonky's positie is relatief aan de focusstip zelf, niet aan het scherm-midden
+  const wx=focusSx + wonkySchermX*W, wy=focusSy-90;
 
   const wonkyFrontaal = document.getElementById('wonky-frontaal');
+  const wonkyNaarFrontaal = document.getElementById('wonky-naar-frontaal');
   const wonkyTurbo = document.getElementById('wonky-turbo');
   const wonkyDropt = document.getElementById('wonky-dropt');
 
-  // Tijdens ombocht: toon frontale afbeelding
-  const toontFrontaal = inOmbocht && (performance.now() - ombochtTimer) < OMBOCHT_DUUR;
+  // Tijdens ombocht: 3 fasen - naar_frontaal -> frontaal -> naar_frontaal (gespiegeld)
+  const ombochtVerstreken = performance.now() - ombochtTimer;
+  const toontOmbocht = inOmbocht && ombochtVerstreken < OMBOCHT_DUUR;
+  const ombochtFractie = toontOmbocht ? ombochtVerstreken / OMBOCHT_DUUR : 0;
+  // laatsteDx geeft de richting AAN waar Wonky NAARTOE draait (na de bocht)
+  // dus VOOR de bocht kwam hij van de andere kant
+  const draaitNaarLinks = laatsteDx < 0; // eindrichting na de bocht
 
   if(dropAnimatieActief){
     // Vlag droppen heeft prioriteit
-    wonkyEl.style.display='none'; wonkyFrontaal.style.display='none'; wonkyTurbo.style.display='none';
+    wonkyEl.style.display='none'; wonkyFrontaal.style.display='none';
+    wonkyNaarFrontaal.style.display='none'; wonkyTurbo.style.display='none';
     wonkyDropt.style.display='block';
     wonkyDropt.style.left=(wx-70)+'px'; wonkyDropt.style.top=(wy-70)+'px';
     if(performance.now()-dropAnimatieTimer > DROP_ANIMATIE_DUUR) dropAnimatieActief=false;
-  } else if(toontFrontaal){
+  } else if(toontOmbocht){
     wonkyEl.style.display='none'; wonkyTurbo.style.display='none'; wonkyDropt.style.display='none';
-    wonkyFrontaal.style.display='block';
-    wonkyFrontaal.style.left=(wx-65)+'px'; wonkyFrontaal.style.top=(wy-65)+'px';
+
+    if(ombochtFractie < 0.28){
+      // Fase 1: naar_frontaal - oude vliegrichting draait in
+      wonkyFrontaal.style.display='none';
+      wonkyNaarFrontaal.style.display='block';
+      wonkyNaarFrontaal.style.left=(wx-67)+'px'; wonkyNaarFrontaal.style.top=(wy-67)+'px';
+      const sc = draaitNaarLinks ? 1 : -1;
+      wonkyNaarFrontaal.style.transform = `scaleX(${sc})`;
+    } else if(ombochtFractie < 0.72){
+      // Fase 2: volledig frontaal (langste fase, het "moment" van de bocht)
+      wonkyNaarFrontaal.style.display='none';
+      wonkyFrontaal.style.display='block';
+      wonkyFrontaal.style.left=(wx-65)+'px'; wonkyFrontaal.style.top=(wy-65)+'px';
+    } else {
+      // Fase 3: naar_frontaal - draait door naar nieuwe richting
+      wonkyFrontaal.style.display='none';
+      wonkyNaarFrontaal.style.display='block';
+      wonkyNaarFrontaal.style.left=(wx-67)+'px'; wonkyNaarFrontaal.style.top=(wy-67)+'px';
+      const sc = draaitNaarLinks ? -1 : 1;
+      wonkyNaarFrontaal.style.transform = `scaleX(${sc})`;
+    }
   } else if(turbo){
-    wonkyEl.style.display='none'; wonkyFrontaal.style.display='none'; wonkyDropt.style.display='none';
+    wonkyEl.style.display='none'; wonkyFrontaal.style.display='none';
+    wonkyNaarFrontaal.style.display='none'; wonkyDropt.style.display='none';
     wonkyTurbo.style.display='block';
     wonkyTurbo.style.left=(wx-70)+'px'; wonkyTurbo.style.top=(wy-70)+'px';
     const scaleX=dx<0?1:-1;
     // dy>0 (omhoog/noord) = neus omhoog, dy<0 (omlaag/zuid) = neus omlaag
     wonkyTurbo.style.transform=`scaleX(${scaleX}) rotate(${dx*14+dy*12}deg)`;
   } else {
-    wonkyFrontaal.style.display='none'; wonkyTurbo.style.display='none'; wonkyDropt.style.display='none';
+    wonkyFrontaal.style.display='none'; wonkyNaarFrontaal.style.display='none';
+    wonkyTurbo.style.display='none'; wonkyDropt.style.display='none';
     wonkyEl.style.display='block';
     wonkyEl.style.left=(wx-70)+'px'; wonkyEl.style.top=(wy-70)+'px';
     const scaleX=dx<0?1:-1;
