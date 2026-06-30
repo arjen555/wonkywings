@@ -721,8 +721,8 @@ const DROP_ANIMATIE_DUUR = 600;
 function updateSpel(){
   if(!spelActief) return;
 
-  // Zoom animatie
-  const doelZoom=ZOOM_STANDEN[zoomStand];
+  // Zoom animatie (stand 3 is dynamisch berekend per land)
+  const doelZoom = zoomStand===3 ? zoomStand3Factor : ZOOM_STANDEN_BASIS[zoomStand];
   zoomFactor+=(doelZoom-zoomFactor)*ZOOM_SNELHEID;
   R=Math.min(W,H)*0.58*zoomFactor;
   CX=W/2; CY=H*0.56;
