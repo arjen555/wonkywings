@@ -198,6 +198,7 @@
     <div id="hint">Pijltjestoetsen · SHIFT = turbo · SPATIE = vlaggetje droppen · Z = zoom</div>
   </div>
   <div id="voortgang"><div id="ronde-display"></div></div>
+  <div id="debug-overlay" style="position:fixed;bottom:10px;left:10px;background:rgba(0,0,0,0.8);color:#0f0;font-family:monospace;font-size:11px;padding:8px;z-index:50;pointer-events:none;white-space:pre;"></div>
 </div>
 
 <script>
@@ -630,6 +631,8 @@ function drawGlobe(){
     laadIllustratie(dutch);
     const ill=landIllustraties[dutch];
     if(ill) tekenLandIllustratie(hoverLand,ill,zoomStand);
+    // TIJDELIJKE DEBUG INFO
+    window.__debugInfo = { dutch, R: Math.round(R), zoomFactor: zoomFactor.toFixed(2), zoomStand, hasImg: !!ill };
   }
 
   // Breedtegraden
@@ -873,7 +876,15 @@ document.addEventListener('keydown',e=>{
 });
 
 // ── Loop ──────────────────────────────────────────────
-function loop(){ updateSpel(); drawGlobe(); requestAnimationFrame(loop); }
+function loop(){
+  updateSpel(); drawGlobe();
+  if(window.__debugInfo){
+    const d = window.__debugInfo;
+    document.getElementById('debug-overlay').textContent =
+      `land: ${d.dutch}\nR: ${d.R}\nzoomFactor: ${d.zoomFactor}\nzoomStand: ${d.zoomStand}\nimg geladen: ${d.hasImg}`;
+  }
+  requestAnimationFrame(loop);
+}
 </script>
 </body>
 </html>
