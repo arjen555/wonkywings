@@ -639,13 +639,13 @@ document.addEventListener('keydown',e=>{
 document.addEventListener('keyup',e=>{ keys[e.key]=false; });
 
 let wonkySchermX=0;
-const MAX_DRIFT=0.10, DRIFT_S=0.08;
+const MAX_DRIFT=0.035, DRIFT_S=0.08;  // Wonky blijft dichter bij de focusstip
 
 // ── Richting-omkeer animatie ──────────────────────────
 let laatsteDx = 0;          // vorige horizontale richting (-1, 0, 1)
 let inOmbocht = false;      // bezig met richting omkeren?
 let ombochtTimer = 0;
-const OMBOCHT_DUUR = 350;   // ms vertraging bij omkeren
+const OMBOCHT_DUUR = 600;   // ms vertraging bij omkeren (langer = meer frontaal zichtbaar)
 
 // ── Vlag-drop animatie timer ──────────────────────────
 let dropAnimatieActief = false;
@@ -700,8 +700,10 @@ function updateSpel(){
   const fp=roteerPunt(lonLatTo3D(wonkyLon,wonkyLat),rotM);
   focusSx=CX+fp[0]*R; focusSy=CY-fp[1]*R;
 
-  // Wonky positie
-  wonkySchermX+=(dx*MAX_DRIFT-wonkySchermX)*DRIFT_S;
+  // Wonky positie - drift volgt de WERKELIJKE snelheid, niet de ruwe input
+  // zodat Wonky synchroon blijft met de focusstip tijdens een ombocht
+  const driftDoel = Math.max(-1, Math.min(1, lonSnelheid * 3)) * MAX_DRIFT;
+  wonkySchermX+=(driftDoel-wonkySchermX)*DRIFT_S;
   const wx=W*(0.5+wonkySchermX), wy=focusSy-90;
 
   const wonkyFrontaal = document.getElementById('wonky-frontaal');
