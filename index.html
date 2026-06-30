@@ -244,7 +244,6 @@ let zoomRichting = 1; // 1=inzoomen, -1=uitzoomen (cyclus 0-1-2-3-2-1-0)
 const ZOOM_STANDEN_BASIS = [1.0, 2.2, 4.5, null]; // null = dynamisch
 const ZOOM_NAMEN = ['Wereld', 'Dichterbij', 'Landview', 'Close-up'];
 let zoomFactor = 1.0;
-let zoomStand3Factor = 4.5; // dynamisch berekende factor voor stand 3
 const ZOOM_SNELHEID = 0.07;
 const DOEL_LAND_HOOGTE_FRACTIE = 0.50; // land moet 50% schermhoogte vullen in stand 3
 
@@ -333,7 +332,6 @@ function nieuwLand(){
   huidigLand=spelLanden[huidigLandIdx];
   document.getElementById('land-naam').textContent=huidigLand;
   updateVoortgang(); wachten=false;
-  if(zoomStand===3) berekenStand3Zoom();
 }
 
 // ── Canvas & variabelen ───────────────────────────────
@@ -498,8 +496,16 @@ function tekenLandIllustratie(feature,img,zoomstandActief){
 
 
 // ── Dynamische zoom voor stand 3: land vult 50% schermhoogte ──
+// Cache: laatst-gemeten land voor stand-3-zoom, om herberekening te vermijden
+// als je nog boven hetzelfde land vliegt
+let stand3LaatsteLand = null;
+let stand3DoelFactor = ZOOM_STANDEN_BASIS[2] * 1.8; // fallback
+
 function berekenStand3Zoom() {
-  if(!hoverLand){ zoomStand3Factor = ZOOM_STANDEN_BASIS[2] * 1.8; return; }
+  if(!hoverLand){
+    // Geen land onder Wonky: behoud de laatste waarde (geen harde fallback-sprong)
+    return;
+  }
 
   const geom = hoverLand.geometry;
   const polysLijst = geom.type==='Polygon' ? [geom.coordinates] : geom.coordinates;
@@ -507,7 +513,7 @@ function berekenStand3Zoom() {
   for(const poly of polysLijst){
     if(poly[0] && poly[0].length>grootsteN){ grootsteN=poly[0].length; grootstePoly=poly; }
   }
-  if(!grootstePoly){ zoomStand3Factor = ZOOM_STANDEN_BASIS[2]*1.8; return; }
+  if(!grootstePoly) return;
 
   // Meet de hoogte van het land in graden breedtegraad (lat-bereik)
   let minLat=Infinity, maxLat=-Infinity;
@@ -516,18 +522,17 @@ function berekenStand3Zoom() {
   }
   const landHoogteGraden = Math.max(0.05, maxLat-minLat);
 
-  // Bij zoomFactor=1: hoeveel pixels is 1 breedtegraad op het scherm?
-  // R_basis = Math.min(W,H)*0.58, bol-omtrek komt overeen met 180 graden (pool naar pool)
   const basisR = Math.min(W,H)*0.58;
-  const pixelsPerGraadBasis = (basisR * Math.PI) / 180; // ruwe schatting
+  const pixelsPerGraadBasis = (basisR * Math.PI) / 180;
 
   const huidigeHoogtePx = landHoogteGraden * pixelsPerGraadBasis;
   const gewensteHoogtePx = H * DOEL_LAND_HOOGTE_FRACTIE;
 
   let benodigdeZoom = gewensteHoogtePx / Math.max(1, huidigeHoogtePx);
-  // Begrens binnen redelijke grenzen
   benodigdeZoom = Math.max(ZOOM_STANDEN_BASIS[2], Math.min(40, benodigdeZoom));
-  zoomStand3Factor = benodigdeZoom;
+
+  stand3DoelFactor = benodigdeZoom;
+  stand3LaatsteLand = hoverLand;
 }
 
 // ── Focusstip ─────────────────────────────────────────
@@ -679,7 +684,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='z'||e.key==='Z'){
     zoomRichting = zoomRichting || 1;
     zoomStand += zoomRichting;
-    if(zoomStand >= 3){ zoomStand = 3; zoomRichting = -1; berekenStand3Zoom(); }
+    if(zoomStand >= 3){ zoomStand = 3; zoomRichting = -1; }
     if(zoomStand <= 0){ zoomStand = 0; zoomRichting = 1; }
     document.getElementById('zoom-indicator').textContent='🔍 '+ZOOM_NAMEN[zoomStand];
   }
@@ -703,9 +708,12 @@ const DROP_ANIMATIE_DUUR = 600;
 function updateSpel(){
   if(!spelActief) return;
 
-  // Zoom animatie (stand 3 is dynamisch berekend per land)
-  const doelZoom = zoomStand===3 ? zoomStand3Factor : ZOOM_STANDEN_BASIS[zoomStand];
-  zoomFactor+=(doelZoom-zoomFactor)*ZOOM_SNELHEID;
+  // Zoom animatie (stand 3 is dynamisch berekend, continu bijgewerkt per land)
+  if(zoomStand===3) berekenStand3Zoom(); // elke frame opnieuw meten o.b.v. hoverLand
+  const doelZoom = zoomStand===3 ? stand3DoelFactor : ZOOM_STANDEN_BASIS[zoomStand];
+  // Vloeiende overgang - iets trager bij stand 3 zodat het rustig "ademt" ipv schokt
+  const zoomSnelheidNu = zoomStand===3 ? ZOOM_SNELHEID*0.6 : ZOOM_SNELHEID;
+  zoomFactor+=(doelZoom-zoomFactor)*zoomSnelheidNu;
   R=Math.min(W,H)*0.58*zoomFactor;
   CX=W/2; CY=H*0.56;
 
