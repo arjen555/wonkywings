@@ -245,7 +245,8 @@ const ZOOM_STANDEN_BASIS = [1.0, 2.2, 4.5, null]; // null = dynamisch
 const ZOOM_NAMEN = ['Wereld', 'Dichterbij', 'Landview', 'Close-up'];
 let zoomFactor = 1.0;
 const ZOOM_SNELHEID = 0.07;
-const DOEL_LAND_HOOGTE_FRACTIE = 0.50; // land moet 50% schermhoogte vullen in stand 3
+const DOEL_LAND_HOOGTE_FRACTIE = 0.65; // land moet 65% schermhoogte vullen in stand 3
+const DOEL_LAND_BREEDTE_FRACTIE = 0.75; // land mag max. 75% schermbreedte vullen in stand 3
 
 // ── Illustraties ──────────────────────────────────────
 const landIllustraties = {};
@@ -551,14 +552,39 @@ function berekenStand3Zoom() {
     minLat=Math.min(minLat,lat); maxLat=Math.max(maxLat,lat);
   }
   const landHoogteGraden = Math.max(0.05, maxLat-minLat);
+  const gemLat = (minLat+maxLat)/2;
+
+  // Meet de breedte van het land in graden lengtegraad (lon-bereik).
+  // Let op: kan niet zomaar met max-min, want landen als Rusland lopen
+  // over de datumgrens (±180°) heen. Daarom zoeken we de grootste "lege
+  // hap" tussen de lengtegraden op een cirkel — de rest is het land.
+  const lons = grootstePoly[0].map(([lon]) => lon).slice().sort((a,b)=>a-b);
+  let grootsteHap = 0;
+  for(let i=0;i<lons.length;i++){
+    const huidige = lons[i];
+    const volgende = (i===lons.length-1) ? lons[0]+360 : lons[i+1];
+    const hap = volgende - huidige;
+    if(hap > grootsteHap) grootsteHap = hap;
+  }
+  const landBreedteGraden = Math.max(0.05, 360 - grootsteHap);
 
   const basisR = Math.min(W,H)*0.58;
   const pixelsPerGraadBasis = (basisR * Math.PI) / 180;
 
+  // Lengtegraden liggen dichter bij elkaar naarmate je verder van de
+  // evenaar zit (denk aan de aardbol) — vandaar de cos(breedtegraad)-correctie.
   const huidigeHoogtePx = landHoogteGraden * pixelsPerGraadBasis;
-  const gewensteHoogtePx = H * DOEL_LAND_HOOGTE_FRACTIE;
+  const huidigeBreedtePx = landBreedteGraden * pixelsPerGraadBasis * Math.cos(gemLat * Math.PI/180);
 
-  let benodigdeZoom = gewensteHoogtePx / Math.max(1, huidigeHoogtePx);
+  const gewensteHoogtePx = H * DOEL_LAND_HOOGTE_FRACTIE;
+  const gewensteBreedtePx = W * DOEL_LAND_BREEDTE_FRACTIE;
+
+  const benodigdeZoomHoogte = gewensteHoogtePx / Math.max(1, huidigeHoogtePx);
+  const benodigdeZoomBreedte = gewensteBreedtePx / Math.max(1, huidigeBreedtePx);
+
+  // De kleinste van de twee wint: zo blijft het land altijd binnen
+  // beeld, zowel in hoogte als in breedte.
+  let benodigdeZoom = Math.min(benodigdeZoomHoogte, benodigdeZoomBreedte);
   benodigdeZoom = Math.max(ZOOM_STANDEN_BASIS[2], Math.min(40, benodigdeZoom));
 
   stand3DoelFactor = benodigdeZoom;
