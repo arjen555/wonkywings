@@ -103,6 +103,27 @@
       cursor:pointer;
     }
     #scorebord-terug-btn:hover { background:rgba(255,255,255,0.22); }
+
+    /* ── JOKER ── */
+    #joker-knop {
+      position:fixed; right:18px; bottom:18px; z-index:20; display:none;
+      width:74px; height:74px; border-radius:50%;
+      cursor:pointer; transition:transform 0.15s, opacity 0.2s, filter 0.2s;
+      filter:drop-shadow(0 4px 14px rgba(0,0,0,0.5));
+    }
+    #joker-knop img { width:100%; height:100%; object-fit:cover; border-radius:50%; border:2px solid #ffd700; display:block; }
+    #joker-knop:hover { transform:scale(1.06); }
+    #joker-knop.joker-uit { opacity:0.35; filter:grayscale(1); cursor:default; pointer-events:none; }
+    #joker-badge {
+      position:absolute; top:-4px; right:-4px; background:#ffd700; color:#000;
+      font-size:0.65rem; font-weight:900; border-radius:50%; width:22px; height:22px;
+      display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,0.5);
+    }
+    #joker-countdown-wrap {
+      position:absolute; left:0; right:0; bottom:-10px; height:5px;
+      background:rgba(255,255,255,0.15); border-radius:4px; overflow:hidden; display:none;
+    }
+    #joker-countdown-fill { height:100%; width:100%; background:linear-gradient(90deg,#ffd700,#ff9900); }
     .level-bol {
       display:flex; flex-direction:row; align-items:center; gap:10px;
       background:rgba(255,255,255,0.06); border:2px solid rgba(255,255,255,0.12);
@@ -236,6 +257,11 @@
   <div id="correctie-land-naam"></div>
   <div id="feedback"></div>
   <div id="punten-feedback"></div>
+  <div id="joker-knop" onclick="gebruikJoker()">
+    <img src="images/joker.png" alt="Joker"/>
+    <div id="joker-badge">1×</div>
+    <div id="joker-countdown-wrap"><div id="joker-countdown-fill"></div></div>
+  </div>
   <div id="hud-top">
     <div id="hud-links">
       <button id="terug-btn" onclick="naarStart()">← Menu</button>
@@ -260,7 +286,7 @@ const GEOJSON = {"type":"FeatureCollection","features":[{"type":"Feature","prope
 
 // ── Levels ────────────────────────────────────────────
 const LEVELS = {
-  1:{ naam:'Europa Starter',   landen:["Frankrijk", "Duitsland", "Spanje", "Italië", "Nederland", "België", "Polen", "Zweden", "Noorwegen", "Denemarken", "Portugal", "Oostenrijk", "Zwitserland", "Griekenland", "Ierland"], altijd_alle:true,  beschikbaar:true },
+  1:{ naam:'Europa Starter',   landen:["Frankrijk", "Duitsland", "Spanje", "Italië", "Nederland", "België", "Polen", "Zweden", "Noorwegen", "Denemarken", "Portugal", "Oostenrijk", "Zwitserland", "Griekenland", "Ierland", "Verenigd Koninkrijk"], altijd_alle:false, beschikbaar:true },
   2:{ naam:'Europa Prof',      landen:["Rusland", "Duitsland", "Verenigd Koninkrijk", "Frankrijk", "Italië", "Spanje", "Oekraïne", "Polen", "Roemenië", "Nederland", "België", "Zweden", "Tsjechië", "Portugal", "Griekenland", "Hongarije", "Oostenrijk", "Wit-Rusland", "Zwitserland", "Bulgarije", "Servië", "Denemarken", "Noorwegen", "Finland", "Slowakije", "Ierland", "Kroatië", "Bosnië-Herzegovina", "Moldavië", "Litouwen", "Albanië", "Slovenië", "Letland", "Noord-Macedonië", "Estland", "Luxemburg", "Montenegro", "Malta", "IJsland", "Andorra", "Liechtenstein", "Monaco", "San Marino", "Vaticaanstad"], altijd_alle:false, beschikbaar:true },
   3:{ naam:'Wereld Starter',   landen:["Frankrijk", "Spanje", "Nederland", "Italië", "Duitsland", "Verenigd Koninkrijk", "Turkije", "Verenigde Staten", "Canada", "Mexico", "Brazilië", "China", "India", "Japan", "Indonesië", "Australië", "Egypte", "Zuid-Afrika", "Rusland"], altijd_alle:false, beschikbaar:true },
   4:{ naam:'Wereld Prof',      landen:["Frankrijk", "Spanje", "Nederland", "Italië", "Duitsland", "Verenigd Koninkrijk", "Turkije", "Verenigde Staten", "Canada", "Mexico", "Brazilië", "China", "India", "Japan", "Indonesië", "Australië", "Egypte", "Zuid-Afrika", "Rusland", "Portugal", "Nieuw-Zeeland", "Zweden", "Noorwegen", "Finland", "Polen", "Denemarken", "Ierland", "IJsland", "Griekenland", "Argentinië", "Peru", "Chili", "Saoedi-Arabië", "Marokko", "Nigeria", "Namibië", "Algerije", "Antarctica", "België", "Roemenië", "Wit-Rusland", "Mongolië", "Iran", "Vietnam", "Groenland"], altijd_alle:false, beschikbaar:true },
@@ -297,6 +323,8 @@ let vluchtStartVec=null, vluchtEindVec=null, vluchtEindLon=0, vluchtEindLat=0;
 let vluchtScoreVoor=0, vluchtScoreNa=0, vluchtAfwijkingKm=0, vluchtDoelLand=null;
 let correctieLand=null, correctieLandStartTijd=0;
 const CORRECTIE_GLOW_DUUR=900; // ms pulsen, daarna blijft het land geel staan
+let jokerBeschikbaar=true, misserAutoTimer=null;
+const MISSER_AUTO_MS=4000; // hoe lang de foutcorrectie in beeld blijft voor 'ie vanzelf doorschakelt
 let wachten=false, spelActief=false, globeGestart=false;
 
 // ── Zoom ─────────────────────────────────────────────
@@ -358,6 +386,9 @@ function startSpel(levelNr, modus) {
   document.getElementById('score').textContent='0';
   document.getElementById('tijd-display').style.display = (modus==='spelen') ? 'block' : 'none';
   document.getElementById('tijd-display').textContent='⏱ 0:00';
+  jokerBeschikbaar=true;
+  document.getElementById('joker-knop').style.display = (modus==='spelen') ? 'block' : 'none';
+  updateJokerKnop();
   document.getElementById('zoom-indicator').textContent='🔍 '+ZOOM_NAMEN[zoomStand];
 
   if(modus==='verkennen'){
@@ -384,6 +415,8 @@ function naarStart(){
   document.getElementById('spelscherm').style.display='none';
   document.getElementById('scorebord-scherm').style.display='none';
   document.getElementById('startscherm').style.display='flex';
+  document.getElementById('joker-knop').style.display='none';
+  if(misserAutoTimer){ clearTimeout(misserAutoTimer); misserAutoTimer=null; }
   vlagGrond.style.display='none'; vlagValt.style.display='none';
 }
 
@@ -439,9 +472,68 @@ function bekijkScorebordVanuitMenu(levelNr){
   document.getElementById('startscherm').style.display='none';
 }
 
+// ── Joker ──────────────────────────────────────────────
+function updateJokerKnop(){
+  const magKlikken = jokerBeschikbaar && huidigModus==='spelen' && spelActief
+    && !vluchtActief && !(wachten && !correctieLand);
+  document.getElementById('joker-knop').classList.toggle('joker-uit', !magKlikken);
+  document.getElementById('joker-badge').style.display = jokerBeschikbaar ? 'flex' : 'none';
+}
+function startMisserCountdown(){
+  const wrap=document.getElementById('joker-countdown-wrap');
+  const fill=document.getElementById('joker-countdown-fill');
+  wrap.style.display='block';
+  fill.style.transition='none';
+  fill.style.width='100%';
+  requestAnimationFrame(()=>{ requestAnimationFrame(()=>{
+    fill.style.transition='width '+MISSER_AUTO_MS+'ms linear';
+    fill.style.width='0%';
+  }); });
+}
+function stopMisserCountdown(){
+  document.getElementById('joker-countdown-wrap').style.display='none';
+  document.getElementById('joker-countdown-fill').style.transition='none';
+}
+function vervangHuidigLand(){
+  const lv=LEVELS[huidigLevel];
+  const gebruikt=new Set(spelLanden);
+  const kandidaten=lv.landen.filter(n=>!gebruikt.has(n));
+  const nieuw = kandidaten.length>0
+    ? kandidaten[Math.floor(Math.random()*kandidaten.length)]
+    : lv.landen[Math.floor(Math.random()*lv.landen.length)]; // noodgeval: geen reserve meer
+  spelLanden[huidigLandIdx]=nieuw;
+  huidigLand=nieuw;
+  document.getElementById('land-naam').textContent=huidigLand;
+  laadIllustratie(huidigLand);
+}
+function gebruikJoker(){
+  if(!jokerBeschikbaar || huidigModus!=='spelen' || !spelActief) return;
+  if(vluchtActief) return;               // vliegtuigje is al onderweg: niet onderbreken
+  if(wachten && !correctieLand) return;  // vlaggetje valt nog, uitslag nog niet bekend
+
+  jokerBeschikbaar=false;
+
+  if(correctieLand){
+    // Misser corrigeren: km-straf terugdraaien en meteen een nieuw land
+    if(misserAutoTimer){ clearTimeout(misserAutoTimer); misserAutoTimer=null; }
+    stopMisserCountdown();
+    score=vluchtScoreVoor;
+    document.getElementById('score').textContent=score;
+    correctieLand=null;
+    document.getElementById('correctie-land-naam').style.opacity='0';
+    document.getElementById('feedback').style.opacity='0';
+    document.getElementById('punten-feedback').style.opacity='0';
+    wachten=false;
+  }
+  vervangHuidigLand();
+  updateJokerKnop();
+}
+
 function nieuwLand(){
   vlagGrond.style.display='none';
   correctieLand=null;
+  misserAutoTimer=null;
+  stopMisserCountdown();
   document.getElementById('correctie-land-naam').style.opacity='0';
   huidigLandIdx++;
   if(huidigLandIdx>=spelLanden.length){
@@ -991,6 +1083,8 @@ const DROP_ANIMATIE_DUUR = 600;
 function updateSpel(){
   if(!spelActief) return;
 
+  updateJokerKnop();
+
   if(huidigModus==='spelen' && levelStartTijd){
     const verstrekenSec=Math.floor((performance.now()-levelStartTijd)/1000);
     const mm=Math.floor(verstrekenSec/60), ss=verstrekenSec%60;
@@ -1033,7 +1127,8 @@ function updateSpel(){
       correctieLandStartTijd=performance.now();
       toonFeedback('Oepsie woepsie, hier is het!','#ff9900');
       toonPunten(vluchtAfwijkingKm);
-      setTimeout(nieuwLand,3000);
+      startMisserCountdown();
+      misserAutoTimer=setTimeout(nieuwLand,MISSER_AUTO_MS);
     }
   } else if(!wachten){
   if(keys['ArrowLeft'])  dx=-1;
