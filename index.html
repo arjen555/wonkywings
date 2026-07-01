@@ -635,16 +635,22 @@ function getLandOpPunt(lon,lat){
   }
   return null;
 }
+function afstandKmTussenPunten(lon1,lat1,lon2,lat2){
+  const R=6371; // straal van de aarde in km
+  const toRad=Math.PI/180;
+  const dLat=(lat2-lat1)*toRad, dLon=(lon2-lon1)*toRad;
+  const a=Math.sin(dLat/2)**2 + Math.cos(lat1*toRad)*Math.cos(lat2*toRad)*Math.sin(dLon/2)**2;
+  return R * 2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
 function afstandTotLand(lon,lat,feature){
   const polys=feature.geometry.type==='Polygon'?[feature.geometry.coordinates]:feature.geometry.coordinates;
   for(const poly of polys) if(poly[0]&&puntInPolygoon(lon,lat,poly[0])) return 0;
-  let minDist=Infinity;
+  let minKm=Infinity;
   for(const poly of polys) for(const ring of poly) for(const [rLon,rLat] of ring){
-    const d=Math.hypot(lon-rLon,lat-rLat); if(d<minDist) minDist=d;
+    const km=afstandKmTussenPunten(lon,lat,rLon,rLat); if(km<minKm) minKm=km;
   }
-  return minDist;
+  return minKm;
 }
-function berekenPunten(d){ return d===0?100:d<2?80:d<5?60:d<10?40:d<20?20:10; }
 
 // ── Globe tekenen ─────────────────────────────────────
 function drawGlobe(){
@@ -925,7 +931,8 @@ function toonFeedback(t,k){
 }
 function toonPunten(p){
   const el=document.getElementById('punten-feedback');
-  el.textContent='+'+p+' punten!'; el.style.opacity='1';
+  el.textContent=(p===0?'Raak! 0 km':'+'+p+' km');
+  el.style.opacity='1';
   setTimeout(()=>{ el.style.opacity='0'; },1800);
 }
 
@@ -939,14 +946,14 @@ document.addEventListener('keydown',e=>{
     wachten=true;
     setTimeout(()=>{
       const doelLand=GEOJSON.features.find(f=>(f.properties.dutch||f.properties.name)===huidigLand);
-      let punten=0;
-      if(doelLand){ punten=berekenPunten(afstandTotLand(wonkyLon,wonkyLat,doelLand)); }
-      score+=punten;
+      let afwijkingKm=0;
+      if(doelLand){ afwijkingKm=Math.round(afstandTotLand(wonkyLon,wonkyLat,doelLand)); }
+      score+=afwijkingKm;
       document.getElementById('score').textContent=score;
-      if(punten>=80) toonFeedback('🎉 Goed zo!','#ffd700');
-      else if(punten>=40) toonFeedback('👍 Bijna!','#ff9900');
+      if(afwijkingKm===0) toonFeedback('🎉 Goed zo!','#ffd700');
+      else if(afwijkingKm<100) toonFeedback('👍 Bijna!','#ff9900');
       else toonFeedback('❌ Mis!','#ff6b6b');
-      toonPunten(punten);
+      toonPunten(afwijkingKm);
       setTimeout(nieuwLand,1800);
     },2000);
   }
