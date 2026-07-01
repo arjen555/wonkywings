@@ -237,6 +237,10 @@ bouwStartscherm();
 let huidigLevel=1, huidigModus='spelen', spelLanden=[];
 let huidigLandIdx=0, huidigLand='', score=0, spelerNaam='';
 let levelStartTijd=0, laatsteLevelTijd=0;
+// Vlucht-animatie bij een misser: vliegtuigje volgt automatisch een gloeiende lijn naar het juiste land
+let vluchtActief=false, vluchtStartTijd=0, vluchtDuur=0;
+let vluchtStartVec=null, vluchtEindVec=null, vluchtEindLon=0, vluchtEindLat=0;
+let vluchtScoreVoor=0, vluchtScoreNa=0, vluchtAfwijkingKm=0;
 let wachten=false, spelActief=false, globeGestart=false;
 
 // ── Zoom ─────────────────────────────────────────────
@@ -650,15 +654,33 @@ function afstandKmTussenPunten(lon1,lat1,lon2,lat2){
   const a=Math.sin(dLat/2)**2 + Math.cos(lat1*toRad)*Math.cos(lat2*toRad)*Math.sin(dLon/2)**2;
   return R * 2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
-function afstandTotLand(lon,lat,feature){
+// Geeft {km, punt:[lon,lat]} terug. punt is null als je al in het land staat.
+function berekenAfwijking(lon,lat,feature){
   const polys=feature.geometry.type==='Polygon'?[feature.geometry.coordinates]:feature.geometry.coordinates;
-  for(const poly of polys) if(poly[0]&&puntInPolygoon(lon,lat,poly[0])) return 0;
-  let minKm=Infinity;
+  for(const poly of polys) if(poly[0]&&puntInPolygoon(lon,lat,poly[0])) return {km:0,punt:null};
+  let minKm=Infinity, minLon=lon, minLat=lat;
   for(const poly of polys) for(const ring of poly) for(const [rLon,rLat] of ring){
-    const km=afstandKmTussenPunten(lon,lat,rLon,rLat); if(km<minKm) minKm=km;
+    const km=afstandKmTussenPunten(lon,lat,rLon,rLat);
+    if(km<minKm){ minKm=km; minLon=rLon; minLat=rLat; }
   }
-  return minKm;
+  return {km:minKm, punt:[minLon,minLat]};
 }
+// Vloeiend tussenpunt op het bol-oppervlak tussen twee unit-vectoren (voor het vliegpad)
+function slerp3(a,b,t){
+  let dot=a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+  dot=Math.max(-1,Math.min(1,dot));
+  const theta=Math.acos(dot);
+  if(theta<1e-6) return a.slice();
+  const sinT=Math.sin(theta);
+  const wa=Math.sin((1-t)*theta)/sinT, wb=Math.sin(t*theta)/sinT;
+  return [a[0]*wa+b[0]*wb, a[1]*wa+b[1]*wb, a[2]*wa+b[2]*wb];
+}
+function vec3NaarLonLat(v){
+  const lat=Math.asin(Math.max(-1,Math.min(1,v[1])))*180/Math.PI;
+  const lon=Math.atan2(v[0],v[2])*180/Math.PI;
+  return [lon,lat];
+}
+function lonVerschil(a,b){ let d=b-a; while(d>180)d-=360; while(d<-180)d+=360; return d; }
 
 // ── Globe tekenen ─────────────────────────────────────
 function drawGlobe(){
@@ -738,6 +760,25 @@ function drawGlobe(){
   }
 
   tekenFocusStip(focusSx,focusSy);
+
+  if(vluchtActief){
+    ctx.save();
+    ctx.lineCap='round'; ctx.lineJoin='round';
+    ctx.shadowColor='#ffe066'; ctx.shadowBlur=14;
+    ctx.strokeStyle='rgba(255,224,102,0.9)'; ctx.lineWidth=3;
+    ctx.beginPath();
+    let pen=false;
+    const STAPPEN=48;
+    for(let i=0;i<=STAPPEN;i++){
+      const v=slerp3(vluchtStartVec,vluchtEindVec,i/STAPPEN);
+      const p3=roteerPunt(v,rotM);
+      if(p3[2]<=0){ pen=false; continue; }
+      const sx=CX+p3[0]*R, sy=CY-p3[1]*R;
+      if(!pen){ ctx.moveTo(sx,sy); pen=true; } else { ctx.lineTo(sx,sy); }
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
   ctx.restore();
 
   const hl=ctx.createRadialGradient(CX-R*.35,CY-R*.38,R*.05,CX-R*.18,CY-R*.25,R*.7);
@@ -815,6 +856,30 @@ function updateSpel(){
   const turbo = keys['Shift'];
   const s=(turbo?1.8:0.7)/zoomFactor;
   let dx=0,dy=0;
+
+  if(vluchtActief){
+    const tRuw=Math.min(1,(performance.now()-vluchtStartTijd)/vluchtDuur);
+    const t = tRuw<0.5 ? 2*tRuw*tRuw : 1-Math.pow(-2*tRuw+2,2)/2; // ease-in-out
+    const prevLon=wonkyLon, prevLat=wonkyLat;
+    const v=slerp3(vluchtStartVec,vluchtEindVec,t);
+    const [nLon,nLat]=vec3NaarLonLat(v);
+    wonkyLon=nLon; wonkyLat=nLat;
+    dx=Math.sign(lonVerschil(prevLon,nLon))||0;
+    dy=Math.sign(nLat-prevLat)||0;
+    rotM=maakRotMatrix(wonkyLon,wonkyLat);
+
+    const scoreNu=Math.round(vluchtScoreVoor+(vluchtScoreNa-vluchtScoreVoor)*t);
+    document.getElementById('score').textContent=scoreNu;
+
+    if(tRuw>=1){
+      vluchtActief=false;
+      score=vluchtScoreNa;
+      document.getElementById('score').textContent=score;
+      toonFeedback('Oepsie woepsie, hier is het!','#ff9900');
+      toonPunten(vluchtAfwijkingKm);
+      setTimeout(nieuwLand,1500);
+    }
+  } else {
   if(keys['ArrowLeft'])  dx=-1;
   if(keys['ArrowRight']) dx= 1;
   if(keys['ArrowUp'])    dy= 1;
@@ -845,6 +910,7 @@ function updateSpel(){
   wonkyLat=Math.max(-89,Math.min(89,wonkyLat));
 
   rotM=maakRotMatrix(wonkyLon,wonkyLat);
+  }
 
   // Focusstip
   const fp=roteerPunt(lonLatTo3D(wonkyLon,wonkyLat),rotM);
@@ -904,7 +970,7 @@ function updateSpel(){
       const sc = draaitNaarLinks ? 1 : -1;
       wonkyNaarFrontaal.style.transform = `scaleX(${sc})`;
     }
-  } else if(turbo){
+  } else if(turbo || vluchtActief){
     wonkyEl.style.display='none'; wonkyFrontaal.style.display='none';
     wonkyNaarFrontaal.style.display='none'; wonkyDropt.style.display='none';
     wonkyTurbo.style.display='block';
@@ -954,15 +1020,26 @@ document.addEventListener('keydown',e=>{
     wachten=true;
     setTimeout(()=>{
       const doelLand=GEOJSON.features.find(f=>(f.properties.dutch||f.properties.name)===huidigLand);
-      let afwijkingKm=0;
-      if(doelLand){ afwijkingKm=Math.round(afstandTotLand(wonkyLon,wonkyLat,doelLand)); }
-      score+=afwijkingKm;
-      document.getElementById('score').textContent=score;
-      if(afwijkingKm===0) toonFeedback('🎉 Goed zo!','#ffd700');
-      else if(afwijkingKm<100) toonFeedback('👍 Bijna!','#ff9900');
-      else toonFeedback('❌ Mis!','#ff6b6b');
-      toonPunten(afwijkingKm);
-      setTimeout(nieuwLand,1800);
+      const uitkomst = doelLand ? berekenAfwijking(wonkyLon,wonkyLat,doelLand) : {km:0,punt:null};
+      const afwijkingKm = Math.round(uitkomst.km);
+
+      if(afwijkingKm===0 || !uitkomst.punt){
+        score+=afwijkingKm;
+        document.getElementById('score').textContent=score;
+        toonFeedback('🎉 Goed zo!','#ffd700');
+        toonPunten(afwijkingKm);
+        setTimeout(nieuwLand,1800);
+      } else {
+        vluchtActief=true;
+        vluchtStartTijd=performance.now();
+        vluchtDuur=Math.max(1500, Math.min(6000, afwijkingKm*4)); // hoe verder ernaast, hoe langer de vlucht
+        vluchtStartVec=lonLatTo3D(wonkyLon,wonkyLat);
+        vluchtEindLon=uitkomst.punt[0]; vluchtEindLat=uitkomst.punt[1];
+        vluchtEindVec=lonLatTo3D(vluchtEindLon,vluchtEindLat);
+        vluchtScoreVoor=score;
+        vluchtScoreNa=score+afwijkingKm;
+        vluchtAfwijkingKm=afwijkingKm;
+      }
     },2000);
   }
 });
