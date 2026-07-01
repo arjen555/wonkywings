@@ -126,7 +126,8 @@
     #level-badge { color:rgba(255,255,255,0.7); font-size:0.85rem; font-weight:600; }
     #level-badge span { color:#ffd700; }
     #speler-naam-display { color:rgba(255,255,255,0.6); font-size:0.85rem; }
-    #score-box { color:#ffd700; font-size:1.1rem; font-weight:800; text-shadow:0 2px 8px rgba(0,0,0,0.8); }
+    #score-box { color:#ffd700; font-size:1.1rem; font-weight:800; text-shadow:0 2px 8px rgba(0,0,0,0.8); text-align:right; }
+    #score-box .score-sub { display:block; font-size:0.7rem; font-weight:600; color:#9fd8ff; text-shadow:0 2px 6px rgba(0,0,0,0.8); margin-top:2px; }
     #zoom-indicator {
       background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.25);
       color:#fff; font-size:0.75rem; font-weight:700;
@@ -188,7 +189,7 @@
       <div id="speler-naam-display"></div>
     </div>
     <div id="zoom-indicator">🔍 Stand 1</div>
-    <div id="score-box">Score: <span id="score">0</span></div>
+    <div id="score-box">Totaal ernaast: <span id="score">0</span> km<span class="score-sub">Hoe lager de score, hoe beter!</span></div>
   </div>
   <div id="hud-bottom">
     <div id="opdracht">
@@ -235,6 +236,7 @@ bouwStartscherm();
 // ── Spelstaat ─────────────────────────────────────────
 let huidigLevel=1, huidigModus='spelen', spelLanden=[];
 let huidigLandIdx=0, huidigLand='', score=0, spelerNaam='';
+let levelStartTijd=0, laatsteLevelTijd=0;
 let wachten=false, spelActief=false, globeGestart=false;
 
 // ── Zoom ─────────────────────────────────────────────
@@ -281,6 +283,7 @@ function startSpel(levelNr, modus) {
     spelLanden = k.slice(0,15);
   }
   huidigLandIdx=0; huidigLand=spelLanden[0];
+  levelStartTijd = (modus==='spelen') ? performance.now() : 0;
 
   // Zoom: Europa levels starten ingezoomd
   zoomStand = (levelNr<=2) ? 1 : 0;
@@ -329,7 +332,12 @@ function updateVoortgang(){
 function nieuwLand(){
   vlagGrond.style.display='none';
   huidigLandIdx++;
-  if(huidigLandIdx>=spelLanden.length){ toonFeedback('🏆 Klaar!','#ffd700'); setTimeout(naarStart,2500); return; }
+  if(huidigLandIdx>=spelLanden.length){
+    laatsteLevelTijd = levelStartTijd ? Math.round((performance.now()-levelStartTijd)/1000) : 0;
+    toonFeedback('🏆 Klaar! ('+laatsteLevelTijd+' sec)','#ffd700');
+    setTimeout(naarStart,2500);
+    return;
+  }
   huidigLand=spelLanden[huidigLandIdx];
   document.getElementById('land-naam').textContent=huidigLand;
   updateVoortgang(); wachten=false;
