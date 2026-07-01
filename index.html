@@ -195,7 +195,7 @@
       <div class="label" id="opdracht-label">✈ Vlieg naar...</div>
       <div class="landnaam" id="land-naam">...</div>
     </div>
-    <div id="hint">Pijltjestoetsen · SHIFT = turbo · SPATIE = vlaggetje droppen · Z = zoom</div>
+    <div id="hint">Pijltjestoetsen · SHIFT = turbo · SPATIE = vlaggetje droppen · Z = inzoomen · X = uitzoomen</div>
   </div>
   <div id="voortgang"><div id="ronde-display"></div></div>
 </div>
@@ -682,7 +682,7 @@ function drawGlobe(){
     else if(g.type==='MultiPolygon') for(const p of g.coordinates) tekenLand(p,vul,rand,dikte);
   }
 
-  tekenIJskap(90,17);
+  tekenIJskap(90,12);
 
   // Illustratie-reis: niks in stand 0/1, waas in stand 2 (Landview),
   // vloeiend opklarend tot vol richting stand 3 (Close-up).
@@ -759,12 +759,13 @@ const keys={};
 document.addEventListener('keydown',e=>{
   keys[e.key]=true;
   if([' ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
-  // Z = zoom toggle (3 standen)
+  // Z = een stap inzoomen, X = een stap uitzoomen
   if(e.key==='z'||e.key==='Z'){
-    zoomRichting = zoomRichting || 1;
-    zoomStand += zoomRichting;
-    if(zoomStand >= 3){ zoomStand = 3; zoomRichting = -1; }
-    if(zoomStand <= 0){ zoomStand = 0; zoomRichting = 1; }
+    if(zoomStand < 3) zoomStand += 1;
+    document.getElementById('zoom-indicator').textContent='🔍 '+ZOOM_NAMEN[zoomStand];
+  }
+  if(e.key==='x'||e.key==='X'){
+    if(zoomStand > 0) zoomStand -= 1;
     document.getElementById('zoom-indicator').textContent='🔍 '+ZOOM_NAMEN[zoomStand];
   }
 });
