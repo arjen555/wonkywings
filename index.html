@@ -68,6 +68,41 @@
     #naam-input::placeholder { color:rgba(255,255,255,0.35); }
     #naam-input:focus { border-color:rgba(255,215,0,0.6); background:rgba(255,255,255,0.15); }
     #level-lijst { display:flex; flex-direction:column; gap:6px; width:100%; position:relative; }
+
+    /* ── SCOREBORD ── */
+    #scorebord-scherm {
+      position:fixed; inset:0; z-index:110; display:none;
+      align-items:center; justify-content:center;
+      background:rgba(2,13,26,0.92);
+    }
+    #scorebord-kaart {
+      background:linear-gradient(135deg, #0a2a4a 0%, #051e30 100%);
+      border:1px solid rgba(255,215,0,0.25);
+      border-radius:18px; padding:28px 30px;
+      width:min(480px, 88vw); max-height:82vh;
+      display:flex; flex-direction:column; gap:14px;
+      box-shadow:0 20px 60px rgba(0,0,0,0.6);
+    }
+    #scorebord-titel { color:#ffd700; font-size:1.3rem; font-weight:900; text-align:center; }
+    #scorebord-nieuwe-run { color:#9fd8ff; font-size:0.85rem; text-align:center; font-weight:600; min-height:1.1em; }
+    #scorebord-lijst { display:flex; flex-direction:column; gap:6px; overflow-y:auto; }
+    .scorebord-rij {
+      display:flex; align-items:center; gap:10px;
+      background:rgba(255,255,255,0.06); border-radius:10px; padding:8px 12px;
+      font-size:0.85rem; color:#fff;
+    }
+    .scorebord-rij.is-eigen { background:rgba(255,224,102,0.18); border:1px solid rgba(255,224,102,0.5); }
+    .scorebord-plek { width:1.8em; font-weight:800; color:#ffd700; text-align:center; }
+    .scorebord-naam { flex:1; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .scorebord-km { font-weight:800; color:#ffe566; }
+    .scorebord-tijd { color:rgba(255,255,255,0.55); font-size:0.78rem; width:4.2em; text-align:right; }
+    #scorebord-leeg { color:rgba(255,255,255,0.5); font-size:0.85rem; text-align:center; padding:10px 0; }
+    #scorebord-terug-btn {
+      background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.25);
+      color:#fff; font-size:0.85rem; font-weight:700; padding:10px; border-radius:12px;
+      cursor:pointer;
+    }
+    #scorebord-terug-btn:hover { background:rgba(255,255,255,0.22); }
     .level-bol {
       display:flex; flex-direction:row; align-items:center; gap:10px;
       background:rgba(255,255,255,0.06); border:2px solid rgba(255,255,255,0.12);
@@ -170,6 +205,16 @@
   </div>
 </div>
 
+<!-- SCOREBORD -->
+<div id="scorebord-scherm">
+  <div id="scorebord-kaart">
+    <div id="scorebord-titel"></div>
+    <div id="scorebord-nieuwe-run"></div>
+    <div id="scorebord-lijst"></div>
+    <button id="scorebord-terug-btn" onclick="naarStart()">← Terug naar menu</button>
+  </div>
+</div>
+
 <!-- SPELSCHERM -->
 <div id="spelscherm">
   <canvas id="globe"></canvas>
@@ -191,7 +236,7 @@
       <div id="speler-naam-display"></div>
     </div>
     <div id="zoom-indicator">🔍 Stand 1</div>
-    <div id="score-box">Totaal ernaast: <span id="score">0</span> km<span class="score-sub">Hoe lager de score, hoe beter!</span></div>
+    <div id="score-box"><span id="tijd-display" class="score-sub">⏱ 0:00</span>Totaal ernaast: <span id="score">0</span> km<span class="score-sub">Hoe lager de score, hoe beter!</span></div>
   </div>
   <div id="hud-bottom">
     <div id="opdracht">
@@ -304,6 +349,8 @@ function startSpel(levelNr, modus) {
   document.getElementById('level-nr-display').textContent=levelNr;
   document.getElementById('speler-naam-display').textContent=spelerNaam;
   document.getElementById('score').textContent='0';
+  document.getElementById('tijd-display').style.display = (modus==='spelen') ? 'block' : 'none';
+  document.getElementById('tijd-display').textContent='⏱ 0:00';
   document.getElementById('zoom-indicator').textContent='🔍 '+ZOOM_NAMEN[zoomStand];
 
   if(modus==='verkennen'){
@@ -328,6 +375,7 @@ function startSpel(levelNr, modus) {
 function naarStart(){
   spelActief=false;
   document.getElementById('spelscherm').style.display='none';
+  document.getElementById('scorebord-scherm').style.display='none';
   document.getElementById('startscherm').style.display='flex';
   vlagGrond.style.display='none'; vlagValt.style.display='none';
 }
@@ -337,6 +385,47 @@ function updateVoortgang(){
     huidigModus==='spelen' ? (huidigLandIdx+1)+' / '+spelLanden.length : '';
 }
 
+// ── Scorebord (voorlopig lokaal, per level, op dit apparaat) ──
+function scorebordSleutel(levelNr){ return 'wonkywings_scores_level'+levelNr; }
+function opslaanScore(levelNr, naam, km, tijdSec){
+  let lijst=[];
+  try{ lijst=JSON.parse(localStorage.getItem(scorebordSleutel(levelNr))||'[]'); }catch(e){ lijst=[]; }
+  const nieuweRun={naam, km, tijd:tijdSec, datum:Date.now()};
+  lijst.push(nieuweRun);
+  lijst.sort((a,b)=>a.km-b.km); // laagste km bovenaan = beste
+  lijst=lijst.slice(0,50);
+  localStorage.setItem(scorebordSleutel(levelNr), JSON.stringify(lijst));
+  return {lijst, nieuweRun};
+}
+function formatTijd(sec){ const m=Math.floor(sec/60), s=sec%60; return m+':'+String(s).padStart(2,'0'); }
+function toonScorebord(levelNr, nieuweRun){
+  const lv=LEVELS[levelNr];
+  let lijst=[];
+  try{ lijst=JSON.parse(localStorage.getItem(scorebordSleutel(levelNr))||'[]'); }catch(e){ lijst=[]; }
+
+  document.getElementById('scorebord-titel').textContent='🏆 Scorebord — '+lv.naam;
+  document.getElementById('scorebord-nieuwe-run').textContent = nieuweRun
+    ? 'Jouw resultaat: '+nieuweRun.km+' km in '+formatTijd(nieuweRun.tijd)
+    : '';
+
+  const lijstEl=document.getElementById('scorebord-lijst');
+  lijstEl.innerHTML='';
+  if(lijst.length===0){
+    lijstEl.innerHTML='<div id="scorebord-leeg">Nog geen scores voor dit level. Wees de eerste!</div>';
+  } else {
+    lijst.forEach((run,i)=>{
+      const isEigen = nieuweRun && run.datum===nieuweRun.datum && run.naam===nieuweRun.naam;
+      const rij=document.createElement('div');
+      rij.className='scorebord-rij'+(isEigen?' is-eigen':'');
+      rij.innerHTML=`<div class="scorebord-plek">${i+1}</div><div class="scorebord-naam">${run.naam}</div><div class="scorebord-km">${run.km} km</div><div class="scorebord-tijd">${formatTijd(run.tijd)}</div>`;
+      lijstEl.appendChild(rij);
+    });
+  }
+
+  document.getElementById('spelscherm').style.display='none';
+  document.getElementById('scorebord-scherm').style.display='flex';
+}
+
 function nieuwLand(){
   vlagGrond.style.display='none';
   correctieLand=null;
@@ -344,8 +433,14 @@ function nieuwLand(){
   huidigLandIdx++;
   if(huidigLandIdx>=spelLanden.length){
     laatsteLevelTijd = levelStartTijd ? Math.round((performance.now()-levelStartTijd)/1000) : 0;
-    toonFeedback('🏆 Klaar! ('+laatsteLevelTijd+' sec)','#ffd700');
-    setTimeout(naarStart,2500);
+    if(huidigModus==='spelen'){
+      const {nieuweRun} = opslaanScore(huidigLevel, spelerNaam, score, laatsteLevelTijd);
+      toonFeedback('🏆 Klaar! ('+laatsteLevelTijd+' sec)','#ffd700');
+      setTimeout(()=>toonScorebord(huidigLevel, nieuweRun), 2000);
+    } else {
+      toonFeedback('🏆 Klaar!','#ffd700');
+      setTimeout(naarStart,2500);
+    }
     return;
   }
   huidigLand=spelLanden[huidigLandIdx];
@@ -722,7 +817,7 @@ function drawGlobe(){
         vul='#ffe566'; rand='#c8960a'; dikte=1.6;
       }
     }
-    else if(isHover){ vul='#ffe566';rand='#c8960a';dikte=1.2; }
+    else if(isHover&&!correctieLand){ vul='#ffe566';rand='#c8960a';dikte=1.2; }
     else if(huidigModus==='verkennen'&&isLevelLand){ vul='#e8824a';rand='#b85a20';dikte=0.8; }
     else {
       const polys2=f.geometry.type==='Polygon'?[f.geometry.coordinates]:f.geometry.coordinates;
@@ -882,6 +977,12 @@ const DROP_ANIMATIE_DUUR = 600;
 
 function updateSpel(){
   if(!spelActief) return;
+
+  if(huidigModus==='spelen' && levelStartTijd){
+    const verstrekenSec=Math.floor((performance.now()-levelStartTijd)/1000);
+    const mm=Math.floor(verstrekenSec/60), ss=verstrekenSec%60;
+    document.getElementById('tijd-display').textContent='⏱ '+mm+':'+String(ss).padStart(2,'0');
+  }
 
   // Zoom animatie (stand 3 is dynamisch berekend, continu bijgewerkt per land)
   if(zoomStand===3) berekenStand3Zoom(); // elke frame opnieuw meten o.b.v. hoverLand
