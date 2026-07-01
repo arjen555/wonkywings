@@ -585,7 +585,11 @@ function berekenStand3Zoom() {
   // De kleinste van de twee wint: zo blijft het land altijd binnen
   // beeld, zowel in hoogte als in breedte.
   let benodigdeZoom = Math.min(benodigdeZoomHoogte, benodigdeZoomBreedte);
-  benodigdeZoom = Math.max(ZOOM_STANDEN_BASIS[2], Math.min(40, benodigdeZoom));
+  // Ondergrens is nu 'Wereld'-zoom (1.0), niet meer Landview-zoom.
+  // Voor reuzenlanden zoals Rusland is de benodigde zoom soms lager dan
+  // Landview — die mogen dan ook echt minder inzoomen, anders passen
+  // ze niet op het scherm.
+  benodigdeZoom = Math.max(1.0, Math.min(40, benodigdeZoom));
 
   stand3DoelFactor = benodigdeZoom;
   stand3LaatsteLand = hoverLand;
