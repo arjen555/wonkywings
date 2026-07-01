@@ -106,22 +106,27 @@
 
     /* ── JOKER ── */
     #joker-knop {
-      position:fixed; right:18px; bottom:18px; z-index:20; display:none;
-      width:74px; height:74px; border-radius:50%;
+      position:fixed; right:22px; bottom:22px; z-index:20; display:none;
+      width:118px; height:118px; border-radius:50%;
       cursor:pointer; transition:transform 0.15s, opacity 0.2s, filter 0.2s;
-      filter:drop-shadow(0 4px 14px rgba(0,0,0,0.5));
+      filter:drop-shadow(0 6px 18px rgba(0,0,0,0.55));
+      animation:joker-puls 2.2s ease-in-out infinite;
     }
-    #joker-knop img { width:100%; height:100%; object-fit:cover; border-radius:50%; border:2px solid #ffd700; display:block; }
-    #joker-knop:hover { transform:scale(1.06); }
-    #joker-knop.joker-uit { opacity:0.35; filter:grayscale(1); cursor:default; pointer-events:none; }
+    @keyframes joker-puls {
+      0%,100% { filter:drop-shadow(0 6px 18px rgba(0,0,0,0.55)) drop-shadow(0 0 0 rgba(255,215,0,0)); }
+      50% { filter:drop-shadow(0 6px 18px rgba(0,0,0,0.55)) drop-shadow(0 0 16px rgba(255,215,0,0.85)); }
+    }
+    #joker-knop img { width:100%; height:100%; object-fit:cover; border-radius:50%; border:3px solid #ffd700; display:block; }
+    #joker-knop:hover { transform:scale(1.07); }
+    #joker-knop.joker-uit { opacity:0.35; filter:grayscale(1); cursor:default; pointer-events:none; animation:none; }
     #joker-badge {
-      position:absolute; top:-4px; right:-4px; background:#ffd700; color:#000;
-      font-size:0.65rem; font-weight:900; border-radius:50%; width:22px; height:22px;
+      position:absolute; top:-6px; right:-6px; background:#ffd700; color:#000;
+      font-size:0.85rem; font-weight:900; border-radius:50%; width:30px; height:30px;
       display:flex; align-items:center; justify-content:center; box-shadow:0 2px 6px rgba(0,0,0,0.5);
     }
     #joker-countdown-wrap {
-      position:absolute; left:0; right:0; bottom:-10px; height:5px;
-      background:rgba(255,255,255,0.15); border-radius:4px; overflow:hidden; display:none;
+      position:absolute; left:0; right:0; bottom:-14px; height:7px;
+      background:rgba(255,255,255,0.15); border-radius:5px; overflow:hidden; display:none;
     }
     #joker-countdown-fill { height:100%; width:100%; background:linear-gradient(90deg,#ffd700,#ff9900); }
     .level-bol {
@@ -211,8 +216,19 @@
     #correctie-land-naam { position:fixed; background:rgba(120,90,0,0.85); color:#fff9d6; font-size:1rem; font-weight:800; padding:5px 16px; border-radius:10px; pointer-events:none; white-space:nowrap; opacity:0; transition:opacity 0.2s; z-index:8; transform:translate(-50%,-100%); box-shadow:0 0 14px rgba(255,224,102,0.6); }
     #feedback { position:fixed; top:42%; left:50%; transform:translate(-50%,-50%); font-size:3rem; font-weight:900; pointer-events:none; opacity:0; text-shadow:0 4px 20px rgba(0,0,0,0.8); z-index:30; transition:opacity 0.3s; }
     #punten-feedback { position:fixed; top:36%; left:50%; transform:translate(-50%,-50%); font-size:1.6rem; font-weight:900; pointer-events:none; opacity:0; color:#ffd700; text-shadow:0 4px 20px rgba(0,0,0,0.8); z-index:30; transition:opacity 0.3s; }
-    #voortgang { position:fixed; top:50%; right:20px; transform:translateY(-50%); color:rgba(255,255,255,0.5); font-size:0.8rem; text-align:right; z-index:20; pointer-events:none; }
     #ronde-display { font-size:1.2rem; font-weight:700; color:rgba(255,255,255,0.8); }
+    #voortgang-bord {
+      position:fixed; left:18px; bottom:18px; z-index:19;
+      width:280px; pointer-events:none; display:none;
+    }
+    #voortgang-bord img.bord-achtergrond { width:100%; display:block; }
+    .bord-cijfers {
+      position:absolute; top:44%; height:26%;
+      display:flex; align-items:center; justify-content:center; gap:2%;
+    }
+    .bord-cijfers img { height:100%; width:auto; display:block; }
+    #bord-huidig { left:23%; width:22%; }
+    #bord-totaal { left:60%; width:26%; }
   </style>
 </head>
 <body>
@@ -278,7 +294,11 @@
     </div>
     <div id="hint">Pijltjestoetsen · SHIFT = turbo · SPATIE = vlaggetje droppen · Z = inzoomen · X = uitzoomen</div>
   </div>
-  <div id="voortgang"><div id="ronde-display"></div></div>
+  <div id="voortgang-bord">
+    <img class="bord-achtergrond" src="images/aantallanden.png" alt="Voortgang"/>
+    <div id="bord-huidig" class="bord-cijfers"></div>
+    <div id="bord-totaal" class="bord-cijfers"></div>
+  </div>
 </div>
 
 <script>
@@ -420,9 +440,21 @@ function naarStart(){
   vlagGrond.style.display='none'; vlagValt.style.display='none';
 }
 
+function toonGetalOpBord(container, getal, kleur){
+  container.innerHTML='';
+  String(getal).split('').forEach(cijfer=>{
+    const img=document.createElement('img');
+    img.src='images/cijfers/'+kleur+'-'+cijfer+'.png';
+    img.alt=cijfer;
+    container.appendChild(img);
+  });
+}
 function updateVoortgang(){
-  document.getElementById('ronde-display').textContent =
-    huidigModus==='spelen' ? (huidigLandIdx+1)+' / '+spelLanden.length : '';
+  const bord=document.getElementById('voortgang-bord');
+  if(huidigModus!=='spelen'){ bord.style.display='none'; return; }
+  bord.style.display='block';
+  toonGetalOpBord(document.getElementById('bord-huidig'), huidigLandIdx+1, 'rood');
+  toonGetalOpBord(document.getElementById('bord-totaal'), spelLanden.length, 'blauw');
 }
 
 // ── Scorebord (voorlopig lokaal, per level, op dit apparaat) ──
