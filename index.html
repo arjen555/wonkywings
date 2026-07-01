@@ -455,7 +455,7 @@ function tekenIJskap(poolLat,straal){
 }
 
 // ── Landillustratie ───────────────────────────────────
-function tekenLandIllustratie(feature,img,zoomstandActief){
+function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
   const geom=feature.geometry;
   const polysLijst=geom.type==='Polygon'?[geom.coordinates]:geom.coordinates;
 
@@ -518,7 +518,7 @@ function tekenLandIllustratie(feature,img,zoomstandActief){
 
   // Stap 3: plak de tekening op de strakke rechthoek om ALLE landdelen samen
   const breedte=maxX-minX, hoogte=maxY-minY;
-  ctx.globalAlpha=0.93;
+  ctx.globalAlpha = (doorzicht!==undefined ? doorzicht : 0.93);
   ctx.drawImage(img, minX, minY, breedte, hoogte);
   ctx.globalAlpha=1.0;
   ctx.restore();
@@ -654,12 +654,31 @@ function drawGlobe(){
 
   tekenIJskap(90,17);
 
-  // Illustratie bij zoom stand 1 of 2
-  if(zoomStand>=1&&hoverLand){
+  // Illustratie-reis: niks in stand 0/1, waas in stand 2 (Landview),
+  // vloeiend opklarend tot vol richting stand 3 (Close-up).
+  if(zoomStand>=2 && hoverLand){
     const dutch=hoverLand.properties.dutch||hoverLand.properties.name;
     laadIllustratie(dutch);
     const ill=landIllustraties[dutch];
-    if(ill) tekenLandIllustratie(hoverLand,ill,zoomStand);
+    if(ill){
+      // Bepaal doorzichtigheid op basis van hoe ver we zijn ingezoomd.
+      // Landview-zoom = ondergrens (waas 15%), Close-up-doel = bovengrens (vol 100%).
+      const landviewZoom = ZOOM_STANDEN_BASIS[2];       // 4.5
+      const closeupZoom  = stand3DoelFactor;            // dynamisch per land
+      const WAAS = 0.15;   // 15% waas in landview
+      let doorzicht;
+      if(closeupZoom <= landviewZoom + 0.01){
+        // Vangnet: als close-up bijna gelijk is aan landview (heel groot land),
+        // laat de illustratie gewoon vol zien vanaf close-up-stand.
+        doorzicht = (zoomStand>=3) ? 1.0 : WAAS;
+      } else {
+        // Hoe ver zijn we tussen landview-zoom en close-up-zoom? (0 = net landview, 1 = vol close-up)
+        let voortgang = (zoomFactor - landviewZoom) / (closeupZoom - landviewZoom);
+        voortgang = Math.max(0, Math.min(1, voortgang));
+        doorzicht = WAAS + (1.0 - WAAS) * voortgang;
+      }
+      tekenLandIllustratie(hoverLand,ill,zoomStand,doorzicht);
+    }
   }
 
   // Breedtegraden
