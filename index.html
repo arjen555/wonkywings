@@ -141,6 +141,13 @@
       cursor:pointer; transition:background 0.2s; white-space:nowrap;
     }
     .btn-verken:hover { background:rgba(255,255,255,0.22); }
+    .btn-scores {
+      background:rgba(255,224,102,0.15); border:1px solid rgba(255,224,102,0.4);
+      color:#ffe566; font-weight:700; font-size:0.62rem;
+      border-radius:7px; padding:4px 8px;
+      cursor:pointer; transition:background 0.2s; white-space:nowrap;
+    }
+    .btn-scores:hover { background:rgba(255,224,102,0.28); }
 
     /* ── SPELSCHERM ── */
     #spelscherm { display:none; }
@@ -273,7 +280,7 @@ function bouwStartscherm() {
     bol.className = 'level-bol' + (isBinnenkort?' level-bol-binnenkort':'') + (isWater?' bol-water':'');
     let inhoud = isBinnenkort
       ? `<div class="bol-naam">${lv.naam}</div><div class="bol-binnenkort-tekst">🚧 Binnenkort beschikbaar</div>`
-      : `<div class="bol-naam">${lv.naam}</div><div class="bol-btns"><button class="btn-speel" onclick="startSpel(${nr},'spelen')">▶ Spelen</button><button class="btn-verken" onclick="startSpel(${nr},'verkennen')">🔍 Verkennen</button></div>`;
+      : `<div class="bol-naam">${lv.naam}</div><div class="bol-btns"><button class="btn-speel" onclick="startSpel(${nr},'spelen')">▶ Spelen</button><button class="btn-verken" onclick="startSpel(${nr},'verkennen')">🔍 Verkennen</button><button class="btn-scores" onclick="bekijkScorebordVanuitMenu(${nr})">🏆 Scores</button></div>`;
     bol.innerHTML = `<div class="bol-nr">${isWater?'🌊':nr}</div><div class="bol-inhoud">${inhoud}</div>`;
     lijst.appendChild(bol);
   }
@@ -424,6 +431,12 @@ function toonScorebord(levelNr, nieuweRun){
 
   document.getElementById('spelscherm').style.display='none';
   document.getElementById('scorebord-scherm').style.display='flex';
+}
+
+// Vanaf het startmenu: scorebord bekijken zonder het level te spelen
+function bekijkScorebordVanuitMenu(levelNr){
+  toonScorebord(levelNr, null);
+  document.getElementById('startscherm').style.display='none';
 }
 
 function nieuwLand(){
@@ -1020,9 +1033,9 @@ function updateSpel(){
       correctieLandStartTijd=performance.now();
       toonFeedback('Oepsie woepsie, hier is het!','#ff9900');
       toonPunten(vluchtAfwijkingKm);
-      setTimeout(nieuwLand,1500);
+      setTimeout(nieuwLand,3000);
     }
-  } else {
+  } else if(!wachten){
   if(keys['ArrowLeft'])  dx=-1;
   if(keys['ArrowRight']) dx= 1;
   if(keys['ArrowUp'])    dy= 1;
@@ -1161,9 +1174,11 @@ document.addEventListener('keydown',e=>{
     dropAnimatieTimer=performance.now();
     dropVlag(wx,wy,focusSx,focusSy);
     wachten=true;
+    // Positie vastleggen op het MOMENT van droppen, niet pas na de val-animatie
+    const dropLon=wonkyLon, dropLat=wonkyLat;
     setTimeout(()=>{
       const doelLand=GEOJSON.features.find(f=>(f.properties.dutch||f.properties.name)===huidigLand);
-      const uitkomst = doelLand ? berekenAfwijking(wonkyLon,wonkyLat,doelLand) : {km:0,punt:null};
+      const uitkomst = doelLand ? berekenAfwijking(dropLon,dropLat,doelLand) : {km:0,punt:null};
       const afwijkingKm = Math.round(uitkomst.km);
 
       if(afwijkingKm===0 || !uitkomst.punt){
@@ -1176,7 +1191,7 @@ document.addEventListener('keydown',e=>{
         vluchtActief=true;
         vluchtStartTijd=performance.now();
         vluchtDuur=Math.max(1500, Math.min(6000, afwijkingKm*4)); // hoe verder ernaast, hoe langer de vlucht
-        vluchtStartVec=lonLatTo3D(wonkyLon,wonkyLat);
+        vluchtStartVec=lonLatTo3D(dropLon,dropLat);
         vluchtEindLon=uitkomst.punt[0]; vluchtEindLat=uitkomst.punt[1];
         vluchtEindVec=lonLatTo3D(vluchtEindLon,vluchtEindLat);
         vluchtScoreVoor=score;
