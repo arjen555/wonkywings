@@ -223,12 +223,12 @@
     }
     #voortgang-bord img.bord-achtergrond { width:100%; display:block; }
     .bord-cijfers {
-      position:absolute; top:44%; height:26%;
-      display:flex; align-items:center; justify-content:center; gap:2%;
+      position:absolute; height:32%;
+      display:flex; align-items:center; justify-content:center;
     }
     .bord-cijfers img { height:100%; width:auto; display:block; }
-    #bord-huidig { left:23%; width:22%; }
-    #bord-totaal { left:60%; width:26%; }
+    #bord-huidig { left:28.5%; width:16%; top:34%; }
+    #bord-totaal { left:59%; width:20%; top:40%; }
   </style>
 </head>
 <body>
@@ -442,11 +442,34 @@ function naarStart(){
 
 function toonGetalOpBord(container, getal, kleur){
   container.innerHTML='';
-  String(getal).split('').forEach(cijfer=>{
+  const chars=String(getal).split('');
+  const imgs=chars.map(cijfer=>{
     const img=document.createElement('img');
     img.src='images/cijfers/'+kleur+'-'+cijfer+'.png';
     img.alt=cijfer;
     container.appendChild(img);
+    return img;
+  });
+  let geladen=0;
+  function layout(){
+    const rect=container.getBoundingClientRect();
+    const boxW=rect.width, boxH=rect.height;
+    const gapFrac=0.08;
+    const ratios=imgs.map(im=>(im.naturalWidth&&im.naturalHeight)?im.naturalWidth/im.naturalHeight:0.4);
+    let breedteBijVolleHoogte = ratios.reduce((s,r)=>s+r*boxH,0) + boxH*gapFrac*(imgs.length-1);
+    let hoogte = boxH;
+    if(breedteBijVolleHoogte>boxW) hoogte = boxH*(boxW/breedteBijVolleHoogte);
+    const gapPx=hoogte*gapFrac;
+    imgs.forEach((im,i)=>{
+      im.style.height=hoogte+'px';
+      im.style.width='auto';
+      im.style.marginLeft = i===0 ? '0' : gapPx+'px';
+    });
+  }
+  if(imgs.length===0) return;
+  imgs.forEach(im=>{
+    im.onload=()=>{ geladen++; if(geladen===imgs.length) layout(); };
+    im.onerror=()=>{ geladen++; if(geladen===imgs.length) layout(); };
   });
 }
 function updateVoortgang(){
