@@ -459,13 +459,33 @@ function tekenLandIllustratie(feature,img,zoomstandActief){
   const geom=feature.geometry;
   const polysLijst=geom.type==='Polygon'?[geom.coordinates]:geom.coordinates;
 
-  // Stap 1: bereken de strakke rechthoek om ALLE landdelen samen.
-  // Dit is precies dezelfde rechthoek die de tekenaar met de hand maakt
-  // bij het bijsnijden: van het verste eiland tot het verste puntje.
+  // Stap 1: bereken de strakke rechthoek om de BETEKENISVOLLE landdelen.
+  // Kleine, verre eilandjes (< 3% van het grootste deel) tellen niet mee,
+  // zodat ze de rechthoek niet oprekken. Zo sluit deze rechthoek aan bij
+  // hoe de tekenaar met de hand bijsnijdt (op het herkenbare land).
+
+  // Eerst: bepaal de oppervlakte (in lon/lat) van elk landdeel,
+  // en vind het grootste deel ("de grote broer").
+  let grootsteOpp = 0;
+  const deelOpp = [];
+  for(const poly of polysLijst){
+    if(!poly[0]||poly[0].length<3){ deelOpp.push(0); continue; }
+    let opp=0;
+    for(let i=0,j=poly[0].length-1;i<poly[0].length;j=i++){
+      opp+=Math.abs((poly[0][j][0]-poly[0][i][0])*(poly[0][j][1]+poly[0][i][1]));
+    }
+    deelOpp.push(opp);
+    if(opp>grootsteOpp) grootsteOpp=opp;
+  }
+  const drempel = grootsteOpp * 0.03; // 3% van de grote broer
+
+  // Dan: meet de rechthoek, maar alleen over de delen die groot genoeg zijn.
   let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
   let heeftPunten=false;
-  for(const poly of polysLijst){
+  for(let p=0;p<polysLijst.length;p++){
+    const poly=polysLijst[p];
     if(!poly[0]||poly[0].length<3) continue;
+    if(deelOpp[p] < drempel) continue; // te klein: negeren voor de rechthoek
     for(const [lon,lat] of poly[0]){
       const [x,y,z]=roteerPunt(lonLatTo3D(lon,lat),rotM);
       if(z>0.01){
