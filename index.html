@@ -145,6 +145,7 @@
     #opdracht .landnaam { color:#ffd700; font-size:2.2rem; font-weight:900; text-shadow:0 2px 16px rgba(0,0,0,0.6); }
     #hint { margin-top:6px; color:rgba(255,255,255,0.3); font-size:0.75rem; }
     #land-hover { position:fixed; background:rgba(0,0,0,0.7); color:#fff; font-size:0.9rem; font-weight:600; padding:4px 14px; border-radius:10px; pointer-events:none; white-space:nowrap; opacity:0; transition:opacity 0.2s; z-index:8; transform:translate(-50%,-100%); }
+    #correctie-land-naam { position:fixed; background:rgba(120,90,0,0.85); color:#fff9d6; font-size:1rem; font-weight:800; padding:5px 16px; border-radius:10px; pointer-events:none; white-space:nowrap; opacity:0; transition:opacity 0.2s; z-index:8; transform:translate(-50%,-100%); box-shadow:0 0 14px rgba(255,224,102,0.6); }
     #feedback { position:fixed; top:42%; left:50%; transform:translate(-50%,-50%); font-size:3rem; font-weight:900; pointer-events:none; opacity:0; text-shadow:0 4px 20px rgba(0,0,0,0.8); z-index:30; transition:opacity 0.3s; }
     #punten-feedback { position:fixed; top:36%; left:50%; transform:translate(-50%,-50%); font-size:1.6rem; font-weight:900; pointer-events:none; opacity:0; color:#ffd700; text-shadow:0 4px 20px rgba(0,0,0,0.8); z-index:30; transition:opacity 0.3s; }
     #voortgang { position:fixed; top:50%; right:20px; transform:translateY(-50%); color:rgba(255,255,255,0.5); font-size:0.8rem; text-align:right; z-index:20; pointer-events:none; }
@@ -180,6 +181,7 @@
   <img id="vlag-valt" src="images/vlag_valt.png" alt="vlag"/>
   <img id="vlag-grond" src="images/vlag_grond.png" alt="vlag"/>
   <div id="land-hover"></div>
+  <div id="correctie-land-naam"></div>
   <div id="feedback"></div>
   <div id="punten-feedback"></div>
   <div id="hud-top">
@@ -240,7 +242,9 @@ let levelStartTijd=0, laatsteLevelTijd=0;
 // Vlucht-animatie bij een misser: vliegtuigje volgt automatisch een gloeiende lijn naar het juiste land
 let vluchtActief=false, vluchtStartTijd=0, vluchtDuur=0;
 let vluchtStartVec=null, vluchtEindVec=null, vluchtEindLon=0, vluchtEindLat=0;
-let vluchtScoreVoor=0, vluchtScoreNa=0, vluchtAfwijkingKm=0;
+let vluchtScoreVoor=0, vluchtScoreNa=0, vluchtAfwijkingKm=0, vluchtDoelLand=null;
+let correctieLand=null, correctieLandStartTijd=0;
+const CORRECTIE_GLOW_DUUR=900; // ms pulsen, daarna blijft het land geel staan
 let wachten=false, spelActief=false, globeGestart=false;
 
 // ── Zoom ─────────────────────────────────────────────
@@ -335,6 +339,8 @@ function updateVoortgang(){
 
 function nieuwLand(){
   vlagGrond.style.display='none';
+  correctieLand=null;
+  document.getElementById('correctie-land-naam').style.opacity='0';
   huidigLandIdx++;
   if(huidigLandIdx>=spelLanden.length){
     laatsteLevelTijd = levelStartTijd ? Math.round((performance.now()-levelStartTijd)/1000) : 0;
@@ -699,12 +705,24 @@ function drawGlobe(){
   ctx.beginPath(); ctx.arc(CX,CY,R,0,Math.PI*2); ctx.fillStyle=og; ctx.fill();
 
   const levelSet=new Set(LEVELS[huidigLevel].landen);
+  let correctieLandScherm=null;
   for(const f of GEOJSON.features){
     const dutch=f.properties.dutch||f.properties.name;
     const isHover=f===hoverLand;
+    const isCorrectieLand=f===correctieLand;
     const isLevelLand=levelSet.has(dutch);
-    let vul,rand,dikte;
-    if(isHover){ vul='#ffe566';rand='#c8960a';dikte=1.2; }
+    let vul,rand,dikte,glowNu=0;
+    if(isCorrectieLand){
+      const verstreken=performance.now()-correctieLandStartTijd;
+      if(verstreken<CORRECTIE_GLOW_DUUR){
+        const puls=0.5+0.5*Math.sin(verstreken/85);
+        vul = puls>0.45 ? '#fffbe0' : '#ffe566';
+        rand='#c8960a'; dikte=2.4; glowNu=18+puls*16;
+      } else {
+        vul='#ffe566'; rand='#c8960a'; dikte=1.6;
+      }
+    }
+    else if(isHover){ vul='#ffe566';rand='#c8960a';dikte=1.2; }
     else if(huidigModus==='verkennen'&&isLevelLand){ vul='#e8824a';rand='#b85a20';dikte=0.8; }
     else {
       const polys2=f.geometry.type==='Polygon'?[f.geometry.coordinates]:f.geometry.coordinates;
@@ -713,9 +731,21 @@ function drawGlobe(){
       const avgLat=nLat>0?sumLat/nLat:0;
       vul=getLandKleur(dutch,avgLat);rand=avgLat>65?'#88aabb':'#1a4a22';dikte=0.6;
     }
+    if(glowNu>0){ ctx.save(); ctx.shadowColor='#fff6c8'; ctx.shadowBlur=glowNu; }
     const g=f.geometry;
     if(g.type==='Polygon') tekenLand(g.coordinates,vul,rand,dikte);
     else if(g.type==='MultiPolygon') for(const p of g.coordinates) tekenLand(p,vul,rand,dikte);
+    if(glowNu>0) ctx.restore();
+    if(isCorrectieLand){
+      // Middelpunt van het grootste deel van het land, voor het naamlabel
+      const polys3=f.geometry.type==='Polygon'?[f.geometry.coordinates]:f.geometry.coordinates;
+      const grootste=polys3.reduce((a,b)=>(b[0]&&b[0].length>(a[0]?a[0].length:0))?b:a,polys3[0]);
+      let sLon=0,sLat=0,n=0;
+      for(const [lo,la] of grootste[0]){ sLon+=lo; sLat+=la; n++; }
+      const midLon=sLon/n, midLat=sLat/n;
+      const p3=roteerPunt(lonLatTo3D(midLon,midLat),rotM);
+      if(p3[2]>0) correctieLandScherm={sx:CX+p3[0]*R, sy:CY-p3[1]*R, naam:dutch};
+    }
   }
 
   tekenIJskap(90,12);
@@ -760,6 +790,16 @@ function drawGlobe(){
   }
 
   tekenFocusStip(focusSx,focusSy);
+
+  const correctieLabelEl=document.getElementById('correctie-land-naam');
+  if(correctieLandScherm){
+    correctieLabelEl.textContent=correctieLandScherm.naam;
+    correctieLabelEl.style.left=correctieLandScherm.sx+'px';
+    correctieLabelEl.style.top=(correctieLandScherm.sy-22)+'px';
+    correctieLabelEl.style.opacity='1';
+  } else {
+    correctieLabelEl.style.opacity='0';
+  }
 
   if(vluchtActief){
     ctx.save();
@@ -875,6 +915,8 @@ function updateSpel(){
       vluchtActief=false;
       score=vluchtScoreNa;
       document.getElementById('score').textContent=score;
+      correctieLand=vluchtDoelLand;
+      correctieLandStartTijd=performance.now();
       toonFeedback('Oepsie woepsie, hier is het!','#ff9900');
       toonPunten(vluchtAfwijkingKm);
       setTimeout(nieuwLand,1500);
@@ -1039,6 +1081,7 @@ document.addEventListener('keydown',e=>{
         vluchtScoreVoor=score;
         vluchtScoreNa=score+afwijkingKm;
         vluchtAfwijkingKm=afwijkingKm;
+        vluchtDoelLand=doelLand;
       }
     },2000);
   }
