@@ -107,12 +107,12 @@
 
     /* ── RICHTINGAANWIJZERS ── */
     #richting-rij {
-      position:fixed; right:22px; bottom:calc(22px + clamp(75px,10.9vmin,135px)/0.7424 + 10px);
-      z-index:20; display:none; gap:8px;
-      flex-direction:row;
+      position:fixed; right:22px; bottom:calc(22px + clamp(75px,10.9vmin,135px)/0.7424 + 14px);
+      z-index:20; display:none; gap:12px;
+      flex-direction:column; align-items:flex-end;
     }
     .richting-knop {
-      width:clamp(36px,5.2vmin,58px); height:clamp(36px,5.2vmin,58px);
+      width:clamp(52px,8vmin,86px); height:clamp(52px,8vmin,86px);
       border-radius:50%; cursor:pointer;
       background:rgba(255,255,255,0.1); border:2px solid rgba(255,255,255,0.3);
       display:flex; align-items:center; justify-content:center;
@@ -633,7 +633,11 @@ function gebruikRichtingwijzer(i){
   const doelLand=GEOJSON.features.find(f=>(f.properties.dutch||f.properties.name)===huidigLand);
   if(!doelLand) return;
   const uitkomst=berekenAfwijking(wonkyLon,wonkyLat,doelLand);
-  if(!uitkomst.punt) return; // je staat toevallig al op het land: geen richting nodig
+  if(!uitkomst.punt){
+    // Je vliegt toevallig al over het juiste land: geen richting nodig, geen pijl verspild
+    toonFeedback('Je bent er al! 🎯','#ffd700');
+    return;
+  }
 
   hintenBeschikbaar--;
   updateRichtingKnoppen();
@@ -649,7 +653,7 @@ function schietRichtingpijl(doelPunt){
   if(bearing<0) bearing+=360;
   const rot=bearing-AANWIJZER_BASISHOEK;
 
-  const wx=W*(0.5+wonkySchermX), wy=focusSy-90;
+  const wx=focusSx+wonkySchermX*W, wy=focusSy-90;
   const afstand=Math.min(W,H)*0.30;
   const dx=Math.sin(bearing*toRad)*afstand;
   const dy=-Math.cos(bearing*toRad)*afstand;
