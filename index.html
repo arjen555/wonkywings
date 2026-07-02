@@ -663,8 +663,20 @@ function schietRichtingpijl(doelPunt){
   if(bearing<0) bearing+=360;
   const rot=bearing-AANWIJZER_BASISHOEK;
 
-  const wx=focusSx+wonkySchermX*W, wy=focusSy-90;
-  const afstand=Math.min(W,H)*0.30;
+  // Start precies op Wonky's ECHTE positie (dezelfde plek als de gele land-markering),
+  // niet op het iets hogere tekenpunt van het personage zelf.
+  const wx=focusSx, wy=focusSy;
+
+  // Vliegafstand: nooit verder dan het doel zelf, zodat de pijl er niet overheen schiet.
+  const doelP3=roteerPunt(lonLatTo3D(doelPunt[0],doelPunt[1]),rotM);
+  let afstand;
+  if(doelP3[2]>0){
+    const doelSx=CX+doelP3[0]*R, doelSy=CY-doelP3[1]*R;
+    const echteAfstand=Math.hypot(doelSx-wx, doelSy-wy);
+    afstand=Math.max(40, Math.min(echteAfstand*0.8, Math.min(W,H)*0.35));
+  } else {
+    afstand=Math.min(W,H)*0.30; // doel ligt nu net aan de andere kant van de bol: val terug op vaste afstand
+  }
   const dx=Math.sin(bearing*toRad)*afstand;
   const dy=-Math.cos(bearing*toRad)*afstand;
 
