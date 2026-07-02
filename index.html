@@ -338,8 +338,8 @@ const GEOJSON = {"type":"FeatureCollection","features":[{"type":"Feature","prope
 const LEVELS = {
   1:{ naam:'Europa Starter',   start:{lon:10, lat:50}, landen:["Frankrijk", "Duitsland", "Spanje", "Italië", "Nederland", "België", "Polen", "Zweden", "Noorwegen", "Denemarken", "Portugal", "Oostenrijk", "Zwitserland", "Griekenland", "Ierland", "Verenigd Koninkrijk"], altijd_alle:false, beschikbaar:true },
   2:{ naam:'Europa Prof',      start:{lon:20, lat:50}, landen:["Rusland", "Duitsland", "Verenigd Koninkrijk", "Frankrijk", "Italië", "Spanje", "Oekraïne", "Polen", "Roemenië", "Nederland", "België", "Zweden", "Tsjechië", "Portugal", "Griekenland", "Hongarije", "Oostenrijk", "Wit-Rusland", "Zwitserland", "Bulgarije", "Servië", "Denemarken", "Noorwegen", "Finland", "Slowakije", "Ierland", "Kroatië", "Bosnië-Herzegovina", "Moldavië", "Litouwen", "Albanië", "Slovenië", "Letland", "Noord-Macedonië", "Estland", "Luxemburg", "Montenegro", "Malta", "IJsland", "Andorra", "Liechtenstein", "Monaco", "San Marino", "Vaticaanstad"], altijd_alle:false, beschikbaar:true },
-  3:{ naam:'Wereld Starter',   start:{lon:0, lat:20}, landen:["Frankrijk", "Spanje", "Nederland", "Italië", "Duitsland", "Verenigd Koninkrijk", "Turkije", "Verenigde Staten", "Canada", "Mexico", "Brazilië", "China", "India", "Japan", "Indonesië", "Australië", "Egypte", "Zuid-Afrika", "Rusland"], altijd_alle:false, beschikbaar:true },
-  4:{ naam:'Wereld Prof',      start:{lon:0, lat:20}, landen:["Frankrijk", "Spanje", "Nederland", "Italië", "Duitsland", "Verenigd Koninkrijk", "Turkije", "Verenigde Staten", "Canada", "Mexico", "Brazilië", "China", "India", "Japan", "Indonesië", "Australië", "Egypte", "Zuid-Afrika", "Rusland", "Portugal", "Nieuw-Zeeland", "Zweden", "Noorwegen", "Finland", "Polen", "Denemarken", "Ierland", "IJsland", "Griekenland", "Argentinië", "Peru", "Chili", "Saoedi-Arabië", "Marokko", "Nigeria", "Namibië", "Algerije", "Antarctica", "België", "Roemenië", "Wit-Rusland", "Mongolië", "Iran", "Vietnam", "Groenland"], altijd_alle:false, beschikbaar:true },
+  3:{ naam:'Wereld Starter',   start:{lon:0, lat:20}, landen:["Frankrijk", "Spanje", "Nederland", "Italië", "Duitsland", "Verenigd Koninkrijk", "Turkije", "Verenigde Staten van Amerika", "Canada", "Mexico", "Brazilië", "China", "India", "Japan", "Indonesië", "Australië", "Egypte", "Zuid-Afrika", "Rusland"], altijd_alle:false, beschikbaar:true },
+  4:{ naam:'Wereld Prof',      start:{lon:0, lat:20}, landen:["Frankrijk", "Spanje", "Nederland", "Italië", "Duitsland", "Verenigd Koninkrijk", "Turkije", "Verenigde Staten van Amerika", "Canada", "Mexico", "Brazilië", "China", "India", "Japan", "Indonesië", "Australië", "Egypte", "Zuid-Afrika", "Rusland", "Portugal", "Nieuw-Zeeland", "Zweden", "Noorwegen", "Finland", "Polen", "Denemarken", "Ierland", "IJsland", "Griekenland", "Argentinië", "Peru", "Chili", "Saoedi-Arabië", "Marokko", "Nigeria", "Namibië", "Algerije", "Antarctica", "België", "Roemenië", "Wit-Rusland", "Mongolië", "Iran", "Vietnam", "Groenland"], altijd_alle:false, beschikbaar:true },
   5:{ naam:'Water Wonder',     start:{lon:10, lat:50}, landen:[], altijd_alle:false, beschikbaar:false },
   6:{ naam:'Wie alles kent!',  start:{lon:0, lat:20}, landen:["Indonesië", "Maleisië", "Chili", "Bolivia", "Peru", "Argentinië", "Dhekelia Cantonment", "Cyprus", "India", "Volksrepubliek China", "Israël", "Palestina", "Libanon", "Ethiopië", "Zuid-Soedan", "Somalië", "Kenia", "Malawi", "Tanzania", "Syrië", "Somaliland", "Frankrijk", "Suriname", "Guyana", "Zuid-Korea", "Noord-Korea", "Marokko", "Westelijke Sahara", "Costa Rica", "Nicaragua", "Congo-Brazzaville", "Congo-Kinshasa", "Bhutan", "Oekraïne", "Wit-Rusland", "Namibië", "Zuid-Afrika", "Sint-Maarten", "Sint Maarten", "Oman", "Oezbekistan", "Kazachstan", "Tadzjikistan", "Litouwen", "Brazilië", "Uruguay", "Mongolië", "Rusland", "Tsjechië", "Duitsland", "Estland", "Letland", "Noorwegen", "Zweden", "Finland", "Vietnam", "Cambodja", "Luxemburg", "Verenigde Arabische Emiraten", "België", "Georgië", "Noord-Macedonië", "Albanië", "Azerbeidzjan", "Kosovo", "Turkije", "Spanje", "Laos", "Kirgizië", "Armenië", "Denemarken", "Libië", "Tunesië", "Roemenië", "Hongarije", "Slowakije", "Polen", "Ierland", "Verenigd Koninkrijk", "Griekenland", "Zambia", "Sierra Leone", "Guinee", "Liberia", "Centraal-Afrikaanse Republiek", "Soedan", "Djibouti", "Eritrea", "Oostenrijk", "Irak", "Italië", "Zwitserland", "Iran", "Nederland", "Liechtenstein", "Ivoorkust", "Servië", "Mali", "Senegal", "Nigeria", "Benin", "Angola", "Kroatië", "Slovenië", "Qatar", "Saoedi-Arabië", "Botswana", "Zimbabwe", "Pakistan", "Bulgarije", "Thailand", "San Marino", "Haïti", "Dominicaanse Republiek", "Tsjaad", "Koeweit", "El Salvador", "Guatemala", "Oost-Timor", "Brunei", "Monaco", "Algerije", "Mozambique", "Swaziland", "Burundi", "Rwanda", "Myanmar", "Bangladesh", "Andorra", "Afghanistan", "Montenegro", "Bosnië-Herzegovina", "Oeganda", "Guantánamo Bay", "Cuba", "Honduras", "Ecuador", "Colombia", "Paraguay", "Brazilian Island", "Portugal", "Moldavië", "Turkmenistan", "Jordanië", "Nepal", "Lesotho", "Kameroen", "Gabon", "Niger", "Burkina Faso", "Togo", "Ghana", "Guinee-Bissau", "Gibraltar", "Verenigde Staten van Amerika", "Canada", "Mexico", "Belize", "Panama", "Venezuela", "Papoea-Nieuw-Guinea", "Egypte", "Jemen", "Mauritanië", "Equatoriaal-Guinea", "Gambia", "Hongkong", "Vaticaanstad", "Noord-Cyprus", "VN-Bufferzone", "Siachengletsjer", "Bajkonoer", "Akrotiri", "Southern Patagonian Ice Field", "Bir Tawil", "Antarctica", "Australië", "Groenland", "Fiji", "Nieuw-Zeeland", "Nieuw-Caledonië", "Madagaskar", "Filipijnen", "Sri Lanka", "Curaçao", "Aruba", "Bahama's", "Turks- en Caicoseilanden", "Taiwan", "Japan", "Saint-Pierre en Miquelon", "IJsland", "Pitcairneilanden", "Frans-Polynesië", "Franse Zuidelijke Gebieden", "Seychellen", "Kiribati", "Marshalleilanden", "Trinidad en Tobago", "Grenada", "Saint Vincent en de Grenadines", "Barbados", "Saint Lucia", "Dominica", "Kleine afgelegen eilanden van de Verenigde Staten", "Montserrat", "Antigua en Barbuda", "Saint Kitts en Nevis", "Amerikaanse Maagdeneilanden", "Saint-Barthélemy", "Puerto Rico", "Anguilla", "Britse Maagdeneilanden", "Jamaica", "Kaaimaneilanden", "Bermuda", "Heard en McDonaldeilanden", "Sint-Helena", "Mauritius", "Comoren", "Sao Tomé en Principe", "Kaapverdië", "Malta", "Jersey", "Guernsey", "Man", "Åland", "Faeröer", "Australische territoria van de Indische Oceaan", "Brits Indische Oceaanterritorium", "Singapore", "Norfolk", "Cookeilanden", "Tonga", "Wallis en Futuna", "Samoa", "Salomonseilanden", "Tuvalu", "Maldiven", "Nauru", "Micronesia", "Zuid-Georgia en de Zuidelijke Sandwicheilanden", "Falklandeilanden", "Vanuatu", "Niue", "Amerikaans-Samoa", "Palau", "Guam", "Noordelijke Marianen", "Bahrein", "Koraalzee-eilanden", "Wake", "Clipperton", "Macau", "Ashmore- en Cartiereilanden", "Bajo Nuevo", "Serranilla", "Scarborough-rif"], altijd_alle:false, beschikbaar:true }
 };
@@ -400,12 +400,23 @@ function landNaarBestand(naam) {
     .replace(/ñ/g,'n').replace(/ç/g,'c').replace(/\s+/g,'_');
 }
 function laadIllustratie(naam) {
-  if(landIllustraties[naam] !== undefined) return;
-  landIllustraties[naam] = null;
-  const img = new Image();
-  img.onload  = () => { landIllustraties[naam] = img; };
-  img.onerror = () => { landIllustraties[naam] = false; };
-  img.src = 'images/landen/' + landNaarBestand(naam) + '.png';
+  if(landIllustraties[naam] === undefined){
+    landIllustraties[naam] = null;
+    const img = new Image();
+    img.onload  = () => { landIllustraties[naam] = img; };
+    img.onerror = () => { landIllustraties[naam] = false; };
+    img.src = 'images/landen/' + landNaarBestand(naam) + '.png';
+  }
+  // Speciaal geval: Alaska hoort bij de VS, maar heeft een eigen plaatje
+  // (zie tekenLandIllustratie), omdat het te ver van het vasteland afligt
+  // om over hetzelfde plaatje uit te rekken.
+  if(naam==='Verenigde Staten van Amerika' && landIllustraties['__Alaska']===undefined){
+    landIllustraties['__Alaska'] = null;
+    const alaskaImg = new Image();
+    alaskaImg.onload  = () => { landIllustraties['__Alaska'] = alaskaImg; };
+    alaskaImg.onerror = () => { landIllustraties['__Alaska'] = false; };
+    alaskaImg.src = 'images/landen/Verenigde_Staten_Alaska.png';
+  }
 }
 
 function startSpel(levelNr, modus) {
@@ -839,17 +850,12 @@ function tekenIJskap(poolLat,straal){
 }
 
 // ── Landillustratie ───────────────────────────────────
-function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
-  const geom=feature.geometry;
-  const polysLijst=geom.type==='Polygon'?[geom.coordinates]:geom.coordinates;
-
+function tekenPolyGroep(polysLijst,img,doorzicht){
+  if(!polysLijst.length) return;
   // Stap 1: bereken de strakke rechthoek om de BETEKENISVOLLE landdelen.
   // Kleine, verre eilandjes (< 3% van het grootste deel) tellen niet mee,
   // zodat ze de rechthoek niet oprekken. Zo sluit deze rechthoek aan bij
   // hoe de tekenaar met de hand bijsnijdt (op het herkenbare land).
-
-  // Eerst: bepaal de oppervlakte (in lon/lat) van elk landdeel,
-  // en vind het grootste deel ("de grote broer").
   let grootsteOpp = 0;
   const deelOpp = [];
   for(const poly of polysLijst){
@@ -863,13 +869,12 @@ function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
   }
   const drempel = grootsteOpp * 0.03; // 3% van de grote broer
 
-  // Dan: meet de rechthoek, maar alleen over de delen die groot genoeg zijn.
   let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
   let heeftPunten=false;
   for(let p=0;p<polysLijst.length;p++){
     const poly=polysLijst[p];
     if(!poly[0]||poly[0].length<3) continue;
-    if(deelOpp[p] < drempel) continue; // te klein: negeren voor de rechthoek
+    if(deelOpp[p] < drempel) continue;
     for(const [lon,lat] of poly[0]){
       const [x,y,z]=roteerPunt(lonLatTo3D(lon,lat),rotM);
       if(z>0.01){
@@ -882,7 +887,7 @@ function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
   }
   if(!heeftPunten||maxX-minX<5||maxY-minY<5) return;
 
-  // Stap 2: clip = ALLE polygonen (zodat de tekening netjes binnen de landvorm blijft)
+  // Stap 2: clip = ALLE polygonen van DEZE groep
   ctx.save();
   ctx.beginPath();
   for(const poly of polysLijst){
@@ -900,12 +905,37 @@ function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
   }
   ctx.clip();
 
-  // Stap 3: plak de tekening op de strakke rechthoek om ALLE landdelen samen
+  // Stap 3: plak de tekening op de strakke rechthoek om deze groep
   const breedte=maxX-minX, hoogte=maxY-minY;
   ctx.globalAlpha = (doorzicht!==undefined ? doorzicht : 0.93);
   ctx.drawImage(img, minX, minY, breedte, hoogte);
   ctx.globalAlpha=1.0;
   ctx.restore();
+}
+
+function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
+  const geom=feature.geometry;
+  const polysLijst=geom.type==='Polygon'?[geom.coordinates]:geom.coordinates;
+  const dutch=feature.properties.dutch||feature.properties.name;
+
+  // Speciaal geval: Alaska ligt zo ver los van de rest van de VS, dat één
+  // plaatje over beide heen stretchen er raar uitziet. Als er een apart
+  // Alaska-plaatje geladen is, tekenen we Alaska (alles onder -140° lengtegraad)
+  // apart, met zijn eigen rechthoek.
+  if(dutch==='Verenigde Staten van Amerika' && landIllustraties['__Alaska']){
+    const alaskaDelen=[], hoofdDelen=[];
+    for(const poly of polysLijst){
+      if(!poly[0]||poly[0].length<3){ hoofdDelen.push(poly); continue; }
+      const lonMin=Math.min(...poly[0].map(p=>p[0]));
+      if(lonMin < -140) alaskaDelen.push(poly);
+      else hoofdDelen.push(poly);
+    }
+    tekenPolyGroep(hoofdDelen, img, doorzicht);
+    tekenPolyGroep(alaskaDelen, landIllustraties['__Alaska'], doorzicht);
+    return;
+  }
+
+  tekenPolyGroep(polysLijst, img, doorzicht);
 }
 
 
