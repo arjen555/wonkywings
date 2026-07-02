@@ -105,6 +105,29 @@
     }
     #scorebord-terug-btn:hover { background:rgba(255,255,255,0.22); }
 
+    /* ── RICHTINGAANWIJZERS ── */
+    #richting-rij {
+      position:fixed; right:22px; bottom:calc(22px + clamp(75px,10.9vmin,135px)/0.7424 + 10px);
+      z-index:20; display:none; gap:8px;
+      flex-direction:row;
+    }
+    .richting-knop {
+      width:clamp(36px,5.2vmin,58px); height:clamp(36px,5.2vmin,58px);
+      border-radius:50%; cursor:pointer;
+      background:rgba(255,255,255,0.1); border:2px solid rgba(255,255,255,0.3);
+      display:flex; align-items:center; justify-content:center;
+      transition:opacity 0.2s, filter 0.2s, transform 0.15s;
+      filter:drop-shadow(0 3px 8px rgba(0,0,0,0.5));
+    }
+    .richting-knop img { width:70%; height:70%; object-fit:contain; }
+    .richting-knop:hover { transform:scale(1.08); }
+    .richting-knop.richting-uit { opacity:0.3; filter:grayscale(1); cursor:default; pointer-events:none; }
+    #richting-pijl {
+      position:fixed; width:clamp(50px,7vmin,90px); pointer-events:none;
+      z-index:21; display:none; opacity:1;
+      filter:drop-shadow(0 0 10px rgba(120,230,255,0.8));
+    }
+
     /* ── JOKER ── */
     #joker-knop {
       position:fixed; right:clamp(12px,2vmin,24px); bottom:clamp(12px,2vmin,24px); z-index:20; display:none;
@@ -274,6 +297,12 @@
   <div id="correctie-land-naam"></div>
   <div id="feedback"></div>
   <div id="punten-feedback"></div>
+  <div id="richting-rij">
+    <div class="richting-knop" onclick="gebruikRichtingwijzer(0)"><img src="images/aanwijzer.png" alt="Richtingaanwijzer"/></div>
+    <div class="richting-knop" onclick="gebruikRichtingwijzer(1)"><img src="images/aanwijzer.png" alt="Richtingaanwijzer"/></div>
+    <div class="richting-knop" onclick="gebruikRichtingwijzer(2)"><img src="images/aanwijzer.png" alt="Richtingaanwijzer"/></div>
+  </div>
+  <img id="richting-pijl" src="images/aanwijzer.png" alt=""/>
   <div id="joker-knop" onclick="gebruikJoker()">
     <img src="images/joker.png" alt="Joker"/>
     <div id="joker-badge">1×</div>
@@ -346,6 +375,8 @@ let correctieLand=null, correctieLandStartTijd=0;
 const CORRECTIE_GLOW_DUUR=900; // ms pulsen, daarna blijft het land geel staan
 let jokerBeschikbaar=true, misserAutoTimer=null;
 const MISSER_AUTO_MS=4000; // hoe lang de foutcorrectie in beeld blijft voor 'ie vanzelf doorschakelt
+let hintenBeschikbaar=3;
+const AANWIJZER_BASISHOEK=45.2546; // hoek waarin de afbeelding van nature wijst
 let wachten=false, spelActief=false, globeGestart=false;
 
 // ── Zoom ─────────────────────────────────────────────
@@ -410,6 +441,9 @@ function startSpel(levelNr, modus) {
   jokerBeschikbaar=true;
   document.getElementById('joker-knop').style.display = (modus==='spelen') ? 'block' : 'none';
   updateJokerKnop();
+  hintenBeschikbaar=3;
+  document.getElementById('richting-rij').style.display = (modus==='spelen') ? 'flex' : 'none';
+  updateRichtingKnoppen();
   document.getElementById('zoom-indicator').textContent='🔍 '+ZOOM_NAMEN[zoomStand];
 
   if(modus==='verkennen'){
@@ -437,6 +471,8 @@ function naarStart(){
   document.getElementById('scorebord-scherm').style.display='none';
   document.getElementById('startscherm').style.display='flex';
   document.getElementById('joker-knop').style.display='none';
+  document.getElementById('richting-rij').style.display='none';
+  document.getElementById('richting-pijl').style.display='none';
   if(misserAutoTimer){ clearTimeout(misserAutoTimer); misserAutoTimer=null; }
   vlagGrond.style.display='none'; vlagValt.style.display='none';
 }
@@ -583,6 +619,53 @@ function gebruikJoker(){
   }
   vervangHuidigLand();
   updateJokerKnop();
+}
+
+// ── Richtingaanwijzers ──────────────────────────────────
+function updateRichtingKnoppen(){
+  const knoppen=document.querySelectorAll('.richting-knop');
+  knoppen.forEach((el,i)=>{
+    el.classList.toggle('richting-uit', i >= hintenBeschikbaar);
+  });
+}
+function gebruikRichtingwijzer(i){
+  if(hintenBeschikbaar<=0 || huidigModus!=='spelen' || !spelActief) return;
+  const doelLand=GEOJSON.features.find(f=>(f.properties.dutch||f.properties.name)===huidigLand);
+  if(!doelLand) return;
+  const uitkomst=berekenAfwijking(wonkyLon,wonkyLat,doelLand);
+  if(!uitkomst.punt) return; // je staat toevallig al op het land: geen richting nodig
+
+  hintenBeschikbaar--;
+  updateRichtingKnoppen();
+  schietRichtingpijl(uitkomst.punt);
+}
+function schietRichtingpijl(doelPunt){
+  const toRad=Math.PI/180, toDeg=180/Math.PI;
+  const phi1=wonkyLat*toRad, phi2=doelPunt[1]*toRad;
+  const dLambda=(doelPunt[0]-wonkyLon)*toRad;
+  const y=Math.sin(dLambda)*Math.cos(phi2);
+  const x=Math.cos(phi1)*Math.sin(phi2)-Math.sin(phi1)*Math.cos(phi2)*Math.cos(dLambda);
+  let bearing=Math.atan2(y,x)*toDeg;
+  if(bearing<0) bearing+=360;
+  const rot=bearing-AANWIJZER_BASISHOEK;
+
+  const wx=W*(0.5+wonkySchermX), wy=focusSy-90;
+  const afstand=Math.min(W,H)*0.30;
+  const dx=Math.sin(bearing*toRad)*afstand;
+  const dy=-Math.cos(bearing*toRad)*afstand;
+
+  const pijl=document.getElementById('richting-pijl');
+  pijl.style.transition='none';
+  pijl.style.left=wx+'px'; pijl.style.top=wy+'px';
+  pijl.style.opacity='1';
+  pijl.style.display='block';
+  pijl.style.transform=`translate(-50%,-50%) rotate(${rot}deg)`;
+  requestAnimationFrame(()=>{ requestAnimationFrame(()=>{
+    pijl.style.transition='transform 1.5s ease-out, opacity 0.3s ease-in 1.2s';
+    pijl.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) rotate(${rot}deg)`;
+    pijl.style.opacity='0';
+  }); });
+  setTimeout(()=>{ pijl.style.display='none'; }, 1550);
 }
 
 function nieuwLand(){
