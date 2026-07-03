@@ -916,8 +916,9 @@ function tekenPolyGroep(polysLijst,img,doorzicht){
     if(!poly[0]||poly[0].length<3){ deelOpp.push(0); continue; }
     let opp=0;
     for(let i=0,j=poly[0].length-1;i<poly[0].length;j=i++){
-      opp+=Math.abs((poly[0][j][0]-poly[0][i][0])*(poly[0][j][1]+poly[0][i][1]));
+      opp+=(poly[0][j][0]-poly[0][i][0])*(poly[0][j][1]+poly[0][i][1]); // GEEN Math.abs per term!
     }
+    opp=Math.abs(opp); // pas hier, over de hele som — dat is de échte (dubbele) oppervlakte
     deelOpp.push(opp);
     if(opp>grootsteOpp) grootsteOpp=opp;
   }
