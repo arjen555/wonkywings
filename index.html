@@ -380,15 +380,17 @@ const AANWIJZER_BASISHOEK=45.2546; // hoek waarin de afbeelding van nature wijst
 let wachten=false, spelActief=false, globeGestart=false;
 
 // ── Zoom ─────────────────────────────────────────────
-let zoomStand = 0;
-let zoomRichting = 1; // 1=inzoomen, -1=uitzoomen (cyclus 0-1-2-3-2-1-0)
-// Stand 3 is dynamisch: berekend zodat het huidige land 50% schermhoogte vult
-const ZOOM_STANDEN_BASIS = [1.0, 2.2, 4.5, null]; // null = dynamisch
-const ZOOM_NAMEN = ['Wereld', 'Dichterbij', 'Landview', 'Close-up'];
+let zoomNiveau = 0; // 0 = volledig uitgezoomd (wereldbol), 1 = volledig ingezoomd op het huidige land
+const ZOOM_MIN = 1.0;
 let zoomFactor = 1.0;
 const ZOOM_SNELHEID = 0.07;
-const DOEL_LAND_HOOGTE_FRACTIE = 0.65; // land moet 65% schermhoogte vullen in stand 3
-const DOEL_LAND_BREEDTE_FRACTIE = 0.75; // land mag max. 75% schermbreedte vullen in stand 3
+const ZOOM_STAP_BASIS = 0.006;      // hoeveel zoomNiveau per frame verschuift bij ingedrukt houden
+const ZOOM_VERSNELLING_MAX = 4;     // hoe veel sneller het maximaal wordt bij lang ingedrukt houden
+const ZOOM_VERSNELLING_TIJD = 1200; // ms tot volle versnelling
+let zHoudSinds = 0, xHoudSinds = 0;
+const DOEL_LAND_HOOGTE_FRACTIE = 0.65; // land moet 65% schermhoogte vullen bij volledig ingezoomd (niveau 1)
+const DOEL_LAND_BREEDTE_FRACTIE = 0.75; // land mag max. 75% schermbreedte vullen bij volledig ingezoomd
+const ZOOM_ILLUSTRATIE_DREMPEL = 4.5; // vanaf deze zoomfactor begint de landillustratie te verschijnen
 
 // ── Illustraties ──────────────────────────────────────
 const landIllustraties = {};
@@ -474,9 +476,8 @@ function startSpel(levelNr, modus) {
   levelStartTijd = (modus==='spelen') ? performance.now() : 0;
 
   // Zoom: Europa levels starten ingezoomd
-  zoomStand = (levelNr<=2) ? 1 : 0;
-  zoomRichting = 1;
-  zoomFactor = ZOOM_STANDEN_BASIS[zoomStand];
+  zoomNiveau = (levelNr<=2) ? 0.35 : 0;
+  zoomFactor = ZOOM_MIN;
   for(const naam of spelLanden) laadIllustratie(naam);
 
   document.getElementById('startscherm').style.display='none';
@@ -492,7 +493,7 @@ function startSpel(levelNr, modus) {
   hintenBeschikbaar=3;
   document.getElementById('richting-rij').style.display = (modus==='spelen') ? 'flex' : 'none';
   updateRichtingKnoppen();
-  document.getElementById('zoom-indicator').textContent='🔍 '+ZOOM_NAMEN[zoomStand];
+  document.getElementById('zoom-indicator').textContent='🔍 '+Math.round(zoomNiveau*100)+'%';
 
   if(modus==='verkennen'){
     document.getElementById('opdracht-label').textContent='🔍 Verkennen';
@@ -1080,7 +1081,7 @@ function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
 // Cache: laatst-gemeten land voor stand-3-zoom, om herberekening te vermijden
 // als je nog boven hetzelfde land vliegt
 let stand3LaatsteLand = null;
-let stand3DoelFactor = ZOOM_STANDEN_BASIS[2] * 1.8; // fallback
+let stand3DoelFactor = 8.1; // fallback (was: oude Landview-zoom 4.5 * 1.8)
 
 function berekenStand3Zoom() {
   if(!hoverLand){
@@ -1282,30 +1283,31 @@ function drawGlobe(){
 
   tekenIJskap(90,12);
 
-  // Illustratie-reis: niks in stand 0/1, waas in stand 2 (Landview),
-  // vloeiend opklarend tot vol richting stand 3 (Close-up).
-  if(zoomStand>=2 && hoverLand){
+  // Illustratie-reis: niks bij weinig zoom, waas vanaf de oude 'Landview'-drempel,
+  // vloeiend opklarend tot vol bij het dynamische maximum voor dit land.
+  if(zoomFactor>=ZOOM_ILLUSTRATIE_DREMPEL && hoverLand){
     const dutch=hoverLand.properties.dutch||hoverLand.properties.name;
     laadIllustratie(dutch);
     const ill=landIllustraties[dutch];
     if(ill){
       // Bepaal doorzichtigheid op basis van hoe ver we zijn ingezoomd.
-      // Landview-zoom = ondergrens (waas 15%), Close-up-doel = bovengrens (vol 100%).
-      const landviewZoom = ZOOM_STANDEN_BASIS[2];       // 4.5
+      // Drempel = ondergrens (waas 15%), dynamisch maximum = bovengrens (vol 100%).
+      const landviewZoom = ZOOM_ILLUSTRATIE_DREMPEL;
       const closeupZoom  = stand3DoelFactor;            // dynamisch per land
-      const WAAS = 0.15;   // 15% waas in landview
+      const WAAS = 0.15;   // 15% waas net voorbij de drempel
       let doorzicht;
       if(closeupZoom <= landviewZoom + 0.01){
-        // Vangnet: als close-up bijna gelijk is aan landview (heel groot land),
-        // laat de illustratie gewoon vol zien vanaf close-up-stand.
-        doorzicht = (zoomStand>=3) ? 1.0 : WAAS;
+        // Vangnet: als het dynamische maximum bijna gelijk is aan de drempel
+        // (heel groot land), laat de illustratie gewoon vol zien zodra je
+        // de drempel echt haalt.
+        doorzicht = (zoomFactor >= landviewZoom - 0.01) ? 1.0 : WAAS;
       } else {
-        // Hoe ver zijn we tussen landview-zoom en close-up-zoom? (0 = net landview, 1 = vol close-up)
+        // Hoe ver zijn we tussen de drempel en het dynamische maximum? (0 = net erover, 1 = volledig ingezoomd)
         let voortgang = (zoomFactor - landviewZoom) / (closeupZoom - landviewZoom);
         voortgang = Math.max(0, Math.min(1, voortgang));
         doorzicht = WAAS + (1.0 - WAAS) * voortgang;
       }
-      tekenLandIllustratie(hoverLand,ill,zoomStand,doorzicht);
+      tekenLandIllustratie(hoverLand,ill,zoomNiveau,doorzicht);
     }
   }
 
@@ -1386,15 +1388,6 @@ const keys={};
 document.addEventListener('keydown',e=>{
   keys[e.key]=true;
   if([' ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
-  // Z = een stap inzoomen, X = een stap uitzoomen
-  if(e.key==='z'||e.key==='Z'){
-    if(zoomStand < 3) zoomStand += 1;
-    document.getElementById('zoom-indicator').textContent='🔍 '+ZOOM_NAMEN[zoomStand];
-  }
-  if(e.key==='x'||e.key==='X'){
-    if(zoomStand > 0) zoomStand -= 1;
-    document.getElementById('zoom-indicator').textContent='🔍 '+ZOOM_NAMEN[zoomStand];
-  }
 });
 document.addEventListener('keyup',e=>{ keys[e.key]=false; });
 
@@ -1423,12 +1416,33 @@ function updateSpel(){
     document.getElementById('tijd-display').textContent='⏱ '+mm+':'+String(ss).padStart(2,'0');
   }
 
-  // Zoom animatie (stand 3 is dynamisch berekend, continu bijgewerkt per land)
-  if(zoomStand===3) berekenStand3Zoom(); // elke frame opnieuw meten o.b.v. hoverLand
-  const doelZoom = zoomStand===3 ? stand3DoelFactor : ZOOM_STANDEN_BASIS[zoomStand];
-  // Vloeiende overgang - iets trager bij stand 3 zodat het rustig "ademt" ipv schokt
-  const zoomSnelheidNu = zoomStand===3 ? ZOOM_SNELHEID*0.6 : ZOOM_SNELHEID;
-  zoomFactor+=(doelZoom-zoomFactor)*zoomSnelheidNu;
+  // Zoom: het dynamische maximum (aangepast aan het land onder Wonky) wordt
+  // elke frame herberekend, en Z/X schuiven het zoomniveau (0-1) geleidelijk
+  // op, met versnelling naarmate je de toets langer ingedrukt houdt.
+  berekenStand3Zoom();
+  const zoomMax = Math.max(stand3DoelFactor, ZOOM_MIN+0.01);
+
+  const nuTijd = performance.now();
+  if(keys['z']||keys['Z']){
+    if(!zHoudSinds) zHoudSinds = nuTijd;
+    const duur = nuTijd - zHoudSinds;
+    const versnelling = 1 + (ZOOM_VERSNELLING_MAX-1)*Math.min(1, duur/ZOOM_VERSNELLING_TIJD);
+    zoomNiveau = Math.min(1, zoomNiveau + ZOOM_STAP_BASIS*versnelling);
+    document.getElementById('zoom-indicator').textContent='🔍 '+Math.round(zoomNiveau*100)+'%';
+  } else { zHoudSinds = 0; }
+  if(keys['x']||keys['X']){
+    if(!xHoudSinds) xHoudSinds = nuTijd;
+    const duur = nuTijd - xHoudSinds;
+    const versnelling = 1 + (ZOOM_VERSNELLING_MAX-1)*Math.min(1, duur/ZOOM_VERSNELLING_TIJD);
+    zoomNiveau = Math.max(0, zoomNiveau - ZOOM_STAP_BASIS*versnelling);
+    document.getElementById('zoom-indicator').textContent='🔍 '+Math.round(zoomNiveau*100)+'%';
+  } else { xHoudSinds = 0; }
+
+  // zoomNiveau (0-1) logaritmisch omzetten naar een echte zoomfactor, zodat
+  // elke stap er even groot 'uitziet' — niet steeds grotere sprongen bij
+  // hoge zoom (wat je bij een simpele rechte lijn wél zou krijgen).
+  const doelZoom = ZOOM_MIN * Math.pow(zoomMax/ZOOM_MIN, zoomNiveau);
+  zoomFactor+=(doelZoom-zoomFactor)*ZOOM_SNELHEID;
   R=Math.min(W,H)*0.58*zoomFactor;
   CX=W/2; CY=H*0.56;
 
