@@ -399,11 +399,45 @@ function landNaarBestand(naam) {
     .replace(/á/g,'a').replace(/à/g,'a').replace(/â/g,'a').replace(/ä/g,'a')
     .replace(/ñ/g,'n').replace(/ç/g,'c').replace(/\s+/g,'_');
 }
+// Vult transparante randen/hoekjes van een illustratie automatisch op door
+// de kleur van het dichtstbijzijnde getekende pixel naar buiten te laten
+// "uitlopen". Zo verdwijnen gaten/gele plekken vanzelf, zonder dat iemand
+// met de hand elk land hoeft bij te werken.
+function verlengRandenNaarTransparant(img){
+  const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+  const off = document.createElement('canvas');
+  off.width = w; off.height = h;
+  const octx = off.getContext('2d');
+  octx.drawImage(img, 0, 0, w, h);
+  const data = octx.getImageData(0, 0, w, h);
+  const px = data.data;
+  const ALPHA_DREMPEL = 20;
+  const totaal = w*h;
+  const bezocht = new Uint8Array(totaal);
+  const wachtrij = new Int32Array(totaal);
+  let qStart=0, qEnd=0;
+  for(let i=0;i<totaal;i++){
+    if(px[i*4+3] >= ALPHA_DREMPEL){ bezocht[i]=1; wachtrij[qEnd++]=i; }
+  }
+  if(qEnd===0 || qEnd===totaal) return img; // niks te doen (leeg of al helemaal vol)
+  while(qStart<qEnd){
+    const idx = wachtrij[qStart++];
+    const x = idx % w, y = (idx / w) | 0;
+    const r=px[idx*4], g=px[idx*4+1], b=px[idx*4+2];
+    if(x>0){ const n=idx-1; if(!bezocht[n]){bezocht[n]=1; px[n*4]=r;px[n*4+1]=g;px[n*4+2]=b;px[n*4+3]=255; wachtrij[qEnd++]=n;} }
+    if(x<w-1){ const n=idx+1; if(!bezocht[n]){bezocht[n]=1; px[n*4]=r;px[n*4+1]=g;px[n*4+2]=b;px[n*4+3]=255; wachtrij[qEnd++]=n;} }
+    if(y>0){ const n=idx-w; if(!bezocht[n]){bezocht[n]=1; px[n*4]=r;px[n*4+1]=g;px[n*4+2]=b;px[n*4+3]=255; wachtrij[qEnd++]=n;} }
+    if(y<h-1){ const n=idx+w; if(!bezocht[n]){bezocht[n]=1; px[n*4]=r;px[n*4+1]=g;px[n*4+2]=b;px[n*4+3]=255; wachtrij[qEnd++]=n;} }
+  }
+  octx.putImageData(data, 0, 0);
+  return off; // canvas, werkt net als een Image bij ctx.drawImage
+}
+
 function laadIllustratie(naam) {
   if(landIllustraties[naam] === undefined){
     landIllustraties[naam] = null;
     const img = new Image();
-    img.onload  = () => { landIllustraties[naam] = img; };
+    img.onload  = () => { landIllustraties[naam] = verlengRandenNaarTransparant(img); };
     img.onerror = () => { landIllustraties[naam] = false; };
     img.src = 'images/landen/' + landNaarBestand(naam) + '.png';
   }
@@ -413,7 +447,7 @@ function laadIllustratie(naam) {
   if(naam==='Verenigde Staten van Amerika' && landIllustraties['__Alaska']===undefined){
     landIllustraties['__Alaska'] = null;
     const alaskaImg = new Image();
-    alaskaImg.onload  = () => { landIllustraties['__Alaska'] = alaskaImg; };
+    alaskaImg.onload  = () => { landIllustraties['__Alaska'] = verlengRandenNaarTransparant(alaskaImg); };
     alaskaImg.onerror = () => { landIllustraties['__Alaska'] = false; };
     alaskaImg.src = 'images/landen/Verenigde_Staten_Alaska.png';
   }
