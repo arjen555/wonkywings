@@ -850,6 +850,27 @@ function tekenIJskap(poolLat,straal){
 }
 
 // ── Landillustratie ───────────────────────────────────
+// Plakt één driehoekje van de afbeelding (sx0,sy0 / sx1,sy1 / sx2,sy2 in bronpixels)
+// uitgerekt naar drie schermpunten (dx0,dy0 / dx1,dy1 / dx2,dy2). Dit is de truc
+// waarmee een plat plaatje in kleine stukjes over de kromming van de bol "buigt".
+function tekenDriehoek(img, sx0,sy0,sx1,sy1,sx2,sy2, dx0,dy0,dx1,dy1,dx2,dy2){
+  const denom = sx0*(sy1-sy2) + sx1*(sy2-sy0) + sx2*(sy0-sy1);
+  if(Math.abs(denom) < 1e-6) return;
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(dx0,dy0); ctx.lineTo(dx1,dy1); ctx.lineTo(dx2,dy2); ctx.closePath();
+  ctx.clip();
+  const a=(dx0*(sy1-sy2)+dx1*(sy2-sy0)+dx2*(sy0-sy1))/denom;
+  const b=(dy0*(sy1-sy2)+dy1*(sy2-sy0)+dy2*(sy0-sy1))/denom;
+  const c=(dx0*(sx2-sx1)+dx1*(sx0-sx2)+dx2*(sx1-sx0))/denom;
+  const d=(dy0*(sx2-sx1)+dy1*(sx0-sx2)+dy2*(sx1-sx0))/denom;
+  const e=(dx0*(sx1*sy2-sx2*sy1)+dx1*(sx2*sy0-sx0*sy2)+dx2*(sx0*sy1-sx1*sy0))/denom;
+  const f=(dy0*(sx1*sy2-sx2*sy1)+dy1*(sx2*sy0-sx0*sy2)+dy2*(sx0*sy1-sx1*sy0))/denom;
+  ctx.transform(a,b,c,d,e,f);
+  ctx.drawImage(img,0,0);
+  ctx.restore();
+}
+
 function tekenPolyGroep(polysLijst,img,doorzicht){
   if(!polysLijst.length) return;
   // Stap 1: bepaal welke landdelen 'betekenisvol' zijn. Kleine, verre eilandjes
@@ -890,24 +911,10 @@ function tekenPolyGroep(polysLijst,img,doorzicht){
   if(!heeftPunten) return;
 
   const midLon=(minLon+maxLon)/2, midLat=(minLat+maxLat)/2;
-  const [mx,my,mz]=roteerPunt(lonLatTo3D(midLon,midLat),rotM);
+  const [,,mz]=roteerPunt(lonLatTo3D(midLon,midLat),rotM);
   if(mz<=0.01) return; // middelpunt van het land niet naar de camera gekeerd
 
-  const pixelsPerGraad = R*Math.PI/180;
-  let breedte = (maxLon-minLon) * Math.cos(midLat*Math.PI/180) * pixelsPerGraad;
-  let hoogte  = (maxLat-minLat) * pixelsPerGraad;
-  if(breedte<5 || hoogte<5) return;
-
-  // Vangnet: bij een extreem breed land (zoals Rusland) desondanks nog
-  // even begrenzen tot iets buiten het scherm, met behoud van verhouding.
-  const maxBreedte=W*1.4, maxHoogte=H*1.4;
-  if(breedte>maxBreedte){ const s=maxBreedte/breedte; breedte*=s; hoogte*=s; }
-  if(hoogte>maxHoogte){ const s=maxHoogte/hoogte; breedte*=s; hoogte*=s; }
-
-  const cx=CX+mx*R, cy=CY-my*R;
-  const minX=cx-breedte/2, minY=cy-hoogte/2;
-
-  // Stap 3: clip = ALLE polygonen van DEZE groep
+  // Stap 3: clip = ALLE polygonen van DEZE groep (voorkomt uitsteken buiten de landgrens)
   ctx.save();
   ctx.beginPath();
   for(const poly of polysLijst){
@@ -925,9 +932,41 @@ function tekenPolyGroep(polysLijst,img,doorzicht){
   }
   ctx.clip();
 
-  // Stap 4: plak de tekening op het vaste (maar meebewegende) rechthoekje
+  // Stap 4: de illustratie in een fijn raster opknippen en elk stukje
+  // laten "buigen" naar zijn eigen plekje op de bolvorm. Zo verankert de
+  // hele illustratie aan het land zelf, in plaats van dat er één platte
+  // rechthoek overheen zweeft.
   ctx.globalAlpha = (doorzicht!==undefined ? doorzicht : 0.93);
-  ctx.drawImage(img, minX, minY, breedte, hoogte);
+  const RASTER = 10; // 10x10 stukjes; hoger = vloeiender maar zwaarder
+  const imgW = img.naturalWidth || img.width, imgH = img.naturalHeight || img.height;
+  const hoek = [];
+  for(let j=0;j<=RASTER;j++){
+    const rij=[];
+    const lat = maxLat - (maxLat-minLat)*j/RASTER;
+    for(let i=0;i<=RASTER;i++){
+      const lon = minLon + (maxLon-minLon)*i/RASTER;
+      const [x,y,z] = roteerPunt(lonLatTo3D(lon,lat),rotM);
+      rij.push({
+        zichtbaar: z>0.01,
+        sx: CX+x*R, sy: CY-y*R,
+        bx: i/RASTER*imgW, by: j/RASTER*imgH
+      });
+    }
+    hoek.push(rij);
+  }
+  for(let j=0;j<RASTER;j++){
+    for(let i=0;i<RASTER;i++){
+      const p00=hoek[j][i], p10=hoek[j][i+1], p01=hoek[j+1][i], p11=hoek[j+1][i+1];
+      if(p00.zichtbaar&&p10.zichtbaar&&p01.zichtbaar){
+        tekenDriehoek(img, p00.bx,p00.by,p10.bx,p10.by,p01.bx,p01.by,
+                           p00.sx,p00.sy,p10.sx,p10.sy,p01.sx,p01.sy);
+      }
+      if(p10.zichtbaar&&p11.zichtbaar&&p01.zichtbaar){
+        tekenDriehoek(img, p10.bx,p10.by,p11.bx,p11.by,p01.bx,p01.by,
+                           p10.sx,p10.sy,p11.sx,p11.sy,p01.sx,p01.sy);
+      }
+    }
+  }
   ctx.globalAlpha=1.0;
   ctx.restore();
 }
