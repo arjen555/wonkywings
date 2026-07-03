@@ -437,7 +437,7 @@ function laadIllustratie(naam) {
   if(landIllustraties[naam] === undefined){
     landIllustraties[naam] = null;
     const img = new Image();
-    img.onload  = () => { landIllustraties[naam] = verlengRandenNaarTransparant(img); };
+    img.onload  = () => { landIllustraties[naam] = img; };
     img.onerror = () => { landIllustraties[naam] = false; };
     img.src = 'images/landen/' + landNaarBestand(naam) + '.png';
   }
@@ -447,7 +447,7 @@ function laadIllustratie(naam) {
   if(naam==='Verenigde Staten van Amerika' && landIllustraties['__Alaska']===undefined){
     landIllustraties['__Alaska'] = null;
     const alaskaImg = new Image();
-    alaskaImg.onload  = () => { landIllustraties['__Alaska'] = verlengRandenNaarTransparant(alaskaImg); };
+    alaskaImg.onload  = () => { landIllustraties['__Alaska'] = alaskaImg; };
     alaskaImg.onerror = () => { landIllustraties['__Alaska'] = false; };
     alaskaImg.src = 'images/landen/Verenigde_Staten_Alaska.png';
   }
@@ -905,14 +905,15 @@ function tekenDriehoek(img, sx0,sy0,sx1,sy1,sx2,sy2, dx0,dy0,dx1,dy1,dx2,dy2){
   ctx.restore();
 }
 
-function tekenPolyGroep(polysLijst,img,doorzicht){
+function tekenPolyGroep(polysLijst,img,doorzicht,dutch){
   if(!polysLijst.length) return;
   // Stap 1: bepaal welke landdelen 'betekenisvol' zijn. Kleine, verre eilandjes
   // (< 3% van het grootste deel) tellen niet mee, zodat ze de meting niet
   // oprekken. Zo sluit dit aan bij hoe de tekenaar met de hand bijsnijdt.
-  let grootsteOpp = 0;
+  let grootsteOpp = 0, grootsteIdx = -1;
   const deelOpp = [];
-  for(const poly of polysLijst){
+  for(let p=0;p<polysLijst.length;p++){
+    const poly=polysLijst[p];
     if(!poly[0]||poly[0].length<3){ deelOpp.push(0); continue; }
     let opp=0;
     for(let i=0,j=poly[0].length-1;i<poly[0].length;j=i++){
@@ -920,9 +921,19 @@ function tekenPolyGroep(polysLijst,img,doorzicht){
     }
     opp=Math.abs(opp); // pas hier, over de hele som — dat is de échte (dubbele) oppervlakte
     deelOpp.push(opp);
-    if(opp>grootsteOpp) grootsteOpp=opp;
+    if(opp>grootsteOpp){ grootsteOpp=opp; grootsteIdx=p; }
   }
+  if(grootsteIdx<0) return;
   const drempel = grootsteOpp * 0.03;
+
+  // Middelpunt van het grootste deel, als anker voor een afstandscheck hierna.
+  // Dit voorkomt dat een op zichzelf groot genoeg overzees gebied (zoals
+  // Frans-Guyana bij Frankrijk, duizenden kilometers verderop) tóch wordt
+  // meegerekend puur omdat het qua oppervlakte de drempel haalt.
+  let ankerSLon=0, ankerSLat=0, ankerN=0;
+  for(const [lo,la] of polysLijst[grootsteIdx][0]){ ankerSLon+=lo; ankerSLat+=la; ankerN++; }
+  const ankerLon0=ankerSLon/ankerN, ankerLat0=ankerSLat/ankerN;
+  const MAX_AFSTAND_KM = 2500;
 
   // Stap 2: meet de rechthoek in GRADEN lengte-/breedtegraad (dus in de
   // vaste geografie van het land zelf) i.p.v. in live schermpixels. Zo'n
@@ -938,6 +949,11 @@ function tekenPolyGroep(polysLijst,img,doorzicht){
     const poly=polysLijst[p];
     if(!poly[0]||poly[0].length<3) continue;
     if(deelOpp[p] < drempel) continue;
+    if(p!==grootsteIdx){
+      let sLon=0,sLat=0,n=0;
+      for(const [lo,la] of poly[0]){ sLon+=lo; sLat+=la; n++; }
+      if(afstandKmTussenPunten(ankerLon0,ankerLat0,sLon/n,sLat/n) > MAX_AFSTAND_KM) continue;
+    }
     for(const [lon,lat] of poly[0]){
       alleLons.push(lon);
       minLat=Math.min(minLat,lat);maxLat=Math.max(maxLat,lat);
@@ -986,6 +1002,14 @@ function tekenPolyGroep(polysLijst,img,doorzicht){
     ctx.closePath();
   }
   ctx.clip();
+
+  // Vul de landvorm eerst met de gewone, niet-gemarkeerde kleur (zelfde
+  // groen/etc. als de niet-gehoverde buurlanden). Zo tonen plekken waar de
+  // illustratie transparant is (nog) gewoon een rustige, passende kleur,
+  // in plaats van het gele hover-geel of een vervormd stukje plaatje.
+  const standaardKleur = getLandKleur(dutch, midLat);
+  ctx.fillStyle = standaardKleur;
+  ctx.fillRect(0, 0, W, H);
 
   // Stap 4: de illustratie in een fijn raster opknippen en elk stukje
   // laten "buigen" naar zijn eigen plekje op de bolvorm. Zo verankert de
@@ -1043,12 +1067,12 @@ function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
       if(lonMin < -140) alaskaDelen.push(poly);
       else hoofdDelen.push(poly);
     }
-    tekenPolyGroep(hoofdDelen, img, doorzicht);
-    tekenPolyGroep(alaskaDelen, landIllustraties['__Alaska'], doorzicht);
+    tekenPolyGroep(hoofdDelen, img, doorzicht, dutch);
+    tekenPolyGroep(alaskaDelen, landIllustraties['__Alaska'], doorzicht, dutch);
     return;
   }
 
-  tekenPolyGroep(polysLijst, img, doorzicht);
+  tekenPolyGroep(polysLijst, img, doorzicht, dutch);
 }
 
 
