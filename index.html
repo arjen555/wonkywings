@@ -1409,10 +1409,11 @@ function updateSpel(){
   // op, met versnelling naarmate je de toets langer ingedrukt houdt.
   berekenStand3Zoom();
   const dynamischMax = Math.max(stand3DoelFactor, ZOOM_MIN+0.01);
-  // Nooit lager dan de vaste referentie: zo kan zoomen nooit per ongeluk
-  // 'terugveren' bij een reuzenland als Rusland dat eigenlijk minder
-  // zoom nodig heeft dan de referentie.
-  const effectiefMax = Math.max(dynamischMax, ZOOM_REFERENTIE_MAX);
+  // Geen ondergrens meer op de referentie: een reuzenland als Rusland mag bij
+  // 100% ook écht minder ingezoomd blijven dan de referentie, zodat het
+  // gewoon lekker in beeld past — ook al betekent dat een klein
+  // zoom-terugveertje in de allerlaatste stap.
+  const effectiefMax = dynamischMax;
 
   const nuTijd = performance.now();
   if(keys['z']||keys['Z']){
