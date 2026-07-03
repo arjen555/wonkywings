@@ -852,10 +852,9 @@ function tekenIJskap(poolLat,straal){
 // ── Landillustratie ───────────────────────────────────
 function tekenPolyGroep(polysLijst,img,doorzicht){
   if(!polysLijst.length) return;
-  // Stap 1: bereken de strakke rechthoek om de BETEKENISVOLLE landdelen.
-  // Kleine, verre eilandjes (< 3% van het grootste deel) tellen niet mee,
-  // zodat ze de rechthoek niet oprekken. Zo sluit deze rechthoek aan bij
-  // hoe de tekenaar met de hand bijsnijdt (op het herkenbare land).
+  // Stap 1: bepaal welke landdelen 'betekenisvol' zijn. Kleine, verre eilandjes
+  // (< 3% van het grootste deel) tellen niet mee, zodat ze de meting niet
+  // oprekken. Zo sluit dit aan bij hoe de tekenaar met de hand bijsnijdt.
   let grootsteOpp = 0;
   const deelOpp = [];
   for(const poly of polysLijst){
@@ -867,33 +866,48 @@ function tekenPolyGroep(polysLijst,img,doorzicht){
     deelOpp.push(opp);
     if(opp>grootsteOpp) grootsteOpp=opp;
   }
-  const drempel = grootsteOpp * 0.03; // 3% van de grote broer
+  const drempel = grootsteOpp * 0.03;
 
-  let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+  // Stap 2: meet de rechthoek in GRADEN lengte-/breedtegraad (dus in de
+  // vaste geografie van het land zelf) i.p.v. in live schermpixels. Zo'n
+  // graden-meting verandert nooit, wat Wonky ook doet — alleen de plek
+  // waar dat vaste rechthoekje op het scherm belandt, volgt de camera.
+  // (Dit voorkomt het 'zwemmen' dat bij hele grote landen als Rusland
+  // ontstond toen de rechthoek elke frame opnieuw uit schermcoördinaten
+  // werd afgeleid.)
+  let minLon=Infinity,maxLon=-Infinity,minLat=Infinity,maxLat=-Infinity;
   let heeftPunten=false;
   for(let p=0;p<polysLijst.length;p++){
     const poly=polysLijst[p];
     if(!poly[0]||poly[0].length<3) continue;
     if(deelOpp[p] < drempel) continue;
     for(const [lon,lat] of poly[0]){
-      const [x,y,z]=roteerPunt(lonLatTo3D(lon,lat),rotM);
-      if(z>0.01){
-        // Begrens tot ruim buiten het zichtbare scherm. Punten die héél schuin
-        // aan de rand van de wereldbol liggen (bijna z=0) projecteren anders
-        // soms ver buiten beeld, waardoor de rechthoek (en dus de illustratie)
-        // veel groter wordt dan het scherm — bij een reuzenland als Rusland
-        // zag je dan maar een klein hoekje van de illustratie.
-        const sx=Math.max(-0.2*W, Math.min(1.2*W, CX+x*R));
-        const sy=Math.max(-0.2*H, Math.min(1.2*H, CY-y*R));
-        minX=Math.min(minX,sx);maxX=Math.max(maxX,sx);
-        minY=Math.min(minY,sy);maxY=Math.max(maxY,sy);
-        heeftPunten=true;
-      }
+      minLon=Math.min(minLon,lon);maxLon=Math.max(maxLon,lon);
+      minLat=Math.min(minLat,lat);maxLat=Math.max(maxLat,lat);
+      heeftPunten=true;
     }
   }
-  if(!heeftPunten||maxX-minX<5||maxY-minY<5) return;
+  if(!heeftPunten) return;
 
-  // Stap 2: clip = ALLE polygonen van DEZE groep
+  const midLon=(minLon+maxLon)/2, midLat=(minLat+maxLat)/2;
+  const [mx,my,mz]=roteerPunt(lonLatTo3D(midLon,midLat),rotM);
+  if(mz<=0.01) return; // middelpunt van het land niet naar de camera gekeerd
+
+  const pixelsPerGraad = R*Math.PI/180;
+  let breedte = (maxLon-minLon) * Math.cos(midLat*Math.PI/180) * pixelsPerGraad;
+  let hoogte  = (maxLat-minLat) * pixelsPerGraad;
+  if(breedte<5 || hoogte<5) return;
+
+  // Vangnet: bij een extreem breed land (zoals Rusland) desondanks nog
+  // even begrenzen tot iets buiten het scherm, met behoud van verhouding.
+  const maxBreedte=W*1.4, maxHoogte=H*1.4;
+  if(breedte>maxBreedte){ const s=maxBreedte/breedte; breedte*=s; hoogte*=s; }
+  if(hoogte>maxHoogte){ const s=maxHoogte/hoogte; breedte*=s; hoogte*=s; }
+
+  const cx=CX+mx*R, cy=CY-my*R;
+  const minX=cx-breedte/2, minY=cy-hoogte/2;
+
+  // Stap 3: clip = ALLE polygonen van DEZE groep
   ctx.save();
   ctx.beginPath();
   for(const poly of polysLijst){
@@ -911,8 +925,7 @@ function tekenPolyGroep(polysLijst,img,doorzicht){
   }
   ctx.clip();
 
-  // Stap 3: plak de tekening op de strakke rechthoek om deze groep
-  const breedte=maxX-minX, hoogte=maxY-minY;
+  // Stap 4: plak de tekening op het vaste (maar meebewegende) rechthoekje
   ctx.globalAlpha = (doorzicht!==undefined ? doorzicht : 0.93);
   ctx.drawImage(img, minX, minY, breedte, hoogte);
   ctx.globalAlpha=1.0;
