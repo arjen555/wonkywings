@@ -390,7 +390,8 @@ const ZOOM_VERSNELLING_TIJD = 1200; // ms tot volle versnelling
 let zHoudSinds = 0, xHoudSinds = 0;
 const DOEL_LAND_HOOGTE_FRACTIE = 0.65; // land moet 65% schermhoogte vullen bij volledig ingezoomd (niveau 1)
 const DOEL_LAND_BREEDTE_FRACTIE = 0.75; // land mag max. 75% schermbreedte vullen bij volledig ingezoomd
-const ZOOM_ILLUSTRATIE_DREMPEL = 4.5; // vanaf deze zoomfactor begint de landillustratie te verschijnen
+const ZOOM_REFERENTIE_MAX = 4.5; // 'typisch' maximum voor het grootste (stabiele) deel van de zoomrange
+const ZOOM_OMSLAGPUNT = 0.85;    // vanaf dit zoomniveau (0-1) past de zoom zich pas aan op het specifieke land
 
 // ── Illustraties ──────────────────────────────────────
 const landIllustraties = {};
@@ -929,12 +930,12 @@ function tekenPolyGroep(polysLijst,img,doorzicht,dutch){
 
   // Middelpunt van het grootste deel, als anker voor een afstandscheck hierna.
   // Dit voorkomt dat een op zichzelf groot genoeg overzees gebied (zoals
-  // Frans-Guyana bij Frankrijk, duizenden kilometers verderop) tóch wordt
+  // Frans-Guyana bij Frankrijk, of Spitsbergen bij Noorwegen) tóch wordt
   // meegerekend puur omdat het qua oppervlakte de drempel haalt.
   let ankerSLon=0, ankerSLat=0, ankerN=0;
   for(const [lo,la] of polysLijst[grootsteIdx][0]){ ankerSLon+=lo; ankerSLat+=la; ankerN++; }
   const ankerLon0=ankerSLon/ankerN, ankerLat0=ankerSLat/ankerN;
-  const MAX_AFSTAND_KM = 2500;
+  const MAX_AFSTAND_KM = 1200;
 
   // Stap 2: meet de rechthoek in GRADEN lengte-/breedtegraad (dus in de
   // vaste geografie van het land zelf) i.p.v. in live schermpixels. Zo'n
@@ -1283,30 +1284,17 @@ function drawGlobe(){
 
   tekenIJskap(90,12);
 
-  // Illustratie-reis: niks bij weinig zoom, waas vanaf de oude 'Landview'-drempel,
-  // vloeiend opklarend tot vol bij het dynamische maximum voor dit land.
-  if(zoomFactor>=ZOOM_ILLUSTRATIE_DREMPEL && hoverLand){
+  // Illustratie-reis: niks vóór het omslagpunt, waas net erna,
+  // vloeiend opklarend tot vol bij zoomniveau 100%.
+  if(zoomNiveau>=ZOOM_OMSLAGPUNT && hoverLand){
     const dutch=hoverLand.properties.dutch||hoverLand.properties.name;
     laadIllustratie(dutch);
     const ill=landIllustraties[dutch];
     if(ill){
-      // Bepaal doorzichtigheid op basis van hoe ver we zijn ingezoomd.
-      // Drempel = ondergrens (waas 15%), dynamisch maximum = bovengrens (vol 100%).
-      const landviewZoom = ZOOM_ILLUSTRATIE_DREMPEL;
-      const closeupZoom  = stand3DoelFactor;            // dynamisch per land
-      const WAAS = 0.15;   // 15% waas net voorbij de drempel
-      let doorzicht;
-      if(closeupZoom <= landviewZoom + 0.01){
-        // Vangnet: als het dynamische maximum bijna gelijk is aan de drempel
-        // (heel groot land), laat de illustratie gewoon vol zien zodra je
-        // de drempel echt haalt.
-        doorzicht = (zoomFactor >= landviewZoom - 0.01) ? 1.0 : WAAS;
-      } else {
-        // Hoe ver zijn we tussen de drempel en het dynamische maximum? (0 = net erover, 1 = volledig ingezoomd)
-        let voortgang = (zoomFactor - landviewZoom) / (closeupZoom - landviewZoom);
-        voortgang = Math.max(0, Math.min(1, voortgang));
-        doorzicht = WAAS + (1.0 - WAAS) * voortgang;
-      }
+      const WAAS = 0.15;   // 15% waas net voorbij het omslagpunt
+      let voortgang = (zoomNiveau - ZOOM_OMSLAGPUNT) / (1 - ZOOM_OMSLAGPUNT);
+      voortgang = Math.max(0, Math.min(1, voortgang));
+      const doorzicht = WAAS + (1.0 - WAAS) * voortgang;
       tekenLandIllustratie(hoverLand,ill,zoomNiveau,doorzicht);
     }
   }
@@ -1420,7 +1408,11 @@ function updateSpel(){
   // elke frame herberekend, en Z/X schuiven het zoomniveau (0-1) geleidelijk
   // op, met versnelling naarmate je de toets langer ingedrukt houdt.
   berekenStand3Zoom();
-  const zoomMax = Math.max(stand3DoelFactor, ZOOM_MIN+0.01);
+  const dynamischMax = Math.max(stand3DoelFactor, ZOOM_MIN+0.01);
+  // Nooit lager dan de vaste referentie: zo kan zoomen nooit per ongeluk
+  // 'terugveren' bij een reuzenland als Rusland dat eigenlijk minder
+  // zoom nodig heeft dan de referentie.
+  const effectiefMax = Math.max(dynamischMax, ZOOM_REFERENTIE_MAX);
 
   const nuTijd = performance.now();
   if(keys['z']||keys['Z']){
@@ -1438,10 +1430,20 @@ function updateSpel(){
     document.getElementById('zoom-indicator').textContent='🔍 '+Math.round(zoomNiveau*100)+'%';
   } else { xHoudSinds = 0; }
 
-  // zoomNiveau (0-1) logaritmisch omzetten naar een echte zoomfactor, zodat
-  // elke stap er even groot 'uitziet' — niet steeds grotere sprongen bij
-  // hoge zoom (wat je bij een simpele rechte lijn wél zou krijgen).
-  const doelZoom = ZOOM_MIN * Math.pow(zoomMax/ZOOM_MIN, zoomNiveau);
+  // Zoomniveau (0-1) omzetten naar een echte zoomfactor, in twee stukken:
+  // - 0 tot ZOOM_OMSLAGPUNT: altijd tussen wereld-zoom en de VASTE referentie,
+  //   he­lemaal onafhankelijk van welk land je op dat moment overvliegt (stabiel!)
+  // - ZOOM_OMSLAGPUNT tot 1: het laatste stukje, dat zich pas aanpast aan het
+  //   specifieke land waar je nu overheen vliegt (net als vroeger Close-up)
+  // Beide stukken logaritmisch geïnterpoleerd, zodat elke stap er even groot uitziet.
+  let doelZoom;
+  if(zoomNiveau <= ZOOM_OMSLAGPUNT){
+    const t = zoomNiveau/ZOOM_OMSLAGPUNT;
+    doelZoom = ZOOM_MIN * Math.pow(ZOOM_REFERENTIE_MAX/ZOOM_MIN, t);
+  } else {
+    const t = (zoomNiveau-ZOOM_OMSLAGPUNT)/(1-ZOOM_OMSLAGPUNT);
+    doelZoom = ZOOM_REFERENTIE_MAX * Math.pow(effectiefMax/ZOOM_REFERENTIE_MAX, t);
+  }
   zoomFactor+=(doelZoom-zoomFactor)*ZOOM_SNELHEID;
   R=Math.min(W,H)*0.58*zoomFactor;
   CX=W/2; CY=H*0.56;
