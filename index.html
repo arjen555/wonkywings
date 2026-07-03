@@ -878,7 +878,13 @@ function tekenPolyGroep(polysLijst,img,doorzicht){
     for(const [lon,lat] of poly[0]){
       const [x,y,z]=roteerPunt(lonLatTo3D(lon,lat),rotM);
       if(z>0.01){
-        const sx=CX+x*R,sy=CY-y*R;
+        // Begrens tot ruim buiten het zichtbare scherm. Punten die héél schuin
+        // aan de rand van de wereldbol liggen (bijna z=0) projecteren anders
+        // soms ver buiten beeld, waardoor de rechthoek (en dus de illustratie)
+        // veel groter wordt dan het scherm — bij een reuzenland als Rusland
+        // zag je dan maar een klein hoekje van de illustratie.
+        const sx=Math.max(-0.2*W, Math.min(1.2*W, CX+x*R));
+        const sy=Math.max(-0.2*H, Math.min(1.2*H, CY-y*R));
         minX=Math.min(minX,sx);maxX=Math.max(maxX,sx);
         minY=Math.min(minY,sy);maxY=Math.max(maxY,sy);
         heeftPunten=true;
@@ -1457,7 +1463,7 @@ function toonPunten(p){
 }
 
 document.addEventListener('keydown',e=>{
-  if(e.key===' '&&!wachten&&spelActief&&huidigModus==='spelen'&&zoomStand!==3){
+  if(e.key===' '&&!wachten&&spelActief&&huidigModus==='spelen'){
     const wx=W*(0.5+wonkySchermX);
     const wy=focusSy-90;
     dropAnimatieActief=true;
