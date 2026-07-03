@@ -896,19 +896,39 @@ function tekenPolyGroep(polysLijst,img,doorzicht){
   // (Dit voorkomt het 'zwemmen' dat bij hele grote landen als Rusland
   // ontstond toen de rechthoek elke frame opnieuw uit schermcoördinaten
   // werd afgeleid.)
-  let minLon=Infinity,maxLon=-Infinity,minLat=Infinity,maxLat=-Infinity;
+  const alleLons=[];
+  let minLat=Infinity,maxLat=-Infinity;
   let heeftPunten=false;
   for(let p=0;p<polysLijst.length;p++){
     const poly=polysLijst[p];
     if(!poly[0]||poly[0].length<3) continue;
     if(deelOpp[p] < drempel) continue;
     for(const [lon,lat] of poly[0]){
-      minLon=Math.min(minLon,lon);maxLon=Math.max(maxLon,lon);
+      alleLons.push(lon);
       minLat=Math.min(minLat,lat);maxLat=Math.max(maxLat,lat);
       heeftPunten=true;
     }
   }
   if(!heeftPunten) return;
+
+  // Grootste-gat-methode: voorkomt dat een land dat over de datumgrens heen
+  // loopt (zoals Rusland, met Tsjoekotka net voorbij de +180°/-180°-naad)
+  // een schijnbare breedte van 360° krijgt door een simpele min/max.
+  const lonsGesorteerd=alleLons.slice().sort((a,b)=>a-b);
+  let grootsteHap=0, hapNaLon=lonsGesorteerd[0];
+  for(let i=0;i<lonsGesorteerd.length;i++){
+    const huidige=lonsGesorteerd[i];
+    const volgende=(i===lonsGesorteerd.length-1)?lonsGesorteerd[0]+360:lonsGesorteerd[i+1];
+    const hap=volgende-huidige;
+    if(hap>grootsteHap){ grootsteHap=hap; hapNaLon=volgende; }
+  }
+  const ankerLon = (hapNaLon>180) ? hapNaLon-360 : hapNaLon;
+  let minLon=Infinity,maxLon=-Infinity;
+  for(const lon of alleLons){
+    const uitgevouwen = ankerLon + ((lon-ankerLon+360)%360);
+    minLon=Math.min(minLon,uitgevouwen);
+    maxLon=Math.max(maxLon,uitgevouwen);
+  }
 
   const midLon=(minLon+maxLon)/2, midLat=(minLat+maxLat)/2;
   const [,,mz]=roteerPunt(lonLatTo3D(midLon,midLat),rotM);
