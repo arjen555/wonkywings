@@ -414,7 +414,7 @@ const MENU = [
       { id:'w-water', naam:'Water Wonder', start:{lon:10, lat:50},
         landen:[], altijd_alle:false, beschikbaar:false },
       { id:'w-makkelijk', naam:'Makkelijke landen', start:{lon:0, lat:20},
-        landen:["Frankrijk","Spanje","Nederland","Italië","Duitsland","Verenigd Koninkrijk","Turkije","Verenigde Staten","Canada","Mexico","Brazilië","China","India","Japan","Indonesië","Australië","Egypte","Zuid-Afrika","Rusland"],
+        landen:["Frankrijk","Spanje","Nederland","Italië","Duitsland","Verenigd Koninkrijk","Turkije","Verenigde Staten","Canada","Mexico","Brazilië","China","India","Japan","Indonesië","Australië","Zuid-Afrika","Rusland"],
         altijd_alle:false, beschikbaar:true },
       { id:'w-alles', naam:'Alle landen wereld', start:{lon:0, lat:20},
         landen:["Indonesië","Maleisië","Chili","Bolivia","Peru","Argentinië","Cyprus","India","China","Israël","Palestina","Libanon","Ethiopië","Zuid-Soedan","Somalië","Kenia","Malawi","Tanzania","Syrië","Frankrijk","Suriname","Guyana","Zuid-Korea","Noord-Korea","Marokko","Westelijke Sahara","Costa Rica","Nicaragua","Congo-Brazzaville","Congo-Kinshasa","Bhutan","Oekraïne","Wit-Rusland","Namibië","Zuid-Afrika","Oman","Oezbekistan","Kazachstan","Tadzjikistan","Litouwen","Brazilië","Uruguay","Mongolië","Rusland","Tsjechië","Duitsland","Estland","Letland","Noorwegen","Zweden","Finland","Vietnam","Cambodja","Luxemburg","Verenigde Arabische Emiraten","België","Georgië","Noord-Macedonië","Albanië","Azerbeidzjan","Kosovo","Turkije","Spanje","Laos","Kirgizië","Armenië","Denemarken","Libië","Tunesië","Roemenië","Hongarije","Slowakije","Polen","Ierland","Verenigd Koninkrijk","Griekenland","Zambia","Sierra Leone","Guinee","Liberia","Centraal-Afrikaanse Republiek","Soedan","Djibouti","Eritrea","Oostenrijk","Irak","Italië","Zwitserland","Iran","Nederland","Liechtenstein","Ivoorkust","Servië","Mali","Senegal","Nigeria","Benin","Angola","Kroatië","Slovenië","Qatar","Saoedi-Arabië","Botswana","Zimbabwe","Pakistan","Bulgarije","Thailand","San Marino","Haïti","Dominicaanse Republiek","Tsjaad","Koeweit","El Salvador","Guatemala","Oost-Timor","Brunei","Monaco","Algerije","Mozambique","Burundi","Rwanda","Myanmar","Bangladesh","Andorra","Afghanistan","Montenegro","Bosnië-Herzegovina","Oeganda","Cuba","Honduras","Ecuador","Colombia","Paraguay","Portugal","Moldavië","Jordanië","Nepal","Lesotho","Kameroen","Gabon","Niger","Burkina Faso","Togo","Ghana","Guinee-Bissau","Gibraltar","Verenigde Staten","Canada","Mexico","Belize","Panama","Venezuela","Papoea-Nieuw-Guinea","Egypte","Jemen","Mauritanië","Equatoriaal-Guinea","Gambia","Vaticaanstad","Antarctica","Australië","Groenland","Fiji","Nieuw-Zeeland","Nieuw-Caledonië","Madagaskar","Filipijnen","Sri Lanka","Taiwan","Japan","IJsland","Seychellen","Trinidad en Tobago","Grenada","Barbados","Saint Lucia","Dominica","Antigua en Barbuda","Saint Kitts en Nevis","Jamaica","Mauritius","Comoren","Sao Tomé en Principe","Kaapverdië","Malta","Faeröer","Singapore","Tonga","Samoa","Salomonseilanden","Tuvalu","Maldiven","Nauru","Micronesia","Falklandeilanden","Vanuatu","Palau","Bahrein"],
@@ -487,7 +487,9 @@ function bouwStartscherm() {
 bouwStartscherm();
 
 // ── Spelstaat ─────────────────────────────────────────
-let huidigLevel=1, huidigModus='spelen', spelLanden=[];
+let huidigLevel='eu-west', huidigModus='spelen', spelLanden=[];
+let introActief=false, introStartTijd=0;
+const INTRO_DUUR = 2000; // ms
 let huidigLandIdx=0, huidigLand='', score=0, spelerNaam='';
 let levelStartTijd=0, laatsteLevelTijd=0;
 // Vlucht-animatie bij een misser: vliegtuigje volgt automatisch een gloeiende lijn naar het juiste land
@@ -514,7 +516,7 @@ let zHoudSinds = 0, xHoudSinds = 0;
 const DOEL_LAND_HOOGTE_FRACTIE = 0.65; // land moet 65% schermhoogte vullen bij volledig ingezoomd (niveau 1)
 const DOEL_LAND_BREEDTE_FRACTIE = 0.75; // land mag max. 75% schermbreedte vullen bij volledig ingezoomd
 const ZOOM_REFERENTIE_MAX = 4.5; // 'typisch' maximum voor het grootste (stabiele) deel van de zoomrange
-const ZOOM_OMSLAGPUNT = 0.85;    // vanaf dit zoomniveau (0-1) past de zoom zich pas aan op het specifieke land
+const ZOOM_OMSLAGPUNT = 0.80;    // vanaf dit zoomniveau (0-1) past de zoom zich pas aan op het specifieke land
 
 // ── Illustraties ──────────────────────────────────────
 const landIllustraties = {};
@@ -523,7 +525,7 @@ function landNaarBestand(naam) {
     .replace(/ë/g,'e').replace(/é/g,'e').replace(/è/g,'e').replace(/ê/g,'e')
     .replace(/ï/g,'i').replace(/í/g,'i').replace(/ö/g,'o').replace(/ü/g,'u')
     .replace(/á/g,'a').replace(/à/g,'a').replace(/â/g,'a').replace(/ä/g,'a')
-    .replace(/ñ/g,'n').replace(/ç/g,'c').replace(/\s+/g,'_');
+    .replace(/ñ/g,'n').replace(/ç/g,'c').replace(/[''']/g,'').replace(/\s+/g,'_');
 }
 // Vult transparante randen/hoekjes van een illustratie automatisch op door
 // de kleur van het dichtstbijzijnde getekende pixel naar buiten te laten
@@ -559,13 +561,14 @@ function verlengRandenNaarTransparant(img){
   return off; // canvas, werkt net als een Image bij ctx.drawImage
 }
 
-function laadIllustratie(naam) {
-  if(landIllustraties[naam] === undefined){
+function laadIllustratie(naam, forceHerlaad) {
+  if(landIllustraties[naam] === undefined || (forceHerlaad && landIllustraties[naam] === false)){
     landIllustraties[naam] = null;
     const img = new Image();
     img.onload  = () => { landIllustraties[naam] = img; };
     img.onerror = () => { landIllustraties[naam] = false; };
-    img.src = 'images/landen/' + landNaarBestand(naam) + '.png';
+    const cacheBust = forceHerlaad ? '?v=' + Date.now() : '';
+    img.src = 'images/landen/' + landNaarBestand(naam) + '.png' + cacheBust;
   }
   // Speciaal geval: Alaska hoort bij de VS, maar heeft een eigen plaatje
   // (zie tekenLandIllustratie), omdat het te ver van het vasteland afligt
@@ -602,10 +605,18 @@ function startSpel(levelId, modus) {
   // Europa-subregio's starten iets ingezoomd, wereld volledig uitgezoomd
   zoomNiveau = levelId.startsWith('eu-') ? 0.35 : 0;
   zoomFactor = ZOOM_MIN;
-  for(const naam of spelLanden) laadIllustratie(naam);
+  for(const naam of spelLanden) laadIllustratie(naam, true);
 
   document.getElementById('startscherm').style.display='none';
   document.getElementById('spelscherm').style.display='block';
+
+  // Intro-glow: alleen voor geografische levels (niet Water Wonder)
+  const doIntro = spelLanden.length > 0 && modus !== 'verkennen';
+  if(doIntro){
+    introActief = true;
+    introStartTijd = performance.now();
+    setTimeout(() => { introActief = false; }, INTRO_DUUR);
+  }
   document.getElementById('level-nr-display').textContent = lv.naam;
   document.getElementById('speler-naam-display').textContent=spelerNaam;
   document.getElementById('score').textContent='0';
@@ -978,34 +989,50 @@ function getLandKleur(naam,lat){
 }
 
 // ── IJskap ────────────────────────────────────────────
+// Vaste lon/lat-ankerpunten langs de rand van het Arctische ijs,
+// net zoals Antarctica zijn grenzen uit echte GeoJSON-data haalt.
+// De breedtegraden zijn handmatig bepaald op basis van de werkelijke
+// uitlopers van het poolijs (Groenland, Siberische Zee, Beaufortzee, etc.)
+const IJSKAP_PUNTEN = [
+  [  -5, 82.5],[  15, 80.8],[  30, 80.0],[  45, 80.5],[  60, 80.2],
+  [  75, 79.5],[  90, 79.8],[ 105, 79.0],[ 120, 78.5],[ 135, 78.8],
+  [ 150, 79.5],[ 165, 79.0],[ 180, 78.5],[-165, 79.2],[-150, 79.8],
+  [-135, 80.5],[-120, 81.0],[-110, 80.5],[-100, 80.8],[ -90, 81.5],
+  [ -85, 83.0],[ -75, 83.5],[ -65, 83.0],[ -55, 82.0],[ -45, 81.5],
+  [ -40, 82.0],[ -35, 83.5],[ -25, 84.0],[ -15, 83.5],[  -5, 82.5],
+];
+
 function tekenIJskap(poolLat,straal){
   const [px,py,pz]=roteerPunt(lonLatTo3D(0,poolLat),rotM);
   if(pz<0) return;
-  const stappen=360;
+
+  // Bouw schermcoördinaten van de ankerpunten
   const schermPunten=[];
-  for(let i=0;i<=stappen;i++){
-    const frac=i/stappen, lon=frac*360-180, lonRad=lon*Math.PI/180;
-    const golf=Math.sin(lonRad*2+0.4)*2.5+Math.sin(lonRad*3+1.8)*1.6+Math.sin(lonRad*5+0.9)*1.0+Math.sin(lonRad*8+2.6)*0.6+Math.sin(lonRad*12+1.2)*0.3;
-    const lat=Math.min(87,(90-straal+golf));
+  for(const [lon,lat] of IJSKAP_PUNTEN){
     const [x,y,z]=roteerPunt(lonLatTo3D(lon,lat),rotM);
-    schermPunten.push({sx:CX+x*R,sy:CY-y*R});
+    // Sla punt over als het achter de bol zit
+    if(z<-0.05) continue;
+    schermPunten.push({sx:CX+x*R, sy:CY-y*R, z});
   }
+  if(schermPunten.length < 3) return;
+
   ctx.beginPath();
-  ctx.moveTo(schermPunten[0].sx,schermPunten[0].sy);
+  ctx.moveTo(schermPunten[0].sx, schermPunten[0].sy);
   for(let i=1;i<schermPunten.length-1;i++){
     const mx=(schermPunten[i].sx+schermPunten[i+1].sx)/2;
     const my=(schermPunten[i].sy+schermPunten[i+1].sy)/2;
     ctx.quadraticCurveTo(schermPunten[i].sx,schermPunten[i].sy,mx,my);
   }
   ctx.closePath();
-  const midX=CX+px*R,midY=CY-py*R;
+
+  const midX=CX+px*R, midY=CY-py*R;
   const grad=ctx.createRadialGradient(midX,midY,0,midX,midY,R*0.45);
   grad.addColorStop(0,'rgba(238,250,255,0.97)');
   grad.addColorStop(0.5,'rgba(218,240,253,0.95)');
   grad.addColorStop(0.8,'rgba(198,228,250,0.90)');
   grad.addColorStop(1,'rgba(178,215,245,0.80)');
   ctx.fillStyle=grad; ctx.fill();
-  ctx.strokeStyle='rgba(160,210,240,0.45)'; ctx.lineWidth=1.2; ctx.stroke();
+  ctx.strokeStyle='rgba(160,210,240,0.55)'; ctx.lineWidth=1.5; ctx.stroke();
 }
 
 // ── Landillustratie ───────────────────────────────────
@@ -1179,6 +1206,46 @@ function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
   const geom=feature.geometry;
   const polysLijst=geom.type==='Polygon'?[geom.coordinates]:geom.coordinates;
   const dutch=feature.properties.dutch||feature.properties.name;
+
+  // ── Vrij-zwevende landen: illustratie niet geclipped op landgrenzen ──
+  // Gebruik dit voor eilandengroepen waarbij de afbeelding de omringende
+  // zee bewust toont (bijv. Bahama's met dolfijnen). De bbox geeft de
+  // lon/lat-rechthoek waarover de afbeelding wordt uitgerekt.
+  const VRIJ_ZWEVEND = {
+    "Bahama's": { minLon:-80.5, maxLon:-72.5, minLat:20.8, maxLat:27.5 },
+  };
+  if(VRIJ_ZWEVEND[dutch]){
+    const bbox = VRIJ_ZWEVEND[dutch];
+    const [,,mz]=roteerPunt(lonLatTo3D((bbox.minLon+bbox.maxLon)/2,(bbox.minLat+bbox.maxLat)/2),rotM);
+    if(mz<=0.01) return;
+    const RASTER=12;
+    const imgW=img.naturalWidth||img.width, imgH=img.naturalHeight||img.height;
+    const hoek=[];
+    for(let j=0;j<=RASTER;j++){
+      const rij=[];
+      const lat=bbox.maxLat-(bbox.maxLat-bbox.minLat)*j/RASTER;
+      for(let i=0;i<=RASTER;i++){
+        const lon=bbox.minLon+(bbox.maxLon-bbox.minLon)*i/RASTER;
+        const [x,y,z]=roteerPunt(lonLatTo3D(lon,lat),rotM);
+        rij.push({ zichtbaar:z>0.01, sx:CX+x*R, sy:CY-y*R, bx:i/RASTER*imgW, by:j/RASTER*imgH });
+      }
+      hoek.push(rij);
+    }
+    ctx.save();
+    ctx.globalAlpha=(doorzicht!==undefined?doorzicht:0.93);
+    for(let j=0;j<RASTER;j++){
+      for(let i=0;i<RASTER;i++){
+        const p00=hoek[j][i],p10=hoek[j][i+1],p01=hoek[j+1][i],p11=hoek[j+1][i+1];
+        if(p00.zichtbaar&&p10.zichtbaar&&p01.zichtbaar)
+          tekenDriehoek(img,p00.bx,p00.by,p10.bx,p10.by,p01.bx,p01.by,p00.sx,p00.sy,p10.sx,p10.sy,p01.sx,p01.sy);
+        if(p10.zichtbaar&&p11.zichtbaar&&p01.zichtbaar)
+          tekenDriehoek(img,p10.bx,p10.by,p11.bx,p11.by,p01.bx,p01.by,p10.sx,p10.sy,p11.sx,p11.sy,p01.sx,p01.sy);
+      }
+    }
+    ctx.globalAlpha=1.0;
+    ctx.restore();
+    return;
+  }
 
   // Speciaal geval: Alaska ligt zo ver los van de rest van de VS, dat één
   // plaatje over beide heen stretchen er raar uitziet. Als er een apart
@@ -1369,7 +1436,17 @@ function drawGlobe(){
     const isCorrectieLand=f===correctieLand;
     const isLevelLand=levelSet.has(dutch);
     let vul,rand,dikte,glowNu=0;
-    if(isCorrectieLand){
+
+    // ── Intro-glow: alle level-landen pulseren kort op bij spelstart ──
+    if(introActief && isLevelLand){
+      const t = (performance.now()-introStartTijd)/INTRO_DUUR; // 0→1
+      const puls = 0.5 + 0.5*Math.sin(t * Math.PI * 3); // 3 golven in 2 sec
+      const intens = Math.sin(t * Math.PI); // fade in én fade out
+      vul = `rgba(255,230,80,${0.35 + 0.35*puls*intens})`;
+      rand = '#ffd700'; dikte = 1.8;
+      glowNu = 22 * intens * (0.6 + 0.4*puls);
+    }
+    else if(isCorrectieLand){
       const verstreken=performance.now()-correctieLandStartTijd;
       if(verstreken<CORRECTIE_GLOW_DUUR){
         const puls=0.5+0.5*Math.sin(verstreken/85);
@@ -1380,7 +1457,8 @@ function drawGlobe(){
       }
     }
     else if(isHover&&!correctieLand){ vul='#ffe566';rand='#c8960a';dikte=1.2; }
-    else if(huidigModus==='verkennen'&&isLevelLand){ vul='#e8824a';rand='#b85a20';dikte=0.8; }
+    else if(isHover&&correctieLand&&zoomNiveau>=ZOOM_OMSLAGPUNT){ vul='rgba(255,240,140,0.5)';rand='#c8960a';dikte=0.8; }
+    else if(huidigModus==='verkennen'&&isLevelLand){ vul='rgba(120,200,120,0.55)';rand='#3a8a3a';dikte=0.7; }
     else {
       const polys2=f.geometry.type==='Polygon'?[f.geometry.coordinates]:f.geometry.coordinates;
       let sumLat=0,nLat=0;
@@ -1388,7 +1466,11 @@ function drawGlobe(){
       const avgLat=nLat>0?sumLat/nLat:0;
       vul=getLandKleur(dutch,avgLat);rand=avgLat>65?'#88aabb':'#1a4a22';dikte=0.6;
     }
-    if(glowNu>0){ ctx.save(); ctx.shadowColor='#fff6c8'; ctx.shadowBlur=glowNu; }
+    if(glowNu>0){
+      ctx.save();
+      ctx.shadowColor = (introActief && isLevelLand) ? '#ffd700' : '#fff6c8';
+      ctx.shadowBlur=glowNu;
+    }
     const g=f.geometry;
     if(g.type==='Polygon') tekenLand(g.coordinates,vul,rand,dikte);
     else if(g.type==='MultiPolygon') for(const p of g.coordinates) tekenLand(p,vul,rand,dikte);
@@ -1414,7 +1496,7 @@ function drawGlobe(){
     laadIllustratie(dutch);
     const ill=landIllustraties[dutch];
     if(ill){
-      const WAAS = 0.15;   // 15% waas net voorbij het omslagpunt
+      const WAAS = 0.65;   // al bij het omslagpunt (80%) goed zichtbaar, loopt op naar 100%
       let voortgang = (zoomNiveau - ZOOM_OMSLAGPUNT) / (1 - ZOOM_OMSLAGPUNT);
       voortgang = Math.max(0, Math.min(1, voortgang));
       const doorzicht = WAAS + (1.0 - WAAS) * voortgang;
