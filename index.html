@@ -97,57 +97,57 @@
     #help-kaart {
       background:linear-gradient(145deg,#0b2540,#0e3060);
       border:1.5px solid rgba(255,255,255,0.15);
-      border-radius:20px; padding:28px 32px; width:min(480px,90vw);
+      border-radius:24px; padding:42px 48px; width:min(720px,92vw);
       box-shadow:0 20px 60px rgba(0,0,0,0.7);
-      display:flex; flex-direction:column; gap:20px;
+      display:flex; flex-direction:column; gap:30px;
     }
     #help-titel {
-      font-family:'Baloo 2',sans-serif; font-size:1.2rem; font-weight:800;
+      font-family:'Baloo 2',sans-serif; font-size:1.8rem; font-weight:800;
       color:#fff; text-align:center; letter-spacing:0.5px;
     }
     .help-sectie {
-      display:flex; flex-direction:column; gap:10px;
+      display:flex; flex-direction:column; gap:15px;
     }
     .help-sectie-kop {
-      font-size:0.78rem; font-weight:700; letter-spacing:1px;
+      font-size:1.05rem; font-weight:700; letter-spacing:1px;
       text-transform:uppercase; color:rgba(255,215,0,0.85);
-      border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:6px;
+      border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px;
       display:flex; align-items:center; gap:8px;
     }
-    .help-rijen { display:flex; flex-direction:column; gap:8px; }
+    .help-rijen { display:flex; flex-direction:column; gap:12px; }
     .help-rij {
-      display:flex; align-items:center; gap:14px;
+      display:flex; align-items:center; gap:20px;
     }
     .help-toetsen {
-      display:flex; gap:4px; flex-shrink:0; min-width:130px; flex-wrap:wrap;
+      display:flex; gap:5px; flex-shrink:0; min-width:195px; flex-wrap:wrap;
     }
     kbd {
       display:inline-flex; align-items:center; justify-content:center;
       background:rgba(255,255,255,0.12); border:1.5px solid rgba(255,255,255,0.28);
-      border-bottom-width:3px; border-radius:7px;
-      color:#fff; font-family:'Courier New',monospace; font-size:0.72rem;
-      font-weight:700; padding:3px 8px; min-width:28px;
+      border-bottom-width:3px; border-radius:8px;
+      color:#fff; font-family:'Courier New',monospace; font-size:1.0rem;
+      font-weight:700; padding:5px 12px; min-width:36px;
       box-shadow:0 2px 4px rgba(0,0,0,0.3);
     }
     .help-uitleg {
-      color:rgba(255,255,255,0.8); font-size:0.82rem; line-height:1.3;
+      color:rgba(255,255,255,0.8); font-size:1.1rem; line-height:1.3;
     }
     .help-sectie-binnenkort { opacity:0.55; }
     .help-binnenkort-badge {
-      font-size:0.62rem; background:rgba(255,200,0,0.2);
+      font-size:0.82rem; background:rgba(255,200,0,0.2);
       border:1px solid rgba(255,200,0,0.4); color:#ffd700;
-      border-radius:10px; padding:1px 7px;
+      border-radius:10px; padding:1px 9px;
       text-transform:lowercase; letter-spacing:0.3px; font-weight:600;
     }
     .help-binnenkort-tekst {
-      color:rgba(255,255,255,0.5); font-size:0.78rem;
+      color:rgba(255,255,255,0.5); font-size:1.0rem;
       font-style:italic; line-height:1.4;
     }
     #help-sluit {
       align-self:center; margin-top:4px;
-      padding:8px 28px; border-radius:20px;
+      padding:11px 38px; border-radius:24px;
       background:rgba(255,255,255,0.1); border:1.5px solid rgba(255,255,255,0.2);
-      color:#fff; font-size:0.82rem; font-family:'Baloo 2',sans-serif;
+      color:#fff; font-size:1.05rem; font-family:'Baloo 2',sans-serif;
       cursor:pointer; transition:background 0.2s;
     }
     #help-sluit:hover { background:rgba(255,255,255,0.2); }
@@ -387,7 +387,7 @@
     </div>
     <div id="level-lijst"></div>
     <button id="help-knop" onclick="document.getElementById('help-popup').style.display='flex'">
-      ❓ Uitleg bediening
+      ❓ Hoe werkt het?
     </button>
   </div>
 </div>
@@ -452,6 +452,8 @@
   <img id="wonky-naar-frontaal" src="images/Timbo_naar_frontaal.png" alt="Wonky naar frontaal" style="position:fixed;width:clamp(86px, 7.03vmin, 154px);pointer-events:none;z-index:11;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
   <img id="wonky-turbo" src="images/Timbo_turbo.png" alt="Wonky turbo" style="position:fixed;width:clamp(90px, 7.3vmin, 160px);pointer-events:none;z-index:10;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
   <img id="wonky-dropt" src="images/Timbo_dropt.png" alt="Wonky dropt" style="position:fixed;width:clamp(90px, 7.3vmin, 160px);pointer-events:none;z-index:10;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
+  <img id="wonky-blij" src="images/Timbo_blij.png" alt="Wonky blij" style="position:fixed;width:clamp(90px, 7.3vmin, 160px);pointer-events:none;z-index:10;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
+  <img id="wonky-sad"  src="images/Timbo_sad.png"  alt="Wonky sad"  style="position:fixed;width:clamp(90px, 7.3vmin, 160px);pointer-events:none;z-index:10;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
   <img id="vlag-valt" src="images/vlag_valt.png" alt="vlag"/>
   <img id="vlag-grond" src="images/vlag_grond.png" alt="vlag"/>
   <div id="land-hover"></div>
@@ -612,7 +614,7 @@ bouwStartscherm();
 // ── Spelstaat ─────────────────────────────────────────
 let huidigLevel='eu-west', huidigModus='spelen', spelLanden=[];
 let introActief=false, introStartTijd=0;
-const INTRO_DUUR = 2000; // ms
+const INTRO_DUUR = 3500; // ms
 let huidigLandIdx=0, huidigLand='', score=0, spelerNaam='';
 let levelStartTijd=0, laatsteLevelTijd=0;
 // Vlucht-animatie bij een misser: vliegtuigje volgt automatisch een gloeiende lijn naar het juiste land
@@ -1112,17 +1114,23 @@ function getLandKleur(naam,lat){
 }
 
 // ── IJskap ────────────────────────────────────────────
-// Vaste lon/lat-ankerpunten langs de rand van het Arctische ijs,
-// net zoals Antarctica zijn grenzen uit echte GeoJSON-data haalt.
-// De breedtegraden zijn handmatig bepaald op basis van de werkelijke
-// uitlopers van het poolijs (Groenland, Siberische Zee, Beaufortzee, etc.)
+// Vaste lon/lat-ankerpunten langs de rand van het Arctische ijs.
+// Meer punten + grotere variatie in breedtegraad geeft de grillige,
+// organische kustlijn die Antarctica ook heeft.
+// Structuur: [lon, lat] — lage lat = diepe inham, hoge lat = uitloper.
 const IJSKAP_PUNTEN = [
-  [  -5, 82.5],[  15, 80.8],[  30, 80.0],[  45, 80.5],[  60, 80.2],
-  [  75, 79.5],[  90, 79.8],[ 105, 79.0],[ 120, 78.5],[ 135, 78.8],
-  [ 150, 79.5],[ 165, 79.0],[ 180, 78.5],[-165, 79.2],[-150, 79.8],
-  [-135, 80.5],[-120, 81.0],[-110, 80.5],[-100, 80.8],[ -90, 81.5],
-  [ -85, 83.0],[ -75, 83.5],[ -65, 83.0],[ -55, 82.0],[ -45, 81.5],
-  [ -40, 82.0],[ -35, 83.5],[ -25, 84.0],[ -15, 83.5],[  -5, 82.5],
+  // Vanuit 0° (Groenlandse Zee) met de klok mee
+  [   0, 82.0],[   8, 80.5],[  15, 79.0],[  20, 80.2],[  28, 78.5],
+  [  35, 77.8],[  42, 79.5],[  50, 78.2],[  58, 76.5],[  65, 78.0],
+  [  72, 79.2],[  80, 77.5],[  88, 76.8],[  95, 78.5],[ 102, 77.0],
+  [ 110, 75.8],[ 118, 77.5],[ 125, 79.0],[ 132, 77.8],[ 140, 76.2],
+  [ 148, 78.0],[ 155, 79.5],[ 163, 78.2],[ 170, 77.0],[ 178, 79.2],
+  [ 180, 78.5],[-173, 77.8],[-165, 79.5],[-158, 78.0],[-152, 76.5],
+  [-145, 78.8],[-138, 80.5],[-132, 79.2],[-126, 81.0],[-120, 80.2],
+  [-114, 81.8],[-108, 80.5],[-102, 82.2],[ -96, 83.5],[ -90, 82.8],
+  [ -84, 84.0],[ -78, 83.2],[ -72, 84.5],[ -66, 83.0],[ -60, 82.5],
+  [ -54, 83.8],[ -48, 82.2],[ -42, 83.5],[ -36, 84.8],[ -30, 83.5],
+  [ -24, 82.0],[ -18, 83.2],[ -12, 82.5],[  -6, 81.2],[   0, 82.0],
 ];
 
 function tekenIJskap(poolLat,straal){
@@ -1916,6 +1924,17 @@ function updateSpel(){
     wonkyEl.style.transform=`scaleX(${scaleX}) rotate(${dx*14+dy*12}deg)`;
   }
 
+  // Blij/sad volgen altijd Timbo's positie (ook tijdens vlucht/turbo/etc.)
+  const wonkyBlij = document.getElementById('wonky-blij');
+  const wonkySad  = document.getElementById('wonky-sad');
+  for(const el of [wonkyBlij, wonkySad]){
+    if(el.style.display !== 'none'){
+      const h = el.offsetWidth/2;
+      el.style.left = (wx-h)+'px';
+      el.style.top  = (wy-h)+'px';
+    }
+  }
+
   // Landdetectie
   hoverLand=getLandOpPunt(wonkyLon,wonkyLat);
   if(hoverLand&&huidigModus==='verkennen'){
@@ -1958,8 +1977,10 @@ document.addEventListener('keydown',e=>{
         document.getElementById('score').textContent=score;
         toonFeedback('🎉 Goed zo!','#ffd700');
         toonPunten(afwijkingKm);
+        toonReactie('blij');
         setTimeout(nieuwLand,1800);
       } else {
+        if(afwijkingKm >= 100) toonReactie('sad');
         vluchtActief=true;
         vluchtStartTijd=performance.now();
         vluchtDuur=Math.max(900, Math.min(3600, afwijkingKm*2.4)); // hoe verder ernaast, hoe langer de vlucht
@@ -1974,6 +1995,19 @@ document.addEventListener('keydown',e=>{
     },1400);
   }
 });
+
+// ── Timbo reactie (blij / sad) na vlag-drop ──────────
+let reactieTimer = null;
+function toonReactie(type) {
+  const blij = document.getElementById('wonky-blij');
+  const sad  = document.getElementById('wonky-sad');
+  blij.style.display = 'none';
+  sad.style.display  = 'none';
+  if(reactieTimer){ clearTimeout(reactieTimer); reactieTimer = null; }
+  const el = type === 'blij' ? blij : sad;
+  el.style.display = 'block';
+  reactieTimer = setTimeout(() => { el.style.display = 'none'; }, 3000);
+}
 
 // ── Loop ──────────────────────────────────────────────
 function loop(){ updateSpel(); drawGlobe(); requestAnimationFrame(loop); }
