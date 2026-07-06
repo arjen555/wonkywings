@@ -725,7 +725,6 @@ function startSpel(levelId, modus) {
     spelLanden = k.slice(0,15);
   }
   huidigLandIdx=0; huidigLand=spelLanden[0];
-  levelStartTijd = (modus==='spelen') ? performance.now() : 0;
 
   // Europa-subregio's starten iets ingezoomd, wereld volledig uitgezoomd
   zoomNiveau = levelId.startsWith('eu-') ? 0.35 : 0;
@@ -740,7 +739,13 @@ function startSpel(levelId, modus) {
   if(doIntro){
     introActief = true;
     introStartTijd = performance.now();
-    setTimeout(() => { introActief = false; }, INTRO_DUUR);
+    levelStartTijd = 0; // tijd staat stil zolang de intro-glow speelt
+    setTimeout(() => {
+      introActief = false;
+      levelStartTijd = (modus==='spelen') ? performance.now() : 0;
+    }, INTRO_DUUR);
+  } else {
+    levelStartTijd = (modus==='spelen') ? performance.now() : 0;
   }
   document.getElementById('level-nr-display').textContent = lv.naam;
   document.getElementById('speler-naam-display').textContent=spelerNaam;
@@ -1873,6 +1878,8 @@ function updateSpel(){
   const wonkyNaarFrontaal = document.getElementById('wonky-naar-frontaal');
   const wonkyTurbo = document.getElementById('wonky-turbo');
   const wonkyDropt = document.getElementById('wonky-dropt');
+  const wonkyBlijEl = document.getElementById('wonky-blij');
+  const wonkySadEl = document.getElementById('wonky-sad');
 
   // Tijdens ombocht: 3 fasen - naar_frontaal -> frontaal -> naar_frontaal (gespiegeld)
   const ombochtVerstreken = performance.now() - ombochtTimer;
@@ -1916,12 +1923,33 @@ function updateSpel(){
       const sc = draaitNaarLinks ? 1 : -1;
       wonkyNaarFrontaal.style.transform = `scaleX(${sc})`;
     }
-  } else if(turbo || vluchtActief){
+  } else if(vluchtActief){
+    // Correctie-vlucht na een foute drop: bij een grote afwijking (>=100km) houdt Timbo
+    // zijn sad-gezicht en draait mee met de richting waarin hij nu daadwerkelijk vliegt.
+    // Bij een kleine afwijking blijft hij gewoon het normale vliegtuigje.
+    wonkyFrontaal.style.display='none'; wonkyNaarFrontaal.style.display='none';
+    wonkyDropt.style.display='none'; wonkyBlijEl.style.display='none';
+    const scaleX = dx<0?1:-1;
+    laatsteScaleX = scaleX;
+    if(vluchtAfwijkingKm >= 100){
+      wonkyEl.style.display='none'; wonkyTurbo.style.display='none';
+      wonkySadEl.style.display='block';
+      { const h=wonkySadEl.offsetWidth/2; wonkySadEl.style.left=(wx-h)+'px'; wonkySadEl.style.top=(wy-h)+'px'; }
+      // Timbo_sad.png is gespiegeld getekend t.o.v. de andere sprites, dus omgekeerd t.o.v. scaleX
+      wonkySadEl.style.transform=`scaleX(${-scaleX})`;
+    } else {
+      wonkyTurbo.style.display='none'; wonkySadEl.style.display='none';
+      wonkyEl.style.display='block';
+      { const h=wonkyEl.offsetWidth/2; wonkyEl.style.left=(wx-h)+'px'; wonkyEl.style.top=(wy-h)+'px'; }
+      wonkyEl.style.transform=`scaleX(${scaleX})`;
+    }
+  } else if(turbo){
     wonkyEl.style.display='none'; wonkyFrontaal.style.display='none';
     wonkyNaarFrontaal.style.display='none'; wonkyDropt.style.display='none';
     wonkyTurbo.style.display='block';
     { const h=wonkyTurbo.offsetWidth/2; wonkyTurbo.style.left=(wx-h)+'px'; wonkyTurbo.style.top=(wy-h)+'px'; }
-    const scaleX=dx<0?1:-1;
+    const richting = dx!==0 ? dx : laatsteDx;
+    const scaleX=richting<0?1:-1;
     laatsteScaleX = scaleX;
     // dy>0 (omhoog/noord) = neus omhoog, dy<0 (omlaag/zuid) = neus omlaag
     wonkyTurbo.style.transform=`scaleX(${scaleX}) rotate(${dx*14+dy*12}deg)`;
@@ -1930,21 +1958,18 @@ function updateSpel(){
     wonkyTurbo.style.display='none'; wonkyDropt.style.display='none';
     wonkyEl.style.display='block';
     { const h=wonkyEl.offsetWidth/2; wonkyEl.style.left=(wx-h)+'px'; wonkyEl.style.top=(wy-h)+'px'; }
-    const scaleX=dx<0?1:-1;
+    const richting = dx!==0 ? dx : laatsteDx;
+    const scaleX=richting<0?1:-1;
     laatsteScaleX = scaleX;
     // Gefixed: dy>0 (omhoog) = neus omhoog (+rot), dy<0 (omlaag) = neus omlaag (-rot)
     wonkyEl.style.transform=`scaleX(${scaleX}) rotate(${dx*14+dy*12}deg)`;
   }
 
-  // Blij/sad volgen altijd Timbo's positie (ook tijdens vlucht/turbo/etc.)
-  const wonkyBlij = document.getElementById('wonky-blij');
-  const wonkySad  = document.getElementById('wonky-sad');
-  for(const el of [wonkyBlij, wonkySad]){
-    if(el.style.display !== 'none'){
-      const h = el.offsetWidth/2;
-      el.style.left = (wx-h)+'px';
-      el.style.top  = (wy-h)+'px';
-    }
+  // Blij volgt Timbo's positie ook als hij is geactiveerd buiten deze update-tak om (bij een goede drop)
+  if(wonkyBlijEl.style.display !== 'none'){
+    const h = wonkyBlijEl.offsetWidth/2;
+    wonkyBlijEl.style.left = (wx-h)+'px';
+    wonkyBlijEl.style.top  = (wy-h)+'px';
   }
 
   // Landdetectie
@@ -2028,7 +2053,12 @@ function toonReactie(type) {
   const scaleX = type === 'sad' ? -laatsteScaleX : laatsteScaleX;
   el.style.transform = `scaleX(${scaleX})`;
   el.style.display = 'block';
-  reactieTimer = setTimeout(() => { el.style.display = 'none'; }, 3000);
+  // Bij 'blij' verdwijnt de reactie na 3s vanzelf (geen vervolgvlucht).
+  // Bij 'sad' blijft hij staan tot de update-loop 'm overneemt zodra vluchtActief start
+  // (die houdt sad zelf zichtbaar en laat 'm meedraaien tijdens de correctie-vlucht).
+  if(type === 'blij'){
+    reactieTimer = setTimeout(() => { el.style.display = 'none'; }, 3000);
+  }
 }
 
 // ── Loop ──────────────────────────────────────────────
