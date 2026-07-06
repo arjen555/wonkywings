@@ -16,6 +16,18 @@
       display:flex; flex-direction:row;
       background:#051e30;
     }
+    #versie-label {
+      position:absolute; top:8px; right:12px; z-index:101;
+      color:rgba(255,255,255,0.35); font-size:0.75rem; font-family:monospace;
+      pointer-events:none; user-select:none;
+    }
+    #intro-titel {
+      position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+      z-index:15; pointer-events:none; user-select:none;
+      font-size:clamp(1.8rem, 5vmin, 3.4rem); font-weight:800;
+      color:#fff6c8; text-shadow:0 2px 18px rgba(0,0,0,0.65), 0 0 24px rgba(255,215,0,0.5);
+      opacity:0; text-align:center; white-space:nowrap;
+    }
     #start-links {
       flex: 0 0 80%;
       position:relative; overflow:hidden;
@@ -375,6 +387,7 @@
 
 <!-- STARTSCHERM -->
 <div id="startscherm">
+  <div id="versie-label">v0.1.0</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -447,6 +460,7 @@
 <!-- SPELSCHERM -->
 <div id="spelscherm">
   <canvas id="globe"></canvas>
+  <div id="intro-titel"></div>
   <img id="wonky" src="images/Wonky.png" alt="Wonky"/>
   <img id="wonky-frontaal" src="images/Timbo_frontaal.png" alt="Wonky frontaal" style="position:fixed;width:clamp(83px, 6.77vmin, 148px);pointer-events:none;z-index:11;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));"/>
   <img id="wonky-naar-frontaal" src="images/Timbo_naar_frontaal.png" alt="Wonky naar frontaal" style="position:fixed;width:clamp(86px, 7.03vmin, 154px);pointer-events:none;z-index:11;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
@@ -705,6 +719,16 @@ function laadIllustratie(naam, forceHerlaad) {
     alaskaImg.onerror = () => { landIllustraties['__Alaska'] = false; };
     alaskaImg.src = 'images/landen/Verenigde_Staten_Alaska.png';
   }
+  // Speciaal geval: Noordpool heeft twee plaatjes - Noordpool2.png (eenvoudige witte
+  // vlek, getoond tot het omslagpunt) en Noordpool.png (illustratie met dieren/mensen,
+  // getoond daarna). Cross-fade tussen beide gebeurt in tekenLandIllustratie.
+  if(naam==='Noordpool' && landIllustraties['__Noordpool_vlek']===undefined){
+    landIllustraties['__Noordpool_vlek'] = null;
+    const vlekImg = new Image();
+    vlekImg.onload  = () => { landIllustraties['__Noordpool_vlek'] = vlekImg; };
+    vlekImg.onerror = () => { landIllustraties['__Noordpool_vlek'] = false; };
+    vlekImg.src = 'images/landen/Noordpool2.png';
+  }
 }
 
 function startSpel(levelId, modus) {
@@ -739,6 +763,7 @@ function startSpel(levelId, modus) {
   if(doIntro){
     introActief = true;
     introStartTijd = performance.now();
+    document.getElementById('intro-titel').textContent = lv.naam;
     levelStartTijd = 0; // tijd staat stil zolang de intro-glow speelt
     setTimeout(() => {
       introActief = false;
@@ -1053,6 +1078,12 @@ let rotM;
 let focusSx=W/2, focusSy=H*0.56;
 let hoverLand=null;
 
+// Simpele "nep"-GEOJSON-feature voor de Noordpool: geen echte polygoon (de ijskap heeft
+// geen scherpe landgrens), maar wel een dutch-naam zodat de bestaande hover/illustratie-
+// logica 'm net als een normaal land kan behandelen (zie getLandOpPunt en VRIJ_ZWEVEND).
+const NOORDPOOL_FEATURE = { properties: { dutch: 'Noordpool', name: 'Noordpool' }, geometry: { type:'Polygon', coordinates:[[]] } };
+const NOORDPOOL_MIN_LAT = 75; // vanaf hier (net als IJSKAP_PUNTEN) geldt een punt als "op de Noordpool"
+
 // ── 3D functies ───────────────────────────────────────
 function maakRotMatrix(lon,lat){
   const lo=lon*Math.PI/180, la=lat*Math.PI/180;
@@ -1351,6 +1382,7 @@ function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
   const VRIJ_ZWEVEND = {
     "Bahama's": { minLon:-80.5, maxLon:-72.5, minLat:20.8, maxLat:27.5 },
     "Belize":   { minLon:-89.5, maxLon:-85.5, minLat:15.6, maxLat:18.8 },
+    "Noordpool": { minLon:-180, maxLon:180, minLat:75, maxLat:90 },
   };
   if(VRIJ_ZWEVEND[dutch]){
     const bbox = VRIJ_ZWEVEND[dutch];
@@ -1513,6 +1545,8 @@ function getLandOpPunt(lon,lat){
       }
     }
   }
+  // Geen enkel land matcht: als we ver genoeg naar het noorden zijn, is dit de Noordpool
+  if(lat >= NOORDPOOL_MIN_LAT) return NOORDPOOL_FEATURE;
   return null;
 }
 function afstandKmTussenPunten(lon1,lat1,lon2,lat2){
@@ -1625,7 +1659,21 @@ function drawGlobe(){
     }
   }
 
-  tekenIJskap(90,12);
+  const noordpoolGehoverd = hoverLand && (hoverLand.properties.dutch === 'Noordpool');
+
+  if(!noordpoolGehoverd){
+    tekenIJskap(90,12);
+  } else {
+    // Basisvorm: Noordpool2.png (de vlek-illustratie), altijd volledig zichtbaar zodra
+    // je in de buurt bent - dit vervangt de canvas-getekende ijskap tijdens het hoveren.
+    laadIllustratie('Noordpool');
+    const vlekImg = landIllustraties['__Noordpool_vlek'];
+    if(vlekImg){
+      tekenLandIllustratie(hoverLand, vlekImg, zoomNiveau, 1.0);
+    } else {
+      tekenIJskap(90,12); // vlek nog niet geladen: val terug op de canvas-vorm
+    }
+  }
 
   // Illustratie-reis: niks vóór het omslagpunt, waas net erna,
   // vloeiend opklarend tot vol bij zoomniveau 100%.
@@ -1753,6 +1801,15 @@ function updateSpel(){
     const verstrekenSec=Math.floor((performance.now()-levelStartTijd)/1000);
     const mm=Math.floor(verstrekenSec/60), ss=verstrekenSec%60;
     document.getElementById('tijd-display').textContent='⏱ '+mm+':'+String(ss).padStart(2,'0');
+  }
+
+  // Intro-titel: faded in/uit op dezelfde curve als het gloweffect op de landen
+  if(introActief){
+    const t = (performance.now()-introStartTijd)/INTRO_DUUR;
+    const intens = Math.sin(Math.min(1,Math.max(0,t)) * Math.PI); // fade in én fade out
+    document.getElementById('intro-titel').style.opacity = intens;
+  } else {
+    document.getElementById('intro-titel').style.opacity = 0;
   }
 
   // Zoom: het dynamische maximum (aangepast aan het land onder Wonky) wordt
@@ -1893,11 +1950,13 @@ function updateSpel(){
     // Vlag droppen heeft prioriteit
     wonkyEl.style.display='none'; wonkyFrontaal.style.display='none';
     wonkyNaarFrontaal.style.display='none'; wonkyTurbo.style.display='none';
+    wonkySadEl.style.display='none';
     wonkyDropt.style.display='block';
     { const h=wonkyDropt.offsetWidth/2; wonkyDropt.style.left=(wx-h)+'px'; wonkyDropt.style.top=(wy-h)+'px'; }
     if(performance.now()-dropAnimatieTimer > DROP_ANIMATIE_DUUR) dropAnimatieActief=false;
   } else if(toontOmbocht){
     wonkyEl.style.display='none'; wonkyTurbo.style.display='none'; wonkyDropt.style.display='none';
+    wonkySadEl.style.display='none';
 
     if(ombochtFractie < 0.28){
       // Fase 1: naar_frontaal - oude vliegrichting draait in
@@ -1946,6 +2005,7 @@ function updateSpel(){
   } else if(turbo){
     wonkyEl.style.display='none'; wonkyFrontaal.style.display='none';
     wonkyNaarFrontaal.style.display='none'; wonkyDropt.style.display='none';
+    wonkySadEl.style.display='none';
     wonkyTurbo.style.display='block';
     { const h=wonkyTurbo.offsetWidth/2; wonkyTurbo.style.left=(wx-h)+'px'; wonkyTurbo.style.top=(wy-h)+'px'; }
     const richting = dx!==0 ? dx : laatsteDx;
@@ -1956,6 +2016,7 @@ function updateSpel(){
   } else {
     wonkyFrontaal.style.display='none'; wonkyNaarFrontaal.style.display='none';
     wonkyTurbo.style.display='none'; wonkyDropt.style.display='none';
+    wonkySadEl.style.display='none';
     wonkyEl.style.display='block';
     { const h=wonkyEl.offsetWidth/2; wonkyEl.style.left=(wx-h)+'px'; wonkyEl.style.top=(wy-h)+'px'; }
     const richting = dx!==0 ? dx : laatsteDx;
