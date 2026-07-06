@@ -655,7 +655,7 @@ let zHoudSinds = 0, xHoudSinds = 0;
 const DOEL_LAND_HOOGTE_FRACTIE = 0.65; // land moet 65% schermhoogte vullen bij volledig ingezoomd (niveau 1)
 const DOEL_LAND_BREEDTE_FRACTIE = 0.75; // land mag max. 75% schermbreedte vullen bij volledig ingezoomd
 const ZOOM_REFERENTIE_MAX = 4.5; // 'typisch' maximum voor het grootste (stabiele) deel van de zoomrange
-const ZOOM_OMSLAGPUNT = 0.80;    // vanaf dit zoomniveau (0-1) past de zoom zich pas aan op het specifieke land
+const ZOOM_OMSLAGPUNT = 0.70;    // vanaf dit zoomniveau (0-1) past de zoom zich pas aan op het specifieke land
 
 // ── Illustraties ──────────────────────────────────────
 const landIllustraties = {};
@@ -1169,6 +1169,24 @@ const IJSKAP_PUNTEN = [
   [ -54, 83.8],[ -48, 82.2],[ -42, 83.5],[ -36, 84.8],[ -30, 83.5],
   [ -24, 82.0],[ -18, 83.2],[ -12, 82.5],[  -6, 81.2],[   0, 82.0],
 ];
+// Voor een gegeven lengtegraad: interpoleer de buitengrens-breedtegraad van de
+// ijskap tussen de twee dichtstbijzijnde IJSKAP_PUNTEN. Herbruikt door zowel het
+// tekenen (tekenLandIllustratie) als de hover-detectie (getLandOpPunt), zodat
+// wat je ziet en waar je kan hoveren altijd exact overeenkomen.
+function randLatVoorLon(lon){
+  let l=lon; while(l<0) l+=360; while(l>=360) l-=360;
+  for(let k=0;k<IJSKAP_PUNTEN.length-1;k++){
+    let lon1=IJSKAP_PUNTEN[k][0], lon2=IJSKAP_PUNTEN[k+1][0];
+    let l1=lon1<0?lon1+360:lon1, l2=lon2<0?lon2+360:lon2;
+    if(l2<l1) l2+=360;
+    let ltest=l<l1?l+360:l;
+    if(ltest>=l1 && ltest<=l2){
+      const t=(l2>l1)?(ltest-l1)/(l2-l1):0;
+      return IJSKAP_PUNTEN[k][1]+(IJSKAP_PUNTEN[k+1][1]-IJSKAP_PUNTEN[k][1])*t;
+    }
+  }
+  return 78; // fallback, komt in de praktijk niet voor
+}
 
 function tekenIJskap(poolLat,straal){
   const [px,py,pz]=roteerPunt(lonLatTo3D(0,poolLat),rotM);
@@ -1375,6 +1393,58 @@ function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
   const polysLijst=geom.type==='Polygon'?[geom.coordinates]:geom.coordinates;
   const dutch=feature.properties.dutch||feature.properties.name;
 
+  // ── Noordpool: azimutale projectie i.p.v. lon/lat-rechthoek ──
+  // Bij een rechthoekige uitrekking komen alle lengtegraden bij de pool samen in
+  // één punt, wat een sterk vervormde "sinaasappelschil" oplevert. In plaats daarvan
+  // draaien we hier rond het middelpunt van de pool (hoek = lengtegraad, straal =
+  // afstand tot de pool), met IJSKAP_PUNTEN als organische buitengrens per hoek.
+  if(dutch==='Noordpool'){
+    // Snelle voorcheck: is de pool zelf óf een van enkele verspreide randpunten
+    // zichtbaar? (Voorkomt onnodig rekenwerk als de hele Noordpool duidelijk aan
+    // de achterkant van de bol zit, maar sluit het randgeval "rand net wel
+    // zichtbaar terwijl de pool zelf niet" niet uit.)
+    const [,,mzPool]=roteerPunt(lonLatTo3D(0,90),rotM);
+    let mzRandMax=-1;
+    for(let hk=0;hk<360;hk+=45){
+      const rl=randLatVoorLon(hk);
+      const [,,mzr]=roteerPunt(lonLatTo3D(hk,rl),rotM);
+      if(mzr>mzRandMax) mzRandMax=mzr;
+    }
+    if(mzPool<=0.01 && mzRandMax<=0.01) return;
+    const RASTER_HOEK=24, RASTER_STRAAL=8;
+    const imgW=img.naturalWidth||img.width, imgH=img.naturalHeight||img.height;
+    const cx=imgW/2, cy=imgH/2, maxR=Math.min(imgW,imgH)/2;
+    const hoek=[];
+    for(let j=0;j<=RASTER_STRAAL;j++){
+      const rij=[];
+      const straalFractie=j/RASTER_STRAAL; // 0 = pool zelf, 1 = buitenrand
+      for(let i=0;i<=RASTER_HOEK;i++){
+        const lonHoek=i/RASTER_HOEK*360-180;
+        const randLat=randLatVoorLon(lonHoek);
+        const lat=90-(90-randLat)*straalFractie;
+        const [x,y,z]=roteerPunt(lonLatTo3D(lonHoek,lat),rotM);
+        const bx=cx+Math.sin(lonHoek*Math.PI/180)*straalFractie*maxR;
+        const by=cy-Math.cos(lonHoek*Math.PI/180)*straalFractie*maxR;
+        rij.push({ zichtbaar:z>0.01, sx:CX+x*R, sy:CY-y*R, bx, by });
+      }
+      hoek.push(rij);
+    }
+    ctx.save();
+    ctx.globalAlpha=(doorzicht!==undefined?doorzicht:0.93);
+    for(let j=0;j<RASTER_STRAAL;j++){
+      for(let i=0;i<RASTER_HOEK;i++){
+        const p00=hoek[j][i],p10=hoek[j][i+1],p01=hoek[j+1][i],p11=hoek[j+1][i+1];
+        if(p00.zichtbaar&&p10.zichtbaar&&p01.zichtbaar)
+          tekenDriehoek(img,p00.bx,p00.by,p10.bx,p10.by,p01.bx,p01.by,p00.sx,p00.sy,p10.sx,p10.sy,p01.sx,p01.sy);
+        if(p10.zichtbaar&&p11.zichtbaar&&p01.zichtbaar)
+          tekenDriehoek(img,p10.bx,p10.by,p11.bx,p11.by,p01.bx,p01.by,p10.sx,p10.sy,p11.sx,p11.sy,p01.sx,p01.sy);
+      }
+    }
+    ctx.globalAlpha=1.0;
+    ctx.restore();
+    return;
+  }
+
   // ── Vrij-zwevende landen: illustratie niet geclipped op landgrenzen ──
   // Gebruik dit voor eilandengroepen waarbij de afbeelding de omringende
   // zee bewust toont (bijv. Bahama's met dolfijnen). De bbox geeft de
@@ -1382,7 +1452,6 @@ function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
   const VRIJ_ZWEVEND = {
     "Bahama's": { minLon:-80.5, maxLon:-72.5, minLat:20.8, maxLat:27.5 },
     "Belize":   { minLon:-89.5, maxLon:-85.5, minLat:15.6, maxLat:18.8 },
-    "Noordpool": { minLon:-180, maxLon:180, minLat:75, maxLat:90 },
   };
   if(VRIJ_ZWEVEND[dutch]){
     const bbox = VRIJ_ZWEVEND[dutch];
@@ -1545,8 +1614,10 @@ function getLandOpPunt(lon,lat){
       }
     }
   }
-  // Geen enkel land matcht: als we ver genoeg naar het noorden zijn, is dit de Noordpool
-  if(lat >= NOORDPOOL_MIN_LAT) return NOORDPOOL_FEATURE;
+  // Geen enkel land matcht: check of we binnen de organische ijskap-vorm zitten
+  // (dezelfde vorm als getekend door tekenIJskap/tekenLandIllustratie), zodat
+  // hover-detectie exact overeenkomt met wat je op het scherm ziet.
+  if(lat >= randLatVoorLon(lo)) return NOORDPOOL_FEATURE;
   return null;
 }
 function afstandKmTussenPunten(lon1,lat1,lon2,lat2){
@@ -1682,7 +1753,7 @@ function drawGlobe(){
     laadIllustratie(dutch);
     const ill=landIllustraties[dutch];
     if(ill){
-      const WAAS = 0.65;   // al bij het omslagpunt (80%) goed zichtbaar, loopt op naar 100%
+      const WAAS = 0.25;   // bij het omslagpunt (70%) nog vrij vaag, loopt geleidelijk op naar 100%
       let voortgang = (zoomNiveau - ZOOM_OMSLAGPUNT) / (1 - ZOOM_OMSLAGPUNT);
       voortgang = Math.max(0, Math.min(1, voortgang));
       const doorzicht = WAAS + (1.0 - WAAS) * voortgang;
