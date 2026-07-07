@@ -281,6 +281,33 @@
       background:rgba(255,255,255,0.15); border-radius:5px; overflow:hidden; display:none;
     }
     #joker-countdown-fill { height:100%; width:100%; background:linear-gradient(90deg,#ffd700,#ff9900); }
+
+    /* ── TOUCH-BESTURING (alleen tablets/telefoons) ── */
+    .touch-verborgen { display:none !important; }
+    #touch-vliegknoppen {
+      position:fixed; left:clamp(12px,2vmin,24px); bottom:clamp(12px,2vmin,24px); z-index:20;
+      display:flex; flex-direction:row; align-items:flex-end; gap:14px;
+    }
+    #touch-zoomknoppen {
+      position:fixed; left:clamp(12px,2vmin,24px); top:clamp(60px,9vmin,100px); z-index:20;
+      display:flex; flex-direction:column; gap:10px;
+    }
+    .touch-knop {
+      width:clamp(58px,9vmin,92px); height:clamp(58px,9vmin,92px);
+      border-radius:50%; cursor:pointer; -webkit-tap-highlight-color:transparent;
+      background:rgba(255,255,255,0.12); border:2px solid rgba(255,255,255,0.3);
+      display:flex; align-items:center; justify-content:center;
+      filter:drop-shadow(0 3px 8px rgba(0,0,0,0.5));
+      transition:transform 0.1s, background 0.15s;
+      touch-action:none; user-select:none;
+      font-size:1.6rem; color:#fff; font-weight:800;
+    }
+    .touch-knop img { width:62%; height:62%; object-fit:contain; pointer-events:none; }
+    .touch-knop:active, .touch-knop.touch-actief {
+      transform:scale(0.92); background:rgba(255,215,0,0.35); border-color:#ffd700;
+    }
+    #touch-turbo { font-size:2rem; }
+    .touch-zoom-knop { width:clamp(46px,7vmin,68px); height:clamp(46px,7vmin,68px); font-size:1.4rem; }
     .level-bol {
       display:flex; flex-direction:row; align-items:center; gap:10px;
       background:rgba(255,255,255,0.06); border:2px solid rgba(255,255,255,0.12);
@@ -470,6 +497,17 @@
   <img id="wonky-sad"  src="images/Timbo_sad.png"  alt="Wonky sad"  style="position:fixed;width:clamp(90px, 7.3vmin, 160px);pointer-events:none;z-index:10;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
   <img id="vlag-valt" src="images/vlag_valt.png" alt="vlag"/>
   <img id="vlag-grond" src="images/vlag_grond.png" alt="vlag"/>
+
+  <!-- Touch-besturing: alleen zichtbaar op touch-apparaten (zie initTouchKnoppen) -->
+  <div id="touch-vliegknoppen" class="touch-verborgen">
+    <div id="touch-vlaggetje" class="touch-knop" title="Vlaggetje droppen"><img src="images/vlag_grond.png" alt="Vlaggetje droppen"/></div>
+    <div id="touch-turbo" class="touch-knop" title="Turbo (vasthouden)">⚡</div>
+  </div>
+  <div id="touch-zoomknoppen" class="touch-verborgen">
+    <div id="touch-zoom-in" class="touch-knop touch-zoom-knop" title="Inzoomen">+</div>
+    <div id="touch-zoom-uit" class="touch-knop touch-zoom-knop" title="Uitzoomen">−</div>
+  </div>
+
   <div id="land-hover"></div>
   <div id="correctie-land-naam"></div>
   <div id="feedback"></div>
@@ -656,6 +694,16 @@ const DOEL_LAND_HOOGTE_FRACTIE = 0.65; // land moet 65% schermhoogte vullen bij 
 const DOEL_LAND_BREEDTE_FRACTIE = 0.75; // land mag max. 75% schermbreedte vullen bij volledig ingezoomd
 const ZOOM_REFERENTIE_MAX = 4.5; // 'typisch' maximum voor het grootste (stabiele) deel van de zoomrange
 const ZOOM_OMSLAGPUNT = 0.75;    // vanaf dit zoomniveau (0-1) past de zoom zich pas aan op het specifieke land
+const ZOOM_NIVEAU_MAX_RUSLAND = 0.5; // Rusland mag nooit verder inzoomen dan 50%, ongeacht de camera-ruimte die er nog is
+
+// Geeft het maximale zoomNiveau (0-1) terug voor het land waar Wonky nu boven vliegt.
+// Voor de meeste landen is dat gewoon 100%; Rusland heeft een eigen, lagere grens.
+function zoomNiveauMaxVoorHuidigLand(){
+  if(hoverLand && hoverLand.properties && hoverLand.properties.dutch === 'Rusland'){
+    return ZOOM_NIVEAU_MAX_RUSLAND;
+  }
+  return 1;
+}
 
 // ── Illustraties ──────────────────────────────────────
 const landIllustraties = {};
@@ -1755,14 +1803,19 @@ function drawGlobe(){
   }
 
   // Illustratie-reis: niks vóór het omslagpunt, waas net erna,
-  // vloeiend opklarend tot vol bij zoomniveau 100%.
-  if(zoomNiveau>=ZOOM_OMSLAGPUNT && hoverLand){
+  // vloeiend opklarend tot vol bij het maximale zoomniveau van dit land.
+  // Voor de meeste landen is dat 100%, voor Rusland is dat de eigen grens (50%) -
+  // zo kun je bij Rusland gewoon dóórdrukken op Z en toch de volle illustratie krijgen,
+  // ook al schuift de camera daarbij niet verder in.
+  const illustratieMax = zoomNiveauMaxVoorHuidigLand();
+  const illustratieOmslagpunt = ZOOM_OMSLAGPUNT * illustratieMax;
+  if(zoomNiveau>=illustratieOmslagpunt && hoverLand){
     const dutch=hoverLand.properties.dutch||hoverLand.properties.name;
     laadIllustratie(dutch);
     const ill=landIllustraties[dutch];
     if(ill){
-      const WAAS = 0.0;   // bij het omslagpunt (75%) volledig onzichtbaar, loopt snel op naar 100%
-      let voortgang = (zoomNiveau - ZOOM_OMSLAGPUNT) / (1 - ZOOM_OMSLAGPUNT);
+      const WAAS = 0.0;   // bij het omslagpunt volledig onzichtbaar, loopt snel op naar vol
+      let voortgang = (zoomNiveau - illustratieOmslagpunt) / (illustratieMax - illustratieOmslagpunt);
       voortgang = Math.max(0, Math.min(1, voortgang));
       const doorzicht = WAAS + (1.0 - WAAS) * voortgang;
       tekenLandIllustratie(hoverLand,ill,zoomNiveau,doorzicht);
@@ -1849,11 +1902,194 @@ document.addEventListener('keydown',e=>{
 });
 document.addEventListener('keyup',e=>{ keys[e.key]=false; });
 
+// Voorkomt "vastzittende" toetsen: als het venster/tabblad focus verliest
+// (bijv. door een scroll-interactie of van tabblad wisselen) kan een keyup
+// event gemist worden, waardoor Wonky bijv. naar links zou blijven vliegen.
+// Bij focusverlies zetten we daarom alle ingedrukte toetsen hard terug op "los".
+function resetAlleToetsen(){
+  for(const k in keys) keys[k]=false;
+}
+window.addEventListener('blur', resetAlleToetsen);
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden) resetAlleToetsen(); });
+
+// ── Touch-besturing (tablet): slepen om te vliegen + pinch-to-zoom ──
+let touchStuurDx = 0, touchStuurDy = 0;  // sleep-input, voedt dezelfde dx/dy als de pijltjestoetsen
+let touchTurboActief = false;            // turbo-knop (vasthouden)
+let touchVliegId = null, touchVliegStartX = 0, touchVliegStartY = 0;
+const TOUCH_SLEEP_RADIUS = 70; // pixels tot volle uitslag (net als een joystick)
+let pinchStartAfstand = null, pinchStartZoomNiveau = null;
+
+function pinchAfstand(touches){
+  const dx = touches[0].clientX - touches[1].clientX;
+  const dy = touches[0].clientY - touches[1].clientY;
+  return Math.hypot(dx, dy);
+}
+
+canvas.addEventListener('touchstart', e=>{
+  if(e.touches.length >= 2){
+    // Tweede vinger erbij: schakel over naar pinch-zoom, sleep-vliegen stopt
+    touchVliegId = null;
+    touchStuurDx = 0; touchStuurDy = 0;
+    pinchStartAfstand = pinchAfstand(e.touches);
+    pinchStartZoomNiveau = zoomNiveau;
+  } else if(touchVliegId === null){
+    const t = e.changedTouches[0];
+    touchVliegId = t.identifier;
+    touchVliegStartX = t.clientX;
+    touchVliegStartY = t.clientY;
+  }
+  e.preventDefault();
+}, {passive:false});
+
+canvas.addEventListener('touchmove', e=>{
+  if(e.touches.length >= 2 && pinchStartAfstand){
+    const nieuweAfstand = pinchAfstand(e.touches);
+    const factor = nieuweAfstand / pinchStartAfstand; // >1 = vingers verder uit elkaar = inzoomen
+    const nieuwNiveau = pinchStartZoomNiveau + (factor - 1) * 0.8;
+    zoomNiveau = Math.min(zoomNiveauMaxVoorHuidigLand(), Math.max(0, nieuwNiveau));
+    document.getElementById('zoom-indicator').textContent='🔍 '+Math.round(zoomNiveau*100)+'%';
+  } else {
+    for(const t of e.changedTouches){
+      if(t.identifier !== touchVliegId) continue;
+      const dx = t.clientX - touchVliegStartX;
+      const dy = t.clientY - touchVliegStartY;
+      touchStuurDx = Math.max(-1, Math.min(1, dx/TOUCH_SLEEP_RADIUS));
+      touchStuurDy = Math.max(-1, Math.min(1, -dy/TOUCH_SLEEP_RADIUS)); // omhoog slepen = zelfde richting als ArrowUp
+    }
+  }
+  e.preventDefault();
+}, {passive:false});
+
+function touchVliegEinde(e){
+  if(e.touches.length < 2) pinchStartAfstand = null;
+  for(const t of e.changedTouches){
+    if(t.identifier === touchVliegId){
+      touchVliegId = null;
+      touchStuurDx = 0; touchStuurDy = 0;
+    }
+  }
+  // Blijft er na een pinch nog één vinger over? Daarmee gewoon verder vliegen.
+  if(e.touches.length === 1 && touchVliegId === null){
+    const t = e.touches[0];
+    touchVliegId = t.identifier;
+    touchVliegStartX = t.clientX;
+    touchVliegStartY = t.clientY;
+  }
+}
+canvas.addEventListener('touchend', touchVliegEinde);
+canvas.addEventListener('touchcancel', touchVliegEinde);
+
+// Knoppen alleen tonen op een apparaat met touch-scherm (niet op desktop)
+function initTouchKnoppen(){
+  const isTouchApparaat = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+  if(!isTouchApparaat) return;
+  document.getElementById('touch-vliegknoppen').classList.remove('touch-verborgen');
+  document.getElementById('touch-zoomknoppen').classList.remove('touch-verborgen');
+}
+initTouchKnoppen();
+
+// Vlaggetje droppen: één tikje, zelfde actie als de spatiebalk
+document.getElementById('touch-vlaggetje').addEventListener('touchstart', e=>{
+  e.preventDefault(); e.stopPropagation();
+  dropVlaggetje();
+}, {passive:false});
+
+// Turbo: vasthouden, zelfde gedrag als Shift ingedrukt houden
+const touchTurboKnop = document.getElementById('touch-turbo');
+touchTurboKnop.addEventListener('touchstart', e=>{
+  e.preventDefault(); e.stopPropagation();
+  touchTurboActief = true;
+  touchTurboKnop.classList.add('touch-actief');
+}, {passive:false});
+function touchTurboUit(e){
+  e.preventDefault();
+  touchTurboActief = false;
+  touchTurboKnop.classList.remove('touch-actief');
+}
+touchTurboKnop.addEventListener('touchend', touchTurboUit);
+touchTurboKnop.addEventListener('touchcancel', touchTurboUit);
+
+// Zoom +/- knoppen: vasthouden, zelfde gedrag als Z/X ingedrukt houden
+let touchZoomInActief = false, touchZoomUitActief = false;
+const touchZoomInKnop = document.getElementById('touch-zoom-in');
+const touchZoomUitKnop = document.getElementById('touch-zoom-uit');
+touchZoomInKnop.addEventListener('touchstart', e=>{
+  e.preventDefault(); e.stopPropagation();
+  touchZoomInActief = true; touchZoomInKnop.classList.add('touch-actief');
+}, {passive:false});
+touchZoomUitKnop.addEventListener('touchstart', e=>{
+  e.preventDefault(); e.stopPropagation();
+  touchZoomUitActief = true; touchZoomUitKnop.classList.add('touch-actief');
+}, {passive:false});
+function touchZoomInUit(e){ e.preventDefault(); touchZoomInActief=false; touchZoomInKnop.classList.remove('touch-actief'); }
+function touchZoomUitUit(e){ e.preventDefault(); touchZoomUitActief=false; touchZoomUitKnop.classList.remove('touch-actief'); }
+touchZoomInKnop.addEventListener('touchend', touchZoomInUit);
+touchZoomInKnop.addEventListener('touchcancel', touchZoomInUit);
+touchZoomUitKnop.addEventListener('touchend', touchZoomUitUit);
+touchZoomUitKnop.addEventListener('touchcancel', touchZoomUitUit);
+
+// ── Gamepad-besturing ──────────────────────────────────
+// Linker joystick (of D-pad) = vliegen, A = vlaggetje droppen,
+// rechter trigger = turbo (vasthouden), L1/R1 = uit-/inzoomen.
+let gamepadStuurDx = 0, gamepadStuurDy = 0;
+let gamepadTurboActief = false;
+let gamepadZoomInActief = false, gamepadZoomUitActief = false;
+let gamepadAKnopVorigeStand = false; // voor eenmalige (edge-triggered) drop, i.p.v. elke frame
+const GAMEPAD_DODE_ZONE = 0.18; // kleine sticktrilling telt niet mee
+
+window.addEventListener('gamepadconnected', e=>{
+  console.log('Gamepad verbonden:', e.gamepad.id);
+  if(spelActief) toonFeedback('🎮 Controller verbonden','#7fd8ff');
+});
+window.addEventListener('gamepaddisconnected', e=>{
+  console.log('Gamepad losgekoppeld:', e.gamepad.id);
+  gamepadStuurDx = 0; gamepadStuurDy = 0;
+  gamepadTurboActief = false; gamepadZoomInActief = false; gamepadZoomUitActief = false;
+});
+
+function pollGamepad(){
+  const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+  let gp = null;
+  for(const g of gamepads){ if(g){ gp = g; break; } }
+  if(!gp){
+    gamepadStuurDx = 0; gamepadStuurDy = 0;
+    gamepadTurboActief = false; gamepadZoomInActief = false; gamepadZoomUitActief = false;
+    return;
+  }
+
+  // Linker joystick (analoog, met dode zone)
+  let stuurDx = gp.axes[0] || 0;
+  let stuurDy = -(gp.axes[1] || 0); // omhoog op de stick = zelfde richting als ArrowUp
+  if(Math.abs(stuurDx) < GAMEPAD_DODE_ZONE) stuurDx = 0;
+  if(Math.abs(stuurDy) < GAMEPAD_DODE_ZONE) stuurDy = 0;
+
+  // D-pad als digitaal alternatief (standaard mapping: 12=up,13=down,14=left,15=right)
+  if(gp.buttons[14] && gp.buttons[14].pressed) stuurDx = -1;
+  if(gp.buttons[15] && gp.buttons[15].pressed) stuurDx = 1;
+  if(gp.buttons[12] && gp.buttons[12].pressed) stuurDy = 1;
+  if(gp.buttons[13] && gp.buttons[13].pressed) stuurDy = -1;
+
+  gamepadStuurDx = stuurDx;
+  gamepadStuurDy = stuurDy;
+
+  // A-knop (buttons[0]): eenmalig droppen bij indrukken, niet elke frame opnieuw
+  const aIngedrukt = !!(gp.buttons[0] && gp.buttons[0].pressed);
+  if(aIngedrukt && !gamepadAKnopVorigeStand) dropVlaggetje();
+  gamepadAKnopVorigeStand = aIngedrukt;
+
+  // Rechter trigger (buttons[7]) = turbo
+  gamepadTurboActief = !!(gp.buttons[7] && gp.buttons[7].pressed);
+
+  // Schouderknoppen: L1 = uitzoomen, R1 = inzoomen
+  gamepadZoomUitActief = !!(gp.buttons[4] && gp.buttons[4].pressed);
+  gamepadZoomInActief  = !!(gp.buttons[5] && gp.buttons[5].pressed);
+}
+
 // Muiswiel: scrollen omhoog = inzoomen, omlaag = uitzoomen (naast Z/X)
 document.addEventListener('wheel',e=>{
   e.preventDefault();
   const richting = e.deltaY < 0 ? 1 : -1; // omhoog scrollen -> inzoomen
-  zoomNiveau = Math.min(1, Math.max(0, zoomNiveau + richting*ZOOM_STAP_BASIS*15));
+  zoomNiveau = Math.min(zoomNiveauMaxVoorHuidigLand(), Math.max(0, zoomNiveau + richting*ZOOM_STAP_BASIS*15));
   document.getElementById('zoom-indicator').textContent='🔍 '+Math.round(zoomNiveau*100)+'%';
 }, {passive:false});
 
@@ -1903,14 +2139,14 @@ function updateSpel(){
   const effectiefMax = dynamischMax;
 
   const nuTijd = performance.now();
-  if(keys['z']||keys['Z']){
+  if(keys['z']||keys['Z']||touchZoomInActief||gamepadZoomInActief){
     if(!zHoudSinds) zHoudSinds = nuTijd;
     const duur = nuTijd - zHoudSinds;
     const versnelling = 1 + (ZOOM_VERSNELLING_MAX-1)*Math.min(1, duur/ZOOM_VERSNELLING_TIJD);
-    zoomNiveau = Math.min(1, zoomNiveau + ZOOM_STAP_BASIS*versnelling);
+    zoomNiveau = Math.min(zoomNiveauMaxVoorHuidigLand(), zoomNiveau + ZOOM_STAP_BASIS*versnelling);
     document.getElementById('zoom-indicator').textContent='🔍 '+Math.round(zoomNiveau*100)+'%';
   } else { zHoudSinds = 0; }
-  if(keys['x']||keys['X']){
+  if(keys['x']||keys['X']||touchZoomUitActief||gamepadZoomUitActief){
     if(!xHoudSinds) xHoudSinds = nuTijd;
     const duur = nuTijd - xHoudSinds;
     const versnelling = 1 + (ZOOM_VERSNELLING_MAX-1)*Math.min(1, duur/ZOOM_VERSNELLING_TIJD);
@@ -1946,7 +2182,7 @@ function updateSpel(){
   CX=W/2; CY=H*0.56;
 
   // Besturing
-  const turbo = keys['Shift'];
+  const turbo = keys['Shift'] || touchTurboActief || gamepadTurboActief;
   const s=(turbo?1.8:0.7)/zoomFactor;
   let dx=0,dy=0;
 
@@ -1980,9 +2216,15 @@ function updateSpel(){
   if(keys['ArrowRight'] || keys['d'] || keys['D']) dx= 1;
   if(keys['ArrowUp']    || keys['w'] || keys['W']) dy= 1;
   if(keys['ArrowDown']  || keys['s'] || keys['S']) dy=-1;
+  if(dx===0 && dy===0){ dx=touchStuurDx; dy=touchStuurDy; }
+  if(dx===0 && dy===0){ dx=gamepadStuurDx; dy=gamepadStuurDy; }
 
   // Detecteer richting-omkeer (links<->rechts wissel)
-  if(dx !== 0 && laatsteDx !== 0 && dx !== laatsteDx && !inOmbocht){
+  // Op basis van het TEKEN vergelijken (niet exacte waarde), want sleep-input
+  // op een tablet is een vloeiende waarde (bijv. 0.3, 0.42, ...) i.p.v. de vaste
+  // -1/0/1 van het toetsenbord - anders zou elke kleine verschuiving al als
+  // "omkeren" gezien worden.
+  if(dx !== 0 && laatsteDx !== 0 && Math.sign(dx) !== Math.sign(laatsteDx) && !inOmbocht){
     inOmbocht = true;
     ombochtTimer = performance.now();
   }
@@ -2143,42 +2385,47 @@ function toonPunten(p){
   setTimeout(()=>{ el.style.opacity='0'; },1800);
 }
 
+function dropVlaggetje(){
+  if(wachten||!spelActief||huidigModus!=='spelen') return;
+  const wx=W*(0.5+wonkySchermX);
+  const wy=focusSy-90;
+  dropAnimatieActief=true;
+  dropAnimatieTimer=performance.now();
+  dropVlag(wx,wy,focusSx,focusSy);
+  wachten=true;
+  // Positie vastleggen op het MOMENT van droppen, niet pas na de val-animatie
+  const dropLon=wonkyLon, dropLat=wonkyLat;
+  setTimeout(()=>{
+    const doelLand=GEOJSON.features.find(f=>(f.properties.dutch||f.properties.name)===huidigLand);
+    const uitkomst = doelLand ? berekenAfwijking(dropLon,dropLat,doelLand) : {km:0,punt:null};
+    const afwijkingKm = Math.round(uitkomst.km);
+
+    if(afwijkingKm===0 || !uitkomst.punt){
+      score+=afwijkingKm;
+      document.getElementById('score').textContent=score;
+      toonFeedback('🎉 Goed zo!','#ffd700');
+      toonPunten(afwijkingKm);
+      toonReactie('blij');
+      setTimeout(nieuwLand,1800);
+    } else {
+      if(afwijkingKm >= 100) toonReactie('sad');
+      vluchtActief=true;
+      vluchtStartTijd=performance.now();
+      vluchtDuur=Math.max(900, Math.min(3600, afwijkingKm*2.4)); // hoe verder ernaast, hoe langer de vlucht
+      vluchtStartVec=lonLatTo3D(dropLon,dropLat);
+      vluchtEindLon=uitkomst.punt[0]; vluchtEindLat=uitkomst.punt[1];
+      vluchtEindVec=lonLatTo3D(vluchtEindLon,vluchtEindLat);
+      vluchtScoreVoor=score;
+      vluchtScoreNa=score+afwijkingKm;
+      vluchtAfwijkingKm=afwijkingKm;
+      vluchtDoelLand=doelLand;
+    }
+  },1400);
+}
+
 document.addEventListener('keydown',e=>{
   if(e.key===' '&&!wachten&&spelActief&&huidigModus==='spelen'){
-    const wx=W*(0.5+wonkySchermX);
-    const wy=focusSy-90;
-    dropAnimatieActief=true;
-    dropAnimatieTimer=performance.now();
-    dropVlag(wx,wy,focusSx,focusSy);
-    wachten=true;
-    // Positie vastleggen op het MOMENT van droppen, niet pas na de val-animatie
-    const dropLon=wonkyLon, dropLat=wonkyLat;
-    setTimeout(()=>{
-      const doelLand=GEOJSON.features.find(f=>(f.properties.dutch||f.properties.name)===huidigLand);
-      const uitkomst = doelLand ? berekenAfwijking(dropLon,dropLat,doelLand) : {km:0,punt:null};
-      const afwijkingKm = Math.round(uitkomst.km);
-
-      if(afwijkingKm===0 || !uitkomst.punt){
-        score+=afwijkingKm;
-        document.getElementById('score').textContent=score;
-        toonFeedback('🎉 Goed zo!','#ffd700');
-        toonPunten(afwijkingKm);
-        toonReactie('blij');
-        setTimeout(nieuwLand,1800);
-      } else {
-        if(afwijkingKm >= 100) toonReactie('sad');
-        vluchtActief=true;
-        vluchtStartTijd=performance.now();
-        vluchtDuur=Math.max(900, Math.min(3600, afwijkingKm*2.4)); // hoe verder ernaast, hoe langer de vlucht
-        vluchtStartVec=lonLatTo3D(dropLon,dropLat);
-        vluchtEindLon=uitkomst.punt[0]; vluchtEindLat=uitkomst.punt[1];
-        vluchtEindVec=lonLatTo3D(vluchtEindLon,vluchtEindLat);
-        vluchtScoreVoor=score;
-        vluchtScoreNa=score+afwijkingKm;
-        vluchtAfwijkingKm=afwijkingKm;
-        vluchtDoelLand=doelLand;
-      }
-    },1400);
+    dropVlaggetje();
   }
 });
 
@@ -2211,7 +2458,7 @@ function toonReactie(type) {
 }
 
 // ── Loop ──────────────────────────────────────────────
-function loop(){ updateSpel(); drawGlobe(); requestAnimationFrame(loop); }
+function loop(){ pollGamepad(); updateSpel(); drawGlobe(); requestAnimationFrame(loop); }
 </script>
 </body>
 </html>
