@@ -655,7 +655,7 @@ let zHoudSinds = 0, xHoudSinds = 0;
 const DOEL_LAND_HOOGTE_FRACTIE = 0.65; // land moet 65% schermhoogte vullen bij volledig ingezoomd (niveau 1)
 const DOEL_LAND_BREEDTE_FRACTIE = 0.75; // land mag max. 75% schermbreedte vullen bij volledig ingezoomd
 const ZOOM_REFERENTIE_MAX = 4.5; // 'typisch' maximum voor het grootste (stabiele) deel van de zoomrange
-const ZOOM_OMSLAGPUNT = 0.70;    // vanaf dit zoomniveau (0-1) past de zoom zich pas aan op het specifieke land
+const ZOOM_OMSLAGPUNT = 0.75;    // vanaf dit zoomniveau (0-1) past de zoom zich pas aan op het specifieke land
 
 // ── Illustraties ──────────────────────────────────────
 const landIllustraties = {};
@@ -1225,15 +1225,16 @@ function tekenIJskap(poolLat,straal){
 // Plakt één driehoekje van de afbeelding (sx0,sy0 / sx1,sy1 / sx2,sy2 in bronpixels)
 // uitgerekt naar drie schermpunten (dx0,dy0 / dx1,dy1 / dx2,dy2). Dit is de truc
 // waarmee een plat plaatje in kleine stukjes over de kromming van de bol "buigt".
-function tekenDriehoek(img, sx0,sy0,sx1,sy1,sx2,sy2, dx0,dy0,dx1,dy1,dx2,dy2){
+function tekenDriehoek(img, sx0,sy0,sx1,sy1,sx2,sy2, dx0,dy0,dx1,dy1,dx2,dy2, uitdijing){
   const denom = sx0*(sy1-sy2) + sx1*(sy2-sy0) + sx2*(sy0-sy1);
   if(Math.abs(denom) < 1e-6) return;
   ctx.save();
-  // Clip-driehoek licht laten uitdijen vanuit het middelpunt (~1.5%), zodat
-  // aangrenzende driehoeken elkaar net overlappen i.p.v. precies raken. Dat
-  // voorkomt de dunne "naad"-lijntjes die anders door canvas-anti-aliasing
-  // tussen twee geclipte driehoeken kunnen ontstaan.
-  const UITDIJING = 1.015;
+  // Clip-driehoek licht laten uitdijen vanuit het middelpunt, zodat aangrenzende
+  // driehoeken elkaar net overlappen i.p.v. precies raken. Dat voorkomt de dunne
+  // "naad"-lijntjes die anders door canvas-anti-aliasing tussen twee geclipte
+  // driehoeken kunnen ontstaan. Standaard 1.5%; dichter opeengepakte roosters
+  // (zoals de Noordpool) geven een grotere waarde mee via het argument.
+  const UITDIJING = uitdijing || 1.015;
   const cx=(dx0+dx1+dx2)/3, cy=(dy0+dy1+dy2)/3;
   const ex0=cx+(dx0-cx)*UITDIJING, ey0=cy+(dy0-cy)*UITDIJING;
   const ex1=cx+(dx1-cx)*UITDIJING, ey1=cy+(dy1-cy)*UITDIJING;
@@ -1444,9 +1445,9 @@ function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
       for(let i=0;i<RASTER_HOEK;i++){
         const p00=hoek[j][i],p10=hoek[j][i+1],p01=hoek[j+1][i],p11=hoek[j+1][i+1];
         if(p00.zichtbaar&&p10.zichtbaar&&p01.zichtbaar)
-          tekenDriehoek(img,p00.bx,p00.by,p10.bx,p10.by,p01.bx,p01.by,p00.sx,p00.sy,p10.sx,p10.sy,p01.sx,p01.sy);
+          tekenDriehoek(img,p00.bx,p00.by,p10.bx,p10.by,p01.bx,p01.by,p00.sx,p00.sy,p10.sx,p10.sy,p01.sx,p01.sy,1.05);
         if(p10.zichtbaar&&p11.zichtbaar&&p01.zichtbaar)
-          tekenDriehoek(img,p10.bx,p10.by,p11.bx,p11.by,p01.bx,p01.by,p10.sx,p10.sy,p11.sx,p11.sy,p01.sx,p01.sy);
+          tekenDriehoek(img,p10.bx,p10.by,p11.bx,p11.by,p01.bx,p01.by,p10.sx,p10.sy,p11.sx,p11.sy,p01.sx,p01.sy,1.05);
       }
     }
     ctx.globalAlpha=1.0;
@@ -1563,8 +1564,12 @@ function berekenStand3Zoom() {
 
   // Lengtegraden liggen dichter bij elkaar naarmate je verder van de
   // evenaar zit (denk aan de aardbol) — vandaar de cos(breedtegraad)-correctie.
+  // Afgezwakt (macht 0.5 i.p.v. 1) omdat de volle correctie een vlakke-kaart-
+  // benadering is; in de 3D-bolweergave met perspectief lijkt een breed land op
+  // hoge breedtegraad (bijv. Rusland) breder dan die volle correctie aanneemt,
+  // wat anders tot te ver inzoomen leidt.
   const huidigeHoogtePx = landHoogteGraden * pixelsPerGraadBasis;
-  const huidigeBreedtePx = landBreedteGraden * pixelsPerGraadBasis * Math.cos(gemLat * Math.PI/180);
+  const huidigeBreedtePx = landBreedteGraden * pixelsPerGraadBasis * Math.pow(Math.cos(gemLat * Math.PI/180), 0.5);
 
   const gewensteHoogtePx = H * DOEL_LAND_HOOGTE_FRACTIE;
   const gewensteBreedtePx = W * DOEL_LAND_BREEDTE_FRACTIE;
@@ -1756,7 +1761,7 @@ function drawGlobe(){
     laadIllustratie(dutch);
     const ill=landIllustraties[dutch];
     if(ill){
-      const WAAS = 0.25;   // bij het omslagpunt (70%) nog vrij vaag, loopt geleidelijk op naar 100%
+      const WAAS = 0.0;   // bij het omslagpunt (75%) volledig onzichtbaar, loopt snel op naar 100%
       let voortgang = (zoomNiveau - ZOOM_OMSLAGPUNT) / (1 - ZOOM_OMSLAGPUNT);
       voortgang = Math.max(0, Math.min(1, voortgang));
       const doorzicht = WAAS + (1.0 - WAAS) * voortgang;
