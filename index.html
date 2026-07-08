@@ -109,15 +109,16 @@
     #help-kaart {
       background:linear-gradient(145deg,#0b2540,#0e3060);
       border:1.5px solid rgba(255,255,255,0.15);
-      border-radius:24px; padding:42px 48px; width:min(720px,92vw);
-      max-height:88vh; overflow-y:auto;
+      border-radius:24px; padding:42px 48px; width:min(920px,95vw);
+      max-height:88vh; overflow-y:auto; overflow-x:hidden;
       box-shadow:0 20px 60px rgba(0,0,0,0.7);
       display:flex; flex-direction:column; gap:30px;
     }
     .help-boven-rij {
       display:grid; grid-template-columns:1fr 1fr; gap:20px;
     }
-    @media (max-width:560px) {
+    .help-boven-rij > .help-sectie { min-width:0; }
+    @media (max-width:640px) {
       .help-boven-rij { grid-template-columns:1fr; }
     }
     #help-titel {
@@ -140,7 +141,7 @@
       display:flex; align-items:center; gap:20px;
     }
     .help-toetsen {
-      display:flex; gap:5px; flex-shrink:0; min-width:195px; flex-wrap:wrap;
+      display:flex; gap:5px; flex-shrink:0; min-width:120px; flex-wrap:wrap;
     }
     kbd {
       display:inline-flex; align-items:center; justify-content:center;
@@ -152,6 +153,7 @@
     }
     .help-uitleg {
       color:rgba(255,255,255,0.8); font-size:1.1rem; line-height:1.3;
+      min-width:0;
     }
     .help-sectie-binnenkort { opacity:0.55; }
     .help-binnenkort-badge {
@@ -384,8 +386,19 @@
     #level-badge { color:rgba(255,255,255,0.7); font-size:0.85rem; font-weight:600; }
     #level-badge span { color:#ffd700; }
     #speler-naam-display { color:rgba(255,255,255,0.6); font-size:0.85rem; }
-    #score-box { color:#ffd700; font-size:1.1rem; font-weight:800; text-shadow:0 2px 8px rgba(0,0,0,0.8); text-align:right; }
-    #score-box .score-sub { display:block; font-size:0.7rem; font-weight:600; color:#9fd8ff; text-shadow:0 2px 6px rgba(0,0,0,0.8); margin-top:2px; }
+    #score-box { position:relative; }
+    #scorebord-wrap {
+      position:relative; width:clamp(150px,20vw,240px);
+      pointer-events:none; --km-size:18px; --tijd-size:11px;
+    }
+    #scorebord-img { width:100%; height:auto; display:block; }
+    .scorebord-cijfer {
+      position:absolute; transform:translate(-50%,-50%);
+      font-family:'Baloo 2',sans-serif; font-weight:800; line-height:1;
+      color:#181310;
+    }
+    .scorebord-km-cijfer { font-size:var(--km-size); }
+    .scorebord-tijd-cijfer { font-size:var(--tijd-size); }
     #zoom-indicator {
       background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.25);
       color:#fff; font-size:0.75rem; font-weight:700;
@@ -606,7 +619,22 @@
       <div id="speler-naam-display"></div>
     </div>
     <div id="zoom-indicator">🔍 Stand 1</div>
-    <div id="score-box"><span id="tijd-display" class="score-sub">⏱ 0:00</span>Totaal ernaast: <span id="score">0</span> km<span class="score-sub">Hoe lager de score, hoe beter!</span></div>
+    <div id="score-box">
+      <div id="scorebord-wrap">
+        <img id="scorebord-img" src="images/scorebord.png" alt="Scorebord"/>
+        <span class="scorebord-cijfer scorebord-km-cijfer" style="left:31.84%;top:46.68%;"></span>
+        <span class="scorebord-cijfer scorebord-km-cijfer" style="left:41.60%;top:46.68%;"></span>
+        <span class="scorebord-cijfer scorebord-km-cijfer" style="left:51.46%;top:46.68%;"></span>
+        <span class="scorebord-cijfer scorebord-km-cijfer" style="left:61.69%;top:46.68%;"></span>
+        <span class="scorebord-cijfer scorebord-km-cijfer" style="left:71.58%;top:46.68%;"></span>
+        <span class="scorebord-cijfer scorebord-tijd-cijfer" id="sc-min-tien" style="left:43.19%;top:76.95%;"></span>
+        <span class="scorebord-cijfer scorebord-tijd-cijfer" id="sc-min-een"  style="left:49.12%;top:76.95%;"></span>
+        <span class="scorebord-cijfer scorebord-tijd-cijfer" id="sc-sec-tien" style="left:60.97%;top:76.95%;"></span>
+        <span class="scorebord-cijfer scorebord-tijd-cijfer" id="sc-sec-een"  style="left:66.96%;top:76.95%;"></span>
+      </div>
+      <span id="tijd-display" style="display:none">⏱ 0:00</span>
+      <span id="score" style="display:none">0</span>
+    </div>
   </div>
   <div id="hud-bottom">
     <div id="opdracht">
@@ -891,8 +919,11 @@ function startSpel(levelId, modus) {
   document.getElementById('level-nr-display').textContent = lv.naam;
   document.getElementById('speler-naam-display').textContent=spelerNaam;
   document.getElementById('score').textContent='0';
+  document.getElementById('score-box').style.display = (modus==='spelen') ? 'block' : 'none';
   document.getElementById('tijd-display').style.display = (modus==='spelen') ? 'block' : 'none';
   document.getElementById('tijd-display').textContent='⏱ 0:00';
+  if(modus==='spelen'){ layoutScorebordCijfers(); }
+  updateScorebordCijfers();
   jokerBeschikbaar=true;
   document.getElementById('joker-knop').style.display = (modus==='spelen') ? 'block' : 'none';
   updateJokerKnop();
@@ -970,6 +1001,33 @@ function updateVoortgang(){
   bord.style.display='block';
   toonGetalOpBord(document.getElementById('bord-huidig'), huidigLandIdx+1, 'rood');
   toonGetalOpBord(document.getElementById('bord-totaal'), spelLanden.length, 'blauw');
+}
+
+// ── Scorebord rechtsboven (km + tijd, ingevuld op de steampunk-plaat) ──
+function layoutScorebordCijfers(){
+  const wrap=document.getElementById('scorebord-wrap');
+  const breedte=wrap.getBoundingClientRect().width;
+  if(!breedte) return; // (nog) niet zichtbaar, niks te meten
+  wrap.style.setProperty('--km-size', (breedte*0.0749)+'px');
+  wrap.style.setProperty('--tijd-size', (breedte*0.0443)+'px');
+}
+function zetKmCijfers(waarde){
+  const kmStr=String(Math.max(0,Math.round(waarde))).padStart(5,'0').slice(-5);
+  document.querySelectorAll('.scorebord-km-cijfer').forEach((el,i)=>{ el.textContent=kmStr[i]; });
+}
+function zetTijdCijfers(){
+  const tijdTekst=document.getElementById('tijd-display').textContent;
+  const match=tijdTekst.match(/(\d+):(\d+)/);
+  const mm=match ? match[1].padStart(2,'0').slice(-2) : '00';
+  const ss=match ? match[2].padStart(2,'0').slice(-2) : '00';
+  document.getElementById('sc-min-tien').textContent=mm[0];
+  document.getElementById('sc-min-een').textContent=mm[1];
+  document.getElementById('sc-sec-tien').textContent=ss[0];
+  document.getElementById('sc-sec-een').textContent=ss[1];
+}
+function updateScorebordCijfers(){
+  zetKmCijfers(score);
+  zetTijdCijfers();
 }
 
 // ── Scorebord (voorlopig lokaal, per level, op dit apparaat) ──
@@ -1066,6 +1124,7 @@ function gebruikJoker(){
     stopMisserCountdown();
     score=vluchtScoreVoor;
     document.getElementById('score').textContent=score;
+    updateScorebordCijfers();
     correctieLand=null;
     document.getElementById('correctie-land-naam').style.opacity='0';
     document.getElementById('feedback').style.opacity='0';
@@ -1185,6 +1244,7 @@ let R=Math.min(W,H)*0.58, CX=W/2, CY=H*0.56;
 window.addEventListener('resize',()=>{
   W=window.innerWidth; H=window.innerHeight;
   canvas.width=W; canvas.height=H;
+  layoutScorebordCijfers();
 });
 
 let wonkyLon=10, wonkyLat=50;
@@ -2196,6 +2256,7 @@ function updateSpel(){
     const verstrekenSec=Math.floor((performance.now()-levelStartTijd)/1000);
     const mm=Math.floor(verstrekenSec/60), ss=verstrekenSec%60;
     document.getElementById('tijd-display').textContent='⏱ '+mm+':'+String(ss).padStart(2,'0');
+    updateScorebordCijfers();
   }
 
   // Intro-titel: faded in/uit op dezelfde curve als het gloweffect op de landen
@@ -2279,11 +2340,13 @@ function updateSpel(){
 
     const scoreNu=Math.round(vluchtScoreVoor+(vluchtScoreNa-vluchtScoreVoor)*t);
     document.getElementById('score').textContent=scoreNu;
+    zetKmCijfers(scoreNu);
 
     if(tRuw>=1){
       vluchtActief=false;
       score=vluchtScoreNa;
       document.getElementById('score').textContent=score;
+      updateScorebordCijfers();
       correctieLand=vluchtDoelLand;
       correctieLandStartTijd=performance.now();
       toonFeedback('Oepsie woepsie, hier is het!','#ff9900');
@@ -2483,6 +2546,7 @@ function dropVlaggetje(){
     if(afwijkingKm===0 || !uitkomst.punt){
       score+=afwijkingKm;
       document.getElementById('score').textContent=score;
+      zetKmCijfers(score);
       toonFeedback('🎉 Goed zo!','#ffd700');
       toonPunten(afwijkingKm);
       toonReactie('blij');
