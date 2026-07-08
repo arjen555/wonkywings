@@ -182,10 +182,12 @@
 
     /* ── MENU: subregio-rijen ── */
     .menu-sub-lijst {
-      display:none; flex-direction:column; gap:3px;
+      display:flex; flex-direction:column; gap:3px;
       padding-left:12px;
+      max-height:0; opacity:0; overflow:hidden;
+      transition:max-height 0.3s ease, opacity 0.25s ease;
     }
-    .menu-sub-lijst.open { display:flex; }
+    .menu-sub-lijst.open { max-height:600px; opacity:1; }
     .menu-sub-rij {
       display:flex; align-items:center; gap:6px;
       background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.09);
@@ -462,6 +464,14 @@
           <div class="help-toetsen"><kbd>Spatie</kbd></div>
           <div class="help-uitleg">Vlag droppen — raad het land!</div>
         </div>
+        <div class="help-rij">
+          <div class="help-toetsen"><kbd>P</kbd></div>
+          <div class="help-uitleg">Richtingpijl schieten — hint waar je heen moet</div>
+        </div>
+        <div class="help-rij">
+          <div class="help-toetsen"><kbd>J</kbd></div>
+          <div class="help-uitleg">Joker inzetten</div>
+        </div>
       </div>
     </div>
 
@@ -513,6 +523,14 @@
         <div class="help-rij">
           <div class="help-toetsen"><kbd>A</kbd></div>
           <div class="help-uitleg">Vlag droppen — raad het land!</div>
+        </div>
+        <div class="help-rij">
+          <div class="help-toetsen"><kbd>B</kbd></div>
+          <div class="help-uitleg">Richtingpijl schieten — hint waar je heen moet</div>
+        </div>
+        <div class="help-rij">
+          <div class="help-toetsen"><kbd>Y</kbd></div>
+          <div class="help-uitleg">Joker inzetten</div>
         </div>
       </div>
     </div>
@@ -698,14 +716,6 @@ function bouwStartscherm() {
     groepEl.appendChild(kop);
     groepEl.appendChild(subLijst);
     lijst.appendChild(groepEl);
-  }
-
-  // Europa standaard openklappen bij laden
-  const eersteKop = lijst.querySelector('.menu-groep-kop');
-  const eersteSub = lijst.querySelector('.menu-sub-lijst');
-  if(eersteKop && eersteSub){
-    eersteKop.classList.add('open');
-    eersteSub.classList.add('open');
   }
 }
 bouwStartscherm();
@@ -2082,6 +2092,8 @@ let gamepadStuurDx = 0, gamepadStuurDy = 0;
 let gamepadTurboActief = false;
 let gamepadZoomInActief = false, gamepadZoomUitActief = false;
 let gamepadAKnopVorigeStand = false; // voor eenmalige (edge-triggered) drop, i.p.v. elke frame
+let gamepadBKnopVorigeStand = false; // B = richtingpijl schieten
+let gamepadYKnopVorigeStand = false; // Y = joker inzetten
 const GAMEPAD_DODE_ZONE = 0.18; // kleine sticktrilling telt niet mee
 
 window.addEventListener('gamepadconnected', e=>{
@@ -2123,6 +2135,16 @@ function pollGamepad(){
   const aIngedrukt = !!(gp.buttons[0] && gp.buttons[0].pressed);
   if(aIngedrukt && !gamepadAKnopVorigeStand) dropVlaggetje();
   gamepadAKnopVorigeStand = aIngedrukt;
+
+  // B-knop (buttons[1]): richtingpijl schieten
+  const bIngedrukt = !!(gp.buttons[1] && gp.buttons[1].pressed);
+  if(bIngedrukt && !gamepadBKnopVorigeStand) gebruikRichtingwijzer(3-hintenBeschikbaar);
+  gamepadBKnopVorigeStand = bIngedrukt;
+
+  // Y-knop (buttons[3]): joker inzetten
+  const yIngedrukt = !!(gp.buttons[3] && gp.buttons[3].pressed);
+  if(yIngedrukt && !gamepadYKnopVorigeStand) gebruikJoker();
+  gamepadYKnopVorigeStand = yIngedrukt;
 
   // Rechter trigger (buttons[7]) = turbo
   gamepadTurboActief = !!(gp.buttons[7] && gp.buttons[7].pressed);
@@ -2473,6 +2495,12 @@ function dropVlaggetje(){
 document.addEventListener('keydown',e=>{
   if(e.key===' '&&!wachten&&spelActief&&huidigModus==='spelen'){
     dropVlaggetje();
+  }
+  if((e.key==='p'||e.key==='P')&&spelActief&&huidigModus==='spelen'){
+    gebruikRichtingwijzer(3-hintenBeschikbaar);
+  }
+  if((e.key==='j'||e.key==='J')&&spelActief&&huidigModus==='spelen'){
+    gebruikJoker();
   }
 });
 
