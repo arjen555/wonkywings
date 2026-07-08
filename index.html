@@ -302,7 +302,7 @@
       display:flex; flex-direction:row; align-items:flex-end; gap:14px;
     }
     #touch-zoomknoppen {
-      position:fixed; left:clamp(12px,2vmin,24px); top:clamp(80px,12vmin,130px); z-index:20;
+      position:fixed; left:clamp(12px,2vmin,24px); top:50%; transform:translateY(-50%); z-index:20;
       display:flex; flex-direction:column; gap:10px;
     }
     .touch-knop {
@@ -393,7 +393,7 @@
     }
     #scorebord-img { width:100%; height:auto; display:block; }
     .scorebord-cijfer {
-      position:absolute; transform:translate(-50%,-50%) translateY(0.13em);
+      position:absolute; transform:translate(-50%,-50%) translateY(0.70em);
       font-family:'Baloo 2',sans-serif; font-weight:800; line-height:1;
       color:#181310;
     }
