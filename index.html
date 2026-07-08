@@ -380,12 +380,18 @@
       background:linear-gradient(to bottom,rgba(0,0,0,0.55),rgba(0,0,0,0));
       z-index:20; pointer-events:none;
     }
-    #hud-links { display:flex; align-items:center; gap:14px; }
-    #terug-btn { background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.25); color:#fff; font-size:0.8rem; font-weight:700; padding:6px 14px; border-radius:14px; cursor:pointer; pointer-events:all; }
-    #terug-btn:hover { background:rgba(255,255,255,0.22); }
-    #level-badge { color:rgba(255,255,255,0.7); font-size:0.85rem; font-weight:600; }
-    #level-badge span { color:#ffd700; }
-    #speler-naam-display { color:rgba(255,255,255,0.6); font-size:0.85rem; }
+    #werelddeel-badge { position:relative; pointer-events:all; }
+    #werelddeel-wrap { position:relative; width:clamp(230px,27vw,460px); }
+    #werelddeel-img { width:100%; height:auto; display:block; }
+    #menu-knop-onzichtbaar {
+      position:absolute; background:transparent; border:none; padding:0; margin:0;
+      cursor:pointer; -webkit-tap-highlight-color:transparent;
+    }
+    .badge-tekst {
+      position:absolute; transform:translateY(-50%);
+      font-family:'Baloo 2',sans-serif; font-weight:700; white-space:nowrap;
+      color:#2a1508; text-align:left;
+    }
     #score-box { position:relative; }
     #scorebord-wrap {
       position:relative; width:clamp(180px,14vw,360px);
@@ -613,10 +619,13 @@
     <div id="joker-countdown-wrap"><div id="joker-countdown-fill"></div></div>
   </div>
   <div id="hud-top">
-    <div id="hud-links">
-      <button id="terug-btn" onclick="naarStart()">← Menu</button>
-      <div id="level-badge">Level <span id="level-nr-display">1</span></div>
-      <div id="speler-naam-display"></div>
+    <div id="werelddeel-badge">
+      <div id="werelddeel-wrap">
+        <img id="werelddeel-img" src="images/werelddeel.png" alt=""/>
+        <button id="menu-knop-onzichtbaar" onclick="naarStart()" aria-label="Menu" style="left:7.32%;top:44.09%;width:13.57%;height:22.31%;"></button>
+        <span class="badge-tekst" id="werelddeel-tekst" style="left:39.55%;top:48.39%;max-width:13.67%;"></span>
+        <span class="badge-tekst" id="speler-tekst" style="left:66.89%;top:48.39%;max-width:11.72%;"></span>
+      </div>
     </div>
     <div id="zoom-indicator">🔍 Stand 1</div>
     <div id="score-box">
@@ -672,7 +681,7 @@ const MENU = [
       { id:'eu-zuid', naam:'Zuid-Europa', start:{lon:15, lat:42},
         landen:["Spanje","Portugal","Italië","Griekenland","Malta","San Marino","Vaticaanstad","Monaco","Andorra","Liechtenstein"],
         altijd_alle:false, beschikbaar:true },
-      { id:'eu-oost', naam:'Oost-Europa & Balkan', start:{lon:28, lat:50},
+      { id:'eu-oost', naam:'Oost-Europa & Balkan', kort:'Oost-Europa', start:{lon:28, lat:50},
         landen:["Rusland","Polen","Oekraïne","Tsjechië","Slowakije","Hongarije","Roemenië","Bulgarije","Wit-Rusland","Moldavië","Servië","Kroatië","Bosnië-Herzegovina","Slovenië","Albanië","Noord-Macedonië","Montenegro","Kosovo"],
         altijd_alle:false, beschikbaar:true },
       { id:'eu-alles', naam:'Heel Europa', start:{lon:20, lat:52},
@@ -686,7 +695,7 @@ const MENU = [
       { id:'w-amerika', naam:'Amerika', start:{lon:-80, lat:15},
         landen:["Canada","Verenigde Staten","Mexico","Guatemala","Belize","Honduras","El Salvador","Nicaragua","Costa Rica","Panama","Cuba","Haïti","Dominicaanse Republiek","Jamaica","Trinidad en Tobago","Colombia","Venezuela","Guyana","Suriname","Brazilië","Ecuador","Peru","Bolivia","Chili","Argentinië","Uruguay","Paraguay"],
         altijd_alle:false, beschikbaar:true },
-      { id:'w-azie', naam:'Azië & Oceanië', start:{lon:100, lat:20},
+      { id:'w-azie', naam:'Azië & Oceanië', kort:'Azië & Oc.', start:{lon:100, lat:20},
         landen:["Rusland","China","India","Japan","Zuid-Korea","Noord-Korea","Mongolië","Kazachstan","Oezbekistan","Turkmenistan","Kirgizië","Tadzjikistan","Afghanistan","Pakistan","Iran","Irak","Saoedi-Arabië","Jemen","Oman","Verenigde Arabische Emiraten","Qatar","Koeweit","Jordanië","Israël","Libanon","Syrië","Turkije","Azerbeidzjan","Georgië","Armenië","Nepal","Bhutan","Bangladesh","Myanmar","Thailand","Vietnam","Cambodja","Laos","Maleisië","Indonesië","Filipijnen","Taiwan","Singapore","Sri Lanka","Australië","Nieuw-Zeeland","Papoea-Nieuw-Guinea"],
         altijd_alle:false, beschikbaar:true },
       { id:'w-afrika', naam:'Afrika', start:{lon:20, lat:5},
@@ -694,10 +703,10 @@ const MENU = [
         altijd_alle:false, beschikbaar:true },
       { id:'w-water', naam:'Water Wonder', start:{lon:10, lat:50},
         landen:[], altijd_alle:false, beschikbaar:false },
-      { id:'w-makkelijk', naam:'Makkelijke landen', start:{lon:0, lat:20},
+      { id:'w-makkelijk', naam:'Makkelijke landen', kort:'Makk. landen', start:{lon:0, lat:20},
         landen:["Frankrijk","Spanje","Nederland","Italië","Duitsland","Verenigd Koninkrijk","Turkije","Verenigde Staten","Canada","Mexico","Brazilië","China","India","Japan","Indonesië","Australië","Zuid-Afrika","Rusland"],
         altijd_alle:false, beschikbaar:true },
-      { id:'w-alles', naam:'Alle landen wereld', start:{lon:0, lat:20},
+      { id:'w-alles', naam:'Alle landen wereld', kort:'Alle landen', start:{lon:0, lat:20},
         landen:["Indonesië","Maleisië","Chili","Bolivia","Peru","Argentinië","Cyprus","India","China","Israël","Palestina","Libanon","Ethiopië","Zuid-Soedan","Somalië","Kenia","Malawi","Tanzania","Syrië","Frankrijk","Suriname","Guyana","Zuid-Korea","Noord-Korea","Marokko","Westelijke Sahara","Costa Rica","Nicaragua","Congo-Brazzaville","Congo-Kinshasa","Bhutan","Oekraïne","Wit-Rusland","Namibië","Zuid-Afrika","Oman","Oezbekistan","Kazachstan","Tadzjikistan","Litouwen","Brazilië","Uruguay","Mongolië","Rusland","Tsjechië","Duitsland","Estland","Letland","Noorwegen","Zweden","Finland","Vietnam","Cambodja","Luxemburg","Verenigde Arabische Emiraten","België","Georgië","Noord-Macedonië","Albanië","Azerbeidzjan","Kosovo","Turkije","Spanje","Laos","Kirgizië","Armenië","Denemarken","Libië","Tunesië","Roemenië","Hongarije","Slowakije","Polen","Ierland","Verenigd Koninkrijk","Griekenland","Zambia","Sierra Leone","Guinee","Liberia","Centraal-Afrikaanse Republiek","Soedan","Djibouti","Eritrea","Oostenrijk","Irak","Italië","Zwitserland","Iran","Nederland","Liechtenstein","Ivoorkust","Servië","Mali","Senegal","Nigeria","Benin","Angola","Kroatië","Slovenië","Qatar","Saoedi-Arabië","Botswana","Zimbabwe","Pakistan","Bulgarije","Thailand","San Marino","Haïti","Dominicaanse Republiek","Tsjaad","Koeweit","El Salvador","Guatemala","Oost-Timor","Brunei","Monaco","Algerije","Mozambique","Burundi","Rwanda","Myanmar","Bangladesh","Andorra","Afghanistan","Montenegro","Bosnië-Herzegovina","Oeganda","Cuba","Honduras","Ecuador","Colombia","Paraguay","Portugal","Moldavië","Jordanië","Nepal","Lesotho","Kameroen","Gabon","Niger","Burkina Faso","Togo","Ghana","Guinee-Bissau","Gibraltar","Verenigde Staten","Canada","Mexico","Belize","Panama","Venezuela","Papoea-Nieuw-Guinea","Egypte","Jemen","Mauritanië","Equatoriaal-Guinea","Gambia","Vaticaanstad","Antarctica","Australië","Groenland","Fiji","Nieuw-Zeeland","Nieuw-Caledonië","Madagaskar","Filipijnen","Sri Lanka","Taiwan","Japan","IJsland","Seychellen","Trinidad en Tobago","Grenada","Barbados","Saint Lucia","Dominica","Antigua en Barbuda","Saint Kitts en Nevis","Jamaica","Mauritius","Comoren","Sao Tomé en Principe","Kaapverdië","Malta","Faeröer","Singapore","Tonga","Samoa","Salomonseilanden","Tuvalu","Maldiven","Nauru","Micronesia","Falklandeilanden","Vanuatu","Palau","Bahrein"],
         altijd_alle:false, beschikbaar:true },
     ]
@@ -916,8 +925,7 @@ function startSpel(levelId, modus) {
   } else {
     levelStartTijd = (modus==='spelen') ? performance.now() : 0;
   }
-  document.getElementById('level-nr-display').textContent = lv.naam;
-  document.getElementById('speler-naam-display').textContent=spelerNaam;
+  updateWerelddeelBadge();
   document.getElementById('score').textContent='0';
   document.getElementById('score-box').style.display = (modus==='spelen') ? 'block' : 'none';
   document.getElementById('tijd-display').textContent='⏱ 0:00';
@@ -1009,6 +1017,26 @@ function layoutScorebordCijfers(){
   if(!breedte) return; // (nog) niet zichtbaar, niks te meten
   wrap.style.setProperty('--km-size', (breedte*0.0749)+'px');
   wrap.style.setProperty('--tijd-size', (breedte*0.0443)+'px');
+}
+function zetTekstAanBadge(el, tekst, basisFontFractie){
+  const wrap=document.getElementById('werelddeel-wrap');
+  const wrapBreedte=wrap.getBoundingClientRect().width;
+  if(!wrapBreedte) return; // nog niet zichtbaar
+  const maxBreedtePx = wrapBreedte * (parseFloat(el.style.maxWidth)/100);
+  const minFontPx = wrapBreedte * 0.014;
+  el.textContent = tekst;
+  let fontPx = wrapBreedte * basisFontFractie;
+  el.style.fontSize = fontPx+'px';
+  while(el.scrollWidth > maxBreedtePx && fontPx > minFontPx){
+    fontPx -= 0.5;
+    el.style.fontSize = fontPx+'px';
+  }
+}
+function updateWerelddeelBadge(){
+  const lv=LEVELS[huidigLevel];
+  const werelddeelTekst = lv ? (lv.kort || lv.naam) : '';
+  zetTekstAanBadge(document.getElementById('werelddeel-tekst'), werelddeelTekst, 0.030);
+  zetTekstAanBadge(document.getElementById('speler-tekst'), spelerNaam, 0.030);
 }
 function zetKmCijfers(waarde){
   const kmStr=String(Math.max(0,Math.round(waarde))).padStart(5,'0').slice(-5);
@@ -1244,6 +1272,8 @@ window.addEventListener('resize',()=>{
   W=window.innerWidth; H=window.innerHeight;
   canvas.width=W; canvas.height=H;
   layoutScorebordCijfers();
+  updateScorebordCijfers();
+  updateWerelddeelBadge();
 });
 
 let wonkyLon=10, wonkyLat=50;
