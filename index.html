@@ -388,9 +388,9 @@
       cursor:pointer; -webkit-tap-highlight-color:transparent;
     }
     .badge-tekst {
-      position:absolute; transform:translateY(-50%);
+      position:absolute; transform:translate(-50%,-50%);
       font-family:'Baloo 2',sans-serif; font-weight:700; white-space:nowrap;
-      color:#2a1508; text-align:left;
+      color:#2a1508; text-align:center;
     }
     #score-box { position:relative; }
     #scorebord-wrap {
@@ -623,8 +623,8 @@
       <div id="werelddeel-wrap">
         <img id="werelddeel-img" src="images/werelddeel.png" alt=""/>
         <button id="menu-knop-onzichtbaar" onclick="naarStart()" aria-label="Menu" style="left:7.32%;top:44.09%;width:13.57%;height:22.31%;"></button>
-        <span class="badge-tekst" id="werelddeel-tekst" style="left:39.55%;top:48.39%;max-width:13.67%;"></span>
-        <span class="badge-tekst" id="speler-tekst" style="left:66.89%;top:48.39%;max-width:11.72%;"></span>
+        <span class="badge-tekst" id="werelddeel-tekst" style="left:38.04%;top:64.25%;max-width:31.74%;"></span>
+        <span class="badge-tekst" id="speler-tekst" style="left:66.46%;top:64.25%;max-width:25.10%;"></span>
       </div>
     </div>
     <div id="zoom-indicator">🔍 Stand 1</div>
@@ -1035,8 +1035,8 @@ function zetTekstAanBadge(el, tekst, basisFontFractie){
 function updateWerelddeelBadge(){
   const lv=LEVELS[huidigLevel];
   const werelddeelTekst = lv ? (lv.kort || lv.naam) : '';
-  zetTekstAanBadge(document.getElementById('werelddeel-tekst'), werelddeelTekst, 0.030);
-  zetTekstAanBadge(document.getElementById('speler-tekst'), spelerNaam, 0.030);
+  zetTekstAanBadge(document.getElementById('werelddeel-tekst'), werelddeelTekst, 0.050);
+  zetTekstAanBadge(document.getElementById('speler-tekst'), spelerNaam, 0.050);
 }
 function zetKmCijfers(waarde){
   const kmStr=String(Math.max(0,Math.round(waarde))).padStart(5,'0').slice(-5);
