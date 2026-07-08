@@ -302,7 +302,7 @@
       display:flex; flex-direction:row; align-items:flex-end; gap:14px;
     }
     #touch-zoomknoppen {
-      position:fixed; left:clamp(12px,2vmin,24px); top:clamp(60px,9vmin,100px); z-index:20;
+      position:fixed; left:clamp(12px,2vmin,24px); top:clamp(80px,12vmin,130px); z-index:20;
       display:flex; flex-direction:column; gap:10px;
     }
     .touch-knop {
@@ -388,12 +388,12 @@
     #speler-naam-display { color:rgba(255,255,255,0.6); font-size:0.85rem; }
     #score-box { position:relative; }
     #scorebord-wrap {
-      position:relative; width:clamp(150px,20vw,240px);
+      position:relative; width:clamp(180px,14vw,360px);
       pointer-events:none; --km-size:18px; --tijd-size:11px;
     }
     #scorebord-img { width:100%; height:auto; display:block; }
     .scorebord-cijfer {
-      position:absolute; transform:translate(-50%,-50%);
+      position:absolute; transform:translate(-50%,-50%) translateY(0.13em);
       font-family:'Baloo 2',sans-serif; font-weight:800; line-height:1;
       color:#181310;
     }
@@ -920,7 +920,6 @@ function startSpel(levelId, modus) {
   document.getElementById('speler-naam-display').textContent=spelerNaam;
   document.getElementById('score').textContent='0';
   document.getElementById('score-box').style.display = (modus==='spelen') ? 'block' : 'none';
-  document.getElementById('tijd-display').style.display = (modus==='spelen') ? 'block' : 'none';
   document.getElementById('tijd-display').textContent='⏱ 0:00';
   if(modus==='spelen'){ layoutScorebordCijfers(); }
   updateScorebordCijfers();
