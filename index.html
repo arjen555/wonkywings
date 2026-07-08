@@ -110,8 +110,15 @@
       background:linear-gradient(145deg,#0b2540,#0e3060);
       border:1.5px solid rgba(255,255,255,0.15);
       border-radius:24px; padding:42px 48px; width:min(720px,92vw);
+      max-height:88vh; overflow-y:auto;
       box-shadow:0 20px 60px rgba(0,0,0,0.7);
       display:flex; flex-direction:column; gap:30px;
+    }
+    .help-boven-rij {
+      display:grid; grid-template-columns:1fr 1fr; gap:20px;
+    }
+    @media (max-width:560px) {
+      .help-boven-rij { grid-template-columns:1fr; }
     }
     #help-titel {
       font-family:'Baloo 2',sans-serif; font-size:1.8rem; font-weight:800;
@@ -119,6 +126,8 @@
     }
     .help-sectie {
       display:flex; flex-direction:column; gap:15px;
+      border:1.5px solid rgba(255,255,255,0.15); border-radius:16px;
+      padding:20px 22px; background:rgba(255,255,255,0.03);
     }
     .help-sectie-kop {
       font-size:1.05rem; font-weight:700; letter-spacing:1px;
@@ -439,6 +448,7 @@
   <div id="help-kaart">
     <div id="help-titel">🎮 Bediening</div>
 
+    <div class="help-boven-rij">
     <div class="help-sectie">
       <div class="help-sectie-kop">⌨️ Toetsenbord</div>
       <div class="help-rijen">
@@ -476,6 +486,41 @@
     </div>
 
     <div class="help-sectie">
+      <div class="help-sectie-kop">🕹️ Gamepad</div>
+      <div class="help-rijen">
+        <div class="help-rij">
+          <div class="help-toetsen"><kbd>⬤ stick</kbd></div>
+          <div class="help-uitleg">Linker joystick (of D-pad) — Timbo besturen</div>
+        </div>
+        <div class="help-rij">
+          <div class="help-toetsen"><kbd>RT</kbd></div>
+          <div class="help-uitleg">Rechter trigger vasthouden — Inzoomen op de kaart</div>
+        </div>
+        <div class="help-rij">
+          <div class="help-toetsen"><kbd>LT</kbd></div>
+          <div class="help-uitleg">Linker trigger vasthouden — Uitzoomen op de kaart</div>
+        </div>
+        <div class="help-rij">
+          <div class="help-toetsen"><kbd>RB</kbd></div>
+          <div class="help-uitleg">Rechter schouderknop vasthouden — Turbo, sneller vliegen</div>
+        </div>
+        <div class="help-rij">
+          <div class="help-toetsen"><kbd>A</kbd></div>
+          <div class="help-uitleg">Vlag droppen — raad het land!</div>
+        </div>
+        <div class="help-rij">
+          <div class="help-toetsen"><kbd>B</kbd></div>
+          <div class="help-uitleg">Richtingpijl schieten — hint waar je heen moet</div>
+        </div>
+        <div class="help-rij">
+          <div class="help-toetsen"><kbd>Y</kbd></div>
+          <div class="help-uitleg">Joker inzetten</div>
+        </div>
+      </div>
+    </div>
+    </div>
+
+    <div class="help-sectie">
       <div class="help-sectie-kop">📱 Touch / tablet</div>
       <div class="help-rijen">
         <div class="help-rij">
@@ -497,40 +542,6 @@
         <div class="help-rij">
           <div class="help-toetsen"><kbd>🚩</kbd></div>
           <div class="help-uitleg">Knop linksonder — Vlag droppen, raad het land!</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="help-sectie">
-      <div class="help-sectie-kop">🕹️ Gamepad</div>
-      <div class="help-rijen">
-        <div class="help-rij">
-          <div class="help-toetsen"><kbd>⬤ stick</kbd></div>
-          <div class="help-uitleg">Linker joystick (of D-pad) — Timbo besturen</div>
-        </div>
-        <div class="help-rij">
-          <div class="help-toetsen"><kbd>RT</kbd></div>
-          <div class="help-uitleg">Rechter trigger vasthouden — Turbo, sneller vliegen</div>
-        </div>
-        <div class="help-rij">
-          <div class="help-toetsen"><kbd>L1</kbd></div>
-          <div class="help-uitleg">Uitzoomen op de kaart</div>
-        </div>
-        <div class="help-rij">
-          <div class="help-toetsen"><kbd>R1</kbd></div>
-          <div class="help-uitleg">Inzoomen op de kaart</div>
-        </div>
-        <div class="help-rij">
-          <div class="help-toetsen"><kbd>A</kbd></div>
-          <div class="help-uitleg">Vlag droppen — raad het land!</div>
-        </div>
-        <div class="help-rij">
-          <div class="help-toetsen"><kbd>B</kbd></div>
-          <div class="help-uitleg">Richtingpijl schieten — hint waar je heen moet</div>
-        </div>
-        <div class="help-rij">
-          <div class="help-toetsen"><kbd>Y</kbd></div>
-          <div class="help-uitleg">Joker inzetten</div>
         </div>
       </div>
     </div>
@@ -2087,7 +2098,7 @@ touchZoomUitKnop.addEventListener('touchcancel', touchZoomUitUit);
 
 // ── Gamepad-besturing ──────────────────────────────────
 // Linker joystick (of D-pad) = vliegen, A = vlaggetje droppen,
-// rechter trigger = turbo (vasthouden), L1/R1 = uit-/inzoomen.
+// RT (rechter trigger) = inzoomen, LT (linker trigger) = uitzoomen, RB = turbo.
 let gamepadStuurDx = 0, gamepadStuurDy = 0;
 let gamepadTurboActief = false;
 let gamepadZoomInActief = false, gamepadZoomUitActief = false;
@@ -2146,12 +2157,12 @@ function pollGamepad(){
   if(yIngedrukt && !gamepadYKnopVorigeStand) gebruikJoker();
   gamepadYKnopVorigeStand = yIngedrukt;
 
-  // Rechter trigger (buttons[7]) = turbo
-  gamepadTurboActief = !!(gp.buttons[7] && gp.buttons[7].pressed);
+  // Rechter trigger (buttons[7]) = inzoomen, linker trigger (buttons[6]) = uitzoomen
+  gamepadZoomInActief  = !!(gp.buttons[7] && gp.buttons[7].pressed);
+  gamepadZoomUitActief = !!(gp.buttons[6] && gp.buttons[6].pressed);
 
-  // Schouderknoppen: L1 = uitzoomen, R1 = inzoomen
-  gamepadZoomUitActief = !!(gp.buttons[4] && gp.buttons[4].pressed);
-  gamepadZoomInActief  = !!(gp.buttons[5] && gp.buttons[5].pressed);
+  // Rechter schouderknop (RB, buttons[5]) = turbo
+  gamepadTurboActief = !!(gp.buttons[5] && gp.buttons[5].pressed);
 }
 
 // Muiswiel: scrollen omhoog = inzoomen, omlaag = uitzoomen (naast Z/X)
