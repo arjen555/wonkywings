@@ -444,7 +444,7 @@
 
 <!-- STARTSCHERM -->
 <div id="startscherm">
-  <div id="versie-label">v0.2.0</div>
+  <div id="versie-label">v0.2.3</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -811,6 +811,22 @@ let correctieLand=null, correctieLandStartTijd=0;
 const CORRECTIE_GLOW_DUUR=900; // ms pulsen, daarna blijft het land geel staan
 let jokerBeschikbaar=true, misserAutoTimer=null;
 const MISSER_AUTO_MS=4000; // hoe lang de foutcorrectie in beeld blijft voor 'ie vanzelf doorschakelt
+// Verschillende teksten die getoond kunnen worden bij een fout antwoord — steeds
+// willekeurig één van gekozen, zodat het niet elke keer hetzelfde "Oepsie
+// woepsie" is.
+const FOUT_TEKSTEN = [
+  'Oepsie woepsie, hier is het!',
+  'Ho ho, hier moet je zijn, niet daar!',
+  'Kijk, dit is de juiste plek!',
+  'Als je nou hier je vlaggetje had gegooid, was het goed!',
+  'Ik presenteer... het enige goede land!',
+  'De volgende keer, gooi het vlaggetje dan hier!'
+];
+// Hoe lang (ms) de camera de tijd krijgt om uit te zoomen naar 50% voordat de
+// vlucht naar het juiste land start — zodat de illustraties van het foute en
+// het juiste land niet over elkaar heen staan terwijl je nog niet weet welke
+// van de twee nou de juiste is.
+const FOUT_ZOOM_UIT_MS = 700;
 let hintenBeschikbaar=3;
 const AANWIJZER_BASISHOEK=45.2546; // hoek waarin de afbeelding van nature wijst
 let wachten=false, spelActief=false, globeGestart=false;
@@ -1577,19 +1593,16 @@ function tekenPolyGroep(polysLijst,img,doorzicht,dutch){
   if(mz<=0.01) return; // middelpunt van het land niet naar de camera gekeerd
 
   // Stap 3: clip = ALLE polygonen van DEZE groep (voorkomt uitsteken buiten de landgrens)
+  // Hergebruikt tekenRing() — dezelfde precieze randmethode die ook de gewone
+  // landkleuring gebruikt (inclusief het tussenpunt-trucje bij de horizon).
+  // Zo loopt de clip-vorm van de illustratie altijd exact even ver door als de
+  // landkleur eronder, en blijft er nooit een reepje van die onderliggende
+  // kleur (bijv. het gele hover-geel) zichtbaar naast de rand van het plaatje.
   ctx.save();
   ctx.beginPath();
   for(const poly of polysLijst){
     if(!poly[0]||poly[0].length<3) continue;
-    let pen=false;
-    for(const [lon,lat] of poly[0]){
-      const [x,y,z]=roteerPunt(lonLatTo3D(lon,lat),rotM);
-      if(z>0.01){
-        const sx=CX+x*R,sy=CY-y*R;
-        if(!pen){ctx.moveTo(sx,sy);pen=true;}
-        else ctx.lineTo(sx,sy);
-      } else { pen=false; }
-    }
+    tekenRing(poly[0]);
     ctx.closePath();
   }
   ctx.clip();
@@ -1617,7 +1630,7 @@ function tekenPolyGroep(polysLijst,img,doorzicht,dutch){
       const lon = minLon + (maxLon-minLon)*i/RASTER;
       const [x,y,z] = roteerPunt(lonLatTo3D(lon,lat),rotM);
       rij.push({
-        zichtbaar: z>0.01,
+        zichtbaar: z>0,
         sx: CX+x*R, sy: CY-y*R,
         bx: i/RASTER*imgW, by: j/RASTER*imgH
       });
@@ -1719,7 +1732,7 @@ function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
       for(let i=0;i<=RASTER;i++){
         const lon=bbox.minLon+(bbox.maxLon-bbox.minLon)*i/RASTER;
         const [x,y,z]=roteerPunt(lonLatTo3D(lon,lat),rotM);
-        rij.push({ zichtbaar:z>0.01, sx:CX+x*R, sy:CY-y*R, bx:i/RASTER*imgW, by:j/RASTER*imgH });
+        rij.push({ zichtbaar:z>0, sx:CX+x*R, sy:CY-y*R, bx:i/RASTER*imgW, by:j/RASTER*imgH });
       }
       hoek.push(rij);
     }
@@ -2015,7 +2028,7 @@ function drawGlobe(){
     // vorige land vervaagt op dezelfde manier na het oversteken) — een simpele
     // lineaire opbouw over een vaste afstand, geen aparte "vervaag-lijst" nodig:
     // elk frame opnieuw berekend, dus vanzelf ook goed bij een drielandenpunt.
-    const GRENS_AFSTAND_KM = 150;
+    const GRENS_AFSTAND_KM = 300;
 
     // Huidig land altijd op volle (zoom-bepaalde) helderheid, ook als het
     // toevallig geen deel uitmaakt van de levellijst (bijv. Wonky dwaalt af).
@@ -2458,7 +2471,8 @@ function updateSpel(){
       updateScorebordCijfers();
       correctieLand=vluchtDoelLand;
       correctieLandStartTijd=performance.now();
-      toonFeedback('Oepsie woepsie, hier is het!','#ff9900');
+      const foutTekst = FOUT_TEKSTEN[Math.floor(Math.random()*FOUT_TEKSTEN.length)];
+      toonFeedback(foutTekst,'#ff9900');
       toonPunten(vluchtAfwijkingKm);
       startMisserCountdown();
       misserAutoTimer=setTimeout(nieuwLand,MISSER_AUTO_MS);
@@ -2662,16 +2676,22 @@ function dropVlaggetje(){
       setTimeout(nieuwLand,1800);
     } else {
       if(afwijkingKm >= 100) toonReactie('sad');
-      vluchtActief=true;
-      vluchtStartTijd=performance.now();
-      vluchtDuur=Math.max(900, Math.min(3600, afwijkingKm*2.4)); // hoe verder ernaast, hoe langer de vlucht
-      vluchtStartVec=lonLatTo3D(dropLon,dropLat);
-      vluchtEindLon=uitkomst.punt[0]; vluchtEindLat=uitkomst.punt[1];
-      vluchtEindVec=lonLatTo3D(vluchtEindLon,vluchtEindLat);
-      vluchtScoreVoor=score;
-      vluchtScoreNa=score+afwijkingKm;
-      vluchtAfwijkingKm=afwijkingKm;
-      vluchtDoelLand=doelLand;
+      // Eerst uitzoomen naar 50% (nooit verder inzoomen dan we al waren), zodat
+      // het foute en het juiste land straks niet als twee overlappende
+      // illustraties door elkaar staan. Pas ná die zoom-uit start de vlucht.
+      zoomNiveau = Math.min(zoomNiveau, 0.5);
+      setTimeout(()=>{
+        vluchtActief=true;
+        vluchtStartTijd=performance.now();
+        vluchtDuur=Math.max(900, Math.min(3600, afwijkingKm*2.4)); // hoe verder ernaast, hoe langer de vlucht
+        vluchtStartVec=lonLatTo3D(dropLon,dropLat);
+        vluchtEindLon=uitkomst.punt[0]; vluchtEindLat=uitkomst.punt[1];
+        vluchtEindVec=lonLatTo3D(vluchtEindLon,vluchtEindLat);
+        vluchtScoreVoor=score;
+        vluchtScoreNa=score+afwijkingKm;
+        vluchtAfwijkingKm=afwijkingKm;
+        vluchtDoelLand=doelLand;
+      }, FOUT_ZOOM_UIT_MS);
     }
   },1400);
 }
