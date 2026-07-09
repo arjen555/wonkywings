@@ -444,7 +444,7 @@
 
 <!-- STARTSCHERM -->
 <div id="startscherm">
-  <div id="versie-label">v0.2.5</div>
+  <div id="versie-label">v0.2.6</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2034,32 +2034,39 @@ function drawGlobe(){
   // ook al schuift de camera daarbij niet verder in.
   const illustratieMax = zoomNiveauMaxVoorHuidigLand();
   const illustratieOmslagpunt = ZOOM_OMSLAGPUNT * illustratieMax;
-  if(zoomNiveau>=illustratieOmslagpunt && hoverLand){
+  if(zoomNiveau>=illustratieOmslagpunt){
     const WAAS = 0.0;   // bij het omslagpunt volledig onzichtbaar, loopt snel op naar vol
     let voortgang = (zoomNiveau - illustratieOmslagpunt) / (illustratieMax - illustratieOmslagpunt);
     voortgang = Math.max(0, Math.min(1, voortgang));
     const doorzichtHuidig = WAAS + (1.0 - WAAS) * voortgang;
 
-    // Grensnabijheid: buurlanden van het huidige land komen al geleidelijk in
-    // beeld voordat Wonky de grens daadwerkelijk oversteekt (en andersom, het
-    // vorige land vervaagt op dezelfde manier na het oversteken) — een simpele
-    // lineaire opbouw over een vaste afstand, geen aparte "vervaag-lijst" nodig:
-    // elk frame opnieuw berekend, dus vanzelf ook goed bij een drielandenpunt.
+    // Grensnabijheid: buurlanden van het huidige land (of, boven zee, de kustlanden
+    // in de buurt) komen al geleidelijk in beeld voordat Wonky de grens daadwerkelijk
+    // oversteekt (en andersom, het vorige land vervaagt op dezelfde manier na het
+    // oversteken) — een simpele lineaire opbouw over een vaste afstand, geen aparte
+    // "vervaag-lijst" nodig: elk frame opnieuw berekend, dus vanzelf ook goed bij
+    // een drielandenpunt én bij aanvliegen vanaf open zee.
     const GRENS_AFSTAND_KM = 300;
 
-    // Huidig land altijd op volle (zoom-bepaalde) helderheid, ook als het
-    // toevallig geen deel uitmaakt van de levellijst (bijv. Wonky dwaalt af).
-    const dutchHuidig=hoverLand.properties.dutch||hoverLand.properties.name;
-    laadIllustratie(dutchHuidig);
-    const illHuidig=landIllustraties[dutchHuidig];
-    if(illHuidig) tekenLandIllustratie(hoverLand,illHuidig,zoomNiveau,doorzichtHuidig);
+    // Huidig land (als Wonky erboven vliegt) altijd op volle (zoom-bepaalde)
+    // helderheid, ook als het toevallig geen deel uitmaakt van de levellijst
+    // (bijv. Wonky dwaalt af). Boven zee is hoverLand null en slaan we dit over -
+    // de buurlanden-loop hieronder zorgt dan alsnog voor de geleidelijke opbouw.
+    if(hoverLand){
+      const dutchHuidig=hoverLand.properties.dutch||hoverLand.properties.name;
+      laadIllustratie(dutchHuidig);
+      const illHuidig=landIllustraties[dutchHuidig];
+      if(illHuidig) tekenLandIllustratie(hoverLand,illHuidig,zoomNiveau,doorzichtHuidig);
+    }
 
     // Buurlanden overal ter wereld: alleen zichtbaar binnen de grensnabijheids-
     // zone, met een doorzicht die meeschaalt met het huidige zoomniveau. Dit
     // gaat over de complete landen-naslaglijst (alleLandenFeatureMap), niet
     // over het gekozen level — zo werkt het sluipeffect ook als Wonky buiten
     // zijn level vliegt (bijv. tijdens verkennen), niet alleen tussen landen
-    // die toevallig in dezelfde levellijst zitten.
+    // die toevallig in dezelfde levellijst zitten. Deze loop draait nu ook
+    // boven zee (hoverLand===null), zodat de kust al vroeg zichtbaar wordt
+    // terwijl je er nog overheen vliegt, net als bij land-naar-land.
     //
     // Om dit betaalbaar te houden checken we per land eerst een goedkope
     // bounding-box (met een marge van 2x GRENS_AFSTAND_KM, zodat het plaatje op
@@ -2070,7 +2077,7 @@ function drawGlobe(){
 
     for(const naam in alleLandenFeatureMap){
       const info = alleLandenFeatureMap[naam];
-      if(info.feature===hoverLand) continue;
+      if(hoverLand && info.feature===hoverLand) continue;
       if(!info.kruistDatumgrens){
         if(wonkyLat < info.minLat - latMargeGraden || wonkyLat > info.maxLat + latMargeGraden) continue;
         if(wonkyLon < info.minLon - lonMargeGraden || wonkyLon > info.maxLon + lonMargeGraden) continue;
