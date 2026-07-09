@@ -721,6 +721,33 @@ for(const groep of MENU){
   }
 }
 
+// ── Complete landen-naslaglijst (voor het grens-sluipeffect, ongeacht level) ──
+// Unie van alle landen uit alle levels samen, met een vooraf berekende grove
+// bounding box per land. Die bbox gebruiken we als snelle voorfilter zodat we
+// niet elke frame voor alle ~190 landen de dure exacte grensberekening hoeven
+// te doen (zie GRENS_AFSTAND_KM verderop) — alleen landen wiens (verruimde)
+// bbox de positie van Wonky bevat komen door naar de precieze check.
+let alleLandenFeatureMap = {};
+(function initAlleLandenFeatureMap(){
+  const namen = new Set();
+  for(const groep of MENU) for(const lv of groep.levels) for(const naam of lv.landen) namen.add(naam);
+  for(const naam of namen){
+    const f = GEOJSON.features.find(ft=>(ft.properties.dutch||ft.properties.name)===naam);
+    if(!f) continue;
+    const polys = f.geometry.type==='Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
+    let minLon=Infinity,maxLon=-Infinity,minLat=Infinity,maxLat=-Infinity;
+    for(const poly of polys) for(const ring of poly) for(const [lo,la] of ring){
+      if(lo<minLon)minLon=lo; if(lo>maxLon)maxLon=lo;
+      if(la<minLat)minLat=la; if(la>maxLat)maxLat=la;
+    }
+    // Grove aanname: als de bbox breder is dan 180°, ligt het land waarschijnlijk
+    // over de datumgrens (bijv. Rusland, Fiji) — dan slaan we de snelle bbox-check
+    // over en doen we altijd de precieze berekening voor dat land.
+    const kruistDatumgrens = (maxLon - minLon) > 180;
+    alleLandenFeatureMap[naam] = {feature:f, minLon,maxLon,minLat,maxLat,kruistDatumgrens};
+  }
+})();
+
 // ── Startscherm ───────────────────────────────────────
 function bouwStartscherm() {
   const lijst = document.getElementById('level-lijst');
@@ -1997,25 +2024,40 @@ function drawGlobe(){
     const illHuidig=landIllustraties[dutchHuidig];
     if(illHuidig) tekenLandIllustratie(hoverLand,illHuidig,zoomNiveau,doorzichtHuidig);
 
-    // Overige levellanden: alleen zichtbaar binnen de grensnabijheids-zone,
-    // met een doorzicht die meeschaalt met het huidige zoomniveau. Dit gaat over
-    // de volledige levellijst (huidigLevelLanden), niet alleen de willekeurige
-    // speelronde-subset (spelLanden) — anders werkt het sluipeffect toevallig
-    // wel of niet, afhankelijk van welke 15 landen er toevallig zijn uitgeloot.
-    for(const naam of huidigLevelLanden){
-      const feature = spelLandenFeatureMap[naam];
-      if(!feature || feature===hoverLand) continue;
+    // Buurlanden overal ter wereld: alleen zichtbaar binnen de grensnabijheids-
+    // zone, met een doorzicht die meeschaalt met het huidige zoomniveau. Dit
+    // gaat over de complete landen-naslaglijst (alleLandenFeatureMap), niet
+    // over het gekozen level — zo werkt het sluipeffect ook als Wonky buiten
+    // zijn level vliegt (bijv. tijdens verkennen), niet alleen tussen landen
+    // die toevallig in dezelfde levellijst zitten.
+    //
+    // Om dit betaalbaar te houden checken we per land eerst een goedkope
+    // bounding-box (met een marge van 2x GRENS_AFSTAND_KM, zodat het plaatje op
+    // tijd geladen is) voordat we de dure exacte grensberekening doen.
+    const VOORLAAD_AFSTAND_KM = GRENS_AFSTAND_KM * 2;
+    const latMargeGraden = VOORLAAD_AFSTAND_KM / 111;
+    const lonMargeGraden = Math.min(90, latMargeGraden / Math.max(0.15, Math.cos(wonkyLat*Math.PI/180)));
+
+    for(const naam in alleLandenFeatureMap){
+      const info = alleLandenFeatureMap[naam];
+      if(info.feature===hoverLand) continue;
+      if(!info.kruistDatumgrens){
+        if(wonkyLat < info.minLat - latMargeGraden || wonkyLat > info.maxLat + latMargeGraden) continue;
+        if(wonkyLon < info.minLon - lonMargeGraden || wonkyLon > info.maxLon + lonMargeGraden) continue;
+      }
+      laadIllustratie(naam); // niet-geforceerd: als 'm al (aan het) laden is, gebeurt er niks
       const ill = landIllustraties[naam];
       if(!ill) continue;
 
-      const afwijking = berekenAfwijking(wonkyLon,wonkyLat,feature);
+      const afwijking = berekenAfwijking(wonkyLon,wonkyLat,info.feature);
       if(afwijking.km > GRENS_AFSTAND_KM) continue;
       const nabijheid = 1 - (afwijking.km / GRENS_AFSTAND_KM);
       const doorzicht = doorzichtHuidig * nabijheid;
       if(doorzicht <= 0.01) continue;
-      tekenLandIllustratie(feature,ill,zoomNiveau,doorzicht);
+      tekenLandIllustratie(info.feature,ill,zoomNiveau,doorzicht);
     }
   }
+
 
   // Breedtegraden
   ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=0.5;
