@@ -444,7 +444,7 @@
 
 <!-- STARTSCHERM -->
 <div id="startscherm">
-  <div id="versie-label">v0.2.3</div>
+  <div id="versie-label">v0.2.5</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -673,10 +673,10 @@ const MENU = [
     id: 'europa', label: 'Europa', icoon: '🌍', kleur: '#1a6fa8',
     levels: [
       { id:'eu-noord', naam:'Noord-Europa', start:{lon:15, lat:65},
-        landen:["Zweden","Noorwegen","Denemarken","Finland","IJsland","Estland","Letland","Litouwen"],
+        landen:["Zweden","Noorwegen","Denemarken","Finland","IJsland","Estland","Letland","Litouwen","Groenland","Faeröer"],
         altijd_alle:false, beschikbaar:true },
       { id:'eu-west', naam:'West-Europa', start:{lon:5, lat:50},
-        landen:["Nederland","België","Duitsland","Frankrijk","Verenigd Koninkrijk","Ierland","Luxemburg","Oostenrijk","Zwitserland"],
+        landen:["Nederland","België","Duitsland","Frankrijk","Verenigd Koninkrijk","Ierland","Luxemburg","Oostenrijk","Zwitserland","Denemarken"],
         altijd_alle:false, beschikbaar:true },
       { id:'eu-zuid', naam:'Zuid-Europa', start:{lon:15, lat:42},
         landen:["Spanje","Portugal","Italië","Griekenland","Malta","San Marino","Vaticaanstad","Monaco","Andorra","Liechtenstein"],
@@ -944,7 +944,7 @@ function startSpel(levelId, modus) {
   } else {
     const k=[...lv.landen];
     for(let i=k.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [k[i],k[j]]=[k[j],k[i]]; }
-    spelLanden = k.slice(0,15);
+    spelLanden = k.slice(0,10);
   }
   huidigLandIdx=0; huidigLand=spelLanden[0];
   huidigLevelLanden=[...lv.landen];
@@ -958,7 +958,7 @@ function startSpel(levelId, modus) {
   zoomNiveau = levelId.startsWith('eu-') ? 0.35 : 0;
   zoomFactor = ZOOM_MIN;
   for(const naam of spelLanden) laadIllustratie(naam, true);
-  // Overige levellanden (niet in de speelronde, bijv. bij een willekeurige subset van 15):
+  // Overige levellanden (niet in de speelronde, bijv. bij een willekeurige subset van 10):
   // gewoon (niet-geforceerd) laden, zodat hun illustratie klaarstaat voor het grens-sluipeffect.
   for(const naam of lv.landen) if(!spelLanden.includes(naam)) laadIllustratie(naam);
 
@@ -1897,7 +1897,22 @@ function afstandKmTussenPunten(lon1,lat1,lon2,lat2){
   const a=Math.sin(dLat/2)**2 + Math.cos(lat1*toRad)*Math.cos(lat2*toRad)*Math.sin(dLon/2)**2;
   return R * 2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
+// Geeft een nieuw punt terug dat 'km' kilometer verder ligt dan [lon,lat], in het
+// verlengde van de rechte lijn vanaf [vanLon,vanLat] naar [lon,lat] (grootcirkel-koers).
+function puntVoorbijGrens(vanLon,vanLat,lon,lat,km){
+  const R=6371, toRad=Math.PI/180, toDeg=180/Math.PI;
+  const phi1=vanLat*toRad, phi2=lat*toRad, dLambda=(lon-vanLon)*toRad;
+  const y=Math.sin(dLambda)*Math.cos(phi2);
+  const x=Math.cos(phi1)*Math.sin(phi2)-Math.sin(phi1)*Math.cos(phi2)*Math.cos(dLambda);
+  const bearing=Math.atan2(y,x);
+  const phi1b=lat*toRad, lambda1=lon*toRad, d=km/R;
+  const phi2b=Math.asin(Math.sin(phi1b)*Math.cos(d)+Math.cos(phi1b)*Math.sin(d)*Math.cos(bearing));
+  const lambda2=lambda1+Math.atan2(Math.sin(bearing)*Math.sin(d)*Math.cos(phi1b), Math.cos(d)-Math.sin(phi1b)*Math.sin(phi2b));
+  return [lambda2*toDeg, phi2b*toDeg];
+}
 // Geeft {km, punt:[lon,lat]} terug. punt is null als je al in het land staat.
+// punt ligt niet exact op de grens, maar 50km voorbij de grens (in dezelfde vliegrichting),
+// zodat de correctievlucht duidelijk het foute land in vliegt in plaats van precies op de lijn te landen.
 function berekenAfwijking(lon,lat,feature){
   const polys=feature.geometry.type==='Polygon'?[feature.geometry.coordinates]:feature.geometry.coordinates;
   for(const poly of polys) if(poly[0]&&puntInPolygoon(lon,lat,poly[0])) return {km:0,punt:null};
@@ -1906,7 +1921,9 @@ function berekenAfwijking(lon,lat,feature){
     const km=afstandKmTussenPunten(lon,lat,rLon,rLat);
     if(km<minKm){ minKm=km; minLon=rLon; minLat=rLat; }
   }
-  return {km:minKm, punt:[minLon,minLat]};
+  const VOORBIJ_GRENS_KM=50;
+  const [eindLon,eindLat]=puntVoorbijGrens(lon,lat,minLon,minLat,VOORBIJ_GRENS_KM);
+  return {km:minKm, punt:[eindLon,eindLat]};
 }
 // Vloeiend tussenpunt op het bol-oppervlak tussen twee unit-vectoren (voor het vliegpad)
 function slerp3(a,b,t){
