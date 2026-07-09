@@ -406,10 +406,15 @@
     .scorebord-km-cijfer { font-size:var(--km-size); }
     .scorebord-tijd-cijfer { font-size:var(--tijd-size); }
     #zoom-indicator {
-      background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.25);
-      color:#fff; font-size:0.75rem; font-weight:700;
-      padding:4px 12px; border-radius:10px;
+      display:flex; align-items:center; gap:6px;
+      background:linear-gradient(180deg, rgba(64,42,20,0.8), rgba(28,16,7,0.8));
+      border:1.5px solid rgba(255,215,0,0.45);
+      color:#fff6c8; font-size:0.85rem; font-weight:800;
+      padding:7px 18px; border-radius:22px;
       pointer-events:none;
+      box-shadow:0 3px 12px rgba(0,0,0,0.4), inset 0 0 10px rgba(255,215,0,0.1);
+      text-shadow:0 1px 3px rgba(0,0,0,0.65);
+      letter-spacing:0.02em;
     }
     #hud-bottom {
       position:fixed; bottom:0; left:0; right:0;
@@ -444,7 +449,7 @@
 
 <!-- STARTSCHERM -->
 <div id="startscherm">
-  <div id="versie-label">v0.2.6</div>
+  <div id="versie-label">v0.2.7</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -610,7 +615,6 @@
   <div id="richting-rij">
     <div class="richting-knop" onclick="gebruikRichtingwijzer(0)"><img src="images/aanwijzer.png" alt="Richtingaanwijzer"/></div>
     <div class="richting-knop" onclick="gebruikRichtingwijzer(1)"><img src="images/aanwijzer.png" alt="Richtingaanwijzer"/></div>
-    <div class="richting-knop" onclick="gebruikRichtingwijzer(2)"><img src="images/aanwijzer.png" alt="Richtingaanwijzer"/></div>
   </div>
   <img id="richting-pijl" src="images/aanwijzer.png" alt=""/>
   <div id="joker-knop" onclick="gebruikJoker()">
@@ -827,7 +831,7 @@ const FOUT_TEKSTEN = [
 // het juiste land niet over elkaar heen staan terwijl je nog niet weet welke
 // van de twee nou de juiste is.
 const FOUT_ZOOM_UIT_MS = 700;
-let hintenBeschikbaar=3;
+let hintenBeschikbaar=2;
 const AANWIJZER_BASISHOEK=45.2546; // hoek waarin de afbeelding van nature wijst
 let wachten=false, spelActief=false, globeGestart=false;
 
@@ -988,7 +992,7 @@ function startSpel(levelId, modus) {
   jokerBeschikbaar=true;
   document.getElementById('joker-knop').style.display = (modus==='spelen') ? 'block' : 'none';
   updateJokerKnop();
-  hintenBeschikbaar=3;
+  hintenBeschikbaar=2;
   document.getElementById('richting-rij').style.display = (modus==='spelen') ? 'flex' : 'none';
   updateRichtingKnoppen();
   document.getElementById('zoom-indicator').textContent='🔍 '+Math.round(zoomNiveau*100)+'%';
@@ -2355,7 +2359,7 @@ function pollGamepad(){
 
   // B-knop (buttons[1]): richtingpijl schieten
   const bIngedrukt = !!(gp.buttons[1] && gp.buttons[1].pressed);
-  if(bIngedrukt && !gamepadBKnopVorigeStand) gebruikRichtingwijzer(3-hintenBeschikbaar);
+  if(bIngedrukt && !gamepadBKnopVorigeStand) gebruikRichtingwijzer(2-hintenBeschikbaar);
   gamepadBKnopVorigeStand = bIngedrukt;
 
   // Y-knop (buttons[3]): joker inzetten
@@ -2725,7 +2729,7 @@ document.addEventListener('keydown',e=>{
     dropVlaggetje();
   }
   if((e.key==='p'||e.key==='P')&&spelActief&&huidigModus==='spelen'){
-    gebruikRichtingwijzer(3-hintenBeschikbaar);
+    gebruikRichtingwijzer(2-hintenBeschikbaar);
   }
   if((e.key==='j'||e.key==='J')&&spelActief&&huidigModus==='spelen'){
     gebruikJoker();
