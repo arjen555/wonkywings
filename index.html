@@ -771,6 +771,7 @@ bouwStartscherm();
 // ── Spelstaat ─────────────────────────────────────────
 let huidigLevel='eu-west', huidigModus='spelen', spelLanden=[];
 let spelLandenFeatureMap={}; // snelle naam->GeoJSON-feature koppeling voor de level-landen
+let huidigLevelLanden=[]; // volledige landenlijst van het level (los van de willekeurige speelronde-subset)
 let introActief=false, introStartTijd=0;
 const INTRO_DUUR = 3500; // ms
 let huidigLandIdx=0, huidigLand='', score=0, spelerNaam='';
@@ -903,8 +904,9 @@ function startSpel(levelId, modus) {
     spelLanden = k.slice(0,15);
   }
   huidigLandIdx=0; huidigLand=spelLanden[0];
+  huidigLevelLanden=[...lv.landen];
   spelLandenFeatureMap={};
-  for(const naam of spelLanden){
+  for(const naam of lv.landen){
     const f=GEOJSON.features.find(ft=>(ft.properties.dutch||ft.properties.name)===naam);
     if(f) spelLandenFeatureMap[naam]=f;
   }
@@ -913,6 +915,9 @@ function startSpel(levelId, modus) {
   zoomNiveau = levelId.startsWith('eu-') ? 0.35 : 0;
   zoomFactor = ZOOM_MIN;
   for(const naam of spelLanden) laadIllustratie(naam, true);
+  // Overige levellanden (niet in de speelronde, bijv. bij een willekeurige subset van 15):
+  // gewoon (niet-geforceerd) laden, zodat hun illustratie klaarstaat voor het grens-sluipeffect.
+  for(const naam of lv.landen) if(!spelLanden.includes(naam)) laadIllustratie(naam);
 
   document.getElementById('startscherm').style.display='none';
   document.getElementById('spelscherm').style.display='block';
@@ -1993,8 +1998,11 @@ function drawGlobe(){
     if(illHuidig) tekenLandIllustratie(hoverLand,illHuidig,zoomNiveau,doorzichtHuidig);
 
     // Overige levellanden: alleen zichtbaar binnen de grensnabijheids-zone,
-    // met een doorzicht die meeschaalt met het huidige zoomniveau.
-    for(const naam of spelLanden){
+    // met een doorzicht die meeschaalt met het huidige zoomniveau. Dit gaat over
+    // de volledige levellijst (huidigLevelLanden), niet alleen de willekeurige
+    // speelronde-subset (spelLanden) — anders werkt het sluipeffect toevallig
+    // wel of niet, afhankelijk van welke 15 landen er toevallig zijn uitgeloot.
+    for(const naam of huidigLevelLanden){
       const feature = spelLandenFeatureMap[naam];
       if(!feature || feature===hoverLand) continue;
       const ill = landIllustraties[naam];
