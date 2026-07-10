@@ -49,6 +49,7 @@
       padding:20px 18px; gap:10px;
       background:linear-gradient(135deg, #051e30 0%, #0a2a4a 100%);
       position:relative; overflow-y:auto;
+      zoom:1.4;
     }
     #start-rechts::before {
       content:''; position:absolute; inset:0;
@@ -273,6 +274,19 @@
     }
 
     /* ── JOKER ── */
+    /* ── SPIEK-KNOP (bediening tijdens spelen/verkennen) ── */
+    #bediening-spiek-knop {
+      position:fixed; left:clamp(12px,2vmin,24px); bottom:clamp(12px,2vmin,24px); z-index:20;
+      width:clamp(46px,6.5vmin,60px); height:clamp(46px,6.5vmin,60px); border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      background:linear-gradient(180deg, rgba(64,42,20,0.85), rgba(28,16,7,0.85));
+      border:1.5px solid rgba(255,215,0,0.45);
+      color:#ffe9a8; font-size:1.3rem; font-weight:900;
+      cursor:pointer; transition:transform 0.15s;
+      box-shadow:0 4px 14px rgba(0,0,0,0.45), inset 0 0 10px rgba(255,215,0,0.1);
+    }
+    #bediening-spiek-knop:hover { transform:scale(1.08); }
+
     #joker-knop {
       position:fixed; right:clamp(12px,2vmin,24px); bottom:clamp(12px,2vmin,24px); z-index:20; display:none;
       width:clamp(75px, 10.9vmin, 135px); height:calc(clamp(75px, 10.9vmin, 135px) / 0.7424); border-radius:14px;
@@ -464,7 +478,7 @@
 
 <!-- STARTSCHERM -->
 <div id="startscherm">
-  <div id="versie-label">v0.2.11</div>
+  <div id="versie-label">v0.2.13</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -476,14 +490,14 @@
       <input id="naam-input" type="text" placeholder="Vul je naam in..." maxlength="20" autocomplete="off"/>
     </div>
     <div id="level-lijst"></div>
-    <button id="help-knop" onclick="document.getElementById('help-popup').style.display='flex'">
+    <button id="help-knop" onclick="openHulp()">
       ❓ Hoe werkt het?
     </button>
   </div>
 </div>
 
 <!-- HELP POPUP -->
-<div id="help-popup" onclick="if(event.target===this)this.style.display='none'">
+<div id="help-popup" onclick="if(event.target===this)sluitHulp()">
   <div id="help-kaart">
     <div id="help-titel">🎮 Bediening</div>
 
@@ -585,7 +599,7 @@
     </div>
     </div>
 
-    <button id="help-sluit" onclick="document.getElementById('help-popup').style.display='none'">Sluiten</button>
+    <button id="help-sluit" onclick="sluitHulp()">Sluiten</button>
   </div>
 </div>
 
@@ -602,6 +616,7 @@
 <!-- SPELSCHERM -->
 <div id="spelscherm">
   <canvas id="globe"></canvas>
+  <button id="bediening-spiek-knop" onclick="openHulp()" aria-label="Bediening bekijken">❓</button>
   <div id="intro-titel"></div>
   <img id="wonky" src="images/Wonky.png" alt="Wonky"/>
   <img id="wonky-frontaal" src="images/Timbo_frontaal.png" alt="Wonky frontaal" style="position:fixed;width:clamp(83px, 6.77vmin, 148px);pointer-events:none;z-index:11;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));"/>
@@ -849,6 +864,7 @@ const FOUT_ZOOM_UIT_MS = 700;
 let hintenBeschikbaar=2;
 const AANWIJZER_BASISHOEK=45.2546; // hoek waarin de afbeelding van nature wijst
 let wachten=false, spelActief=false, globeGestart=false;
+let hulpActief=false, hulpOpenTijd=0; // "spieken": spel bevriest, tijd telt niet mee
 
 // ── Zoom ─────────────────────────────────────────────
 let zoomNiveau = 0; // 0 = volledig uitgezoomd (wereldbol), 1 = volledig ingezoomd op het huidige land
@@ -1212,7 +1228,7 @@ function vervangHuidigLand(){
   laadIllustratie(huidigLand);
 }
 function gebruikJoker(){
-  if(!jokerBeschikbaar || huidigModus!=='spelen' || !spelActief) return;
+  if(!jokerBeschikbaar || huidigModus!=='spelen' || !spelActief || hulpActief) return;
   if(vluchtActief) return;               // vliegtuigje is al onderweg: niet onderbreken
   if(wachten && !correctieLand) return;  // vlaggetje valt nog, uitslag nog niet bekend
 
@@ -1250,7 +1266,7 @@ function berekenMiddelpunt(feature){
   return [sLon/n, sLat/n];
 }
 function gebruikRichtingwijzer(i){
-  if(hintenBeschikbaar<=0 || huidigModus!=='spelen' || !spelActief) return;
+  if(hintenBeschikbaar<=0 || huidigModus!=='spelen' || !spelActief || hulpActief) return;
   const doelLand=GEOJSON.features.find(f=>(f.properties.dutch||f.properties.name)===huidigLand);
   if(!doelLand) return;
   const uitkomst=berekenAfwijking(wonkyLon,wonkyLat,doelLand);
@@ -2235,6 +2251,7 @@ canvas.addEventListener('touchstart', e=>{
 }, {passive:false});
 
 canvas.addEventListener('touchmove', e=>{
+  if(hulpActief) return;
   if(e.touches.length >= 2 && pinchStartAfstand){
     const nieuweAfstand = pinchAfstand(e.touches);
     const factor = nieuweAfstand / pinchStartAfstand; // >1 = vingers verder uit elkaar = inzoomen
@@ -2392,6 +2409,7 @@ function pollGamepad(){
 
 // Muiswiel: scrollen omhoog = inzoomen, omlaag = uitzoomen (naast Z/X)
 document.addEventListener('wheel',e=>{
+  if(hulpActief) return;
   e.preventDefault();
   const richting = e.deltaY < 0 ? 1 : -1; // omhoog scrollen -> inzoomen
   zoomNiveau = Math.min(zoomNiveauMaxVoorHuidigLand(), Math.max(0, zoomNiveau + richting*ZOOM_STAP_BASIS*15));
@@ -2413,7 +2431,7 @@ let dropAnimatieTimer = 0;
 const DROP_ANIMATIE_DUUR = 600;
 
 function updateSpel(){
-  if(!spelActief) return;
+  if(!spelActief || hulpActief) return;
 
   updateJokerKnop();
 
@@ -2687,6 +2705,21 @@ function updateSpel(){
   } else { hoverEl.style.opacity='0'; }
 }
 
+// ── Bediening-hulp: spel bevriest zolang de speler spiekt, tijd loopt niet door ──
+function openHulp(){
+  hulpActief = true;
+  hulpOpenTijd = performance.now();
+  document.getElementById('help-popup').style.display='flex';
+}
+function sluitHulp(){
+  if(hulpActief && levelStartTijd){
+    // Verschuif de starttijd met precies de duur van het spieken, zodat die
+    // tijd niet meetelt in de zichtbare speeltijd.
+    levelStartTijd += (performance.now() - hulpOpenTijd);
+  }
+  hulpActief = false;
+  document.getElementById('help-popup').style.display='none';
+}
 // ── Feedback & punten ─────────────────────────────────
 function zetZoomIndicator(niveau){
   const pct = Math.round(niveau*100);
@@ -2710,7 +2743,7 @@ function toonPunten(p){
 }
 
 function dropVlaggetje(){
-  if(wachten||!spelActief||huidigModus!=='spelen') return;
+  if(wachten||!spelActief||huidigModus!=='spelen'||hulpActief) return;
   const wx=W*(0.5+wonkySchermX);
   const wy=focusSy-90;
   dropAnimatieActief=true;
