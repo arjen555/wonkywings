@@ -10,6 +10,29 @@
     html { font-size: clamp(12px, 1.45vmin, 18px); }
     body { width:100vw; height:100vh; overflow:hidden; background:#020d1a; font-family:"Segoe UI",sans-serif; user-select:none; }
 
+    /* ── SCORE-TICKERS (boven=Europa naar links, onder=Wereld naar rechts) ── */
+    .score-ticker {
+      position:fixed; left:0; right:0; z-index:102;
+      overflow:hidden; pointer-events:none;
+      background:linear-gradient(180deg, rgba(4,16,28,0.94), rgba(4,16,28,0.8));
+      padding:5px 0; display:none;
+    }
+    .score-ticker-boven { top:0; border-bottom:1px solid rgba(255,215,0,0.28); }
+    .score-ticker-onder { bottom:0; border-top:1px solid rgba(255,215,0,0.28); }
+    .score-ticker-track {
+      display:inline-flex; white-space:nowrap; width:max-content;
+    }
+    .score-ticker-boven .score-ticker-track { animation:tickerNaarLinks 45s linear infinite; }
+    .score-ticker-onder .score-ticker-track { animation:tickerNaarRechts 45s linear infinite; }
+    @keyframes tickerNaarLinks { from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
+    @keyframes tickerNaarRechts { from{ transform:translateX(-50%); } to{ transform:translateX(0); } }
+    .score-ticker-kaart {
+      display:inline-flex; align-items:baseline; gap:8px;
+      padding:0 22px; border-right:1px solid rgba(255,255,255,0.15);
+      font-size:0.7rem; white-space:nowrap;
+    }
+    .score-ticker-kop { color:#ffd700; font-weight:800; }
+    .score-ticker-namen { color:rgba(255,255,255,0.8); }
     /* ── STARTSCHERM ── */
     #startscherm {
       position:fixed; inset:0; z-index:100;
@@ -17,7 +40,7 @@
       background:#051e30;
     }
     #versie-label {
-      position:absolute; top:8px; right:12px; z-index:101;
+      position:absolute; top:8px; right:12px; z-index:103;
       color:rgba(255,255,255,0.35); font-size:0.75rem; font-family:monospace;
       pointer-events:none; user-select:none;
     }
@@ -489,7 +512,13 @@
 
 <!-- STARTSCHERM -->
 <div id="startscherm">
-  <div id="versie-label">v0.2.16</div>
+  <div id="score-ticker-boven" class="score-ticker score-ticker-boven">
+    <div id="score-ticker-boven-track" class="score-ticker-track"></div>
+  </div>
+  <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
+    <div id="score-ticker-onder-track" class="score-ticker-track"></div>
+  </div>
+  <div id="versie-label">v0.2.17</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -879,6 +908,53 @@ function bouwStartscherm() {
 }
 bouwStartscherm();
 
+// ── Score-tickers (boven=Europa, onder=Wereld) ─────────
+// Bouwt per beschikbaar onderdeel van een werelddeel-groep maximaal twee
+// kaartjes (Vandaag + All-time), elk met de top 3. Een onderdeel zonder
+// enige score wordt volledig overgeslagen; heeft een onderdeel wel all-time
+// scores maar nog geen van vandaag, dan verschijnt alleen het all-time-kaartje.
+function bouwTickerKaarten(groep){
+  const kaarten = [];
+  for(const lv of groep.levels){
+    if(!lv.beschikbaar) continue;
+    let lijst=[];
+    try{ lijst=JSON.parse(localStorage.getItem(scorebordSleutel(lv.id))||'[]'); }catch(e){ lijst=[]; }
+    if(lijst.length===0) continue;
+    const naam = lv.kort || lv.naam;
+    const vandaag = lijst.filter(r=>isVandaag(r.datum)).slice(0,3);
+    const alltime = lijst.slice(0,3);
+    if(vandaag.length>0) kaarten.push({titel:naam+' · Vandaag', runs:vandaag});
+    if(alltime.length>0) kaarten.push({titel:naam+' · All-time', runs:alltime});
+  }
+  return kaarten;
+}
+function tickerKaartHtml(kaarten){
+  return kaarten.map(k => {
+    const namen = k.runs.map((r,i)=>`${i+1}. ${r.naam} (${r.km}km)`).join('  ');
+    return `<span class="score-ticker-kaart"><span class="score-ticker-kop">🏆 ${k.titel}:</span><span class="score-ticker-namen">${namen}</span></span>`;
+  }).join('');
+}
+function vulTickerTrack(wrapperId, trackId, kaarten){
+  const wrapper = document.getElementById(wrapperId);
+  const track = document.getElementById(trackId);
+  if(kaarten.length===0){
+    wrapper.style.display='none';
+    track.innerHTML='';
+    return;
+  }
+  wrapper.style.display='block';
+  const html = tickerKaartHtml(kaarten);
+  // Inhoud verdubbelen zodat de scroll-animatie (0% naar -50%) naadloos in een lus loopt.
+  track.innerHTML = html + html;
+}
+function bouwScoreTickers(){
+  const europaGroep = MENU.find(g=>g.id==='europa');
+  const wereldGroep = MENU.find(g=>g.id==='wereld');
+  vulTickerTrack('score-ticker-boven','score-ticker-boven-track', bouwTickerKaarten(europaGroep));
+  vulTickerTrack('score-ticker-onder','score-ticker-onder-track', bouwTickerKaarten(wereldGroep));
+}
+bouwScoreTickers();
+
 // ── Spelstaat ─────────────────────────────────────────
 let huidigLevel='eu-west', huidigModus='spelen', spelLanden=[];
 let spelLandenFeatureMap={}; // snelle naam->GeoJSON-feature koppeling voor de level-landen
@@ -1107,6 +1183,7 @@ function naarStart(){
   document.getElementById('richting-pijl').style.display='none';
   if(misserAutoTimer){ clearTimeout(misserAutoTimer); misserAutoTimer=null; }
   vlagGrond.style.display='none'; vlagValt.style.display='none';
+  bouwScoreTickers();
 }
 
 function toonGetalOpBord(container, getal, kleur){
