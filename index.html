@@ -50,6 +50,7 @@
       background:linear-gradient(135deg, #051e30 0%, #0a2a4a 100%);
       position:relative; overflow-y:auto;
       zoom:1.4;
+      transition:width 0.35s ease;
     }
     #start-rechts::before {
       content:''; position:absolute; inset:0;
@@ -225,13 +226,19 @@
       background:linear-gradient(135deg, #0a2a4a 0%, #051e30 100%);
       border:1px solid rgba(255,215,0,0.25);
       border-radius:18px; padding:28px 30px;
-      width:min(480px, 88vw); max-height:82vh;
+      width:min(880px, 94vw); max-height:82vh;
       display:flex; flex-direction:column; gap:14px;
       box-shadow:0 20px 60px rgba(0,0,0,0.6);
     }
     #scorebord-titel { color:#ffd700; font-size:1.3rem; font-weight:900; text-align:center; }
     #scorebord-nieuwe-run { color:#9fd8ff; font-size:0.85rem; text-align:center; font-weight:600; min-height:1.1em; }
-    #scorebord-lijst { display:flex; flex-direction:column; gap:6px; overflow-y:auto; }
+    #scorebord-kolommen { display:flex; gap:20px; overflow:hidden; min-height:0; }
+    .scorebord-kolom { flex:1; min-width:0; display:flex; flex-direction:column; gap:8px; }
+    .scorebord-kolom-titel {
+      color:#ffd700; font-size:0.95rem; font-weight:800; text-align:center;
+      letter-spacing:0.02em; border-bottom:1px solid rgba(255,215,0,0.25); padding-bottom:6px;
+    }
+    .scorebord-kolom-lijst { display:flex; flex-direction:column; gap:6px; overflow-y:auto; }
     .scorebord-rij {
       display:flex; align-items:center; gap:10px;
       background:rgba(255,255,255,0.06); border-radius:10px; padding:8px 12px;
@@ -243,6 +250,10 @@
     .scorebord-km { font-weight:800; color:#ffe566; }
     .scorebord-tijd { color:rgba(255,255,255,0.55); font-size:0.78rem; width:4.2em; text-align:right; }
     #scorebord-leeg { color:rgba(255,255,255,0.5); font-size:0.85rem; text-align:center; padding:10px 0; }
+    .scorebord-leeg-klein { color:rgba(255,255,255,0.45); font-size:0.78rem; text-align:center; padding:10px 0; }
+    @media (max-width:640px) {
+      #scorebord-kolommen { flex-direction:column; overflow-y:auto; }
+    }
     #scorebord-terug-btn {
       background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.25);
       color:#fff; font-size:0.85rem; font-weight:700; padding:10px; border-radius:12px;
@@ -275,16 +286,16 @@
 
     /* ── JOKER ── */
     /* ── SPIEK-KNOP (bediening tijdens spelen/verkennen) ── */
+    /* Zelfde formaat als .richting-knop, en er precies boven gestapeld: */
     #bediening-spiek-knop {
-      position:fixed; left:clamp(12px,2vmin,24px); bottom:clamp(12px,2vmin,24px); z-index:20;
-      width:clamp(46px,6.5vmin,60px); height:clamp(46px,6.5vmin,60px); border-radius:50%;
-      display:flex; align-items:center; justify-content:center;
-      background:linear-gradient(180deg, rgba(64,42,20,0.85), rgba(28,16,7,0.85));
-      border:1.5px solid rgba(255,215,0,0.45);
-      color:#ffe9a8; font-size:1.3rem; font-weight:900;
+      position:fixed; right:22px;
+      bottom:calc(22px + clamp(75px,10.9vmin,135px)/0.7424 + 14px + clamp(52px,8vmin,86px)*2 + 12px + 14px);
+      z-index:20;
+      width:clamp(52px,8vmin,86px); height:clamp(52px,8vmin,86px);
       cursor:pointer; transition:transform 0.15s;
-      box-shadow:0 4px 14px rgba(0,0,0,0.45), inset 0 0 10px rgba(255,215,0,0.1);
+      filter:drop-shadow(0 3px 8px rgba(0,0,0,0.5));
     }
+    #bediening-spiek-knop img { width:100%; height:100%; object-fit:contain; display:block; }
     #bediening-spiek-knop:hover { transform:scale(1.08); }
 
     #joker-knop {
@@ -478,7 +489,7 @@
 
 <!-- STARTSCHERM -->
 <div id="startscherm">
-  <div id="versie-label">v0.2.13</div>
+  <div id="versie-label">v0.2.16</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -608,7 +619,16 @@
   <div id="scorebord-kaart">
     <div id="scorebord-titel"></div>
     <div id="scorebord-nieuwe-run"></div>
-    <div id="scorebord-lijst"></div>
+    <div id="scorebord-kolommen">
+      <div class="scorebord-kolom">
+        <div class="scorebord-kolom-titel">🌍 All-time</div>
+        <div id="scorebord-lijst-alltime" class="scorebord-kolom-lijst"></div>
+      </div>
+      <div class="scorebord-kolom">
+        <div class="scorebord-kolom-titel">📅 Vandaag</div>
+        <div id="scorebord-lijst-vandaag" class="scorebord-kolom-lijst"></div>
+      </div>
+    </div>
     <button id="scorebord-terug-btn" onclick="naarStart()">← Terug naar menu</button>
   </div>
 </div>
@@ -616,7 +636,7 @@
 <!-- SPELSCHERM -->
 <div id="spelscherm">
   <canvas id="globe"></canvas>
-  <button id="bediening-spiek-knop" onclick="openHulp()" aria-label="Bediening bekijken">❓</button>
+  <button id="bediening-spiek-knop" onclick="openHulp()" aria-label="Bediening bekijken"><img src="images/bediening.png" alt="Bediening"/></button>
   <div id="intro-titel"></div>
   <img id="wonky" src="images/Wonky.png" alt="Wonky"/>
   <img id="wonky-frontaal" src="images/Timbo_frontaal.png" alt="Wonky frontaal" style="position:fixed;width:clamp(83px, 6.77vmin, 148px);pointer-events:none;z-index:11;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));"/>
@@ -783,6 +803,34 @@ let alleLandenFeatureMap = {};
 })();
 
 // ── Startscherm ───────────────────────────────────────
+// Maakt het menupaneel (#start-rechts) 33% breder dan zijn normale breedte en
+// laat het als overlay over de vliegtuigafbeelding heen schuiven, zodra een
+// continent (Europa/Wereld) is uitgeklapt — en weer terug bij inklappen.
+let menuUitgeklaptTimer=null;
+function zetMenuUitgeklapt(open){
+  const rechts = document.getElementById('start-rechts');
+  if(menuUitgeklaptTimer){ clearTimeout(menuUitgeklaptTimer); menuUitgeklaptTimer=null; }
+  if(open){
+    if(!rechts.dataset.breedteNormaal){
+      rechts.dataset.breedteNormaal = rechts.getBoundingClientRect().width;
+    }
+    const normBreedte = parseFloat(rechts.dataset.breedteNormaal);
+    rechts.style.position='absolute'; rechts.style.top='0'; rechts.style.right='0'; rechts.style.bottom='0';
+    rechts.style.zIndex='5';
+    rechts.style.width = normBreedte+'px'; // eerst exact de huidige breedte, geen sprong
+    requestAnimationFrame(()=>{
+      rechts.style.width = (normBreedte*1.33)+'px'; // dan vloeiend naar 33% breder
+    });
+  } else {
+    const normBreedte = parseFloat(rechts.dataset.breedteNormaal||0);
+    rechts.style.width = normBreedte+'px'; // vloeiend terug naar de normale breedte
+    menuUitgeklaptTimer = setTimeout(()=>{
+      // pas ná de animatie weer gewoon onderdeel maken van de flex-layout
+      rechts.style.position=''; rechts.style.top=''; rechts.style.right=''; rechts.style.bottom='';
+      rechts.style.width=''; rechts.style.zIndex='';
+    }, 380);
+  }
+}
 function bouwStartscherm() {
   const lijst = document.getElementById('level-lijst');
   lijst.innerHTML = '';
@@ -798,6 +846,8 @@ function bouwStartscherm() {
     kop.onclick = () => {
       kop.classList.toggle('open');
       subLijst.classList.toggle('open');
+      const iemandOpen = document.querySelector('.menu-groep-kop.open') !== null;
+      zetMenuUitgeklapt(iemandOpen);
     };
 
     // Subregio-lijst (initieel ingeklapt)
@@ -1154,11 +1204,34 @@ function opslaanScore(levelNr, naam, km, tijdSec){
   const nieuweRun={naam, km, tijd:tijdSec, datum:Date.now()};
   lijst.push(nieuweRun);
   lijst.sort((a,b)=>a.km-b.km); // laagste km bovenaan = beste
-  lijst=lijst.slice(0,50);
+  // Ruim hoger dan de top 20 die getoond wordt, zodat de scores van "vandaag"
+  // niet per ongeluk verdwijnen doordat er ooit betere all-time scores waren.
+  lijst=lijst.slice(0,300);
   localStorage.setItem(scorebordSleutel(levelNr), JSON.stringify(lijst));
   return {lijst, nieuweRun};
 }
 function formatTijd(sec){ const m=Math.floor(sec/60), s=sec%60; return m+':'+String(s).padStart(2,'0'); }
+// Vergelijkt alleen de kalenderdag (niet het exacte tijdstip), zodat "vandaag"
+// klopt ongeacht hoe laat een run precies gespeeld is.
+function isVandaag(timestampMs){
+  const nu=new Date(), d=new Date(timestampMs);
+  return nu.getFullYear()===d.getFullYear() && nu.getMonth()===d.getMonth() && nu.getDate()===d.getDate();
+}
+function bouwScorebordKolom(elId, runs, nieuweRun){
+  const el=document.getElementById(elId);
+  el.innerHTML='';
+  if(runs.length===0){
+    el.innerHTML='<div class="scorebord-leeg-klein">Nog geen scores</div>';
+    return;
+  }
+  runs.forEach((run,i)=>{
+    const isEigen = nieuweRun && run.datum===nieuweRun.datum && run.naam===nieuweRun.naam;
+    const rij=document.createElement('div');
+    rij.className='scorebord-rij'+(isEigen?' is-eigen':'');
+    rij.innerHTML=`<div class="scorebord-plek">${i+1}</div><div class="scorebord-naam">${run.naam}</div><div class="scorebord-km">${run.km} km</div><div class="scorebord-tijd">${formatTijd(run.tijd)}</div>`;
+    el.appendChild(rij);
+  });
+}
 function toonScorebord(levelId, nieuweRun){
   const lv=LEVELS[levelId];
   let lijst=[];
@@ -1169,19 +1242,12 @@ function toonScorebord(levelId, nieuweRun){
     ? 'Jouw resultaat: '+nieuweRun.km+' km in '+formatTijd(nieuweRun.tijd)
     : '';
 
-  const lijstEl=document.getElementById('scorebord-lijst');
-  lijstEl.innerHTML='';
-  if(lijst.length===0){
-    lijstEl.innerHTML='<div id="scorebord-leeg">Nog geen scores voor dit level. Wees de eerste!</div>';
-  } else {
-    lijst.forEach((run,i)=>{
-      const isEigen = nieuweRun && run.datum===nieuweRun.datum && run.naam===nieuweRun.naam;
-      const rij=document.createElement('div');
-      rij.className='scorebord-rij'+(isEigen?' is-eigen':'');
-      rij.innerHTML=`<div class="scorebord-plek">${i+1}</div><div class="scorebord-naam">${run.naam}</div><div class="scorebord-km">${run.km} km</div><div class="scorebord-tijd">${formatTijd(run.tijd)}</div>`;
-      lijstEl.appendChild(rij);
-    });
-  }
+  // lijst is al gesorteerd op km (laagste/beste eerst) - dus gewoon de eerste
+  // 20 pakken voor all-time, en voor "vandaag" eerst filteren en dan top 20.
+  const alltime = lijst.slice(0,20);
+  const vandaag = lijst.filter(r=>isVandaag(r.datum)).slice(0,20);
+  bouwScorebordKolom('scorebord-lijst-alltime', alltime, nieuweRun);
+  bouwScorebordKolom('scorebord-lijst-vandaag', vandaag, nieuweRun);
 
   document.getElementById('spelscherm').style.display='none';
   document.getElementById('scorebord-scherm').style.display='flex';
