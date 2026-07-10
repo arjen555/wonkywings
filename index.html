@@ -518,7 +518,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.18</div>
+  <div id="versie-label">v0.2.19</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1093,6 +1093,9 @@ function laadIllustratie(naam, forceHerlaad) {
 function startSpel(levelId, modus) {
   spelerNaam = document.getElementById('naam-input').value.trim() || 'Speler';
   huidigLevel = levelId; huidigModus = modus; score = 0;
+  wachten = false; // vangnet: als een vorig level per ongeluk 'wachten' aan liet staan
+                    // (bijv. bij het afronden van het allerlaatste land), mag dat een
+                    // nieuw level nooit blokkeren - zie ook de fix in nieuwLand().
   const lv = LEVELS[levelId];
   if(!lv || !lv.beschikbaar) return;
   wonkyLon=lv.start.lon; wonkyLat=lv.start.lat;
@@ -1472,6 +1475,8 @@ function nieuwLand(){
   document.getElementById('correctie-land-naam').style.opacity='0';
   huidigLandIdx++;
   if(huidigLandIdx>=spelLanden.length){
+    wachten=false; // level is klaar: dit was de laatste return in de functie, dus
+                    // zonder deze regel bleef 'wachten' hier op true staan
     laatsteLevelTijd = levelStartTijd ? Math.round((performance.now()-levelStartTijd)/1000) : 0;
     if(huidigModus==='spelen'){
       const {nieuweRun} = opslaanScore(huidigLevel, spelerNaam, score, laatsteLevelTijd);
