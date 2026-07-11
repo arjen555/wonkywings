@@ -544,7 +544,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.27</div>
+  <div id="versie-label">v0.2.28</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1165,6 +1165,7 @@ let vluchtActief=false, vluchtStartTijd=0, vluchtDuur=0;
 // ── Hoofdsteden-modus: geen km-score/highscore, wel een goed/totaal-teller ──
 let hoofdstedenGoed=0, hoofdstedenTotaal=0;
 let vluchtIsHoofdstad=false, vluchtIsGoed=false, vluchtHoofdstadNaam='', vluchtGevallenLandNaam='';
+let hoofdstedenRevealLand=null; // welk land z'n hoofdstad moet gloeien (na het droppen van het vlaggetje)
 let correctieLabelDubbel=null; // {hoofdstad, land} - zet het correctie-label in dual-tekst-modus
 let vluchtStartVec=null, vluchtEindVec=null, vluchtEindLon=0, vluchtEindLat=0;
 let vluchtScoreVoor=0, vluchtScoreNa=0, vluchtAfwijkingKm=0, vluchtDoelLand=null;
@@ -1714,6 +1715,7 @@ function nieuwLand(){
   vlagGrond.style.display='none';
   correctieLand=null;
   correctieLabelDubbel=null;
+  hoofdstedenRevealLand=null;
   misserAutoTimer=null;
   goedAutoTimer=null;
   stopMisserCountdown();
@@ -2296,6 +2298,16 @@ function tekenFocusStip(sx,sy){
 // duidelijk andere kleur (goud) dan Wonky's eigen blauwe positie-stip, en
 // zichtbaar op elk zoomniveau - dit is het enige visuele aanknopingspunt
 // zolang landenafbeeldingen in deze modus uitstaan.
+// Rustige, platte stip - voor alle hoofdsteden van de ronde tegelijk, geen
+// pulserende animatie (dat wordt te druk als er meerdere tegelijk staan).
+function tekenHoofdstadStipRustig(sx,sy){
+  ctx.beginPath(); ctx.arc(sx,sy,4,0,Math.PI*2);
+  ctx.fillStyle='#ffd700'; ctx.fill();
+  ctx.lineWidth=1.1; ctx.strokeStyle='#7a4a00'; ctx.stroke();
+}
+// Gloeiende/pulserende stip - alleen voor de hoofdstad die zojuist de
+// opdracht was, ná het droppen van het vlaggetje (goed of fout), als
+// bevestiging/onthulling van waar die hoofdstad precies ligt.
 function tekenHoofdstadStip(sx,sy){
   const puls=(Math.sin(Date.now()/450)+1)/2;
   const gloedR=9+puls*8;
@@ -2570,11 +2582,15 @@ function drawGlobe(){
 
   tekenFocusStip(focusSx,focusSy);
 
-  if(spelActief && huidigLand && LEVELS[huidigLevel] && LEVELS[huidigLevel].hoofdsteden){
-    const cap = HOOFDSTEDEN[huidigLand];
-    if(cap){
+  if(spelActief && LEVELS[huidigLevel] && LEVELS[huidigLevel].hoofdsteden){
+    for(const land of spelLanden){
+      const cap = HOOFDSTEDEN[land];
+      if(!cap) continue;
       const p3=roteerPunt(lonLatTo3D(cap.lon,cap.lat),rotM);
-      if(p3[2]>0) tekenHoofdstadStip(CX+p3[0]*R, CY-p3[1]*R);
+      if(p3[2]<=0) continue;
+      const sx=CX+p3[0]*R, sy=CY-p3[1]*R;
+      if(land===hoofdstedenRevealLand) tekenHoofdstadStip(sx,sy);
+      else tekenHoofdstadStipRustig(sx,sy);
     }
   }
 
@@ -3228,6 +3244,7 @@ function dropVlaggetje(){
       hoofdstedenTotaal++;
       if(isGoed) hoofdstedenGoed++;
       updateHoofdstedenTeller();
+      hoofdstedenRevealLand = huidigLand; // vanaf nu mag deze hoofdstad gloeien
       toonReactie(isGoed ? 'blij' : (afwijkingKm>=100 ? 'sad' : 'blij'));
       const cap = HOOFDSTEDEN[huidigLand];
       const gevallenLand = getLandOpPunt(dropLon,dropLat);
