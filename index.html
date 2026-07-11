@@ -565,7 +565,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.32</div>
+  <div id="versie-label">v0.2.33</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -578,7 +578,7 @@
     </div>
     <div id="level-lijst"></div>
     <label id="illustraties-schakelaar-rij">
-      <span>Landenafbeeldingen</span>
+      <span>Inzoomen = meer zien van het land</span>
       <span class="schakelaar">
         <input type="checkbox" id="illustraties-schakelaar" checked onchange="zetIllustratiesAan(this.checked)"/>
         <span class="schakelaar-bol"></span>
@@ -896,6 +896,7 @@ const HOOFDSTEDEN = {
   "Venezuela":{naam:"Caracas",lon:-66.904,lat:10.480},
   "Guyana":{naam:"Georgetown",lon:-58.163,lat:6.801},
   "Suriname":{naam:"Paramaribo",lon:-55.203,lat:5.867},
+  "Frans Guyana":{naam:"Cayenne",lon:-52.326,lat:4.908},
   "Brazilië":{naam:"Brasilia",lon:-47.883,lat:-15.794},
   "Ecuador":{naam:"Quito",lon:-78.467,lat:-0.180},
   "Peru":{naam:"Lima",lon:-77.043,lat:-12.046},
@@ -997,10 +998,10 @@ const MENU = [
         landen:["Nederland","België","Duitsland","Frankrijk","Verenigd Koninkrijk","Ierland","Luxemburg","Oostenrijk","Zwitserland","Denemarken"],
         altijd_alle:false, beschikbaar:true, hoofdsteden:true },
       { id:'hs-amerika', naam:'Amerika', start:{lon:-80, lat:15},
-        landen:["Canada","Verenigde Staten","Mexico","Guatemala","Belize","Honduras","El Salvador","Nicaragua","Costa Rica","Panama","Cuba","Haïti","Dominicaanse Republiek","Colombia","Venezuela","Guyana","Suriname","Brazilië","Ecuador","Peru","Bolivia","Chili","Argentinië","Uruguay","Paraguay"],
+        landen:["Canada","Verenigde Staten","Mexico","Guatemala","Belize","Honduras","El Salvador","Nicaragua","Costa Rica","Panama","Cuba","Haïti","Dominicaanse Republiek","Colombia","Venezuela","Guyana","Suriname","Frans Guyana","Brazilië","Ecuador","Peru","Bolivia","Chili","Argentinië","Uruguay","Paraguay"],
         altijd_alle:false, beschikbaar:true, hoofdsteden:true },
       { id:'hs-zuid-amerika', naam:'Zuid-Amerika', start:{lon:-60, lat:-15},
-        landen:["Colombia","Venezuela","Guyana","Suriname","Brazilië","Ecuador","Peru","Bolivia","Chili","Argentinië","Uruguay","Paraguay"],
+        landen:["Colombia","Venezuela","Guyana","Suriname","Frans Guyana","Brazilië","Ecuador","Peru","Bolivia","Chili","Argentinië","Uruguay","Paraguay"],
         altijd_alle:false, beschikbaar:true, hoofdsteden:true },
       { id:'hs-afrika', naam:'Afrika', start:{lon:20, lat:5},
         landen:["Marokko","Egypte","Soedan","Kenia","Tanzania","Namibië","Angola","Congo-Kinshasa","Libië","Algerije","Ethiopië","Madagaskar","Nigeria","Botswana","Zimbabwe","Kameroen"],
@@ -1574,7 +1575,7 @@ function opslaanScore(levelNr, naam, km, tijdSec){
   try{ lijst=JSON.parse(localStorage.getItem(scorebordSleutel(levelNr))||'[]'); }catch(e){ lijst=[]; }
   const nieuweRun={naam, km, tijd:tijdSec, datum:Date.now()};
   lijst.push(nieuweRun);
-  lijst.sort((a,b)=>a.km-b.km); // laagste km bovenaan = beste
+  lijst.sort((a,b)=> (a.km-b.km) || (a.tijd-b.tijd) ); // laagste km bovenaan, bij gelijke km de snelste tijd
   // Ruim hoger dan de top 20 die getoond wordt, zodat de scores van "vandaag"
   // niet per ongeluk verdwijnen doordat er ooit betere all-time scores waren.
   lijst=lijst.slice(0,300);
@@ -2639,7 +2640,7 @@ function drawGlobe(){
   // ook al schuift de camera daarbij niet verder in.
   const illustratieMax = zoomNiveauMaxVoorHuidigLand();
   const illustratieOmslagpunt = ZOOM_OMSLAGPUNT * illustratieMax;
-  if(zoomNiveau>=illustratieOmslagpunt){
+  if(illustratiesAan && zoomNiveau>=illustratieOmslagpunt){
     const WAAS = 0.0;   // bij het omslagpunt volledig onzichtbaar, loopt snel op naar vol
     let voortgang = (zoomNiveau - illustratieOmslagpunt) / (illustratieMax - illustratieOmslagpunt);
     voortgang = Math.max(0, Math.min(1, voortgang));
