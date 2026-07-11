@@ -34,6 +34,14 @@
     .score-ticker-kop { color:#ffd700; font-weight:800; }
     .score-ticker-namen { color:rgba(255,255,255,0.8); }
     /* ── STARTSCHERM ── */
+    #hoofdsteden-teller {
+      background:linear-gradient(180deg, rgba(64,42,20,0.85), rgba(28,16,7,0.85));
+      border:1.5px solid rgba(255,215,0,0.45);
+      color:#ffe9a8; font-size:1rem; font-weight:800;
+      padding:8px 18px; border-radius:14px;
+      box-shadow:0 3px 12px rgba(0,0,0,0.4), inset 0 0 10px rgba(255,215,0,0.1);
+      text-shadow:0 1px 3px rgba(0,0,0,0.65);
+    }
     #illustraties-schakelaar-rij {
       display:flex; align-items:center; justify-content:space-between; gap:12px;
       width:100%; padding:8px 4px; color:rgba(255,255,255,0.85); font-size:0.85rem; cursor:pointer;
@@ -536,7 +544,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.25</div>
+  <div id="versie-label">v0.2.26</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -763,6 +771,7 @@
       </div>
       <span id="tijd-display" style="display:none">⏱ 0:00</span>
       <span id="score" style="display:none">0</span>
+      <div id="hoofdsteden-teller" style="display:none">🏛️ 0 / 0 goed</div>
     </div>
   </div>
   <div id="hud-bottom">
@@ -795,6 +804,114 @@ const GEOJSON = {"type":"FeatureCollection","features":[{"type":"Feature","prope
 // Elke groep heeft: label, icoon, kleur, en een array van levels.
 // Elk level heeft: id (uniek), naam, start, landen, altijd_alle, beschikbaar.
 // hoofdsteden-modus wordt later ingevuld; de sleutel 'hoofdsteden' is al gereserveerd.
+
+// ── Hoofdsteden (voor de Hoofdsteden-speelmodus) ──────
+// Handmatig samengesteld en op zichzelf gecontroleerd (geen multi-punt pad
+// zoals bij rivieren, dus veel kleiner foutrisico), maar laat het weten als
+// er ergens een stip niet klopt.
+const HOOFDSTEDEN = {
+  "Nederland":{naam:"Amsterdam",lon:4.895,lat:52.370},
+  "België":{naam:"Brussel",lon:4.352,lat:50.846},
+  "Duitsland":{naam:"Berlijn",lon:13.405,lat:52.520},
+  "Frankrijk":{naam:"Parijs",lon:2.349,lat:48.857},
+  "Verenigd Koninkrijk":{naam:"Londen",lon:-0.128,lat:51.507},
+  "Ierland":{naam:"Dublin",lon:-6.267,lat:53.349},
+  "Luxemburg":{naam:"Luxemburg",lon:6.130,lat:49.611},
+  "Oostenrijk":{naam:"Wenen",lon:16.373,lat:48.208},
+  "Zwitserland":{naam:"Bern",lon:7.447,lat:46.948},
+  "Spanje":{naam:"Madrid",lon:-3.703,lat:40.417},
+  "Portugal":{naam:"Lissabon",lon:-9.139,lat:38.722},
+  "Italië":{naam:"Rome",lon:12.496,lat:41.903},
+  "Griekenland":{naam:"Athene",lon:23.728,lat:37.984},
+  "Zweden":{naam:"Stockholm",lon:18.068,lat:59.329},
+  "Noorwegen":{naam:"Oslo",lon:10.752,lat:59.913},
+  "Denemarken":{naam:"Kopenhagen",lon:12.568,lat:55.676},
+  "Finland":{naam:"Helsinki",lon:24.945,lat:60.192},
+  "IJsland":{naam:"Reykjavik",lon:-21.895,lat:64.146},
+  "Estland":{naam:"Tallinn",lon:24.754,lat:59.437},
+  "Letland":{naam:"Riga",lon:24.106,lat:56.949},
+  "Litouwen":{naam:"Vilnius",lon:25.279,lat:54.687},
+  "Rusland":{naam:"Moskou",lon:37.618,lat:55.756},
+  "Polen":{naam:"Warschau",lon:21.012,lat:52.230},
+  "Oekraïne":{naam:"Kiev",lon:30.524,lat:50.450},
+  "Tsjechië":{naam:"Praag",lon:14.438,lat:50.076},
+  "Slowakije":{naam:"Bratislava",lon:17.107,lat:48.148},
+  "Hongarije":{naam:"Boedapest",lon:19.040,lat:47.498},
+  "Roemenië":{naam:"Boekarest",lon:26.103,lat:44.427},
+  "Bulgarije":{naam:"Sofia",lon:23.322,lat:42.698},
+  "Wit-Rusland":{naam:"Minsk",lon:27.567,lat:53.902},
+  "Moldavië":{naam:"Chisinau",lon:28.858,lat:47.010},
+  "Servië":{naam:"Belgrado",lon:20.457,lat:44.787},
+  "Kroatië":{naam:"Zagreb",lon:15.978,lat:45.815},
+  "Bosnië-Herzegovina":{naam:"Sarajevo",lon:18.413,lat:43.856},
+  "Slovenië":{naam:"Ljubljana",lon:14.505,lat:46.056},
+  "Albanië":{naam:"Tirana",lon:19.818,lat:41.328},
+  "Noord-Macedonië":{naam:"Skopje",lon:21.428,lat:41.997},
+  "Montenegro":{naam:"Podgorica",lon:19.263,lat:42.441},
+  "Kosovo":{naam:"Pristina",lon:21.166,lat:42.663},
+  "Canada":{naam:"Ottawa",lon:-75.695,lat:45.421},
+  "Verenigde Staten":{naam:"Washington D.C.",lon:-77.037,lat:38.907},
+  "Mexico":{naam:"Mexico-Stad",lon:-99.133,lat:19.433},
+  "Guatemala":{naam:"Guatemala-Stad",lon:-90.523,lat:14.634},
+  "Belize":{naam:"Belmopan",lon:-88.767,lat:17.251},
+  "Honduras":{naam:"Tegucigalpa",lon:-87.207,lat:14.072},
+  "El Salvador":{naam:"San Salvador",lon:-89.183,lat:13.692},
+  "Nicaragua":{naam:"Managua",lon:-86.251,lat:12.114},
+  "Costa Rica":{naam:"San José",lon:-84.091,lat:9.928},
+  "Panama":{naam:"Panama-Stad",lon:-79.517,lat:8.994},
+  "Cuba":{naam:"Havana",lon:-82.383,lat:23.133},
+  "Haïti":{naam:"Port-au-Prince",lon:-72.338,lat:18.594},
+  "Dominicaanse Republiek":{naam:"Santo Domingo",lon:-69.902,lat:18.486},
+  "Colombia":{naam:"Bogota",lon:-74.083,lat:4.711},
+  "Venezuela":{naam:"Caracas",lon:-66.904,lat:10.480},
+  "Guyana":{naam:"Georgetown",lon:-58.163,lat:6.801},
+  "Suriname":{naam:"Paramaribo",lon:-55.203,lat:5.867},
+  "Brazilië":{naam:"Brasilia",lon:-47.883,lat:-15.794},
+  "Ecuador":{naam:"Quito",lon:-78.467,lat:-0.180},
+  "Peru":{naam:"Lima",lon:-77.043,lat:-12.046},
+  "Bolivia":{naam:"La Paz",lon:-68.150,lat:-16.500},
+  "Chili":{naam:"Santiago",lon:-70.669,lat:-33.449},
+  "Argentinië":{naam:"Buenos Aires",lon:-58.382,lat:-34.604},
+  "Uruguay":{naam:"Montevideo",lon:-56.165,lat:-34.906},
+  "Paraguay":{naam:"Asunción",lon:-57.576,lat:-25.263},
+  "Marokko":{naam:"Rabat",lon:-6.849,lat:34.020},
+  "Egypte":{naam:"Caïro",lon:31.236,lat:30.044},
+  "Soedan":{naam:"Khartoum",lon:32.560,lat:15.501},
+  "Kenia":{naam:"Nairobi",lon:36.817,lat:-1.286},
+  "Tanzania":{naam:"Dodoma",lon:35.744,lat:-6.163},
+  "Namibië":{naam:"Windhoek",lon:17.084,lat:-22.560},
+  "Angola":{naam:"Luanda",lon:13.234,lat:-8.839},
+  "Congo-Kinshasa":{naam:"Kinshasa",lon:15.313,lat:-4.322},
+  "Libië":{naam:"Tripoli",lon:13.191,lat:32.887},
+  "Algerije":{naam:"Algiers",lon:3.087,lat:36.753},
+  "Ethiopië":{naam:"Addis Abeba",lon:38.747,lat:9.025},
+  "Madagaskar":{naam:"Antananarivo",lon:47.522,lat:-18.879},
+  "Nigeria":{naam:"Abuja",lon:7.489,lat:9.058},
+  "Botswana":{naam:"Gaborone",lon:25.913,lat:-24.658},
+  "Zimbabwe":{naam:"Harare",lon:31.053,lat:-17.825},
+  "Kameroen":{naam:"Yaoundé",lon:11.502,lat:3.848},
+  "China":{naam:"Peking",lon:116.407,lat:39.904},
+  "India":{naam:"New Delhi",lon:77.209,lat:28.614},
+  "Japan":{naam:"Tokio",lon:139.692,lat:35.690},
+  "Zuid-Korea":{naam:"Seoul",lon:126.978,lat:37.567},
+  "Pakistan":{naam:"Islamabad",lon:73.061,lat:33.684},
+  "Iran":{naam:"Teheran",lon:51.389,lat:35.689},
+  "Irak":{naam:"Bagdad",lon:44.366,lat:33.315},
+  "Saoedi-Arabië":{naam:"Riyad",lon:46.738,lat:24.713},
+  "Qatar":{naam:"Doha",lon:51.531,lat:25.286},
+  "Syrië":{naam:"Damascus",lon:36.279,lat:33.513},
+  "Turkije":{naam:"Ankara",lon:32.860,lat:39.933},
+  "Thailand":{naam:"Bangkok",lon:100.502,lat:13.756},
+  "Vietnam":{naam:"Hanoi",lon:105.834,lat:21.028},
+  "Cambodja":{naam:"Phnom Penh",lon:104.892,lat:11.556},
+  "Laos":{naam:"Vientiane",lon:102.630,lat:17.976},
+  "Maleisië":{naam:"Kuala Lumpur",lon:101.686,lat:3.139},
+  "Indonesië":{naam:"Jakarta",lon:106.845,lat:-6.208},
+  "Filipijnen":{naam:"Manilla",lon:120.984,lat:14.599},
+  "Singapore":{naam:"Singapore",lon:103.820,lat:1.352},
+  "Australië":{naam:"Canberra",lon:149.128,lat:-35.282},
+  "Nieuw-Zeeland":{naam:"Wellington",lon:174.776,lat:-41.286},
+};
 
 const MENU = [
   {
@@ -838,6 +955,29 @@ const MENU = [
       { id:'w-water', naam:'Water Wonder', start:{lon:10, lat:50},
         landen:[], altijd_alle:false, beschikbaar:false },
     
+    ]
+  },
+  {
+    id: 'hoofdsteden', label: 'Hoofdsteden', icoon: '🏛️', kleur: '#a8781a',
+    levels: [
+      { id:'hs-europa', naam:'Europa', start:{lon:20, lat:52},
+        landen:["Nederland","België","Duitsland","Frankrijk","Verenigd Koninkrijk","Ierland","Luxemburg","Oostenrijk","Zwitserland","Spanje","Portugal","Italië","Griekenland","Zweden","Noorwegen","Denemarken","Finland","IJsland","Estland","Letland","Litouwen","Rusland","Polen","Oekraïne","Tsjechië","Slowakije","Hongarije","Roemenië","Bulgarije","Wit-Rusland","Moldavië","Servië","Kroatië","Bosnië-Herzegovina","Slovenië","Albanië","Noord-Macedonië","Montenegro","Kosovo"],
+        altijd_alle:false, beschikbaar:true, hoofdsteden:true },
+      { id:'hs-west-europa', naam:'West-Europa', start:{lon:5, lat:50},
+        landen:["Nederland","België","Duitsland","Frankrijk","Verenigd Koninkrijk","Ierland","Luxemburg","Oostenrijk","Zwitserland","Denemarken"],
+        altijd_alle:false, beschikbaar:true, hoofdsteden:true },
+      { id:'hs-amerika', naam:'Amerika', start:{lon:-80, lat:15},
+        landen:["Canada","Verenigde Staten","Mexico","Guatemala","Belize","Honduras","El Salvador","Nicaragua","Costa Rica","Panama","Cuba","Haïti","Dominicaanse Republiek","Colombia","Venezuela","Guyana","Suriname","Brazilië","Ecuador","Peru","Bolivia","Chili","Argentinië","Uruguay","Paraguay"],
+        altijd_alle:false, beschikbaar:true, hoofdsteden:true },
+      { id:'hs-zuid-amerika', naam:'Zuid-Amerika', start:{lon:-60, lat:-15},
+        landen:["Colombia","Venezuela","Guyana","Suriname","Brazilië","Ecuador","Peru","Bolivia","Chili","Argentinië","Uruguay","Paraguay"],
+        altijd_alle:false, beschikbaar:true, hoofdsteden:true },
+      { id:'hs-afrika', naam:'Afrika', start:{lon:20, lat:5},
+        landen:["Marokko","Egypte","Soedan","Kenia","Tanzania","Namibië","Angola","Congo-Kinshasa","Libië","Algerije","Ethiopië","Madagaskar","Nigeria","Botswana","Zimbabwe","Kameroen"],
+        altijd_alle:false, beschikbaar:true, hoofdsteden:true },
+      { id:'hs-azie', naam:'Azië', start:{lon:100, lat:20},
+        landen:["Rusland","China","India","Japan","Zuid-Korea","Pakistan","Iran","Irak","Saoedi-Arabië","Qatar","Syrië","Turkije","Thailand","Vietnam","Cambodja","Laos","Maleisië","Indonesië","Filipijnen","Singapore","Australië","Nieuw-Zeeland"],
+        altijd_alle:false, beschikbaar:true, hoofdsteden:true },
     ]
   }
 ];
@@ -919,6 +1059,16 @@ function bouwStartscherm() {
     kop.className = 'menu-groep-kop';
     kop.innerHTML = `<span class="menu-groep-icoon">${groep.icoon}</span><span class="menu-groep-label">${groep.label}</span><span class="menu-groep-pijl">▶</span>`;
     kop.onclick = () => {
+      const gaatOpen = !kop.classList.contains('open');
+      // Accordion: sluit alle andere open balken zodra er een nieuwe opengaat
+      if(gaatOpen){
+        document.querySelectorAll('.menu-groep-kop.open').forEach(andereKop=>{
+          if(andereKop!==kop){
+            andereKop.classList.remove('open');
+            andereKop.nextElementSibling.classList.remove('open');
+          }
+        });
+      }
       kop.classList.toggle('open');
       subLijst.classList.toggle('open');
       const iemandOpen = document.querySelector('.menu-groep-kop.open') !== null;
@@ -1012,6 +1162,10 @@ let huidigLandIdx=0, huidigLand='', score=0, spelerNaam='';
 let levelStartTijd=0, laatsteLevelTijd=0;
 // Vlucht-animatie bij een misser: vliegtuigje volgt automatisch een gloeiende lijn naar het juiste land
 let vluchtActief=false, vluchtStartTijd=0, vluchtDuur=0;
+// ── Hoofdsteden-modus: geen km-score/highscore, wel een goed/totaal-teller ──
+let hoofdstedenGoed=0, hoofdstedenTotaal=0;
+let vluchtIsHoofdstad=false, vluchtIsGoed=false, vluchtHoofdstadNaam='', vluchtGevallenLandNaam='';
+let correctieLabelDubbel=null; // {hoofdstad, land} - zet het correctie-label in dual-tekst-modus
 let vluchtStartVec=null, vluchtEindVec=null, vluchtEindLon=0, vluchtEindLat=0;
 let vluchtScoreVoor=0, vluchtScoreNa=0, vluchtAfwijkingKm=0, vluchtDoelLand=null;
 let correctieLand=null, correctieLandStartTijd=0;
@@ -1138,6 +1292,20 @@ function laadIllustratie(naam, forceHerlaad) {
   }
 }
 
+// Toont de opdrachttekst: gewoon de landnaam, of "Hoofdstad van X" in de
+// hoofdsteden-modus.
+function updateHoofdstedenTeller(){
+  document.getElementById('hoofdsteden-teller').textContent =
+    '🏛️ ' + hoofdstedenGoed + ' / ' + hoofdstedenTotaal + ' goed';
+}
+function zetOpdrachtTekst(){
+  const el = document.getElementById('land-naam');
+  if(LEVELS[huidigLevel] && LEVELS[huidigLevel].hoofdsteden){
+    el.textContent = 'Hoofdstad van ' + huidigLand;
+  } else {
+    el.textContent = huidigLand;
+  }
+}
 function startSpel(levelId, modus) {
   spelerNaam = document.getElementById('naam-input').value.trim() || 'Speler';
   huidigLevel = levelId; huidigModus = modus; score = 0;
@@ -1146,6 +1314,11 @@ function startSpel(levelId, modus) {
                     // nieuw level nooit blokkeren - zie ook de fix in nieuwLand().
   const lv = LEVELS[levelId];
   if(!lv || !lv.beschikbaar) return;
+  hoofdstedenGoed=0; hoofdstedenTotaal=0;
+  const isHoofdsteden = !!lv.hoofdsteden;
+  document.getElementById('scorebord-wrap').style.display = isHoofdsteden ? 'none' : '';
+  document.getElementById('hoofdsteden-teller').style.display = isHoofdsteden ? 'block' : 'none';
+  if(isHoofdsteden) updateHoofdstedenTeller();
   wonkyLon=lv.start.lon; wonkyLat=lv.start.lat;
   lonSnelheid=0; latSnelheid=0;
   rotM=maakRotMatrix(wonkyLon,wonkyLat);
@@ -1210,7 +1383,7 @@ function startSpel(levelId, modus) {
     document.getElementById('land-naam').textContent='Vlieg vrij rond!';
   } else {
     document.getElementById('opdracht-label').textContent='✈ Vlieg naar...';
-    document.getElementById('land-naam').textContent=huidigLand;
+    zetOpdrachtTekst();
   }
   updateVoortgang();
   spelActief=true;
@@ -1418,7 +1591,7 @@ function vervangHuidigLand(){
     : lv.landen[Math.floor(Math.random()*lv.landen.length)]; // noodgeval: geen reserve meer
   spelLanden[huidigLandIdx]=nieuw;
   huidigLand=nieuw;
-  document.getElementById('land-naam').textContent=huidigLand;
+  zetOpdrachtTekst();
   laadIllustratie(huidigLand);
 }
 // ── Direct doorgaan (X-knop / dubbeltik / Enter) ──────
@@ -1534,6 +1707,7 @@ function schietRichtingpijl(doelPunt){
 function nieuwLand(){
   vlagGrond.style.display='none';
   correctieLand=null;
+  correctieLabelDubbel=null;
   misserAutoTimer=null;
   goedAutoTimer=null;
   stopMisserCountdown();
@@ -1543,7 +1717,11 @@ function nieuwLand(){
     wachten=false; // level is klaar: dit was de laatste return in de functie, dus
                     // zonder deze regel bleef 'wachten' hier op true staan
     laatsteLevelTijd = levelStartTijd ? Math.round((performance.now()-levelStartTijd)/1000) : 0;
-    if(huidigModus==='spelen'){
+    if(LEVELS[huidigLevel] && LEVELS[huidigLevel].hoofdsteden){
+      // Hoofdsteden-modus: geen km-highscore, gewoon een goed/totaal-samenvatting
+      toonFeedback('🏆 '+hoofdstedenGoed+' van de '+hoofdstedenTotaal+' hoofdsteden goed!','#ffd700');
+      setTimeout(naarStart,3000);
+    } else if(huidigModus==='spelen'){
       const {nieuweRun} = opslaanScore(huidigLevel, spelerNaam, score, laatsteLevelTijd);
       toonFeedback('🏆 Klaar! ('+laatsteLevelTijd+' sec)','#ffd700');
       setTimeout(()=>toonScorebord(huidigLevel, nieuweRun), 2000);
@@ -1554,7 +1732,7 @@ function nieuwLand(){
     return;
   }
   huidigLand=spelLanden[huidigLandIdx];
-  document.getElementById('land-naam').textContent=huidigLand;
+  zetOpdrachtTekst();
   updateVoortgang(); wachten=false;
 }
 
@@ -2254,14 +2432,24 @@ function drawGlobe(){
     else if(g.type==='MultiPolygon') for(const p of g.coordinates) tekenLand(p,vul,rand,dikte);
     if(glowNu>0) ctx.restore();
     if(isCorrectieLand){
-      // Middelpunt van het grootste deel van het land, voor het naamlabel
-      const polys3=f.geometry.type==='Polygon'?[f.geometry.coordinates]:f.geometry.coordinates;
-      const grootste=polys3.reduce((a,b)=>(b[0]&&b[0].length>(a[0]?a[0].length:0))?b:a,polys3[0]);
-      let sLon=0,sLat=0,n=0;
-      for(const [lo,la] of grootste[0]){ sLon+=lo; sLat+=la; n++; }
-      const midLon=sLon/n, midLat=sLat/n;
-      const p3=roteerPunt(lonLatTo3D(midLon,midLat),rotM);
-      if(p3[2]>0) correctieLandScherm={sx:CX+p3[0]*R, sy:CY-p3[1]*R, naam:dutch};
+      if(correctieLabelDubbel){
+        // Hoofdsteden-modus: label hoort exact op de hoofdstad-stip, niet op
+        // het middelpunt van het land (die liggen vaak ver uit elkaar).
+        const capPunt = HOOFDSTEDEN[huidigLand];
+        if(capPunt){
+          const p3=roteerPunt(lonLatTo3D(capPunt.lon,capPunt.lat),rotM);
+          if(p3[2]>0) correctieLandScherm={sx:CX+p3[0]*R, sy:CY-p3[1]*R, naam:dutch};
+        }
+      } else {
+        // Middelpunt van het grootste deel van het land, voor het naamlabel
+        const polys3=f.geometry.type==='Polygon'?[f.geometry.coordinates]:f.geometry.coordinates;
+        const grootste=polys3.reduce((a,b)=>(b[0]&&b[0].length>(a[0]?a[0].length:0))?b:a,polys3[0]);
+        let sLon=0,sLat=0,n=0;
+        for(const [lo,la] of grootste[0]){ sLon+=lo; sLat+=la; n++; }
+        const midLon=sLon/n, midLat=sLat/n;
+        const p3=roteerPunt(lonLatTo3D(midLon,midLat),rotM);
+        if(p3[2]>0) correctieLandScherm={sx:CX+p3[0]*R, sy:CY-p3[1]*R, naam:dutch};
+      }
     }
   }
 
@@ -2360,7 +2548,13 @@ function drawGlobe(){
 
   const correctieLabelEl=document.getElementById('correctie-land-naam');
   if(correctieLandScherm){
-    correctieLabelEl.textContent=correctieLandScherm.naam;
+    if(correctieLabelDubbel){
+      correctieLabelEl.innerHTML = '<div>'+correctieLabelDubbel.hoofdstad+'</div>'
+        + '<div style="font-size:0.75em;opacity:0.85;font-weight:600">'
+        + (correctieLabelDubbel.land || '—') + '</div>';
+    } else {
+      correctieLabelEl.textContent=correctieLandScherm.naam;
+    }
     correctieLabelEl.style.left=correctieLandScherm.sx+'px';
     correctieLabelEl.style.top=(correctieLandScherm.sy-22)+'px';
     correctieLabelEl.style.opacity='1';
@@ -2751,16 +2945,31 @@ function updateSpel(){
 
     if(tRuw>=1){
       vluchtActief=false;
-      score=vluchtScoreNa;
-      document.getElementById('score').textContent=score;
-      updateScorebordCijfers();
-      correctieLand=vluchtDoelLand;
-      correctieLandStartTijd=performance.now();
-      const foutTekst = FOUT_TEKSTEN[Math.floor(Math.random()*FOUT_TEKSTEN.length)];
-      toonFeedback(foutTekst,'#ff9900');
-      toonPunten(vluchtAfwijkingKm);
-      startMisserCountdown();
-      misserAutoTimer=setTimeout(nieuwLand,MISSER_AUTO_MS);
+      if(vluchtIsHoofdstad){
+        vluchtIsHoofdstad=false;
+        correctieLand=vluchtDoelLand;
+        correctieLandStartTijd=performance.now();
+        correctieLabelDubbel = { hoofdstad:vluchtHoofdstadNaam, land:vluchtGevallenLandNaam };
+        if(vluchtIsGoed){
+          toonFeedback('🎉 Goed zo!','#ffd700');
+        } else {
+          const foutTekst = FOUT_TEKSTEN[Math.floor(Math.random()*FOUT_TEKSTEN.length)];
+          toonFeedback(foutTekst,'#ff9900');
+        }
+        startMisserCountdown();
+        misserAutoTimer=setTimeout(nieuwLand,MISSER_AUTO_MS);
+      } else {
+        score=vluchtScoreNa;
+        document.getElementById('score').textContent=score;
+        updateScorebordCijfers();
+        correctieLand=vluchtDoelLand;
+        correctieLandStartTijd=performance.now();
+        const foutTekst = FOUT_TEKSTEN[Math.floor(Math.random()*FOUT_TEKSTEN.length)];
+        toonFeedback(foutTekst,'#ff9900');
+        toonPunten(vluchtAfwijkingKm);
+        startMisserCountdown();
+        misserAutoTimer=setTimeout(nieuwLand,MISSER_AUTO_MS);
+      }
     }
   } else if(!wachten){
   if(keys['ArrowLeft']  || keys['a'] || keys['A']) dx=-1;
@@ -2980,8 +3189,38 @@ function dropVlaggetje(){
     const doelLand=GEOJSON.features.find(f=>(f.properties.dutch||f.properties.name)===huidigLand);
     const uitkomst = doelLand ? berekenAfwijking(dropLon,dropLat,doelLand) : {km:0,punt:null};
     const afwijkingKm = Math.round(uitkomst.km);
+    const isGoed = (afwijkingKm===0 || !uitkomst.punt);
 
-    if(afwijkingKm===0 || !uitkomst.punt){
+    if(LEVELS[huidigLevel].hoofdsteden){
+      // ── Hoofdsteden-modus: altijd naar de hoofdstad-stip vliegen, geen km-score ──
+      hoofdstedenTotaal++;
+      if(isGoed) hoofdstedenGoed++;
+      updateHoofdstedenTeller();
+      toonReactie(isGoed ? 'blij' : (afwijkingKm>=100 ? 'sad' : 'blij'));
+      const cap = HOOFDSTEDEN[huidigLand];
+      const gevallenLand = getLandOpPunt(dropLon,dropLat);
+      zoomNiveau = Math.min(zoomNiveau, 0.5);
+      zetZoomIndicator(zoomNiveau);
+      setTimeout(()=>{
+        vluchtActief=true;
+        vluchtIsHoofdstad=true;
+        vluchtIsGoed=isGoed;
+        vluchtHoofdstadNaam = cap ? cap.naam : huidigLand;
+        vluchtGevallenLandNaam = gevallenLand ? (gevallenLand.properties.dutch||gevallenLand.properties.name) : '';
+        vluchtStartTijd=performance.now();
+        vluchtDuur=1300;
+        vluchtStartVec=lonLatTo3D(dropLon,dropLat);
+        vluchtEindLon = cap ? cap.lon : dropLon;
+        vluchtEindLat = cap ? cap.lat : dropLat;
+        vluchtEindVec=lonLatTo3D(vluchtEindLon,vluchtEindLat);
+        vluchtScoreVoor=score; vluchtScoreNa=score; // score blijft ongewijzigd in deze modus
+        vluchtAfwijkingKm=0;
+        vluchtDoelLand=doelLand;
+      }, FOUT_ZOOM_UIT_MS);
+      return;
+    }
+
+    if(isGoed){
       score+=afwijkingKm;
       document.getElementById('score').textContent=score;
       zetKmCijfers(score);
@@ -2998,6 +3237,7 @@ function dropVlaggetje(){
       zetZoomIndicator(zoomNiveau);
       setTimeout(()=>{
         vluchtActief=true;
+        vluchtIsHoofdstad=false;
         vluchtStartTijd=performance.now();
         vluchtDuur=Math.max(900, Math.min(3600, afwijkingKm*2.4)); // hoe verder ernaast, hoe langer de vlucht
         vluchtStartVec=lonLatTo3D(dropLon,dropLat);
