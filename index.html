@@ -565,7 +565,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.33</div>
+  <div id="versie-label">v0.2.35</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2280,39 +2280,53 @@ function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
   }
 
   // ── Vrij-zwevende landen: illustratie niet geclipped op landgrenzen ──
-  // Gebruik dit voor eilandengroepen waarbij de afbeelding de omringende
-  // zee bewust toont (bijv. Bahama's met dolfijnen). De bbox geeft de
-  // lon/lat-rechthoek waarover de afbeelding wordt uitgerekt.
+  // Gebruik dit voor kust-/eilandlanden waarbij de illustratie meer laat zien
+  // dan de exacte (vaak grillige) kustlijn - inclusief het stukje zee en de
+  // eilandjes eromheen, zoals op de originele afbeelding. De rand van de
+  // rechthoek vervaagt geleidelijk (geen harde knip), zodat het vloeiend
+  // overloopt in de rest van de kaart. De bbox geeft de lon/lat-rechthoek
+  // waarover de afbeelding wordt uitgerekt - kies 'm ruim genoeg voor de zee/
+  // eilandjes, maar niet zo ruim dat 'ie over buurlanden heen loopt.
   const VRIJ_ZWEVEND = {
     "Bahama's": { minLon:-80.5, maxLon:-72.5, minLat:20.8, maxLat:27.5 },
-    "Belize":   { minLon:-89.5, maxLon:-85.5, minLat:15.6, maxLat:18.8 },
   };
   if(VRIJ_ZWEVEND[dutch]){
     const bbox = VRIJ_ZWEVEND[dutch];
     const [,,mz]=roteerPunt(lonLatTo3D((bbox.minLon+bbox.maxLon)/2,(bbox.minLat+bbox.maxLat)/2),rotM);
     if(mz<=0.01) return;
-    const RASTER=12;
+    const RASTER=16; // iets fijner rooster dan voorheen, voor een vloeiendere vervaging
+    const VERVAGING=0.22; // hoeveel van de rechthoek (breedte/hoogte) gebruikt wordt om te vervagen
     const imgW=img.naturalWidth||img.width, imgH=img.naturalHeight||img.height;
+    const randFactor=(frac)=>{
+      const afstandTotRand=Math.min(frac, 1-frac);
+      return afstandTotRand>=VERVAGING ? 1 : afstandTotRand/VERVAGING;
+    };
     const hoek=[];
     for(let j=0;j<=RASTER;j++){
       const rij=[];
-      const lat=bbox.maxLat-(bbox.maxLat-bbox.minLat)*j/RASTER;
+      const fj=j/RASTER;
+      const lat=bbox.maxLat-(bbox.maxLat-bbox.minLat)*fj;
       for(let i=0;i<=RASTER;i++){
-        const lon=bbox.minLon+(bbox.maxLon-bbox.minLon)*i/RASTER;
+        const fi=i/RASTER;
+        const lon=bbox.minLon+(bbox.maxLon-bbox.minLon)*fi;
         const [x,y,z]=roteerPunt(lonLatTo3D(lon,lat),rotM);
-        rij.push({ zichtbaar:z>0, sx:CX+x*R, sy:CY-y*R, bx:i/RASTER*imgW, by:j/RASTER*imgH });
+        rij.push({ zichtbaar:z>0, sx:CX+x*R, sy:CY-y*R, bx:fi*imgW, by:fj*imgH, rand:randFactor(fi)*randFactor(fj) });
       }
       hoek.push(rij);
     }
     ctx.save();
-    ctx.globalAlpha=(doorzicht!==undefined?doorzicht:0.93);
+    const basisDoorzicht=(doorzicht!==undefined?doorzicht:0.93);
     for(let j=0;j<RASTER;j++){
       for(let i=0;i<RASTER;i++){
         const p00=hoek[j][i],p10=hoek[j][i+1],p01=hoek[j+1][i],p11=hoek[j+1][i+1];
-        if(p00.zichtbaar&&p10.zichtbaar&&p01.zichtbaar)
+        if(p00.zichtbaar&&p10.zichtbaar&&p01.zichtbaar){
+          ctx.globalAlpha=basisDoorzicht*((p00.rand+p10.rand+p01.rand)/3);
           tekenDriehoek(img,p00.bx,p00.by,p10.bx,p10.by,p01.bx,p01.by,p00.sx,p00.sy,p10.sx,p10.sy,p01.sx,p01.sy);
-        if(p10.zichtbaar&&p11.zichtbaar&&p01.zichtbaar)
+        }
+        if(p10.zichtbaar&&p11.zichtbaar&&p01.zichtbaar){
+          ctx.globalAlpha=basisDoorzicht*((p10.rand+p11.rand+p01.rand)/3);
           tekenDriehoek(img,p10.bx,p10.by,p11.bx,p11.by,p01.bx,p01.by,p10.sx,p10.sy,p11.sx,p11.sy,p01.sx,p01.sy);
+        }
       }
     }
     ctx.globalAlpha=1.0;
