@@ -544,7 +544,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.28</div>
+  <div id="versie-label">v0.2.29</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2583,7 +2583,7 @@ function drawGlobe(){
   tekenFocusStip(focusSx,focusSy);
 
   if(spelActief && LEVELS[huidigLevel] && LEVELS[huidigLevel].hoofdsteden){
-    for(const land of spelLanden){
+    for(const land of LEVELS[huidigLevel].landen){
       const cap = HOOFDSTEDEN[land];
       if(!cap) continue;
       const p3=roteerPunt(lonLatTo3D(cap.lon,cap.lat),rotM);
