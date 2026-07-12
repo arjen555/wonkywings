@@ -565,7 +565,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.37</div>
+  <div id="versie-label">v0.2.38</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1266,8 +1266,8 @@ const ZOOM_STAP_BASIS = 0.006;      // hoeveel zoomNiveau per frame verschuift b
 const ZOOM_VERSNELLING_MAX = 4;     // hoe veel sneller het maximaal wordt bij lang ingedrukt houden
 const ZOOM_VERSNELLING_TIJD = 1200; // ms tot volle versnelling
 let zHoudSinds = 0, xHoudSinds = 0;
-const DOEL_LAND_HOOGTE_FRACTIE = 0.65; // land moet 65% schermhoogte vullen bij volledig ingezoomd (niveau 1)
-const DOEL_LAND_BREEDTE_FRACTIE = 0.75; // land mag max. 75% schermbreedte vullen bij volledig ingezoomd
+const DOEL_LAND_HOOGTE_FRACTIE = 0.85; // land moet 85% schermhoogte vullen bij volledig ingezoomd (niveau 1)
+const DOEL_LAND_BREEDTE_FRACTIE = 0.9; // land mag max. 90% schermbreedte vullen bij volledig ingezoomd
 const ZOOM_REFERENTIE_MAX = 4.5; // 'typisch' maximum voor het grootste (stabiele) deel van de zoomrange
 const ZOOM_OMSLAGPUNT = 0.75;    // vanaf dit zoomniveau (0-1) past de zoom zich pas aan op het specifieke land
 const ZOOM_NIVEAU_MAX_RUSLAND = 0.5; // Rusland mag nooit verder inzoomen dan 50%, ongeacht de camera-ruimte die er nog is
@@ -2361,6 +2361,8 @@ function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
 // als je nog boven hetzelfde land vliegt
 let stand3LaatsteLand = null;
 let stand3DoelFactor = 8.1; // fallback (was: oude Landview-zoom 4.5 * 1.8)
+let stand3DoelFactorVloeiend = 8.1; // vertraagd meebewegende versie: voorkomt een schok in het zoom-maximum
+                                     // zodra je van het ene naar het andere land vliegt
 
 function berekenStand3Zoom() {
   if(!hoverLand){
@@ -3086,7 +3088,12 @@ function updateSpel(){
   // elke frame herberekend, en Z/X schuiven het zoomniveau (0-1) geleidelijk
   // op, met versnelling naarmate je de toets langer ingedrukt houdt.
   berekenStand3Zoom();
-  const dynamischMax = Math.max(stand3DoelFactor, ZOOM_MIN+0.01);
+  // Laat het zoom-maximum zelf ook vloeiend meebewegen naar zijn nieuwe waarde,
+  // in plaats van in één klap te verspringen zodra Wonky een grens oversteekt
+  // (van een klein naar een groot land, of andersom) - dat schokkerige gevoel
+  // zat 'm dus niet in de camerabeweging zelf, maar in het doel waar die naartoe bewoog.
+  stand3DoelFactorVloeiend += (stand3DoelFactor - stand3DoelFactorVloeiend) * 0.06;
+  const dynamischMax = Math.max(stand3DoelFactorVloeiend, ZOOM_MIN+0.01);
   // Geen ondergrens meer op de referentie: een reuzenland als Rusland mag bij
   // 100% ook écht minder ingezoomd blijven dan de referentie, zodat het
   // gewoon lekker in beeld past — ook al betekent dat een klein
