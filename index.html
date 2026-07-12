@@ -565,7 +565,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.36</div>
+  <div id="versie-label">v0.2.37</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2809,11 +2809,27 @@ function dropVlag(sx,sy,ex,ey){
 
 // ── Besturing ─────────────────────────────────────────
 const keys={};
+const keysLaatsteTijd={}; // per toets: wanneer kwam de laatste keydown binnen?
 document.addEventListener('keydown',e=>{
   keys[e.key]=true;
+  keysLaatsteTijd[e.key]=performance.now();
   if([' ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
 });
 document.addEventListener('keyup',e=>{ keys[e.key]=false; });
+
+// Vangnet tegen "vastzittende" toetsen door een gemiste keyup (bijv. door een
+// OS-toetsenbordlaag, sneltoets-conflict, of browser-eigenaardigheid die soms
+// een keyup-event laat wegvallen). Zolang een toets écht ingedrukt blijft,
+// stuurt de browser er zelf steeds opnieuw (elke ~30-50ms) een keydown-herhaling
+// voor - komt die herhaling een tijdje niet meer binnen terwijl de toets bij ons
+// nog als "ingedrukt" geregistreerd staat, dan was de keyup vrijwel zeker gemist:
+// dan zetten we 'm hier zelf terug op "los".
+function verwijderVastgelopenToetsen(){
+  const nu=performance.now();
+  for(const k in keys){
+    if(keys[k] && (nu-(keysLaatsteTijd[k]||0))>400) keys[k]=false;
+  }
+}
 
 // Voorkomt "vastzittende" toetsen: als het venster/tabblad focus verliest
 // (bijv. door een scroll-interactie of van tabblad wisselen) kan een keyup
@@ -3170,6 +3186,7 @@ function updateSpel(){
       }
     }
   } else if(!wachten){
+  verwijderVastgelopenToetsen();
   if(keys['ArrowLeft']  || keys['a'] || keys['A']) dx=-1;
   if(keys['ArrowRight'] || keys['d'] || keys['D']) dx= 1;
   if(keys['ArrowUp']    || keys['w'] || keys['W']) dy= 1;
