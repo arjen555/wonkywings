@@ -565,7 +565,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.41</div>
+  <div id="versie-label">v0.2.44</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1166,6 +1166,13 @@ const VRIJ_ZWEVEND = {
   // een vast vak op de werkelijke omvang van het land staat de tekening
   // tenminste weer op de juiste plek.
   "Indonesië": { minLon:94.5, maxLon:141.5, minLat:-11.5, maxLat:6.5 },
+  // Denemarken bestaat uit 15 losse stukjes (het vasteland van Jutland plus
+  // een heleboel eilanden) — dezelfde soort versplintering als Indonesië,
+  // alleen op veel kleinere schaal.
+  "Denemarken": { minLon:7.8, maxLon:15.3, minLat:54.4, maxLat:57.9 },
+  // De Filipijnen bestaan uit 97 losse eilanden - nog versplinterder dan
+  // Indonesië en Denemarken.
+  "Filipijnen": { minLon:116.5, maxLon:127.0, minLat:4.3, maxLat:21.5 },
 };
 const eilandengroepBBox = {};
 for(const naam in VRIJ_ZWEVEND){
@@ -1933,6 +1940,32 @@ function knipPunt(p1,p2){
   return [p1[0]+t*(p2[0]-p1[0]),p1[1]+t*(p2[1]-p1[1]),0];
 }
 
+// Hoeveel km de illustratie van een land over zijn eigen grens heen mag
+// "bleeden" - een klein beetje overlap met de buurman, zodat er nooit een
+// kiertje van de kale achtergrondkleur tussen twee landen door piept. Klein
+// gehouden met opzet: te veel en landen gaan zichtbaar over elkaar heen.
+const GRENS_OVERLAP_KM = 3;
+
+// Duwt elk punt van een ring een klein stukje (marge, in km) naar buiten toe,
+// weg van het eigen middelpunt van die ring. Geen wiskundig exacte
+// polygon-buffer, maar voor een paar km overlap ruim precies genoeg - en veel
+// eenvoudiger dan een echte polygon-offset-berekening.
+function bufferRingNaarBuiten(ring, margeKm){
+  if(!ring || ring.length<3) return ring;
+  let sLon=0, sLat=0;
+  for(const [lo,la] of ring){ sLon+=lo; sLat+=la; }
+  const n=ring.length;
+  const cLon=sLon/n, cLat=sLat/n;
+  const cosLat = Math.max(0.15, Math.cos(cLat*Math.PI/180));
+  return ring.map(([lo,la])=>{
+    const dLon=lo-cLon, dLat=la-cLat;
+    const afstandKm = Math.sqrt((dLon*cosLat*111)**2 + (dLat*111)**2);
+    if(afstandKm<0.01) return [lo,la]; // punt ligt al (nagenoeg) op het middelpunt
+    const factor = (afstandKm+margeKm)/afstandKm;
+    return [cLon+dLon*factor, cLat+dLat*factor];
+  });
+}
+
 // ── Landen tekenen ────────────────────────────────────
 function tekenRing(ring){
   if(!ring||ring.length<3) return;
@@ -2228,17 +2261,32 @@ function tekenPolyGroep(polysLijst,img,doorzicht,dutch){
   const [,,mz]=roteerPunt(lonLatTo3D(midLon,midLat),rotM);
   if(mz<=0.01) return; // middelpunt van het land niet naar de camera gekeerd
 
+  // De rasterbox (waar het plaatje overheen wordt uitgerekt) krijgt dezelfde
+  // GRENS_OVERLAP_KM-marge mee als de clip hierna - anders is er straks wel
+  // ruimte om in te tekenen, maar geen extra beeldinhoud om daar te laten
+  // zien (het plaatje zou dan gewoon weer bij de oude rand stoppen).
+  {
+    const buffLat = GRENS_OVERLAP_KM/111;
+    const buffLon = GRENS_OVERLAP_KM/(111*Math.max(0.15, Math.cos(midLat*Math.PI/180)));
+    minLon -= buffLon; maxLon += buffLon;
+    minLat -= buffLat; maxLat += buffLat;
+  }
+
   // Stap 3: clip = ALLE polygonen van DEZE groep (voorkomt uitsteken buiten de landgrens)
   // Hergebruikt tekenRing() — dezelfde precieze randmethode die ook de gewone
   // landkleuring gebruikt (inclusief het tussenpunt-trucje bij de horizon).
   // Zo loopt de clip-vorm van de illustratie altijd exact even ver door als de
   // landkleur eronder, en blijft er nooit een reepje van die onderliggende
   // kleur (bijv. het gele hover-geel) zichtbaar naast de rand van het plaatje.
+  // Elke rand wordt bovendien met GRENS_OVERLAP_KM naar buiten geduwd, zodat
+  // twee buurlanden elkaar net een klein beetje overlappen i.p.v. precies
+  // raken — dat voorkomt het dunne streepje kale achtergrondkleur dat anders
+  // soms tussen twee landen door piept.
   ctx.save();
   ctx.beginPath();
   for(const poly of polysLijst){
     if(!poly[0]||poly[0].length<3) continue;
-    tekenRing(poly[0]);
+    tekenRing(bufferRingNaarBuiten(poly[0], GRENS_OVERLAP_KM));
     ctx.closePath();
   }
   ctx.clip();
@@ -2383,9 +2431,9 @@ function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
       for(let i=0;i<RASTER;i++){
         const p00=hoek[j][i],p10=hoek[j][i+1],p01=hoek[j+1][i],p11=hoek[j+1][i+1];
         if(p00.zichtbaar&&p10.zichtbaar&&p01.zichtbaar)
-          tekenDriehoek(vervaagdImg,p00.bx,p00.by,p10.bx,p10.by,p01.bx,p01.by,p00.sx,p00.sy,p10.sx,p10.sy,p01.sx,p01.sy);
+          tekenDriehoek(vervaagdImg,p00.bx,p00.by,p10.bx,p10.by,p01.bx,p01.by,p00.sx,p00.sy,p10.sx,p10.sy,p01.sx,p01.sy,1.0);
         if(p10.zichtbaar&&p11.zichtbaar&&p01.zichtbaar)
-          tekenDriehoek(vervaagdImg,p10.bx,p10.by,p11.bx,p11.by,p01.bx,p01.by,p10.sx,p10.sy,p11.sx,p11.sy,p01.sx,p01.sy);
+          tekenDriehoek(vervaagdImg,p10.bx,p10.by,p11.bx,p11.by,p01.bx,p01.by,p10.sx,p10.sy,p11.sx,p11.sy,p01.sx,p01.sy,1.0);
       }
     }
     ctx.globalAlpha=1.0;
