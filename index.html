@@ -565,7 +565,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.39</div>
+  <div id="versie-label">v0.2.40</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1277,7 +1277,7 @@ const ZOOM_OMSLAGPUNT = 0.75;    // vanaf dit zoomniveau (0-1) past de zoom zich
 // zit. Voor die landen leggen we daarom een lager maximum zoomniveau vast.
 const ZOOM_NIVEAU_MAX_PER_LAND = {
   'Rusland': 0.5,
-  'Indonesië': 0.5,
+  'Indonesië': 0.65,
 };
 
 // Geeft het maximale zoomNiveau (0-1) terug voor het land waar Wonky nu boven vliegt.
@@ -1291,6 +1291,37 @@ function zoomNiveauMaxVoorHuidigLand(){
 
 // ── Illustraties ──────────────────────────────────────
 const landIllustraties = {};
+// Cache: per landnaam een vooraf pixel-voor-pixel vervaagde versie van de
+// illustratie, voor de vrij-zwevende landen (Bahama's, Belize, Indonesië).
+// Deze vervaging wordt maar één keer per plaatje uitgerekend (niet elke
+// frame opnieuw), en daarna hergebruikt — zie maakVervaagdeIllustratie().
+const vrijZwevendVervaagd = {};
+function maakVervaagdeIllustratie(bronImg, marge){
+  const w = bronImg.naturalWidth||bronImg.width, h = bronImg.naturalHeight||bronImg.height;
+  const off = document.createElement('canvas');
+  off.width = w; off.height = h;
+  const octx = off.getContext('2d');
+  octx.drawImage(bronImg, 0, 0, w, h);
+  const data = octx.getImageData(0, 0, w, h);
+  const px = data.data;
+  const randFactor=(frac)=>{
+    const afstandTotRand=Math.min(frac, 1-frac);
+    return afstandTotRand>=marge ? 1 : afstandTotRand/marge;
+  };
+  for(let y=0;y<h;y++){
+    const fy = randFactor(y/h);
+    for(let x=0;x<w;x++){
+      const fx = randFactor(x/w);
+      const fade = fx*fy;
+      if(fade<1){
+        const a = (y*w+x)*4+3;
+        px[a] = Math.round(px[a]*fade);
+      }
+    }
+  }
+  octx.putImageData(data, 0, 0);
+  return off;
+}
 function landNaarBestand(naam) {
   return naam
     .replace(/ë/g,'e').replace(/é/g,'e').replace(/è/g,'e').replace(/ê/g,'e')
@@ -2307,17 +2338,18 @@ function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
     // tenminste weer op de juiste plek.
     "Indonesië": { minLon:94.5, maxLon:141.5, minLat:-11.5, maxLat:6.5 },
   };
+  // Hoe ver (als fractie van breedte/hoogte van het vak) vanaf de rand de
+  // vervaging begint. Vanaf die grens wordt het plaatje geleidelijk
+  // transparanter, tot volledig transparant precies op de rand van het vak.
+  const VRIJ_ZWEVEND_VERVAGING = 0.10;
   if(VRIJ_ZWEVEND[dutch]){
     const bbox = VRIJ_ZWEVEND[dutch];
     const [,,mz]=roteerPunt(lonLatTo3D((bbox.minLon+bbox.maxLon)/2,(bbox.minLat+bbox.maxLat)/2),rotM);
     if(mz<=0.01) return;
-    const RASTER=16; // iets fijner rooster dan voorheen, voor een vloeiendere vervaging
-    const VERVAGING=0.22; // hoeveel van de rechthoek (breedte/hoogte) gebruikt wordt om te vervagen
+    if(!vrijZwevendVervaagd[dutch]) vrijZwevendVervaagd[dutch] = maakVervaagdeIllustratie(img, VRIJ_ZWEVEND_VERVAGING);
+    const vervaagdImg = vrijZwevendVervaagd[dutch];
+    const RASTER=16;
     const imgW=img.naturalWidth||img.width, imgH=img.naturalHeight||img.height;
-    const randFactor=(frac)=>{
-      const afstandTotRand=Math.min(frac, 1-frac);
-      return afstandTotRand>=VERVAGING ? 1 : afstandTotRand/VERVAGING;
-    };
     const hoek=[];
     for(let j=0;j<=RASTER;j++){
       const rij=[];
@@ -2327,23 +2359,19 @@ function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
         const fi=i/RASTER;
         const lon=bbox.minLon+(bbox.maxLon-bbox.minLon)*fi;
         const [x,y,z]=roteerPunt(lonLatTo3D(lon,lat),rotM);
-        rij.push({ zichtbaar:z>0, sx:CX+x*R, sy:CY-y*R, bx:fi*imgW, by:fj*imgH, rand:randFactor(fi)*randFactor(fj) });
+        rij.push({ zichtbaar:z>0, sx:CX+x*R, sy:CY-y*R, bx:fi*imgW, by:fj*imgH });
       }
       hoek.push(rij);
     }
     ctx.save();
-    const basisDoorzicht=(doorzicht!==undefined?doorzicht:0.93);
+    ctx.globalAlpha=(doorzicht!==undefined?doorzicht:0.93);
     for(let j=0;j<RASTER;j++){
       for(let i=0;i<RASTER;i++){
         const p00=hoek[j][i],p10=hoek[j][i+1],p01=hoek[j+1][i],p11=hoek[j+1][i+1];
-        if(p00.zichtbaar&&p10.zichtbaar&&p01.zichtbaar){
-          ctx.globalAlpha=basisDoorzicht*((p00.rand+p10.rand+p01.rand)/3);
-          tekenDriehoek(img,p00.bx,p00.by,p10.bx,p10.by,p01.bx,p01.by,p00.sx,p00.sy,p10.sx,p10.sy,p01.sx,p01.sy);
-        }
-        if(p10.zichtbaar&&p11.zichtbaar&&p01.zichtbaar){
-          ctx.globalAlpha=basisDoorzicht*((p10.rand+p11.rand+p01.rand)/3);
-          tekenDriehoek(img,p10.bx,p10.by,p11.bx,p11.by,p01.bx,p01.by,p10.sx,p10.sy,p11.sx,p11.sy,p01.sx,p01.sy);
-        }
+        if(p00.zichtbaar&&p10.zichtbaar&&p01.zichtbaar)
+          tekenDriehoek(vervaagdImg,p00.bx,p00.by,p10.bx,p10.by,p01.bx,p01.by,p00.sx,p00.sy,p10.sx,p10.sy,p01.sx,p01.sy);
+        if(p10.zichtbaar&&p11.zichtbaar&&p01.zichtbaar)
+          tekenDriehoek(vervaagdImg,p10.bx,p10.by,p11.bx,p11.by,p01.bx,p01.by,p10.sx,p10.sy,p11.sx,p11.sy,p01.sx,p01.sy);
       }
     }
     ctx.globalAlpha=1.0;
