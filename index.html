@@ -565,7 +565,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.40</div>
+  <div id="versie-label">v0.2.41</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2377,35 +2377,19 @@ function berekenStand3Zoom() {
     return;
   }
 
-  const geom = hoverLand.geometry;
-  const polysLijst = geom.type==='Polygon' ? [geom.coordinates] : geom.coordinates;
-  let grootstePoly=null, grootsteN=0;
-  for(const poly of polysLijst){
-    if(poly[0] && poly[0].length>grootsteN){ grootsteN=poly[0].length; grootstePoly=poly; }
-  }
-  if(!grootstePoly) return;
+  // Hergebruikt exact dezelfde gebied-berekening als de illustratie zelf
+  // (tekenPolyGroep/berekenLandBBoxGraden) - inclusief eventuele nabije
+  // eilanden die bij de illustratie horen (bijv. Bioko bij Equatoriaal-
+  // Guinea). Zonder dit gebruikte de camera alleen het grootste losse deel
+  // (het vasteland) om de zoom te bepalen, terwijl de afbeelding zelf over
+  // een breder gebied (vasteland + eiland) werd uitgerekt - met als gevolg
+  // dat er bij "100% zoom" maar een deel van de afbeelding in beeld paste.
+  const bbox = berekenLandBBoxGraden(hoverLand);
+  if(!bbox) return;
 
-  // Meet de hoogte van het land in graden breedtegraad (lat-bereik)
-  let minLat=Infinity, maxLat=-Infinity;
-  for(const [lon,lat] of grootstePoly[0]){
-    minLat=Math.min(minLat,lat); maxLat=Math.max(maxLat,lat);
-  }
-  const landHoogteGraden = Math.max(0.05, maxLat-minLat);
-  const gemLat = (minLat+maxLat)/2;
-
-  // Meet de breedte van het land in graden lengtegraad (lon-bereik).
-  // Let op: kan niet zomaar met max-min, want landen als Rusland lopen
-  // over de datumgrens (±180°) heen. Daarom zoeken we de grootste "lege
-  // hap" tussen de lengtegraden op een cirkel — de rest is het land.
-  const lons = grootstePoly[0].map(([lon]) => lon).slice().sort((a,b)=>a-b);
-  let grootsteHap = 0;
-  for(let i=0;i<lons.length;i++){
-    const huidige = lons[i];
-    const volgende = (i===lons.length-1) ? lons[0]+360 : lons[i+1];
-    const hap = volgende - huidige;
-    if(hap > grootsteHap) grootsteHap = hap;
-  }
-  const landBreedteGraden = Math.max(0.05, 360 - grootsteHap);
+  const landHoogteGraden = Math.max(0.05, bbox.maxLat-bbox.minLat);
+  const landBreedteGraden = Math.max(0.05, bbox.maxLon-bbox.minLon);
+  const gemLat = (bbox.minLat+bbox.maxLat)/2;
 
   const basisR = Math.min(W,H)*0.58;
   const pixelsPerGraadBasis = (basisR * Math.PI) / 180;
