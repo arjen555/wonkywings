@@ -565,7 +565,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.44</div>
+  <div id="versie-label">v0.2.45</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1328,11 +1328,18 @@ function zoomNiveauMaxVoorHuidigLand(){
 // ── Illustraties ──────────────────────────────────────
 const landIllustraties = {};
 // Cache: per landnaam een vooraf pixel-voor-pixel vervaagde versie van de
-// illustratie, voor de vrij-zwevende landen (Bahama's, Belize, Indonesië).
-// Deze vervaging wordt maar één keer per plaatje uitgerekend (niet elke
-// frame opnieuw), en daarna hergebruikt — zie maakVervaagdeIllustratie().
+// illustratie, voor de vrij-zwevende landen (Bahama's, Belize, Indonesië,
+// Denemarken, Filipijnen). Deze vervaging wordt maar één keer per plaatje
+// uitgerekend (niet elke frame opnieuw), en daarna hergebruikt — zie
+// maakVervaagdeIllustratie().
 const vrijZwevendVervaagd = {};
-function maakVervaagdeIllustratie(bronImg, marge){
+// margeFractieX/Y: hoe groot (als fractie van de breedte/hoogte van het
+// plaatje) de uitvloeizone is. Bewust apart per as, en vooraf al omgerekend
+// van een vast aantal KILOMETER naar een fractie — anders zou eenzelfde
+// percentage bij een breed vak (zoals Denemarken, dat tot aan Bornholm moet
+// reiken) een veel te dikke, in het echte land doorlopende waas geven,
+// terwijl het bij een compact vak (Belize) nauwelijks opvalt.
+function maakVervaagdeIllustratie(bronImg, margeFractieX, margeFractieY){
   const w = bronImg.naturalWidth||bronImg.width, h = bronImg.naturalHeight||bronImg.height;
   const off = document.createElement('canvas');
   off.width = w; off.height = h;
@@ -1340,14 +1347,14 @@ function maakVervaagdeIllustratie(bronImg, marge){
   octx.drawImage(bronImg, 0, 0, w, h);
   const data = octx.getImageData(0, 0, w, h);
   const px = data.data;
-  const randFactor=(frac)=>{
+  const randFactor=(frac, marge)=>{
     const afstandTotRand=Math.min(frac, 1-frac);
     return afstandTotRand>=marge ? 1 : afstandTotRand/marge;
   };
   for(let y=0;y<h;y++){
-    const fy = randFactor(y/h);
+    const fy = randFactor(y/h, margeFractieY);
     for(let x=0;x<w;x++){
-      const fx = randFactor(x/w);
+      const fx = randFactor(x/w, margeFractieX);
       const fade = fx*fy;
       if(fade<1){
         const a = (y*w+x)*4+3;
@@ -2400,15 +2407,25 @@ function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
   // uitleg — dat is nu de enige plek waar dit vak wordt vastgelegd, zodat de
   // tekenroute hier en de hoverLand-detectie verderop altijd exact hetzelfde
   // gebied gebruiken.
-  // Hoe ver (als fractie van breedte/hoogte van het vak) vanaf de rand de
-  // vervaging begint. Vanaf die grens wordt het plaatje geleidelijk
-  // transparanter, tot volledig transparant precies op de rand van het vak.
-  const VRIJ_ZWEVEND_VERVAGING = 0.10;
+  // Hoe ver vanaf de rand de vervaging begint, in een vast aantal
+  // kilometer — niet als percentage van het vak, want dat zou bij een breed
+  // vak (Denemarken, dat tot Bornholm moet reiken; Indonesië/Filipijnen met
+  // hun enorme spreiding) een veel te dikke waas geven die tot ver in het
+  // echte land doorloopt. Vanaf deze afstand van de rand wordt het plaatje
+  // geleidelijk transparanter, tot volledig transparant precies op de rand.
+  const VRIJ_ZWEVEND_VERVAGING_KM = 25;
   if(VRIJ_ZWEVEND[dutch]){
     const bbox = VRIJ_ZWEVEND[dutch];
-    const [,,mz]=roteerPunt(lonLatTo3D((bbox.minLon+bbox.maxLon)/2,(bbox.minLat+bbox.maxLat)/2),rotM);
+    const midLonVz=(bbox.minLon+bbox.maxLon)/2, midLatVz=(bbox.minLat+bbox.maxLat)/2;
+    const [,,mz]=roteerPunt(lonLatTo3D(midLonVz,midLatVz),rotM);
     if(mz<=0.01) return;
-    if(!vrijZwevendVervaagd[dutch]) vrijZwevendVervaagd[dutch] = maakVervaagdeIllustratie(img, VRIJ_ZWEVEND_VERVAGING);
+    if(!vrijZwevendVervaagd[dutch]){
+      const breedteKm = (bbox.maxLon-bbox.minLon)*111*Math.max(0.15,Math.cos(midLatVz*Math.PI/180));
+      const hoogteKm = (bbox.maxLat-bbox.minLat)*111;
+      const margeFractieX = Math.min(0.45, VRIJ_ZWEVEND_VERVAGING_KM/breedteKm);
+      const margeFractieY = Math.min(0.45, VRIJ_ZWEVEND_VERVAGING_KM/hoogteKm);
+      vrijZwevendVervaagd[dutch] = maakVervaagdeIllustratie(img, margeFractieX, margeFractieY);
+    }
     const vervaagdImg = vrijZwevendVervaagd[dutch];
     const RASTER=16;
     const imgW=img.naturalWidth||img.width, imgH=img.naturalHeight||img.height;
