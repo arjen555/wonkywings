@@ -565,7 +565,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.38</div>
+  <div id="versie-label">v0.2.40</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1266,19 +1266,26 @@ const ZOOM_STAP_BASIS = 0.006;      // hoeveel zoomNiveau per frame verschuift b
 const ZOOM_VERSNELLING_MAX = 4;     // hoe veel sneller het maximaal wordt bij lang ingedrukt houden
 const ZOOM_VERSNELLING_TIJD = 1200; // ms tot volle versnelling
 let zHoudSinds = 0, xHoudSinds = 0;
-const DOEL_LAND_HOOGTE_FRACTIE = 0.85; // land moet 85% schermhoogte vullen bij volledig ingezoomd (niveau 1)
-const DOEL_LAND_BREEDTE_FRACTIE = 0.9; // land mag max. 90% schermbreedte vullen bij volledig ingezoomd
-const ZOOM_REFERENTIE_MAX = 4.5; // 'typisch' maximum voor het grootste (stabiele) deel van de zoomrange
-const ZOOM_OMSLAGPUNT = 0.75;    // vanaf dit zoomniveau (0-1) past de zoom zich pas aan op het specifieke land
-const ZOOM_NIVEAU_MAX_RUSLAND = 0.5; // Rusland mag nooit verder inzoomen dan 50%, ongeacht de camera-ruimte die er nog is
+const DOEL_LAND_HOOGTE_FRACTIE = 1.2; // land mag 120% schermhoogte "vullen" (20% valt welbewust buiten beeld)
+const DOEL_LAND_BREEDTE_FRACTIE = 1.2; // idem voor breedte
+const ZOOM_OMSLAGPUNT = 0.75;    // vanaf dit deel van het (land-specifieke) max. zoomniveau verschijnt de illustratie
+// Wereldwijd vaste zoomcurve: 80% zoom betekent overal dezelfde daadwerkelijke
+// schaal, ongeacht welk land je erboven vliegt. GLOBAL_ZOOM_MAX is geijkt op
+// een land ter grootte van Luxemburg, zodat ook zulke kleine landen nog goed
+// dichtbij komen. Grote landen (Rusland, Canada, Brazilië...) hebben simpelweg
+// veel minder zoom nodig om 120% van het scherm te vullen dan dat - en trekken
+// daardoor vanzelf eerder terug (zie de klem verderop), zonder dat we per land
+// een uitzondering hoeven te maken zoals voorheen bij Rusland.
+const GLOBAL_ZOOM_MAX = 40;
 
-// Geeft het maximale zoomNiveau (0-1) terug voor het land waar Wonky nu boven vliegt.
-// Voor de meeste landen is dat gewoon 100%; Rusland heeft een eigen, lagere grens.
+// Geeft het maximale zoomNiveau (0-1) terug voor het land waar Wonky nu boven
+// vliegt: het punt op de wereldcurve waarop het land-specifieke maximum
+// (stand3DoelFactorVloeiend) al bereikt is - verder doorzoomen heeft daarna
+// toch geen effect meer (zie de klem in updateSpel), dus laten we de
+// schuifregelaar (en het percentage in de indicator) daar ook stoppen.
 function zoomNiveauMaxVoorHuidigLand(){
-  if(hoverLand && hoverLand.properties && hoverLand.properties.dutch === 'Rusland'){
-    return ZOOM_NIVEAU_MAX_RUSLAND;
-  }
-  return 1;
+  const niveau = Math.log(Math.max(ZOOM_MIN, stand3DoelFactorVloeiend)/ZOOM_MIN) / Math.log(GLOBAL_ZOOM_MAX/ZOOM_MIN);
+  return Math.max(0.05, Math.min(1, niveau));
 }
 
 // ── Illustraties ──────────────────────────────────────
@@ -2652,9 +2659,10 @@ function drawGlobe(){
 
   // Illustratie-reis: niks vóór het omslagpunt, waas net erna,
   // vloeiend opklarend tot vol bij het maximale zoomniveau van dit land.
-  // Voor de meeste landen is dat 100%, voor Rusland is dat de eigen grens (50%) -
-  // zo kun je bij Rusland gewoon dóórdrukken op Z en toch de volle illustratie krijgen,
-  // ook al schuift de camera daarbij niet verder in.
+  // Voor kleine/middelgrote landen is dat vrijwel 100%, voor grote landen
+  // (Rusland, Canada, Brazilië...) ligt die grens vanzelf lager - zo kun je
+  // bij zo'n groot land gewoon dóórdrukken op Z en toch de volle illustratie
+  // krijgen, ook al schuift de camera daarbij niet verder in.
   const illustratieMax = zoomNiveauMaxVoorHuidigLand();
   const illustratieOmslagpunt = ZOOM_OMSLAGPUNT * illustratieMax;
   if(illustratiesAan && zoomNiveau>=illustratieOmslagpunt){
@@ -2811,27 +2819,11 @@ function dropVlag(sx,sy,ex,ey){
 
 // ── Besturing ─────────────────────────────────────────
 const keys={};
-const keysLaatsteTijd={}; // per toets: wanneer kwam de laatste keydown binnen?
 document.addEventListener('keydown',e=>{
   keys[e.key]=true;
-  keysLaatsteTijd[e.key]=performance.now();
   if([' ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
 });
 document.addEventListener('keyup',e=>{ keys[e.key]=false; });
-
-// Vangnet tegen "vastzittende" toetsen door een gemiste keyup (bijv. door een
-// OS-toetsenbordlaag, sneltoets-conflict, of browser-eigenaardigheid die soms
-// een keyup-event laat wegvallen). Zolang een toets écht ingedrukt blijft,
-// stuurt de browser er zelf steeds opnieuw (elke ~30-50ms) een keydown-herhaling
-// voor - komt die herhaling een tijdje niet meer binnen terwijl de toets bij ons
-// nog als "ingedrukt" geregistreerd staat, dan was de keyup vrijwel zeker gemist:
-// dan zetten we 'm hier zelf terug op "los".
-function verwijderVastgelopenToetsen(){
-  const nu=performance.now();
-  for(const k in keys){
-    if(keys[k] && (nu-(keysLaatsteTijd[k]||0))>400) keys[k]=false;
-  }
-}
 
 // Voorkomt "vastzittende" toetsen: als het venster/tabblad focus verliest
 // (bijv. door een scroll-interactie of van tabblad wisselen) kan een keyup
@@ -3093,12 +3085,6 @@ function updateSpel(){
   // (van een klein naar een groot land, of andersom) - dat schokkerige gevoel
   // zat 'm dus niet in de camerabeweging zelf, maar in het doel waar die naartoe bewoog.
   stand3DoelFactorVloeiend += (stand3DoelFactor - stand3DoelFactorVloeiend) * 0.06;
-  const dynamischMax = Math.max(stand3DoelFactorVloeiend, ZOOM_MIN+0.01);
-  // Geen ondergrens meer op de referentie: een reuzenland als Rusland mag bij
-  // 100% ook écht minder ingezoomd blijven dan de referentie, zodat het
-  // gewoon lekker in beeld past — ook al betekent dat een klein
-  // zoom-terugveertje in de allerlaatste stap.
-  const effectiefMax = dynamischMax;
 
   const nuTijd = performance.now();
   if(keys['z']||keys['Z']||touchZoomInActief||gamepadZoomInActief){
@@ -3116,29 +3102,16 @@ function updateSpel(){
     zetZoomIndicator(zoomNiveau);
   } else { xHoudSinds = 0; }
 
-  // Zoomniveau (0-1) omzetten naar een echte zoomfactor, in twee stukken:
-  // - 0 tot ZOOM_OMSLAGPUNT: altijd tussen wereld-zoom en de VASTE referentie,
-  //   he­lemaal onafhankelijk van welk land je op dat moment overvliegt (stabiel!)
-  // - ZOOM_OMSLAGPUNT tot 1: het laatste stukje, dat zich pas aanpast aan het
-  //   specifieke land waar je nu overheen vliegt (net als vroeger Close-up)
-  // Beide stukken logaritmisch geïnterpoleerd, zodat elke stap er even groot uitziet.
-  let doelZoom;
-  if(zoomNiveau <= ZOOM_OMSLAGPUNT){
-    const t = zoomNiveau/ZOOM_OMSLAGPUNT;
-    doelZoom = ZOOM_MIN * Math.pow(ZOOM_REFERENTIE_MAX/ZOOM_MIN, t);
-  } else {
-    const t = (zoomNiveau-ZOOM_OMSLAGPUNT)/(1-ZOOM_OMSLAGPUNT);
-    if(effectiefMax >= ZOOM_REFERENTIE_MAX){
-      // Klein land: groeit exponentieel verder, zoals voorheen.
-      doelZoom = ZOOM_REFERENTIE_MAX * Math.pow(effectiefMax/ZOOM_REFERENTIE_MAX, t);
-    } else {
-      // Groot land: het past al goed bij minder dan de referentie-zoom. De camera
-      // stopt hier met verder inzoomen (geen "terugveren" meer); de resterende
-      // 70%-100% zoomruimte wordt daarna alleen nog gebruikt voor de illustratie
-      // (waas -> scherp, zie WAAS/ZOOM_OMSLAGPUNT verderop), niet voor de camera.
-      doelZoom = ZOOM_REFERENTIE_MAX;
-    }
-  }
+  // Eén vaste wereldwijde curve (0-1 -> ZOOM_MIN..GLOBAL_ZOOM_MAX), dus 80%
+  // zoom betekent overal dezelfde daadwerkelijke schaal. Daarna een klem: nooit
+  // verder inzoomen dan nodig is om het huidige land 120% van het scherm te
+  // laten vullen (stand3DoelFactorVloeiend). Voor een klein land als Luxemburg
+  // ligt die klem ver voorbij GLOBAL_ZOOM_MAX, dus die grijpt daar nooit in.
+  // Voor een groot land (Rusland, Canada, Brazilië...) ligt die klem allang
+  // vóór GLOBAL_ZOOM_MAX, en trekt de camera dus vanzelf eerder terug - zonder
+  // dat we per land een uitzondering hoeven te maken.
+  let doelZoom = ZOOM_MIN * Math.pow(GLOBAL_ZOOM_MAX/ZOOM_MIN, zoomNiveau);
+  doelZoom = Math.min(doelZoom, stand3DoelFactorVloeiend);
   zoomFactor+=(doelZoom-zoomFactor)*ZOOM_SNELHEID;
   R=Math.min(W,H)*0.58*zoomFactor;
   CX=W/2; CY=H*0.56;
@@ -3193,7 +3166,6 @@ function updateSpel(){
       }
     }
   } else if(!wachten){
-  verwijderVastgelopenToetsen();
   if(keys['ArrowLeft']  || keys['a'] || keys['A']) dx=-1;
   if(keys['ArrowRight'] || keys['d'] || keys['D']) dx= 1;
   if(keys['ArrowUp']    || keys['w'] || keys['W']) dy= 1;
