@@ -565,7 +565,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.46</div>
+  <div id="versie-label">v0.2.45</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2036,26 +2036,6 @@ function isRandpuntGedeeld(lon, lat, eigenLand){
 function classificeerRingpunten(ring, eigenLand){
   return ring.map(([lon,lat]) => isRandpuntGedeeld(lon,lat,eigenLand));
 }
-// Voor elk randstuk (tussen twee opeenvolgende punten): is dit een kuststuk
-// (mag vervagen richting zee) of een grensstuk (moet hard blijven)? Een stuk
-// telt al als grens zodra BEIDE eindpunten grens zijn - zo blijft de
-// vervaging nog net doorlopen tot vlak bij het punt waar grens en kust
-// elkaar raken, zonder de rand zelf te vervormen (dat gaf zelfoverlappende,
-// ongeldige vormen bij een grillige kustlijn zoals Spanje).
-function classificeerRandsegmenten(ring, eigenLand){
-  const isGrensPerPunt = classificeerRingpunten(ring, eigenLand);
-  const n = ring.length;
-  const isKustSegment = [];
-  for(let i=0;i<n;i++){
-    const j=(i+1)%n;
-    isKustSegment.push(!(isGrensPerPunt[i] && isGrensPerPunt[j]));
-  }
-  return isKustSegment;
-}
-// Kortste afstand tot de rand, maar dan alléén tellend langs de kuststukken -
-// grensstukken worden genegeerd. Zo blijft de vervaging automatisch weg bij
-// landgrenzen (geen nabij kuststuk = geen vervaging = alpha 0) en treedt hij
-// alleen op waar een land écht aan zee grenst.
 // Zoals bufferRingNaarBuiten, maar met een eigen marge (in km) per punt,
 // i.p.v. één vaste marge voor de hele ring.
 function bufferRingVariabel(ring, margesKm){
@@ -2080,22 +2060,6 @@ function afstandTotRing(lon, lat, ring){
   let minKm = Infinity;
   const STAPPEN=4;
   for(let i=0;i<ring.length;i++){
-    const [lon1,lat1]=ring[i], [lon2,lat2]=ring[(i+1)%ring.length];
-    for(let s=0;s<=STAPPEN;s++){
-      const t=s/STAPPEN;
-      const d=afstandKmTussenPunten(lon,lat, lon1+(lon2-lon1)*t, lat1+(lat2-lat1)*t);
-      if(d<minKm) minKm=d;
-    }
-  }
-  return minKm;
-}
-// Zoals afstandTotRing, maar telt alleen kuststukken mee (isKustSegment[i]
-// per randstuk i, van punt i naar punt i+1) - zie classificeerRandsegmenten.
-function afstandTotKustSegmenten(lon, lat, ring, isKustSegment){
-  let minKm = Infinity;
-  const STAPPEN=4;
-  for(let i=0;i<ring.length;i++){
-    if(!isKustSegment[i]) continue;
     const [lon1,lat1]=ring[i], [lon2,lat2]=ring[(i+1)%ring.length];
     for(let s=0;s<=STAPPEN;s++){
       const t=s/STAPPEN;
@@ -2208,13 +2172,13 @@ function bouwHybrideKustData(polysLijst, dutch){
   minLat -= buffLat; maxLat += buffLat;
   const midLat=(minLat+maxLat)/2;
 
+  const clipRingen = relevantePolys.map(poly=>{
+    const ring = poly[0];
+    const isGrensPerPunt = classificeerRingpunten(ring, dutch);
+    const margesKm = isGrensPerPunt.map(g => g ? GRENS_OVERLAP_KM : ZEE_MARGE_KM);
+    return bufferRingVariabel(ring, margesKm);
+  });
   const fillRingen = relevantePolys.map(poly=>bufferRingNaarBuiten(poly[0], GRENS_OVERLAP_KM));
-
-  // Per polygoondeel: welke randstukken zijn kust (mogen vervagen) i.p.v.
-  // grens (moeten hard blijven). Wordt hieronder gebruikt bij de vervaging,
-  // in plaats van de rand zelf te vervormen (dat gaf bij een grillige kust-
-  // lijn als Spanje ongeldige, zelfoverlappende vormen).
-  const kustSegmentenPerPoly = relevantePolys.map(poly => classificeerRandsegmenten(poly[0], dutch));
 
   const RASTER = 12;
   const raster=[];
@@ -2226,8 +2190,8 @@ function bouwHybrideKustData(polysLijst, dutch){
       let alphaFactor=1;
       if(!puntInPolygoon(lon,lat,relevantePolys)){
         let dichtsteAfstand=Infinity;
-        for(let p=0;p<relevantePolys.length;p++){
-          const d=afstandTotKustSegmenten(lon,lat,relevantePolys[p][0],kustSegmentenPerPoly[p]);
+        for(const poly of relevantePolys){
+          const d=afstandTotRing(lon,lat,poly[0]);
           if(d<dichtsteAfstand) dichtsteAfstand=d;
         }
         alphaFactor=Math.max(0,1-dichtsteAfstand/ZEE_MARGE_KM);
@@ -2243,7 +2207,7 @@ function bouwHybrideKustData(polysLijst, dutch){
     raster.push(rij);
   }
 
-  return {relevantePolys, fillRingen, minLon, maxLon, minLat, maxLat, midLat, RASTER, raster};
+  return {relevantePolys, clipRingen, fillRingen, minLon, maxLon, minLat, maxLat, midLat, RASTER, raster};
 }
 
 function tekenPolyGroepHybride(polysLijst, img, doorzicht, dutch){
@@ -2258,14 +2222,14 @@ function tekenPolyGroepHybride(polysLijst, img, doorzicht, dutch){
   if(mz<=0.01) return;
 
   ctx.save();
+  ctx.beginPath();
+  for(const ring of d.clipRingen){ tekenRing(ring); ctx.closePath(); }
+  ctx.clip();
 
   // Achtergrondkleur alleen strak op de originele landvorm (+gebruikelijke
   // kleine grensoverlap) - NIET over de hele kust-marge. Zo blijft de
   // bestaande oceaankleur van de bol zichtbaar in de kust-marge, en daar
-  // vervaagt de illustratie er straks overheen. Geen aparte clip nodig: elke
-  // driehoek hieronder clipt zichzelf al (zie tekenDriehoek), en de
-  // alphaFactor-vervaging zorgt dat er buiten de kust-marge simpelweg niets
-  // meer getekend wordt.
+  // vervaagt de illustratie er straks overheen.
   ctx.beginPath();
   for(const ring of d.fillRingen){ tekenRing(ring); ctx.closePath(); }
   ctx.fillStyle = getLandKleur(dutch, d.midLat);
