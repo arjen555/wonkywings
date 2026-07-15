@@ -565,7 +565,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.35</div>
+  <div id="versie-label">v0.2.34</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1843,7 +1843,7 @@ let hoverLand=null;
 
 // Simpele "nep"-GEOJSON-feature voor de Noordpool: geen echte polygoon (de ijskap heeft
 // geen scherpe landgrens), maar wel een dutch-naam zodat de bestaande hover/illustratie-
-// logica 'm net als een normaal land kan behandelen (zie getLandOpPunt en VRIJ_ZWEVEND).
+// logica 'm net als een normaal land kan behandelen (zie getLandOpPunt en ILLUSTRATIE_KALIBRATIE).
 const NOORDPOOL_FEATURE = { properties: { dutch: 'Noordpool', name: 'Noordpool' }, geometry: { type:'Polygon', coordinates:[[]] } };
 const NOORDPOOL_MIN_LAT = 75; // vanaf hier (net als IJSKAP_PUNTEN) geldt een punt als "op de Noordpool"
 
@@ -1866,7 +1866,11 @@ function knipPunt(p1,p2){
 }
 
 // ── Landen tekenen ────────────────────────────────────
-function tekenRing(ring){
+// Optioneel tweede argument 'c': een alternatieve canvas-context om op te
+// tekenen (bijv. het kladcanvas van het buurland-gummen). Zonder argument
+// tekent hij, zoals altijd, gewoon op het hoofdcanvas.
+function tekenRing(ring, c){
+  c = c || ctx;
   if(!ring||ring.length<3) return;
   const n=ring.length;
   const pts=ring.map(([lon,lat])=>{
@@ -1877,14 +1881,14 @@ function tekenRing(ring){
   for(let i=0;i<n;i++){
     const curr=pts[i],next=pts[(i+1)%n];
     if(curr.vis){
-      if(!pen){ctx.moveTo(curr.sx,curr.sy);pen=true;}
-      else ctx.lineTo(curr.sx,curr.sy);
+      if(!pen){c.moveTo(curr.sx,curr.sy);pen=true;}
+      else c.lineTo(curr.sx,curr.sy);
     }
     if(curr.vis!==next.vis){
       const s=knipPunt(curr.p3,next.p3);
       const sx=CX+s[0]*R,sy=CY-s[1]*R;
-      if(curr.vis){ctx.lineTo(sx,sy);pen=false;}
-      else{ctx.moveTo(sx,sy);pen=true;}
+      if(curr.vis){c.lineTo(sx,sy);pen=false;}
+      else{c.moveTo(sx,sy);pen=true;}
     }
   }
 }
@@ -1988,10 +1992,11 @@ function tekenIJskap(poolLat,straal){
 // Plakt één driehoekje van de afbeelding (sx0,sy0 / sx1,sy1 / sx2,sy2 in bronpixels)
 // uitgerekt naar drie schermpunten (dx0,dy0 / dx1,dy1 / dx2,dy2). Dit is de truc
 // waarmee een plat plaatje in kleine stukjes over de kromming van de bol "buigt".
-function tekenDriehoek(img, sx0,sy0,sx1,sy1,sx2,sy2, dx0,dy0,dx1,dy1,dx2,dy2, uitdijing){
+function tekenDriehoek(img, sx0,sy0,sx1,sy1,sx2,sy2, dx0,dy0,dx1,dy1,dx2,dy2, uitdijing, doelCtx){
+  const dctx = doelCtx || ctx; // optioneel: teken op een ander canvas (kladcanvas)
   const denom = sx0*(sy1-sy2) + sx1*(sy2-sy0) + sx2*(sy0-sy1);
   if(Math.abs(denom) < 1e-6) return;
-  ctx.save();
+  dctx.save();
   // Clip-driehoek licht laten uitdijen vanuit het middelpunt, zodat aangrenzende
   // driehoeken elkaar net overlappen i.p.v. precies raken. Dat voorkomt de dunne
   // "naad"-lijntjes die anders door canvas-anti-aliasing tussen twee geclipte
@@ -2002,18 +2007,18 @@ function tekenDriehoek(img, sx0,sy0,sx1,sy1,sx2,sy2, dx0,dy0,dx1,dy1,dx2,dy2, ui
   const ex0=cx+(dx0-cx)*UITDIJING, ey0=cy+(dy0-cy)*UITDIJING;
   const ex1=cx+(dx1-cx)*UITDIJING, ey1=cy+(dy1-cy)*UITDIJING;
   const ex2=cx+(dx2-cx)*UITDIJING, ey2=cy+(dy2-cy)*UITDIJING;
-  ctx.beginPath();
-  ctx.moveTo(ex0,ey0); ctx.lineTo(ex1,ey1); ctx.lineTo(ex2,ey2); ctx.closePath();
-  ctx.clip();
+  dctx.beginPath();
+  dctx.moveTo(ex0,ey0); dctx.lineTo(ex1,ey1); dctx.lineTo(ex2,ey2); dctx.closePath();
+  dctx.clip();
   const a=(dx0*(sy1-sy2)+dx1*(sy2-sy0)+dx2*(sy0-sy1))/denom;
   const b=(dy0*(sy1-sy2)+dy1*(sy2-sy0)+dy2*(sy0-sy1))/denom;
   const c=(dx0*(sx2-sx1)+dx1*(sx0-sx2)+dx2*(sx1-sx0))/denom;
   const d=(dy0*(sx2-sx1)+dy1*(sx0-sx2)+dy2*(sx1-sx0))/denom;
   const e=(dx0*(sx1*sy2-sx2*sy1)+dx1*(sx2*sy0-sx0*sy2)+dx2*(sx0*sy1-sx1*sy0))/denom;
   const f=(dy0*(sx1*sy2-sx2*sy1)+dy1*(sx2*sy0-sx0*sy2)+dy2*(sx0*sy1-sx1*sy0))/denom;
-  ctx.transform(a,b,c,d,e,f);
-  ctx.drawImage(img,0,0);
-  ctx.restore();
+  dctx.transform(a,b,c,d,e,f);
+  dctx.drawImage(img,0,0);
+  dctx.restore();
 }
 
 // Berekent dezelfde vaste "gebied"-rechthoek (in graden lengte-/breedtegraad)
@@ -2080,280 +2085,218 @@ function berekenLandBBoxGraden(feature){
   return {minLon,maxLon,minLat,maxLat,ankerLon};
 }
 
-// ── Hybride kust-rendering (proef, vooralsnog alleen Spanje) ─────────
-// Idee: op landgrenzen blijft de illustratie exact zo strak als altijd
-// (geen wijziging t.o.v. tekenPolyGroep hierboven), maar aan de kust mag
-// de rand van de afbeelding geleidelijk vervagen naar de oceaankleur die
-// de bol daar toch al heeft. Welke randstukken "kust" zijn wordt NIET
-// handmatig ingesteld, maar afgeleid uit de brondata: een randpunt dat
-// (nagenoeg) ook in een ander land voorkomt is een gedeelde landgrens;
-// komt het nergens anders voor, dan is het kust.
-//
-// Belangrijk: de rand van het land wordt hier NERGENS vervormd of
-// opgerekt (dat gaf eerder ongeldige, zelfoverlappende vormen bij een
-// grillige kustlijn). In plaats daarvan wordt per rasterpunt alleen de
-// doorzichtigheid aangepast op basis van de afstand tot de dichtstbijzijnde
-// kust; bij een landgrens blijft die afstand groot (dus alpha ~0) tenzij
-// het punt toevallig ook dicht bij een kuststuk ligt.
-const ZEE_MARGE_KM = 45; // hoe ver de illustratie voorbij de kust mag doorlopen
-const GRENS_HERKENNING_TOLERANTIE_KM = 8; // marge voor "is dit hetzelfde grenspunt?"
-const RANDPUNTEN_CEL_GRADEN = 0.5; // ~55km rastercellen voor de randpunten-index
+// ── Illustratie-kalibratie ────────────────────────────
+// Per land: de lon/lat-rechthoek waarover de afbeelding wordt gelegd.
+// Landen die hier (of in de lokaal opgeslagen kalibratie) staan, worden
+// VRIJ getekend: de afbeelding wordt NIET meer weggeknipt op de eigen
+// landgrens, dus zee, bootjes en de transparante rand blijven zichtbaar.
+// Wél wordt de afbeelding weggegumd waar hij over een ÁNDER land valt.
+// Waarden instelbaar in het spel zelf: vlieg boven het land en druk op K.
+const ILLUSTRATIE_KALIBRATIE = {
+  "Bahama's": { minLon:-80.5, maxLon:-72.5, minLat:20.8, maxLat:27.5 },
+  "Belize":   { minLon:-89.5, maxLon:-85.5, minLat:15.6, maxLat:18.8 },
+};
 
-let gedeeldeRandpuntenGrid = null;
-function bouwGedeeldeRandpuntenGrid(){
-  const grid = new Map();
-  for(const f of GEOJSON.features){
-    const land = f.properties.dutch || f.properties.name;
-    const geom = f.geometry;
-    const polys = geom.type==='Polygon' ? [geom.coordinates] : geom.coordinates;
-    for(const poly of polys){
-      if(!poly[0]) continue;
-      for(const [lon,lat] of poly[0]){
-        const key = Math.round(lat/RANDPUNTEN_CEL_GRADEN)+','+Math.round(lon/RANDPUNTEN_CEL_GRADEN);
-        if(!grid.has(key)) grid.set(key, []);
-        grid.get(key).push([lon,lat,land]);
-      }
-    }
-  }
-  gedeeldeRandpuntenGrid = grid;
-}
-// Is dit punt (bijna) ook onderdeel van een ANDER land? Zo ja: landgrens.
-function isRandpuntGedeeld(lon, lat, eigenLand){
-  if(!gedeeldeRandpuntenGrid) bouwGedeeldeRandpuntenGrid();
-  const cLat = Math.round(lat/RANDPUNTEN_CEL_GRADEN), cLon = Math.round(lon/RANDPUNTEN_CEL_GRADEN);
-  for(let dLat=-1; dLat<=1; dLat++){
-    for(let dLon=-1; dLon<=1; dLon++){
-      const punten = gedeeldeRandpuntenGrid.get((cLat+dLat)+','+(cLon+dLon));
-      if(!punten) continue;
-      for(const [plon,plat,pland] of punten){
-        if(pland===eigenLand) continue;
-        if(afstandKmTussenPunten(lon,lat,plon,plat) <= GRENS_HERKENNING_TOLERANTIE_KM) return true;
-      }
-    }
-  }
-  return false;
-}
-// Per randstuk (tussen twee opeenvolgende punten): is dit kust (mag
-// vervagen) of grens (moet hard blijven)? Een stuk telt al als grens
-// zodra BEIDE eindpunten grens zijn.
-function classificeerRandsegmenten(ring, eigenLand){
-  const n = ring.length;
-  const isGrensPerPunt = ring.map(([lon,lat]) => isRandpuntGedeeld(lon,lat,eigenLand));
-  const isKustSegment = [];
-  for(let i=0;i<n;i++){
-    const j=(i+1)%n;
-    isKustSegment.push(!(isGrensPerPunt[i] && isGrensPerPunt[j]));
-  }
-  return isKustSegment;
-}
-// Kortste afstand tot de rand, maar dan alléén tellend langs de kuststukken.
-function afstandTotKustSegmenten(lon, lat, ring, isKustSegment){
-  let minKm = Infinity;
-  const STAPPEN=4;
-  for(let i=0;i<ring.length;i++){
-    if(!isKustSegment[i]) continue;
-    const [lon1,lat1]=ring[i], [lon2,lat2]=ring[(i+1)%ring.length];
-    for(let s=0;s<=STAPPEN;s++){
-      const t=s/STAPPEN;
-      const d=afstandKmTussenPunten(lon,lat, lon1+(lon2-lon1)*t, lat1+(lat2-lat1)*t);
-      if(d<minKm) minKm=d;
-    }
-  }
-  return minKm;
-}
-// Ray-casting punt-in-meerdere-polygonen (i.t.t. de bestaande puntInPolygoon
-// hierboven, die één losse ring test) - genoeg voor onze landvormen (geen
-// binnengaten/enclaves in deze dataset).
-function puntInLandvorm(lon, lat, polysLijst){
-  let inside=false;
-  for(const poly of polysLijst){
-    const ring = poly[0];
-    if(!ring || ring.length<3) continue;
-    for(let i=0,j=ring.length-1;i<ring.length;j=i++){
-      const [xi,yi]=ring[i], [xj,yj]=ring[j];
-      const kruist = ((yi>lat)!==(yj>lat)) && (lon < (xj-xi)*(lat-yi)/(yj-yi)+xi);
-      if(kruist) inside=!inside;
-    }
-  }
-  return inside;
+// Lokaal opgeslagen kalibraties (gemaakt met de K-modus) gaan vóór de
+// ingebouwde tabel. Zo zie je je eigen instellingen meteen terug, ook na
+// een herstart, totdat ze definitief in de tabel hierboven worden gezet.
+let kalibratieOverrides = {};
+try {
+  kalibratieOverrides = JSON.parse(localStorage.getItem('wonkywings_kalibratie') || '{}');
+} catch(e){ kalibratieOverrides = {}; }
+
+function getIllustratieKalibratie(naam){
+  return kalibratieOverrides[naam] || ILLUSTRATIE_KALIBRATIE[naam] || null;
 }
 
-// Landen waarvoor de hybride kust-rendering aanstaat (proef).
-const HYBRIDE_KUST_LANDEN = new Set(['Spanje']);
+// ── Kalibratiemodus (toets K) ─────────────────────────
+// Vlieg boven een land en druk op K: de illustratie wordt vrij over het land
+// gelegd, de echte landgrens verschijnt als rode lijn, en met de toetsen
+// schuif/rek je de afbeelding tot hij past. Enter = opslaan, Esc = annuleren.
+let kalibratieActief=false, kalibratieNaam=null, kalibratieFeature=null;
+let kalibratieBBox=null, kalibratieFijn=false, kalibratieMelding='';
 
-// Eenmalig per land opgebouwde (statische) data - hangt alleen af van de
-// landgeometrie, niet van de camerastand, dus wordt maar één keer berekend.
-const hybrideKustCache = {};
-function bouwHybrideKustData(polysLijst, dutch){
-  let grootsteOpp = 0, grootsteIdx = -1;
-  const deelOpp = [];
-  for(let p=0;p<polysLijst.length;p++){
-    const poly=polysLijst[p];
-    if(!poly[0]||poly[0].length<3){ deelOpp.push(0); continue; }
-    let opp=0;
-    for(let i=0,j=poly[0].length-1;i<poly[0].length;j=i++){
-      opp+=(poly[0][j][0]-poly[0][i][0])*(poly[0][j][1]+poly[0][i][1]);
-    }
-    opp=Math.abs(opp);
-    deelOpp.push(opp);
-    if(opp>grootsteOpp){ grootsteOpp=opp; grootsteIdx=p; }
-  }
-  if(grootsteIdx<0) return null;
-  const drempel = grootsteOpp * 0.03;
+const kalibratieHud=document.createElement('div');
+kalibratieHud.style.cssText='position:fixed;top:12px;left:12px;z-index:60;display:none;'+
+  'background:rgba(10,20,35,0.88);color:#fff;padding:14px 18px;border-radius:10px;'+
+  'font:13px/1.55 monospace;max-width:340px;box-shadow:0 4px 18px rgba(0,0,0,0.5);white-space:pre-wrap;';
+document.body.appendChild(kalibratieHud);
 
-  let ankerSLon=0, ankerSLat=0, ankerN=0;
-  for(const [lo,la] of polysLijst[grootsteIdx][0]){ ankerSLon+=lo; ankerSLat+=la; ankerN++; }
-  const ankerLon0=ankerSLon/ankerN, ankerLat0=ankerSLat/ankerN;
-  const MAX_AFSTAND_KM = 1200;
-
-  const relevantePolys = [];
-  const alleLons=[];
-  let minLat=Infinity,maxLat=-Infinity;
-  let heeftPunten=false;
-  for(let p=0;p<polysLijst.length;p++){
-    const poly=polysLijst[p];
-    if(!poly[0]||poly[0].length<3) continue;
-    if(deelOpp[p] < drempel) continue;
-    if(p!==grootsteIdx){
-      let sLon=0,sLat=0,n=0;
-      for(const [lo,la] of poly[0]){ sLon+=lo; sLat+=la; n++; }
-      if(afstandKmTussenPunten(ankerLon0,ankerLat0,sLon/n,sLat/n) > MAX_AFSTAND_KM) continue;
-    }
-    relevantePolys.push(poly);
-    for(const [lon,lat] of poly[0]){
-      alleLons.push(lon);
-      minLat=Math.min(minLat,lat);maxLat=Math.max(maxLat,lat);
-      heeftPunten=true;
-    }
-  }
-  if(!heeftPunten) return null;
-
-  const lonsGesorteerd=alleLons.slice().sort((a,b)=>a-b);
-  let grootsteHap=0, hapNaLon=lonsGesorteerd[0];
-  for(let i=0;i<lonsGesorteerd.length;i++){
-    const huidige=lonsGesorteerd[i];
-    const volgende=(i===lonsGesorteerd.length-1)?lonsGesorteerd[0]+360:lonsGesorteerd[i+1];
-    const hap=volgende-huidige;
-    if(hap>grootsteHap){ grootsteHap=hap; hapNaLon=volgende; }
-  }
-  const ankerLon = (hapNaLon>180) ? hapNaLon-360 : hapNaLon;
-  let minLon=Infinity,maxLon=-Infinity;
-  for(const lon of alleLons){
-    const uitgevouwen = ankerLon + ((lon-ankerLon+360)%360);
-    minLon=Math.min(minLon,uitgevouwen);
-    maxLon=Math.max(maxLon,uitgevouwen);
-  }
-  // Dit (nog niet vergrote) vak is exact de rand van het land zelf - hier
-  // wordt de afbeelding op uitgelijnd (net als in tekenPolyGroep). Bijsnijden
-  // gebeurt dus nog steeds gewoon tot de eerste landpixel, zoals altijd.
-  const imgMinLon=minLon, imgMaxLon=maxLon, imgMinLat=minLat, imgMaxLat=maxLat;
-  const midLat0=(minLat+maxLat)/2;
-
-  // Kaart-/vervagingsvak: wél vergroot met de kust-marge, puur om er ruimte
-  // voor het rasterpunt-grid te hebben - de afbeelding zelf wordt NIET
-  // uitgerekt over deze marge (zie fi/fj hieronder: die klemmen op het
-  // strakke beeldvak, en buiten dat vak wordt gewoon de buitenste rand van
-  // de afbeelding doorgetrokken).
-  const buffLat = ZEE_MARGE_KM/111;
-  const buffLon = ZEE_MARGE_KM/(111*Math.max(0.15, Math.cos(midLat0*Math.PI/180)));
-  minLon -= buffLon; maxLon += buffLon;
-  minLat -= buffLat; maxLat += buffLat;
-  const midLat=(minLat+maxLat)/2;
-
-  // Per polygoondeel: welke randstukken zijn kust (mogen vervagen) i.p.v.
-  // grens (moeten hard blijven).
-  const kustSegmentenPerPoly = relevantePolys.map(poly => classificeerRandsegmenten(poly[0], dutch));
-
-  const RASTER = 24; // was 12 - verdubbeld voor een minder hakkerige kustvervaging
-  const raster=[];
-  for(let j=0;j<=RASTER;j++){
-    const rij=[];
-    const lat = maxLat-(maxLat-minLat)*j/RASTER;
-    for(let i=0;i<=RASTER;i++){
-      const lon = minLon+(maxLon-minLon)*i/RASTER;
-      let alphaFactor=1;
-      if(!puntInLandvorm(lon,lat,relevantePolys)){
-        let dichtsteAfstand=Infinity;
-        for(let p=0;p<relevantePolys.length;p++){
-          const d=afstandTotKustSegmenten(lon,lat,relevantePolys[p][0],kustSegmentenPerPoly[p]);
-          if(d<dichtsteAfstand) dichtsteAfstand=d;
-        }
-        alphaFactor=Math.max(0,1-dichtsteAfstand/ZEE_MARGE_KM);
-      }
-      const fi = Math.max(0, Math.min(1, (lon-imgMinLon)/(imgMaxLon-imgMinLon)));
-      const fj = Math.max(0, Math.min(1, (imgMaxLat-lat)/(imgMaxLat-imgMinLat)));
-      rij.push({lon,lat,alphaFactor,fi,fj});
-    }
-    raster.push(rij);
-  }
-
-  return {relevantePolys, minLon, maxLon, minLat, maxLat, midLat, RASTER, raster};
+function updateKalibratieHud(){
+  if(!kalibratieActief){ kalibratieHud.style.display='none'; return; }
+  const b=kalibratieBBox;
+  kalibratieHud.style.display='block';
+  kalibratieHud.textContent=
+    'KALIBRATIE: '+kalibratieNaam+'\n'+
+    '─────────────────────────\n'+
+    'west  '+b.minLon.toFixed(2)+'°   oost  '+b.maxLon.toFixed(2)+'°\n'+
+    'zuid  '+b.minLat.toFixed(2)+'°   noord '+b.maxLat.toFixed(2)+'°\n'+
+    '─────────────────────────\n'+
+    'Pijltjes        = schuiven\n'+
+    'Shift+li/re     = smaller/breder\n'+
+    'Shift+op/neer   = hoger/lager\n'+
+    '+ / -           = groter/kleiner\n'+
+    'F               = fijnstellen '+(kalibratieFijn?'[AAN]':'[uit]')+'\n'+
+    'Enter = opslaan   Esc = stoppen\n'+
+    'C = alle waarden kopiëren'+
+    (kalibratieMelding?'\n\n'+kalibratieMelding:'');
 }
 
-function tekenPolyGroepHybride(polysLijst, img, doorzicht, dutch){
-  if(hybrideKustCache[dutch]===undefined){
-    hybrideKustCache[dutch] = bouwHybrideKustData(polysLijst, dutch);
-  }
-  const d = hybrideKustCache[dutch];
-  if(!d) return;
+function startKalibratie(){
+  if(!hoverLand){ return; } // alleen boven een land te starten
+  const naam=hoverLand.properties.dutch||hoverLand.properties.name;
+  if(naam==='Noordpool') return; // eigen projectie, hier niet kalibreerbaar
+  laadIllustratie(naam);
+  kalibratieNaam=naam;
+  kalibratieFeature=hoverLand;
+  // Beginstand: bestaande kalibratie, of anders de automatisch gemeten
+  // graden-rechthoek van het land (zelfde meting als de oude weergave).
+  const bestaand=getIllustratieKalibratie(naam);
+  const auto=berekenLandBBoxGraden(hoverLand);
+  const bron=bestaand||auto;
+  if(!bron) return;
+  kalibratieBBox={minLon:bron.minLon,maxLon:bron.maxLon,minLat:bron.minLat,maxLat:bron.maxLat};
+  kalibratieMelding='';
+  kalibratieActief=true;
+  resetAlleToetsen(); // voorkomt dat Wonky blijft doorvliegen op een oude toets
+  updateKalibratieHud();
+}
 
-  const midLon=(d.minLon+d.maxLon)/2, midLat=(d.minLat+d.maxLat)/2;
-  const [,,mz]=roteerPunt(lonLatTo3D(midLon,midLat),rotM);
+function stopKalibratie(opslaan){
+  if(opslaan && kalibratieNaam && kalibratieBBox){
+    kalibratieOverrides[kalibratieNaam]={
+      minLon:+kalibratieBBox.minLon.toFixed(3), maxLon:+kalibratieBBox.maxLon.toFixed(3),
+      minLat:+kalibratieBBox.minLat.toFixed(3), maxLat:+kalibratieBBox.maxLat.toFixed(3)
+    };
+    localStorage.setItem('wonkywings_kalibratie', JSON.stringify(kalibratieOverrides));
+  }
+  kalibratieActief=false; kalibratieNaam=null; kalibratieFeature=null; kalibratieBBox=null;
+  updateKalibratieHud();
+}
+
+function kopieerKalibraties(){
+  // Alles samen (ingebouwd + eigen instellingen) als kant-en-klare tabel,
+  // zodat de waarden zo in ILLUSTRATIE_KALIBRATIE geplakt kunnen worden.
+  const samen=Object.assign({},ILLUSTRATIE_KALIBRATIE,kalibratieOverrides);
+  const regels=Object.keys(samen).sort().map(n=>{
+    const b=samen[n];
+    return '  '+JSON.stringify(n)+': { minLon:'+b.minLon+', maxLon:'+b.maxLon+', minLat:'+b.minLat+', maxLat:'+b.maxLat+' },';
+  });
+  const tekst='const ILLUSTRATIE_KALIBRATIE = {\n'+regels.join('\n')+'\n};';
+  const klaar=()=>{ kalibratieMelding='Gekopieerd naar klembord!'; updateKalibratieHud(); };
+  const mis=()=>{ kalibratieMelding='Kopiëren lukte niet — zie de\nconsole (F12) voor de waarden.'; console.log(tekst); updateKalibratieHud(); };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(tekst).then(klaar,mis);
+  } else mis();
+}
+
+// Capture-fase: deze handler krijgt de toetsen éérder dan de vlieg-besturing,
+// zodat de pijltjes tijdens het kalibreren de afbeelding verschuiven en
+// Wonky netjes stil blijft hangen.
+document.addEventListener('keydown', e=>{
+  if(!kalibratieActief){
+    if((e.key==='k'||e.key==='K') && illustratiesAan) startKalibratie();
+    return;
+  }
+  const b=kalibratieBBox;
+  const stap=kalibratieFijn?0.002:0.01;
+  const dLon=(b.maxLon-b.minLon)*stap, dLat=(b.maxLat-b.minLat)*stap;
+  let verwerkt=true;
+  if(e.key==='Escape') stopKalibratie(false);
+  else if(e.key==='Enter'){ stopKalibratie(true); }
+  else if(e.key==='f'||e.key==='F'){ kalibratieFijn=!kalibratieFijn; }
+  else if(e.key==='c'||e.key==='C'){ kopieerKalibraties(); }
+  else if(e.key==='ArrowLeft'  && !e.shiftKey){ b.minLon-=dLon; b.maxLon-=dLon; }
+  else if(e.key==='ArrowRight' && !e.shiftKey){ b.minLon+=dLon; b.maxLon+=dLon; }
+  else if(e.key==='ArrowUp'    && !e.shiftKey){ b.minLat+=dLat; b.maxLat+=dLat; }
+  else if(e.key==='ArrowDown'  && !e.shiftKey){ b.minLat-=dLat; b.maxLat-=dLat; }
+  else if(e.key==='ArrowRight' && e.shiftKey){ b.minLon-=dLon/2; b.maxLon+=dLon/2; }           // breder
+  else if(e.key==='ArrowLeft'  && e.shiftKey){ b.minLon+=dLon/2; b.maxLon-=dLon/2; }           // smaller
+  else if(e.key==='ArrowUp'    && e.shiftKey){ b.minLat-=dLat/2; b.maxLat+=dLat/2; }           // hoger
+  else if(e.key==='ArrowDown'  && e.shiftKey){ b.minLat+=dLat/2; b.maxLat-=dLat/2; }           // lager
+  else if(e.key==='+'||e.key==='='){ b.minLon-=dLon/2; b.maxLon+=dLon/2; b.minLat-=dLat/2; b.maxLat+=dLat/2; }
+  else if(e.key==='-'||e.key==='_'){ b.minLon+=dLon/2; b.maxLon-=dLon/2; b.minLat+=dLat/2; b.maxLat-=dLat/2; }
+  else verwerkt=false;
+  if(verwerkt){
+    // Ondergrens: de rechthoek mag nooit "binnenstebuiten" klappen
+    if(kalibratieBBox && b.maxLon-b.minLon<0.1){ const m=(b.minLon+b.maxLon)/2; b.minLon=m-0.05; b.maxLon=m+0.05; }
+    if(kalibratieBBox && b.maxLat-b.minLat<0.1){ const m=(b.minLat+b.maxLat)/2; b.minLat=m-0.05; b.maxLat=m+0.05; }
+    updateKalibratieHud();
+    e.preventDefault();
+    e.stopPropagation();
+  }
+}, true);
+
+// Kladcanvas voor het buurland-gummen: de afbeelding wordt eerst hierop
+// getekend, dan worden de vormen van alle andere landen eruit "gegumd"
+// (destination-out), en pas daarna gaat het resultaat naar het hoofdcanvas.
+const illKladCanvas = document.createElement('canvas');
+const illKladCtx = illKladCanvas.getContext('2d');
+
+// Tekent een illustratie vrij (ongeclipt) over de opgegeven graden-rechthoek,
+// gebogen over de bol, en gumt de delen weg die over andere landen vallen.
+function tekenIllustratieVrij(dutch, img, bbox, doorzicht){
+  const [,,mz]=roteerPunt(lonLatTo3D((bbox.minLon+bbox.maxLon)/2,(bbox.minLat+bbox.maxLat)/2),rotM);
   if(mz<=0.01) return;
 
-  ctx.save();
-  // Clip = strak op de originele landvorm, exact zoals tekenPolyGroep dat
-  // ook doet (geen wijziging aan de grens-kant).
-  ctx.beginPath();
-  for(const poly of d.relevantePolys){
-    if(!poly[0]||poly[0].length<3) continue;
-    tekenRing(poly[0]);
-    ctx.closePath();
+  if(illKladCanvas.width!==W || illKladCanvas.height!==H){
+    illKladCanvas.width=W; illKladCanvas.height=H;
   }
-  ctx.clip();
-  const standaardKleur = getLandKleur(dutch, d.midLat);
-  ctx.fillStyle = standaardKleur;
-  ctx.fillRect(0, 0, W, H);
-  ctx.restore();
+  illKladCtx.clearRect(0,0,W,H);
 
-  // Illustratie tekenen: geen aparte clip meer nodig, elke driehoek clipt
-  // zichzelf al (zie tekenDriehoek), en de alphaFactor-vervaging zorgt dat
-  // er buiten de kust-marge simpelweg niets meer getekend wordt - dus de
-  // illustratie kan hier gewoon over de originele landgrens heen "lekken"
-  // waar dat de bedoeling is (bij de kust).
-  ctx.save();
-  const basisAlpha=(doorzicht!==undefined?doorzicht:0.93);
+  // Stap 1: de afbeelding in een raster over de bolkromming buigen (op het klad)
+  const RASTER=12;
   const imgW=img.naturalWidth||img.width, imgH=img.naturalHeight||img.height;
-  const RASTER=d.RASTER;
   const hoek=[];
   for(let j=0;j<=RASTER;j++){
     const rij=[];
+    const lat=bbox.maxLat-(bbox.maxLat-bbox.minLat)*j/RASTER;
     for(let i=0;i<=RASTER;i++){
-      const {lon,lat,alphaFactor,fi,fj}=d.raster[j][i];
+      const lon=bbox.minLon+(bbox.maxLon-bbox.minLon)*i/RASTER;
       const [x,y,z]=roteerPunt(lonLatTo3D(lon,lat),rotM);
-      rij.push({zichtbaar:z>0, sx:CX+x*R, sy:CY-y*R, bx:fi*imgW, by:fj*imgH, alphaFactor});
+      rij.push({ zichtbaar:z>0, sx:CX+x*R, sy:CY-y*R, bx:i/RASTER*imgW, by:j/RASTER*imgH });
     }
     hoek.push(rij);
   }
   for(let j=0;j<RASTER;j++){
     for(let i=0;i<RASTER;i++){
       const p00=hoek[j][i],p10=hoek[j][i+1],p01=hoek[j+1][i],p11=hoek[j+1][i+1];
-      if(p00.zichtbaar&&p10.zichtbaar&&p01.zichtbaar){
-        const a=(p00.alphaFactor+p10.alphaFactor+p01.alphaFactor)/3;
-        if(a>0.01){
-          ctx.globalAlpha=basisAlpha*a;
-          tekenDriehoek(img,p00.bx,p00.by,p10.bx,p10.by,p01.bx,p01.by,p00.sx,p00.sy,p10.sx,p10.sy,p01.sx,p01.sy);
-        }
-      }
-      if(p10.zichtbaar&&p11.zichtbaar&&p01.zichtbaar){
-        const a=(p10.alphaFactor+p11.alphaFactor+p01.alphaFactor)/3;
-        if(a>0.01){
-          ctx.globalAlpha=basisAlpha*a;
-          tekenDriehoek(img,p10.bx,p10.by,p11.bx,p11.by,p01.bx,p01.by,p10.sx,p10.sy,p11.sx,p11.sy,p01.sx,p01.sy);
-        }
-      }
+      if(p00.zichtbaar&&p10.zichtbaar&&p01.zichtbaar)
+        tekenDriehoek(img,p00.bx,p00.by,p10.bx,p10.by,p01.bx,p01.by,p00.sx,p00.sy,p10.sx,p10.sy,p01.sx,p01.sy,undefined,illKladCtx);
+      if(p10.zichtbaar&&p11.zichtbaar&&p01.zichtbaar)
+        tekenDriehoek(img,p10.bx,p10.by,p11.bx,p11.by,p01.bx,p01.by,p10.sx,p10.sy,p11.sx,p11.sy,p01.sx,p01.sy,undefined,illKladCtx);
     }
   }
+
+  // Stap 2: gum de afbeelding weg boven alle ANDERE landen. Alleen landen
+  // waarvan de bounding-box de afbeeldings-rechthoek raakt, doen mee
+  // (goedkope voorcheck), plus datumgrens-kruisers voor de zekerheid.
+  illKladCtx.save();
+  illKladCtx.globalCompositeOperation='destination-out';
+  illKladCtx.fillStyle='#000';
+  illKladCtx.beginPath();
+  for(const naam in alleLandenFeatureMap){
+    if(naam===dutch) continue;
+    const info=alleLandenFeatureMap[naam];
+    if(!info.kruistDatumgrens){
+      if(info.maxLat < bbox.minLat || info.minLat > bbox.maxLat) continue;
+      if(info.maxLon < bbox.minLon || info.minLon > bbox.maxLon) continue;
+    }
+    const g=info.feature.geometry;
+    const polys=g.type==='Polygon'?[g.coordinates]:g.coordinates;
+    for(const poly of polys){
+      if(!poly[0]||poly[0].length<3) continue;
+      tekenRing(poly[0], illKladCtx);
+      illKladCtx.closePath();
+    }
+  }
+  illKladCtx.fill('evenodd');
+  illKladCtx.restore();
+
+  // Stap 3: het resultaat (afbeelding minus buurlanden) op het hoofdcanvas
+  ctx.save();
+  ctx.globalAlpha=(doorzicht!==undefined?doorzicht:0.93);
+  ctx.drawImage(illKladCanvas,0,0);
   ctx.globalAlpha=1.0;
   ctx.restore();
 }
@@ -2557,44 +2500,15 @@ function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
     return;
   }
 
-  // ── Vrij-zwevende landen: illustratie niet geclipped op landgrenzen ──
-  // Gebruik dit voor eilandengroepen waarbij de afbeelding de omringende
-  // zee bewust toont (bijv. Bahama's met dolfijnen). De bbox geeft de
-  // lon/lat-rechthoek waarover de afbeelding wordt uitgerekt.
-  const VRIJ_ZWEVEND = {
-    "Bahama's": { minLon:-80.5, maxLon:-72.5, minLat:20.8, maxLat:27.5 },
-    "Belize":   { minLon:-89.5, maxLon:-85.5, minLat:15.6, maxLat:18.8 },
-  };
-  if(VRIJ_ZWEVEND[dutch]){
-    const bbox = VRIJ_ZWEVEND[dutch];
-    const [,,mz]=roteerPunt(lonLatTo3D((bbox.minLon+bbox.maxLon)/2,(bbox.minLat+bbox.maxLat)/2),rotM);
-    if(mz<=0.01) return;
-    const RASTER=12;
-    const imgW=img.naturalWidth||img.width, imgH=img.naturalHeight||img.height;
-    const hoek=[];
-    for(let j=0;j<=RASTER;j++){
-      const rij=[];
-      const lat=bbox.maxLat-(bbox.maxLat-bbox.minLat)*j/RASTER;
-      for(let i=0;i<=RASTER;i++){
-        const lon=bbox.minLon+(bbox.maxLon-bbox.minLon)*i/RASTER;
-        const [x,y,z]=roteerPunt(lonLatTo3D(lon,lat),rotM);
-        rij.push({ zichtbaar:z>0, sx:CX+x*R, sy:CY-y*R, bx:i/RASTER*imgW, by:j/RASTER*imgH });
-      }
-      hoek.push(rij);
-    }
-    ctx.save();
-    ctx.globalAlpha=(doorzicht!==undefined?doorzicht:0.93);
-    for(let j=0;j<RASTER;j++){
-      for(let i=0;i<RASTER;i++){
-        const p00=hoek[j][i],p10=hoek[j][i+1],p01=hoek[j+1][i],p11=hoek[j+1][i+1];
-        if(p00.zichtbaar&&p10.zichtbaar&&p01.zichtbaar)
-          tekenDriehoek(img,p00.bx,p00.by,p10.bx,p10.by,p01.bx,p01.by,p00.sx,p00.sy,p10.sx,p10.sy,p01.sx,p01.sy);
-        if(p10.zichtbaar&&p11.zichtbaar&&p01.zichtbaar)
-          tekenDriehoek(img,p10.bx,p10.by,p11.bx,p11.by,p01.bx,p01.by,p10.sx,p10.sy,p11.sx,p11.sy,p01.sx,p01.sy);
-      }
-    }
-    ctx.globalAlpha=1.0;
-    ctx.restore();
+  // ── Gekalibreerde landen: illustratie vrij tekenen, niet knippen op de
+  // eigen landgrens (zee en transparante rand blijven zichtbaar), maar wel
+  // weggummen boven buurlanden. Zie ILLUSTRATIE_KALIBRATIE + de K-modus.
+  // Tijdens het kalibreren tekent de kalibratiemodus dit land zelf, dus
+  // slaan we het hier over om dubbel tekenen te voorkomen.
+  if(kalibratieActief && dutch===kalibratieNaam) return;
+  const kal = getIllustratieKalibratie(dutch);
+  if(kal){
+    tekenIllustratieVrij(dutch, img, kal, doorzicht);
     return;
   }
 
@@ -2612,11 +2526,6 @@ function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
     }
     tekenPolyGroep(hoofdDelen, img, doorzicht, dutch);
     tekenPolyGroep(alaskaDelen, landIllustraties['__Alaska'], doorzicht, dutch);
-    return;
-  }
-
-  if(HYBRIDE_KUST_LANDEN.has(dutch)){
-    tekenPolyGroepHybride(polysLijst, img, doorzicht, dutch);
     return;
   }
 
@@ -2984,6 +2893,46 @@ function drawGlobe(){
     }
   }
 
+
+  // ── Kalibratiemodus-overlay ──
+  // De illustratie op de werk-rechthoek (altijd zichtbaar, ongeacht zoom),
+  // de echte landgrens in rood, en de rand van de afbeelding als geel kader.
+  if(kalibratieActief && kalibratieFeature && kalibratieBBox){
+    laadIllustratie(kalibratieNaam);
+    const kalImg=landIllustraties[kalibratieNaam];
+    if(kalImg) tekenIllustratieVrij(kalibratieNaam, kalImg, kalibratieBBox, 0.85);
+
+    // Rode lijn: de echte landgrens uit de kaartdata
+    const kg=kalibratieFeature.geometry;
+    const kalPolys=kg.type==='Polygon'?[kg.coordinates]:kg.coordinates;
+    ctx.save();
+    ctx.beginPath();
+    for(const poly of kalPolys){
+      if(!poly[0]||poly[0].length<3) continue;
+      tekenRing(poly[0]);
+      ctx.closePath();
+    }
+    ctx.strokeStyle='#ff2d2d'; ctx.lineWidth=2; ctx.stroke();
+
+    // Geel gestippeld kader: waar de rand van de afbeelding ligt
+    const kb=kalibratieBBox, SEG=16;
+    ctx.beginPath();
+    let kaderPen=false;
+    const kaderPunt=(lon,lat)=>{
+      const [x,y,z]=roteerPunt(lonLatTo3D(lon,lat),rotM);
+      if(z<=0){ kaderPen=false; return; }
+      const sx=CX+x*R, sy=CY-y*R;
+      if(!kaderPen){ ctx.moveTo(sx,sy); kaderPen=true; } else ctx.lineTo(sx,sy);
+    };
+    for(let i=0;i<=SEG;i++) kaderPunt(kb.minLon+(kb.maxLon-kb.minLon)*i/SEG, kb.maxLat); // boven
+    for(let i=0;i<=SEG;i++) kaderPunt(kb.maxLon, kb.maxLat-(kb.maxLat-kb.minLat)*i/SEG); // rechts
+    for(let i=0;i<=SEG;i++) kaderPunt(kb.maxLon-(kb.maxLon-kb.minLon)*i/SEG, kb.minLat); // onder
+    for(let i=0;i<=SEG;i++) kaderPunt(kb.minLon, kb.minLat+(kb.maxLat-kb.minLat)*i/SEG); // links
+    ctx.setLineDash([6,5]);
+    ctx.strokeStyle='#ffd400'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
 
   // Breedtegraden
   ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=0.5;
