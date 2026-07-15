@@ -565,7 +565,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.33</div>
+  <div id="versie-label">v0.2.34</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2080,6 +2080,284 @@ function berekenLandBBoxGraden(feature){
   return {minLon,maxLon,minLat,maxLat,ankerLon};
 }
 
+// ── Hybride kust-rendering (proef, vooralsnog alleen Spanje) ─────────
+// Idee: op landgrenzen blijft de illustratie exact zo strak als altijd
+// (geen wijziging t.o.v. tekenPolyGroep hierboven), maar aan de kust mag
+// de rand van de afbeelding geleidelijk vervagen naar de oceaankleur die
+// de bol daar toch al heeft. Welke randstukken "kust" zijn wordt NIET
+// handmatig ingesteld, maar afgeleid uit de brondata: een randpunt dat
+// (nagenoeg) ook in een ander land voorkomt is een gedeelde landgrens;
+// komt het nergens anders voor, dan is het kust.
+//
+// Belangrijk: de rand van het land wordt hier NERGENS vervormd of
+// opgerekt (dat gaf eerder ongeldige, zelfoverlappende vormen bij een
+// grillige kustlijn). In plaats daarvan wordt per rasterpunt alleen de
+// doorzichtigheid aangepast op basis van de afstand tot de dichtstbijzijnde
+// kust; bij een landgrens blijft die afstand groot (dus alpha ~0) tenzij
+// het punt toevallig ook dicht bij een kuststuk ligt.
+const ZEE_MARGE_KM = 45; // hoe ver de illustratie voorbij de kust mag doorlopen
+const GRENS_HERKENNING_TOLERANTIE_KM = 8; // marge voor "is dit hetzelfde grenspunt?"
+const RANDPUNTEN_CEL_GRADEN = 0.5; // ~55km rastercellen voor de randpunten-index
+
+let gedeeldeRandpuntenGrid = null;
+function bouwGedeeldeRandpuntenGrid(){
+  const grid = new Map();
+  for(const f of GEOJSON.features){
+    const land = f.properties.dutch || f.properties.name;
+    const geom = f.geometry;
+    const polys = geom.type==='Polygon' ? [geom.coordinates] : geom.coordinates;
+    for(const poly of polys){
+      if(!poly[0]) continue;
+      for(const [lon,lat] of poly[0]){
+        const key = Math.round(lat/RANDPUNTEN_CEL_GRADEN)+','+Math.round(lon/RANDPUNTEN_CEL_GRADEN);
+        if(!grid.has(key)) grid.set(key, []);
+        grid.get(key).push([lon,lat,land]);
+      }
+    }
+  }
+  gedeeldeRandpuntenGrid = grid;
+}
+// Is dit punt (bijna) ook onderdeel van een ANDER land? Zo ja: landgrens.
+function isRandpuntGedeeld(lon, lat, eigenLand){
+  if(!gedeeldeRandpuntenGrid) bouwGedeeldeRandpuntenGrid();
+  const cLat = Math.round(lat/RANDPUNTEN_CEL_GRADEN), cLon = Math.round(lon/RANDPUNTEN_CEL_GRADEN);
+  for(let dLat=-1; dLat<=1; dLat++){
+    for(let dLon=-1; dLon<=1; dLon++){
+      const punten = gedeeldeRandpuntenGrid.get((cLat+dLat)+','+(cLon+dLon));
+      if(!punten) continue;
+      for(const [plon,plat,pland] of punten){
+        if(pland===eigenLand) continue;
+        if(afstandKmTussenPunten(lon,lat,plon,plat) <= GRENS_HERKENNING_TOLERANTIE_KM) return true;
+      }
+    }
+  }
+  return false;
+}
+// Per randstuk (tussen twee opeenvolgende punten): is dit kust (mag
+// vervagen) of grens (moet hard blijven)? Een stuk telt al als grens
+// zodra BEIDE eindpunten grens zijn.
+function classificeerRandsegmenten(ring, eigenLand){
+  const n = ring.length;
+  const isGrensPerPunt = ring.map(([lon,lat]) => isRandpuntGedeeld(lon,lat,eigenLand));
+  const isKustSegment = [];
+  for(let i=0;i<n;i++){
+    const j=(i+1)%n;
+    isKustSegment.push(!(isGrensPerPunt[i] && isGrensPerPunt[j]));
+  }
+  return isKustSegment;
+}
+// Kortste afstand tot de rand, maar dan alléén tellend langs de kuststukken.
+function afstandTotKustSegmenten(lon, lat, ring, isKustSegment){
+  let minKm = Infinity;
+  const STAPPEN=4;
+  for(let i=0;i<ring.length;i++){
+    if(!isKustSegment[i]) continue;
+    const [lon1,lat1]=ring[i], [lon2,lat2]=ring[(i+1)%ring.length];
+    for(let s=0;s<=STAPPEN;s++){
+      const t=s/STAPPEN;
+      const d=afstandKmTussenPunten(lon,lat, lon1+(lon2-lon1)*t, lat1+(lat2-lat1)*t);
+      if(d<minKm) minKm=d;
+    }
+  }
+  return minKm;
+}
+// Ray-casting punt-in-meerdere-polygonen (i.t.t. de bestaande puntInPolygoon
+// hierboven, die één losse ring test) - genoeg voor onze landvormen (geen
+// binnengaten/enclaves in deze dataset).
+function puntInLandvorm(lon, lat, polysLijst){
+  let inside=false;
+  for(const poly of polysLijst){
+    const ring = poly[0];
+    if(!ring || ring.length<3) continue;
+    for(let i=0,j=ring.length-1;i<ring.length;j=i++){
+      const [xi,yi]=ring[i], [xj,yj]=ring[j];
+      const kruist = ((yi>lat)!==(yj>lat)) && (lon < (xj-xi)*(lat-yi)/(yj-yi)+xi);
+      if(kruist) inside=!inside;
+    }
+  }
+  return inside;
+}
+
+// Landen waarvoor de hybride kust-rendering aanstaat (proef).
+const HYBRIDE_KUST_LANDEN = new Set(['Spanje']);
+
+// Eenmalig per land opgebouwde (statische) data - hangt alleen af van de
+// landgeometrie, niet van de camerastand, dus wordt maar één keer berekend.
+const hybrideKustCache = {};
+function bouwHybrideKustData(polysLijst, dutch){
+  let grootsteOpp = 0, grootsteIdx = -1;
+  const deelOpp = [];
+  for(let p=0;p<polysLijst.length;p++){
+    const poly=polysLijst[p];
+    if(!poly[0]||poly[0].length<3){ deelOpp.push(0); continue; }
+    let opp=0;
+    for(let i=0,j=poly[0].length-1;i<poly[0].length;j=i++){
+      opp+=(poly[0][j][0]-poly[0][i][0])*(poly[0][j][1]+poly[0][i][1]);
+    }
+    opp=Math.abs(opp);
+    deelOpp.push(opp);
+    if(opp>grootsteOpp){ grootsteOpp=opp; grootsteIdx=p; }
+  }
+  if(grootsteIdx<0) return null;
+  const drempel = grootsteOpp * 0.03;
+
+  let ankerSLon=0, ankerSLat=0, ankerN=0;
+  for(const [lo,la] of polysLijst[grootsteIdx][0]){ ankerSLon+=lo; ankerSLat+=la; ankerN++; }
+  const ankerLon0=ankerSLon/ankerN, ankerLat0=ankerSLat/ankerN;
+  const MAX_AFSTAND_KM = 1200;
+
+  const relevantePolys = [];
+  const alleLons=[];
+  let minLat=Infinity,maxLat=-Infinity;
+  let heeftPunten=false;
+  for(let p=0;p<polysLijst.length;p++){
+    const poly=polysLijst[p];
+    if(!poly[0]||poly[0].length<3) continue;
+    if(deelOpp[p] < drempel) continue;
+    if(p!==grootsteIdx){
+      let sLon=0,sLat=0,n=0;
+      for(const [lo,la] of poly[0]){ sLon+=lo; sLat+=la; n++; }
+      if(afstandKmTussenPunten(ankerLon0,ankerLat0,sLon/n,sLat/n) > MAX_AFSTAND_KM) continue;
+    }
+    relevantePolys.push(poly);
+    for(const [lon,lat] of poly[0]){
+      alleLons.push(lon);
+      minLat=Math.min(minLat,lat);maxLat=Math.max(maxLat,lat);
+      heeftPunten=true;
+    }
+  }
+  if(!heeftPunten) return null;
+
+  const lonsGesorteerd=alleLons.slice().sort((a,b)=>a-b);
+  let grootsteHap=0, hapNaLon=lonsGesorteerd[0];
+  for(let i=0;i<lonsGesorteerd.length;i++){
+    const huidige=lonsGesorteerd[i];
+    const volgende=(i===lonsGesorteerd.length-1)?lonsGesorteerd[0]+360:lonsGesorteerd[i+1];
+    const hap=volgende-huidige;
+    if(hap>grootsteHap){ grootsteHap=hap; hapNaLon=volgende; }
+  }
+  const ankerLon = (hapNaLon>180) ? hapNaLon-360 : hapNaLon;
+  let minLon=Infinity,maxLon=-Infinity;
+  for(const lon of alleLons){
+    const uitgevouwen = ankerLon + ((lon-ankerLon+360)%360);
+    minLon=Math.min(minLon,uitgevouwen);
+    maxLon=Math.max(maxLon,uitgevouwen);
+  }
+  // Dit (nog niet vergrote) vak is exact de rand van het land zelf - hier
+  // wordt de afbeelding op uitgelijnd (net als in tekenPolyGroep). Bijsnijden
+  // gebeurt dus nog steeds gewoon tot de eerste landpixel, zoals altijd.
+  const imgMinLon=minLon, imgMaxLon=maxLon, imgMinLat=minLat, imgMaxLat=maxLat;
+  const midLat0=(minLat+maxLat)/2;
+
+  // Kaart-/vervagingsvak: wél vergroot met de kust-marge, puur om er ruimte
+  // voor het rasterpunt-grid te hebben - de afbeelding zelf wordt NIET
+  // uitgerekt over deze marge (zie fi/fj hieronder: die klemmen op het
+  // strakke beeldvak, en buiten dat vak wordt gewoon de buitenste rand van
+  // de afbeelding doorgetrokken).
+  const buffLat = ZEE_MARGE_KM/111;
+  const buffLon = ZEE_MARGE_KM/(111*Math.max(0.15, Math.cos(midLat0*Math.PI/180)));
+  minLon -= buffLon; maxLon += buffLon;
+  minLat -= buffLat; maxLat += buffLat;
+  const midLat=(minLat+maxLat)/2;
+
+  // Per polygoondeel: welke randstukken zijn kust (mogen vervagen) i.p.v.
+  // grens (moeten hard blijven).
+  const kustSegmentenPerPoly = relevantePolys.map(poly => classificeerRandsegmenten(poly[0], dutch));
+
+  const RASTER = 12;
+  const raster=[];
+  for(let j=0;j<=RASTER;j++){
+    const rij=[];
+    const lat = maxLat-(maxLat-minLat)*j/RASTER;
+    for(let i=0;i<=RASTER;i++){
+      const lon = minLon+(maxLon-minLon)*i/RASTER;
+      let alphaFactor=1;
+      if(!puntInLandvorm(lon,lat,relevantePolys)){
+        let dichtsteAfstand=Infinity;
+        for(let p=0;p<relevantePolys.length;p++){
+          const d=afstandTotKustSegmenten(lon,lat,relevantePolys[p][0],kustSegmentenPerPoly[p]);
+          if(d<dichtsteAfstand) dichtsteAfstand=d;
+        }
+        alphaFactor=Math.max(0,1-dichtsteAfstand/ZEE_MARGE_KM);
+      }
+      const fi = Math.max(0, Math.min(1, (lon-imgMinLon)/(imgMaxLon-imgMinLon)));
+      const fj = Math.max(0, Math.min(1, (imgMaxLat-lat)/(imgMaxLat-imgMinLat)));
+      rij.push({lon,lat,alphaFactor,fi,fj});
+    }
+    raster.push(rij);
+  }
+
+  return {relevantePolys, minLon, maxLon, minLat, maxLat, midLat, RASTER, raster};
+}
+
+function tekenPolyGroepHybride(polysLijst, img, doorzicht, dutch){
+  if(hybrideKustCache[dutch]===undefined){
+    hybrideKustCache[dutch] = bouwHybrideKustData(polysLijst, dutch);
+  }
+  const d = hybrideKustCache[dutch];
+  if(!d) return;
+
+  const midLon=(d.minLon+d.maxLon)/2, midLat=(d.minLat+d.maxLat)/2;
+  const [,,mz]=roteerPunt(lonLatTo3D(midLon,midLat),rotM);
+  if(mz<=0.01) return;
+
+  ctx.save();
+  // Clip = strak op de originele landvorm, exact zoals tekenPolyGroep dat
+  // ook doet (geen wijziging aan de grens-kant).
+  ctx.beginPath();
+  for(const poly of d.relevantePolys){
+    if(!poly[0]||poly[0].length<3) continue;
+    tekenRing(poly[0]);
+    ctx.closePath();
+  }
+  ctx.clip();
+  const standaardKleur = getLandKleur(dutch, d.midLat);
+  ctx.fillStyle = standaardKleur;
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+
+  // Illustratie tekenen: geen aparte clip meer nodig, elke driehoek clipt
+  // zichzelf al (zie tekenDriehoek), en de alphaFactor-vervaging zorgt dat
+  // er buiten de kust-marge simpelweg niets meer getekend wordt - dus de
+  // illustratie kan hier gewoon over de originele landgrens heen "lekken"
+  // waar dat de bedoeling is (bij de kust).
+  ctx.save();
+  const basisAlpha=(doorzicht!==undefined?doorzicht:0.93);
+  const imgW=img.naturalWidth||img.width, imgH=img.naturalHeight||img.height;
+  const RASTER=d.RASTER;
+  const hoek=[];
+  for(let j=0;j<=RASTER;j++){
+    const rij=[];
+    for(let i=0;i<=RASTER;i++){
+      const {lon,lat,alphaFactor,fi,fj}=d.raster[j][i];
+      const [x,y,z]=roteerPunt(lonLatTo3D(lon,lat),rotM);
+      rij.push({zichtbaar:z>0, sx:CX+x*R, sy:CY-y*R, bx:fi*imgW, by:fj*imgH, alphaFactor});
+    }
+    hoek.push(rij);
+  }
+  for(let j=0;j<RASTER;j++){
+    for(let i=0;i<RASTER;i++){
+      const p00=hoek[j][i],p10=hoek[j][i+1],p01=hoek[j+1][i],p11=hoek[j+1][i+1];
+      if(p00.zichtbaar&&p10.zichtbaar&&p01.zichtbaar){
+        const a=(p00.alphaFactor+p10.alphaFactor+p01.alphaFactor)/3;
+        if(a>0.01){
+          ctx.globalAlpha=basisAlpha*a;
+          tekenDriehoek(img,p00.bx,p00.by,p10.bx,p10.by,p01.bx,p01.by,p00.sx,p00.sy,p10.sx,p10.sy,p01.sx,p01.sy);
+        }
+      }
+      if(p10.zichtbaar&&p11.zichtbaar&&p01.zichtbaar){
+        const a=(p10.alphaFactor+p11.alphaFactor+p01.alphaFactor)/3;
+        if(a>0.01){
+          ctx.globalAlpha=basisAlpha*a;
+          tekenDriehoek(img,p10.bx,p10.by,p11.bx,p11.by,p01.bx,p01.by,p10.sx,p10.sy,p11.sx,p11.sy,p01.sx,p01.sy);
+        }
+      }
+    }
+  }
+  ctx.globalAlpha=1.0;
+  ctx.restore();
+}
+
 function tekenPolyGroep(polysLijst,img,doorzicht,dutch){
   if(!polysLijst.length) return;
   // Stap 1: bepaal welke landdelen 'betekenisvol' zijn. Kleine, verre eilandjes
@@ -2334,6 +2612,11 @@ function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
     }
     tekenPolyGroep(hoofdDelen, img, doorzicht, dutch);
     tekenPolyGroep(alaskaDelen, landIllustraties['__Alaska'], doorzicht, dutch);
+    return;
+  }
+
+  if(HYBRIDE_KUST_LANDEN.has(dutch)){
+    tekenPolyGroepHybride(polysLijst, img, doorzicht, dutch);
     return;
   }
 
