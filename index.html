@@ -565,7 +565,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.35</div>
+  <div id="versie-label">v0.2.37</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1994,6 +1994,11 @@ function tekenIJskap(poolLat,straal){
 // waarmee een plat plaatje in kleine stukjes over de kromming van de bol "buigt".
 function tekenDriehoek(img, sx0,sy0,sx1,sy1,sx2,sy2, dx0,dy0,dx1,dy1,dx2,dy2, uitdijing, doelCtx){
   const dctx = doelCtx || ctx; // optioneel: teken op een ander canvas (kladcanvas)
+  // Snelle winst: als de hele driehoek buiten het scherm valt, meteen stoppen.
+  // Vooral bij ver inzoomen valt een groot deel van het raster buiten beeld,
+  // en elke overgeslagen driehoek scheelt een save/clip/drawImage-cyclus.
+  if((dx0<0&&dx1<0&&dx2<0) || (dx0>W&&dx1>W&&dx2>W) ||
+     (dy0<0&&dy1<0&&dy2<0) || (dy0>H&&dy1>H&&dy2>H)) return;
   const denom = sx0*(sy1-sy2) + sx1*(sy2-sy0) + sx2*(sy0-sy1);
   if(Math.abs(denom) < 1e-6) return;
   dctx.save();
@@ -2270,22 +2275,43 @@ document.addEventListener('keydown', e=>{
   }
 }, true);
 
-// Kladcanvas voor het buurland-gummen: de afbeelding wordt eerst hierop
-// getekend, dan worden de vormen van alle andere landen eruit "gegumd"
-// (destination-out), en pas daarna gaat het resultaat naar het hoofdcanvas.
-const illKladCanvas = document.createElement('canvas');
-const illKladCtx = illKladCanvas.getContext('2d');
+// ── Vrije rendering (gekalibreerde landen) ───────────
+// Sneller dan de eerdere gum-methode: in plaats van "teken alles op een
+// kladcanvas en gum de buurlanden weg" gebruiken we nu één kniptruc op het
+// hoofdcanvas: een knipgebied dat het hele scherm beslaat MIN de vormen van
+// alle andere landen (evenodd maakt van elke landvorm vanzelf een gat).
+// Resultaat is identiek, maar zonder schermgrote kopieerslagen per frame —
+// dat was de grote vertrager op zwakkere videokaarten.
 
-// Tekent een illustratie vrij (ongeclipt) over de opgegeven graden-rechthoek,
-// gebogen over de bol, en gumt de delen weg die over andere landen vallen.
+// Per-frame cache van geprojecteerde landvormen (Path2D). Meerdere
+// gekalibreerde landen in beeld (drielandenpunt!) moeten vaak dezelfde
+// buurlanden uitsparen; dankzij deze cache wordt elk land per frame maar
+// één keer doorgerekend in plaats van drie of vier keer. De cache herkent
+// een nieuw frame aan een nieuwe rotatiematrix (rotM) en leegt zichzelf dan.
+const landPadCache = { rot:null, paden:{} };
+function getLandPad(naam){
+  if(landPadCache.rot!==rotM){ landPadCache.rot=rotM; landPadCache.paden={}; }
+  let pad=landPadCache.paden[naam];
+  if(pad) return pad;
+  pad=new Path2D();
+  const g=alleLandenFeatureMap[naam].feature.geometry;
+  const polys=g.type==='Polygon'?[g.coordinates]:g.coordinates;
+  for(const poly of polys){
+    if(!poly[0]||poly[0].length<3) continue;
+    tekenRing(poly[0], pad); // tekenRing gebruikt alleen moveTo/lineTo, dus een Path2D kan ook als doel dienen
+    pad.closePath();
+  }
+  landPadCache.paden[naam]=pad;
+  return pad;
+}
+
 // ── Hoekvervorming ────────────────────────────────────
 // Elke kalibratie kan optioneel een 'hoeken'-blokje hebben: per hoek van de
 // afbeelding een verschuiving in graden (dLon = oost/west, dLat = noord/zuid).
 //   lb = linksboven, rb = rechtsboven, lo = linksonder, ro = rechtsonder
 // De verschuiving werkt het sterkst bij die hoek zelf en loopt geleidelijk
-// af richting de andere hoeken (bilineair) — precies het "plaatselijk aan de
-// afbeelding trekken" uit Arjens schets: één hoek beweegt, de rest blijft
-// vrijwel staan.
+// af richting de andere hoeken (bilineair) — het "plaatselijk aan de
+// afbeelding trekken": één hoek beweegt, de rest blijft vrijwel staan.
 // u = 0..1 van links naar rechts, v = 0..1 van boven naar onder (afbeelding).
 function vervormLonLat(bbox, u, v){
   let lon = bbox.minLon + (bbox.maxLon - bbox.minLon) * u;
@@ -2301,16 +2327,45 @@ function vervormLonLat(bbox, u, v){
   return [lon, lat];
 }
 
+// Tekent een illustratie vrij (ongeclipt op de eigen grens) over de opgegeven
+// graden-rechthoek, gebogen over de bol. Waar de afbeelding over een ÁNDER
+// land zou vallen, wordt hij niet getekend (kniptruc hierboven).
 function tekenIllustratieVrij(dutch, img, bbox, doorzicht){
   const [,,mz]=roteerPunt(lonLatTo3D((bbox.minLon+bbox.maxLon)/2,(bbox.minLat+bbox.maxLat)/2),rotM);
   if(mz<=0.01) return;
 
-  if(illKladCanvas.width!==W || illKladCanvas.height!==H){
-    illKladCanvas.width=W; illKladCanvas.height=H;
+  // Marge voor de voorcheck: als hoeken naar buiten zijn getrokken, reikt de
+  // afbeelding verder dan de basisrechthoek — tel de grootste verschuiving mee.
+  let hMargeLon=0, hMargeLat=0;
+  if(bbox.hoeken){
+    for(const k of ['lb','rb','lo','ro']){
+      const hp=bbox.hoeken[k];
+      if(hp){ hMargeLon=Math.max(hMargeLon,Math.abs(hp.dLon)); hMargeLat=Math.max(hMargeLat,Math.abs(hp.dLat)); }
+    }
   }
-  illKladCtx.clearRect(0,0,W,H);
 
-  // Stap 1: de afbeelding in een raster over de bolkromming buigen (op het klad)
+  // Knipgebied: het hele scherm, met alle relevante andere landen als gaten.
+  // Alleen landen waarvan de bounding-box de afbeeldings-rechthoek raakt doen
+  // mee (goedkope voorcheck), plus datumgrens-kruisers voor de zekerheid.
+  const klip=new Path2D();
+  klip.rect(0,0,W,H);
+  for(const naam in alleLandenFeatureMap){
+    if(naam===dutch) continue;
+    const info=alleLandenFeatureMap[naam];
+    if(!info.kruistDatumgrens){
+      if(info.maxLat < bbox.minLat-hMargeLat || info.minLat > bbox.maxLat+hMargeLat) continue;
+      if(info.maxLon < bbox.minLon-hMargeLon || info.minLon > bbox.maxLon+hMargeLon) continue;
+    }
+    klip.addPath(getLandPad(naam));
+  }
+
+  ctx.save();
+  ctx.clip(klip,'evenodd');
+  ctx.globalAlpha=(doorzicht!==undefined?doorzicht:0.93);
+
+  // De afbeelding in een raster over de bolkromming buigen, rechtstreeks op
+  // het hoofdcanvas (binnen het knipgebied). Driehoeken buiten beeld worden
+  // in tekenDriehoek zelf al overgeslagen.
   const RASTER=12;
   const imgW=img.naturalWidth||img.width, imgH=img.naturalHeight||img.height;
   const hoek=[];
@@ -2327,50 +2382,102 @@ function tekenIllustratieVrij(dutch, img, bbox, doorzicht){
     for(let i=0;i<RASTER;i++){
       const p00=hoek[j][i],p10=hoek[j][i+1],p01=hoek[j+1][i],p11=hoek[j+1][i+1];
       if(p00.zichtbaar&&p10.zichtbaar&&p01.zichtbaar)
-        tekenDriehoek(img,p00.bx,p00.by,p10.bx,p10.by,p01.bx,p01.by,p00.sx,p00.sy,p10.sx,p10.sy,p01.sx,p01.sy,undefined,illKladCtx);
+        tekenDriehoek(img,p00.bx,p00.by,p10.bx,p10.by,p01.bx,p01.by,p00.sx,p00.sy,p10.sx,p10.sy,p01.sx,p01.sy);
       if(p10.zichtbaar&&p11.zichtbaar&&p01.zichtbaar)
-        tekenDriehoek(img,p10.bx,p10.by,p11.bx,p11.by,p01.bx,p01.by,p10.sx,p10.sy,p11.sx,p11.sy,p01.sx,p01.sy,undefined,illKladCtx);
+        tekenDriehoek(img,p10.bx,p10.by,p11.bx,p11.by,p01.bx,p01.by,p10.sx,p10.sy,p11.sx,p11.sy,p01.sx,p01.sy);
     }
   }
+  ctx.globalAlpha=1.0;
+  ctx.restore();
 
-  // Stap 2: gum de afbeelding weg boven alle ANDERE landen. Alleen landen
-  // waarvan de bounding-box de afbeeldings-rechthoek raakt, doen mee
-  // (goedkope voorcheck), plus datumgrens-kruisers voor de zekerheid.
-  illKladCtx.save();
-  illKladCtx.globalCompositeOperation='destination-out';
-  illKladCtx.fillStyle='#000';
-  illKladCtx.beginPath();
-  // Marge voor de voorcheck: als hoeken naar buiten zijn getrokken, reikt de
-  // afbeelding verder dan de basisrechthoek — tel de grootste verschuiving mee.
-  let hMargeLon=0, hMargeLat=0;
-  if(bbox.hoeken){
-    for(const k of ['lb','rb','lo','ro']){
-      const hp=bbox.hoeken[k];
-      if(hp){ hMargeLon=Math.max(hMargeLon,Math.abs(hp.dLon)); hMargeLat=Math.max(hMargeLat,Math.abs(hp.dLat)); }
-    }
-  }
+  // Gouden grenslijnen: alleen op grenzen met ándere landen (niet op de kust),
+  // meevervagend met dezelfde doorzicht als de illustratie zelf.
+  tekenGoudenGrenzen(dutch, doorzicht);
+}
+
+// ── Gouden landgrenzen ────────────────────────────────
+// Bepaalt éénmalig per land welke stukken van de grens aan een ander land
+// raken (land-land) en welke aan zee (kust). Dat verandert nooit tijdens het
+// spelen, dus de uitkomst wordt gecachet — de klassificatie kost alleen bij
+// de allereerste keer een fractie van een seconde.
+const landGrensCache = {};
+
+// Ligt dit punt binnen een ánder land dan 'eigenNaam'? (met goedkope
+// bounding-box-voorcheck per land, zodat niet alle grenspunten van de
+// hele wereld hoeven te worden nagelopen)
+function puntInAnderLand(lon,lat,eigenNaam){
   for(const naam in alleLandenFeatureMap){
-    if(naam===dutch) continue;
+    if(naam===eigenNaam) continue;
     const info=alleLandenFeatureMap[naam];
     if(!info.kruistDatumgrens){
-      if(info.maxLat < bbox.minLat-hMargeLat || info.minLat > bbox.maxLat+hMargeLat) continue;
-      if(info.maxLon < bbox.minLon-hMargeLon || info.minLon > bbox.maxLon+hMargeLon) continue;
+      if(lat<info.minLat||lat>info.maxLat||lon<info.minLon||lon>info.maxLon) continue;
     }
     const g=info.feature.geometry;
     const polys=g.type==='Polygon'?[g.coordinates]:g.coordinates;
     for(const poly of polys){
-      if(!poly[0]||poly[0].length<3) continue;
-      tekenRing(poly[0], illKladCtx);
-      illKladCtx.closePath();
+      if(poly[0]&&poly[0].length>=3&&puntInPolygoon(lon,lat,poly[0])) return true;
     }
   }
-  illKladCtx.fill('evenodd');
-  illKladCtx.restore();
+  return false;
+}
 
-  // Stap 3: het resultaat (afbeelding minus buurlanden) op het hoofdcanvas
+function getLandLandGrenzen(naam){
+  if(landGrensCache[naam]) return landGrensCache[naam];
+  const info=alleLandenFeatureMap[naam];
+  if(!info){ landGrensCache[naam]=[]; return landGrensCache[naam]; }
+  const g=info.feature.geometry;
+  const polys=g.type==='Polygon'?[g.coordinates]:g.coordinates;
+  const lijnen=[];
+  const EPS=0.04; // testpuntje ± 4 honderdsten van een graad (± 4 km) naast de grens
+  for(const poly of polys){
+    const ring=poly[0];
+    if(!ring||ring.length<3) continue;
+    let huidige=null;
+    for(let i=0;i<ring.length;i++){
+      const p1=ring[i], p2=ring[(i+1)%ring.length];
+      // Middenpunt van dit grenssegment + een klein stapje loodrecht erop,
+      // aan beide kanten getest: raakt één van beide kanten een ander land,
+      // dan is dit een land-land-grens (kust raakt alleen zee = geen land).
+      const mLon=(p1[0]+p2[0])/2, mLat=(p1[1]+p2[1])/2;
+      const dLon=p2[0]-p1[0], dLat=p2[1]-p1[1];
+      const lengte=Math.hypot(dLon,dLat)||1;
+      const nLon=-dLat/lengte*EPS, nLat=dLon/lengte*EPS;
+      const isLandgrens =
+        puntInAnderLand(mLon+nLon, mLat+nLat, naam) ||
+        puntInAnderLand(mLon-nLon, mLat-nLat, naam);
+      if(isLandgrens){
+        if(!huidige){ huidige=[p1]; }
+        huidige.push(p2);
+      } else if(huidige){
+        lijnen.push(huidige); huidige=null;
+      }
+    }
+    if(huidige) lijnen.push(huidige);
+  }
+  landGrensCache[naam]=lijnen;
+  return lijnen;
+}
+
+// Tekent de land-land-grenzen als warme gouden lijn met een zachte gloed:
+// eerst een brede, doorschijnende laag (de gloed), daaroverheen de kernlijn.
+function tekenGoudenGrenzen(naam, doorzicht){
+  const lijnen=getLandLandGrenzen(naam);
+  if(!lijnen.length) return;
   ctx.save();
-  ctx.globalAlpha=(doorzicht!==undefined?doorzicht:0.93);
-  ctx.drawImage(illKladCanvas,0,0);
+  ctx.beginPath();
+  for(const lijn of lijnen){
+    let pen=false;
+    for(const [lon,lat] of lijn){
+      const [x,y,z]=roteerPunt(lonLatTo3D(lon,lat),rotM);
+      if(z<=0){ pen=false; continue; }
+      const sx=CX+x*R, sy=CY-y*R;
+      if(!pen){ ctx.moveTo(sx,sy); pen=true; } else ctx.lineTo(sx,sy);
+    }
+  }
+  ctx.lineJoin='round'; ctx.lineCap='round';
+  const d=(doorzicht!==undefined?doorzicht:0.93);
+  ctx.globalAlpha=0.32*d; ctx.strokeStyle='#ffe08a'; ctx.lineWidth=7;   ctx.stroke(); // gloed
+  ctx.globalAlpha=0.9*d;  ctx.strokeStyle='#f2c14e'; ctx.lineWidth=2.4; ctx.stroke(); // kernlijn
   ctx.globalAlpha=1.0;
   ctx.restore();
 }
