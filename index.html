@@ -565,7 +565,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.38</div>
+  <div id="versie-label">v0.2.39</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2114,6 +2114,17 @@ function getIllustratieKalibratie(naam){
   return kalibratieOverrides[naam] || ILLUSTRATIE_KALIBRATIE[naam] || null;
 }
 
+// Per land instelbaar maximum-zoomniveau. Zonder deze override berekent het
+// spel zelf hoe ver een land maximaal ingezoomd mag worden (op basis van de
+// afmetingen van het land). Tijdens de kalibratiemodus (] en [) kun je die
+// automatische waarde overschrijven — handig als een land net te vroeg of
+// juist te laat "vol scherm" komt te staan. Wordt net als de illustratie-
+// kalibratie samen met de rest van het land opgeslagen.
+function getZoomMaxOverride(naam){
+  const bron = kalibratieOverrides[naam] || ILLUSTRATIE_KALIBRATIE[naam];
+  return (bron && bron.zoomMax!==undefined) ? bron.zoomMax : null;
+}
+
 // ── Kalibratiemodus (toets K) ─────────────────────────
 // Vlieg boven een land en druk op K: de illustratie wordt vrij over het land
 // gelegd, de echte landgrens verschijnt als rode lijn, en met de toetsen
@@ -2145,6 +2156,7 @@ function updateKalibratieHud(){
     '─────────────────────────\n'+
     'west  '+b.minLon.toFixed(2)+'°   oost  '+b.maxLon.toFixed(2)+'°\n'+
     'zuid  '+b.minLat.toFixed(2)+'°   noord '+b.maxLat.toFixed(2)+'°\n'+
+    'max. inzoom: '+b.zoomMax.toFixed(2)+'x\n'+
     hoekRegel+
     '─────────────────────────\n'+
     '0..4            = kies wat je bewerkt\n'+
@@ -2156,6 +2168,7 @@ function updateKalibratieHud(){
     '+ / -           = groter/kleiner\n'
     :
     'R               = deze hoek terugzetten\n')+
+    '] / [           = max. inzoom meer/minder\n'+
     'F               = fijnstellen '+(kalibratieFijn?'[AAN]':'[uit]')+'\n'+
     'Enter = opslaan   Esc = stoppen\n'+
     'C = alle waarden kopiëren'+
@@ -2176,6 +2189,9 @@ function startKalibratie(){
   const bron=bestaand||auto;
   if(!bron) return;
   kalibratieBBox={minLon:bron.minLon,maxLon:bron.maxLon,minLat:bron.minLat,maxLat:bron.maxLat,
+    // Startwaarde: een eerder opgeslagen zoom-maximum, anders het huidige
+    // automatisch berekende maximum voor dit land (stand3DoelFactor).
+    zoomMax: (bestaand && bestaand.zoomMax!==undefined) ? bestaand.zoomMax : stand3DoelFactor,
     hoeken:{
       lb:{dLon:bron.hoeken?.lb?.dLon||0, dLat:bron.hoeken?.lb?.dLat||0},
       rb:{dLon:bron.hoeken?.rb?.dLon||0, dLat:bron.hoeken?.rb?.dLat||0},
@@ -2194,7 +2210,8 @@ function stopKalibratie(opslaan){
     const b=kalibratieBBox;
     const kal={
       minLon:+b.minLon.toFixed(3), maxLon:+b.maxLon.toFixed(3),
-      minLat:+b.minLat.toFixed(3), maxLat:+b.maxLat.toFixed(3)
+      minLat:+b.minLat.toFixed(3), maxLat:+b.maxLat.toFixed(3),
+      zoomMax:+b.zoomMax.toFixed(2)
     };
     // Hoeken alleen bewaren als er daadwerkelijk aan getrokken is —
     // zo blijven de opgeslagen waarden lekker overzichtelijk.
@@ -2250,6 +2267,8 @@ document.addEventListener('keydown', e=>{
   else if(e.key==='c'||e.key==='C'){ kopieerKalibraties(); }
   else if(e.key>='0'&&e.key<='4'){ kalibratieHoek=+e.key; }
   else if((e.key==='r'||e.key==='R')&&hoekActief){ hoekActief.dLon=0; hoekActief.dLat=0; }
+  else if(e.key===']'){ b.zoomMax = Math.min(40, b.zoomMax*(1+(kalibratieFijn?0.005:0.03))); }
+  else if(e.key==='['){ b.zoomMax = Math.max(1.0, b.zoomMax*(1-(kalibratieFijn?0.005:0.03))); }
   else if(hoekActief && e.key==='ArrowLeft' ){ hoekActief.dLon-=dLon; }
   else if(hoekActief && e.key==='ArrowRight'){ hoekActief.dLon+=dLon; }
   else if(hoekActief && e.key==='ArrowUp'   ){ hoekActief.dLat+=dLat; }
@@ -3519,7 +3538,8 @@ function updateSpel(){
   // elke frame herberekend, en Z/X schuiven het zoomniveau (0-1) geleidelijk
   // op, met versnelling naarmate je de toets langer ingedrukt houdt.
   berekenStand3Zoom();
-  const dynamischMax = Math.max(stand3DoelFactor, ZOOM_MIN+0.01);
+  const zoomOverride = hoverLand ? getZoomMaxOverride(hoverLand.properties.dutch||hoverLand.properties.name) : null;
+  const dynamischMax = zoomOverride!==null ? zoomOverride : Math.max(stand3DoelFactor, ZOOM_MIN+0.01);
   // Geen ondergrens meer op de referentie: een reuzenland als Rusland mag bij
   // 100% ook écht minder ingezoomd blijven dan de referentie, zodat het
   // gewoon lekker in beeld past — ook al betekent dat een klein
