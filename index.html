@@ -565,7 +565,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.36</div>
+  <div id="versie-label">v0.2.37</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2303,6 +2303,28 @@ function getLandPad(naam){
   }
   landPadCache.paden[naam]=pad;
   return pad;
+}
+
+// ── Hoekvervorming ────────────────────────────────────
+// Elke kalibratie kan optioneel een 'hoeken'-blokje hebben: per hoek van de
+// afbeelding een verschuiving in graden (dLon = oost/west, dLat = noord/zuid).
+//   lb = linksboven, rb = rechtsboven, lo = linksonder, ro = rechtsonder
+// De verschuiving werkt het sterkst bij die hoek zelf en loopt geleidelijk
+// af richting de andere hoeken (bilineair) — het "plaatselijk aan de
+// afbeelding trekken": één hoek beweegt, de rest blijft vrijwel staan.
+// u = 0..1 van links naar rechts, v = 0..1 van boven naar onder (afbeelding).
+function vervormLonLat(bbox, u, v){
+  let lon = bbox.minLon + (bbox.maxLon - bbox.minLon) * u;
+  let lat = bbox.maxLat - (bbox.maxLat - bbox.minLat) * v;
+  const h = bbox.hoeken;
+  if(h){
+    const wlb=(1-u)*(1-v), wrb=u*(1-v), wlo=(1-u)*v, wro=u*v;
+    if(h.lb){ lon += h.lb.dLon*wlb; lat += h.lb.dLat*wlb; }
+    if(h.rb){ lon += h.rb.dLon*wrb; lat += h.rb.dLat*wrb; }
+    if(h.lo){ lon += h.lo.dLon*wlo; lat += h.lo.dLat*wlo; }
+    if(h.ro){ lon += h.ro.dLon*wro; lat += h.ro.dLat*wro; }
+  }
+  return [lon, lat];
 }
 
 // Tekent een illustratie vrij (ongeclipt op de eigen grens) over de opgegeven
