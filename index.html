@@ -565,7 +565,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.37</div>
+  <div id="versie-label">v0.2.38</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2283,28 +2283,12 @@ document.addEventListener('keydown', e=>{
 // Resultaat is identiek, maar zonder schermgrote kopieerslagen per frame —
 // dat was de grote vertrager op zwakkere videokaarten.
 
-// Per-frame cache van geprojecteerde landvormen (Path2D). Meerdere
-// gekalibreerde landen in beeld (drielandenpunt!) moeten vaak dezelfde
-// buurlanden uitsparen; dankzij deze cache wordt elk land per frame maar
-// één keer doorgerekend in plaats van drie of vier keer. De cache herkent
-// een nieuw frame aan een nieuwe rotatiematrix (rotM) en leegt zichzelf dan.
-const landPadCache = { rot:null, paden:{} };
-function getLandPad(naam){
-  if(landPadCache.rot!==rotM){ landPadCache.rot=rotM; landPadCache.paden={}; }
-  let pad=landPadCache.paden[naam];
-  if(pad) return pad;
-  pad=new Path2D();
-  const g=alleLandenFeatureMap[naam].feature.geometry;
-  const polys=g.type==='Polygon'?[g.coordinates]:g.coordinates;
-  for(const poly of polys){
-    if(!poly[0]||poly[0].length<3) continue;
-    tekenRing(poly[0], pad); // tekenRing gebruikt alleen moveTo/lineTo, dus een Path2D kan ook als doel dienen
-    pad.closePath();
-  }
-  landPadCache.paden[naam]=pad;
-  return pad;
-}
-
+// ── Gebakken illustraties ─────────────────────────────
+// De grote snelheidswinst: buurlanden worden niet meer elk frame weggegumd
+// of weggeknipt, maar éénmalig "gebakken" in een kopie van de afbeelding.
+// Grenzen en kalibratie veranderen tijdens het spelen immers nooit. Daarna
+// tekent elk frame gewoon dat kant-en-klare plaatje — zonder kladcanvas,
+// zonder knipgebied — met precies dezelfde kosten als de oude, snelle stijl.
 // ── Hoekvervorming ────────────────────────────────────
 // Elke kalibratie kan optioneel een 'hoeken'-blokje hebben: per hoek van de
 // afbeelding een verschuiving in graden (dLon = oost/west, dLat = noord/zuid).
@@ -2327,15 +2311,45 @@ function vervormLonLat(bbox, u, v){
   return [lon, lat];
 }
 
-// Tekent een illustratie vrij (ongeclipt op de eigen grens) over de opgegeven
-// graden-rechthoek, gebogen over de bol. Waar de afbeelding over een ÁNDER
-// land zou vallen, wordt hij niet getekend (kniptruc hierboven).
-function tekenIllustratieVrij(dutch, img, bbox, doorzicht){
-  const [,,mz]=roteerPunt(lonLatTo3D((bbox.minLon+bbox.maxLon)/2,(bbox.minLat+bbox.maxLat)/2),rotM);
-  if(mz<=0.01) return;
+const gebakkenIllustraties = {}; // naam -> {sleutel, bronImg, canvas}
 
-  // Marge voor de voorcheck: als hoeken naar buiten zijn getrokken, reikt de
-  // afbeelding verder dan de basisrechthoek — tel de grootste verschuiving mee.
+function getGebakkenIllustratie(naam, img, bbox){
+  const sleutel=JSON.stringify(bbox);
+  const cache=gebakkenIllustraties[naam];
+  if(cache && cache.sleutel===sleutel && cache.bronImg===img) return cache.canvas;
+
+  const imgW=img.naturalWidth||img.width, imgH=img.naturalHeight||img.height;
+  // Bovengrens op de bak-resolutie: scheelt geheugen en bak-tijd, en op
+  // spel-zoomniveau is 2048 pixels ruim voldoende scherp.
+  const MAX_BAK=2048;
+  const schaal=Math.min(1, MAX_BAK/Math.max(imgW,imgH));
+  const bw=Math.max(1,Math.round(imgW*schaal)), bh=Math.max(1,Math.round(imgH*schaal));
+  const cnv=document.createElement('canvas');
+  cnv.width=bw; cnv.height=bh;
+  const bctx=cnv.getContext('2d');
+  bctx.drawImage(img,0,0,bw,bh);
+
+  // Vertaalt lon/lat naar een pixelpositie ín de afbeelding. Zonder
+  // hoekvervorming is dat een simpele lineaire omrekening; mét vervorming
+  // benaderen we de omgekeerde bewerking in een paar verfijningsstapjes
+  // (de hoekverschuivingen zijn klein t.o.v. het land, dus dit convergeert
+  // vrijwel meteen).
+  const lonBreedte=bbox.maxLon-bbox.minLon, latHoogte=bbox.maxLat-bbox.minLat;
+  const naarPixel=(lon,lat)=>{
+    let u=(lon-bbox.minLon)/lonBreedte;
+    let v=(bbox.maxLat-lat)/latHoogte;
+    if(bbox.hoeken){
+      for(let stapje=0;stapje<4;stapje++){
+        const [l2,a2]=vervormLonLat(bbox,u,v);
+        u += (lon-l2)/lonBreedte;
+        v -= (lat-a2)/latHoogte;
+      }
+    }
+    return [u*bw, v*bh];
+  };
+
+  // Marge voor de voorcheck: naar buiten getrokken hoeken reiken verder
+  // dan de basisrechthoek.
   let hMargeLon=0, hMargeLat=0;
   if(bbox.hoeken){
     for(const k of ['lb','rb','lo','ro']){
@@ -2344,37 +2358,57 @@ function tekenIllustratieVrij(dutch, img, bbox, doorzicht){
     }
   }
 
-  // Knipgebied: het hele scherm, met alle relevante andere landen als gaten.
-  // Alleen landen waarvan de bounding-box de afbeeldings-rechthoek raakt doen
-  // mee (goedkope voorcheck), plus datumgrens-kruisers voor de zekerheid.
-  const klip=new Path2D();
-  klip.rect(0,0,W,H);
-  for(const naam in alleLandenFeatureMap){
-    if(naam===dutch) continue;
-    const info=alleLandenFeatureMap[naam];
+  // Alle andere landen die de afbeelding kunnen raken uit de kopie gummen.
+  bctx.globalCompositeOperation='destination-out';
+  bctx.fillStyle='#000';
+  bctx.beginPath();
+  for(const nm in alleLandenFeatureMap){
+    if(nm===naam) continue;
+    const info=alleLandenFeatureMap[nm];
     if(!info.kruistDatumgrens){
       if(info.maxLat < bbox.minLat-hMargeLat || info.minLat > bbox.maxLat+hMargeLat) continue;
       if(info.maxLon < bbox.minLon-hMargeLon || info.minLon > bbox.maxLon+hMargeLon) continue;
     }
-    klip.addPath(getLandPad(naam));
+    const g=info.feature.geometry;
+    const polys=g.type==='Polygon'?[g.coordinates]:g.coordinates;
+    for(const poly of polys){
+      const ring=poly[0];
+      if(!ring||ring.length<3) continue;
+      let eerste=true;
+      for(const [plon,plat] of ring){
+        const [px,py]=naarPixel(plon,plat);
+        if(eerste){ bctx.moveTo(px,py); eerste=false; } else bctx.lineTo(px,py);
+      }
+      bctx.closePath();
+    }
   }
+  bctx.fill('evenodd');
+  bctx.globalCompositeOperation='source-over';
+
+  gebakkenIllustraties[naam]={sleutel, bronImg:img, canvas:cnv};
+  return cnv;
+}
+
+// Tekent een illustratie vrij (ongeclipt op de eigen grens) over de opgegeven
+// graden-rechthoek, gebogen over de bol. Buurlanden zijn al uit de gebakken
+// versie weggegumd, dus hier hoeft niets meer geknipt te worden.
+function tekenIllustratieVrij(dutch, img, bbox, doorzicht){
+  const [,,mz]=roteerPunt(lonLatTo3D((bbox.minLon+bbox.maxLon)/2,(bbox.minLat+bbox.maxLat)/2),rotM);
+  if(mz<=0.01) return;
+
+  const beeld=getGebakkenIllustratie(dutch, img, bbox);
+  const bw=beeld.width, bh=beeld.height;
 
   ctx.save();
-  ctx.clip(klip,'evenodd');
   ctx.globalAlpha=(doorzicht!==undefined?doorzicht:0.93);
-
-  // De afbeelding in een raster over de bolkromming buigen, rechtstreeks op
-  // het hoofdcanvas (binnen het knipgebied). Driehoeken buiten beeld worden
-  // in tekenDriehoek zelf al overgeslagen.
   const RASTER=12;
-  const imgW=img.naturalWidth||img.width, imgH=img.naturalHeight||img.height;
   const hoek=[];
   for(let j=0;j<=RASTER;j++){
     const rij=[];
     for(let i=0;i<=RASTER;i++){
       const [lon,lat]=vervormLonLat(bbox, i/RASTER, j/RASTER);
       const [x,y,z]=roteerPunt(lonLatTo3D(lon,lat),rotM);
-      rij.push({ zichtbaar:z>0, sx:CX+x*R, sy:CY-y*R, bx:i/RASTER*imgW, by:j/RASTER*imgH });
+      rij.push({ zichtbaar:z>0, sx:CX+x*R, sy:CY-y*R, bx:i/RASTER*bw, by:j/RASTER*bh });
     }
     hoek.push(rij);
   }
@@ -2382,9 +2416,9 @@ function tekenIllustratieVrij(dutch, img, bbox, doorzicht){
     for(let i=0;i<RASTER;i++){
       const p00=hoek[j][i],p10=hoek[j][i+1],p01=hoek[j+1][i],p11=hoek[j+1][i+1];
       if(p00.zichtbaar&&p10.zichtbaar&&p01.zichtbaar)
-        tekenDriehoek(img,p00.bx,p00.by,p10.bx,p10.by,p01.bx,p01.by,p00.sx,p00.sy,p10.sx,p10.sy,p01.sx,p01.sy);
+        tekenDriehoek(beeld,p00.bx,p00.by,p10.bx,p10.by,p01.bx,p01.by,p00.sx,p00.sy,p10.sx,p10.sy,p01.sx,p01.sy);
       if(p10.zichtbaar&&p11.zichtbaar&&p01.zichtbaar)
-        tekenDriehoek(img,p10.bx,p10.by,p11.bx,p11.by,p01.bx,p01.by,p10.sx,p10.sy,p11.sx,p11.sy,p01.sx,p01.sy);
+        tekenDriehoek(beeld,p10.bx,p10.by,p11.bx,p11.by,p01.bx,p01.by,p10.sx,p10.sy,p11.sx,p11.sy,p01.sx,p01.sy);
     }
   }
   ctx.globalAlpha=1.0;
