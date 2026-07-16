@@ -565,7 +565,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.34</div>
+  <div id="versie-label">v0.2.35</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2115,6 +2115,9 @@ function getIllustratieKalibratie(naam){
 // schuif/rek je de afbeelding tot hij past. Enter = opslaan, Esc = annuleren.
 let kalibratieActief=false, kalibratieNaam=null, kalibratieFeature=null;
 let kalibratieBBox=null, kalibratieFijn=false, kalibratieMelding='';
+let kalibratieHoek=0; // 0 = hele afbeelding, 1=linksboven, 2=rechtsboven, 3=linksonder, 4=rechtsonder
+const HOEK_SLEUTELS={1:'lb',2:'rb',3:'lo',4:'ro'};
+const HOEK_NAMEN={0:'hele afbeelding',1:'linksboven',2:'rechtsboven',3:'linksonder',4:'rechtsonder'};
 
 const kalibratieHud=document.createElement('div');
 kalibratieHud.style.cssText='position:fixed;top:12px;left:12px;z-index:60;display:none;'+
@@ -2125,17 +2128,29 @@ document.body.appendChild(kalibratieHud);
 function updateKalibratieHud(){
   if(!kalibratieActief){ kalibratieHud.style.display='none'; return; }
   const b=kalibratieBBox;
+  let hoekRegel='';
+  if(kalibratieHoek>0){
+    const hp=b.hoeken[HOEK_SLEUTELS[kalibratieHoek]];
+    hoekRegel='verschuiving: '+hp.dLon.toFixed(2)+'° oost, '+hp.dLat.toFixed(2)+'° noord\n';
+  }
   kalibratieHud.style.display='block';
   kalibratieHud.textContent=
     'KALIBRATIE: '+kalibratieNaam+'\n'+
+    'Bewerken: '+HOEK_NAMEN[kalibratieHoek]+(kalibratieHoek>0?' (hoek)':'')+'\n'+
     '─────────────────────────\n'+
     'west  '+b.minLon.toFixed(2)+'°   oost  '+b.maxLon.toFixed(2)+'°\n'+
     'zuid  '+b.minLat.toFixed(2)+'°   noord '+b.maxLat.toFixed(2)+'°\n'+
+    hoekRegel+
     '─────────────────────────\n'+
+    '0..4            = kies wat je bewerkt\n'+
+    '  (0=alles 1=LB 2=RB 3=LO 4=RO)\n'+
     'Pijltjes        = schuiven\n'+
+    (kalibratieHoek===0?
     'Shift+li/re     = smaller/breder\n'+
     'Shift+op/neer   = hoger/lager\n'+
-    '+ / -           = groter/kleiner\n'+
+    '+ / -           = groter/kleiner\n'
+    :
+    'R               = deze hoek terugzetten\n')+
     'F               = fijnstellen '+(kalibratieFijn?'[AAN]':'[uit]')+'\n'+
     'Enter = opslaan   Esc = stoppen\n'+
     'C = alle waarden kopiëren'+
@@ -2155,7 +2170,14 @@ function startKalibratie(){
   const auto=berekenLandBBoxGraden(hoverLand);
   const bron=bestaand||auto;
   if(!bron) return;
-  kalibratieBBox={minLon:bron.minLon,maxLon:bron.maxLon,minLat:bron.minLat,maxLat:bron.maxLat};
+  kalibratieBBox={minLon:bron.minLon,maxLon:bron.maxLon,minLat:bron.minLat,maxLat:bron.maxLat,
+    hoeken:{
+      lb:{dLon:bron.hoeken?.lb?.dLon||0, dLat:bron.hoeken?.lb?.dLat||0},
+      rb:{dLon:bron.hoeken?.rb?.dLon||0, dLat:bron.hoeken?.rb?.dLat||0},
+      lo:{dLon:bron.hoeken?.lo?.dLon||0, dLat:bron.hoeken?.lo?.dLat||0},
+      ro:{dLon:bron.hoeken?.ro?.dLon||0, dLat:bron.hoeken?.ro?.dLat||0},
+    }};
+  kalibratieHoek=0;
   kalibratieMelding='';
   kalibratieActief=true;
   resetAlleToetsen(); // voorkomt dat Wonky blijft doorvliegen op een oude toets
@@ -2164,10 +2186,24 @@ function startKalibratie(){
 
 function stopKalibratie(opslaan){
   if(opslaan && kalibratieNaam && kalibratieBBox){
-    kalibratieOverrides[kalibratieNaam]={
-      minLon:+kalibratieBBox.minLon.toFixed(3), maxLon:+kalibratieBBox.maxLon.toFixed(3),
-      minLat:+kalibratieBBox.minLat.toFixed(3), maxLat:+kalibratieBBox.maxLat.toFixed(3)
+    const b=kalibratieBBox;
+    const kal={
+      minLon:+b.minLon.toFixed(3), maxLon:+b.maxLon.toFixed(3),
+      minLat:+b.minLat.toFixed(3), maxLat:+b.maxLat.toFixed(3)
     };
+    // Hoeken alleen bewaren als er daadwerkelijk aan getrokken is —
+    // zo blijven de opgeslagen waarden lekker overzichtelijk.
+    const hoeken={};
+    let heeftHoeken=false;
+    for(const k of ['lb','rb','lo','ro']){
+      const hp=b.hoeken[k];
+      if(Math.abs(hp.dLon)>0.0005 || Math.abs(hp.dLat)>0.0005){
+        hoeken[k]={dLon:+hp.dLon.toFixed(3), dLat:+hp.dLat.toFixed(3)};
+        heeftHoeken=true;
+      }
+    }
+    if(heeftHoeken) kal.hoeken=hoeken;
+    kalibratieOverrides[kalibratieNaam]=kal;
     localStorage.setItem('wonkywings_kalibratie', JSON.stringify(kalibratieOverrides));
   }
   kalibratieActief=false; kalibratieNaam=null; kalibratieFeature=null; kalibratieBBox=null;
@@ -2179,8 +2215,8 @@ function kopieerKalibraties(){
   // zodat de waarden zo in ILLUSTRATIE_KALIBRATIE geplakt kunnen worden.
   const samen=Object.assign({},ILLUSTRATIE_KALIBRATIE,kalibratieOverrides);
   const regels=Object.keys(samen).sort().map(n=>{
-    const b=samen[n];
-    return '  '+JSON.stringify(n)+': { minLon:'+b.minLon+', maxLon:'+b.maxLon+', minLat:'+b.minLat+', maxLat:'+b.maxLat+' },';
+    // JSON.stringify neemt automatisch ook het optionele hoeken-blokje mee
+    return '  '+JSON.stringify(n)+': '+JSON.stringify(samen[n])+',';
   });
   const tekst='const ILLUSTRATIE_KALIBRATIE = {\n'+regels.join('\n')+'\n};';
   const klaar=()=>{ kalibratieMelding='Gekopieerd naar klembord!'; updateKalibratieHud(); };
@@ -2201,11 +2237,18 @@ document.addEventListener('keydown', e=>{
   const b=kalibratieBBox;
   const stap=kalibratieFijn?0.002:0.01;
   const dLon=(b.maxLon-b.minLon)*stap, dLat=(b.maxLat-b.minLat)*stap;
+  const hoekActief=kalibratieHoek>0 ? b.hoeken[HOEK_SLEUTELS[kalibratieHoek]] : null;
   let verwerkt=true;
   if(e.key==='Escape') stopKalibratie(false);
   else if(e.key==='Enter'){ stopKalibratie(true); }
   else if(e.key==='f'||e.key==='F'){ kalibratieFijn=!kalibratieFijn; }
   else if(e.key==='c'||e.key==='C'){ kopieerKalibraties(); }
+  else if(e.key>='0'&&e.key<='4'){ kalibratieHoek=+e.key; }
+  else if((e.key==='r'||e.key==='R')&&hoekActief){ hoekActief.dLon=0; hoekActief.dLat=0; }
+  else if(hoekActief && e.key==='ArrowLeft' ){ hoekActief.dLon-=dLon; }
+  else if(hoekActief && e.key==='ArrowRight'){ hoekActief.dLon+=dLon; }
+  else if(hoekActief && e.key==='ArrowUp'   ){ hoekActief.dLat+=dLat; }
+  else if(hoekActief && e.key==='ArrowDown' ){ hoekActief.dLat-=dLat; }
   else if(e.key==='ArrowLeft'  && !e.shiftKey){ b.minLon-=dLon; b.maxLon-=dLon; }
   else if(e.key==='ArrowRight' && !e.shiftKey){ b.minLon+=dLon; b.maxLon+=dLon; }
   else if(e.key==='ArrowUp'    && !e.shiftKey){ b.minLat+=dLat; b.maxLat+=dLat; }
@@ -2235,6 +2278,29 @@ const illKladCtx = illKladCanvas.getContext('2d');
 
 // Tekent een illustratie vrij (ongeclipt) over de opgegeven graden-rechthoek,
 // gebogen over de bol, en gumt de delen weg die over andere landen vallen.
+// ── Hoekvervorming ────────────────────────────────────
+// Elke kalibratie kan optioneel een 'hoeken'-blokje hebben: per hoek van de
+// afbeelding een verschuiving in graden (dLon = oost/west, dLat = noord/zuid).
+//   lb = linksboven, rb = rechtsboven, lo = linksonder, ro = rechtsonder
+// De verschuiving werkt het sterkst bij die hoek zelf en loopt geleidelijk
+// af richting de andere hoeken (bilineair) — precies het "plaatselijk aan de
+// afbeelding trekken" uit Arjens schets: één hoek beweegt, de rest blijft
+// vrijwel staan.
+// u = 0..1 van links naar rechts, v = 0..1 van boven naar onder (afbeelding).
+function vervormLonLat(bbox, u, v){
+  let lon = bbox.minLon + (bbox.maxLon - bbox.minLon) * u;
+  let lat = bbox.maxLat - (bbox.maxLat - bbox.minLat) * v;
+  const h = bbox.hoeken;
+  if(h){
+    const wlb=(1-u)*(1-v), wrb=u*(1-v), wlo=(1-u)*v, wro=u*v;
+    if(h.lb){ lon += h.lb.dLon*wlb; lat += h.lb.dLat*wlb; }
+    if(h.rb){ lon += h.rb.dLon*wrb; lat += h.rb.dLat*wrb; }
+    if(h.lo){ lon += h.lo.dLon*wlo; lat += h.lo.dLat*wlo; }
+    if(h.ro){ lon += h.ro.dLon*wro; lat += h.ro.dLat*wro; }
+  }
+  return [lon, lat];
+}
+
 function tekenIllustratieVrij(dutch, img, bbox, doorzicht){
   const [,,mz]=roteerPunt(lonLatTo3D((bbox.minLon+bbox.maxLon)/2,(bbox.minLat+bbox.maxLat)/2),rotM);
   if(mz<=0.01) return;
@@ -2250,9 +2316,8 @@ function tekenIllustratieVrij(dutch, img, bbox, doorzicht){
   const hoek=[];
   for(let j=0;j<=RASTER;j++){
     const rij=[];
-    const lat=bbox.maxLat-(bbox.maxLat-bbox.minLat)*j/RASTER;
     for(let i=0;i<=RASTER;i++){
-      const lon=bbox.minLon+(bbox.maxLon-bbox.minLon)*i/RASTER;
+      const [lon,lat]=vervormLonLat(bbox, i/RASTER, j/RASTER);
       const [x,y,z]=roteerPunt(lonLatTo3D(lon,lat),rotM);
       rij.push({ zichtbaar:z>0, sx:CX+x*R, sy:CY-y*R, bx:i/RASTER*imgW, by:j/RASTER*imgH });
     }
@@ -2275,12 +2340,21 @@ function tekenIllustratieVrij(dutch, img, bbox, doorzicht){
   illKladCtx.globalCompositeOperation='destination-out';
   illKladCtx.fillStyle='#000';
   illKladCtx.beginPath();
+  // Marge voor de voorcheck: als hoeken naar buiten zijn getrokken, reikt de
+  // afbeelding verder dan de basisrechthoek — tel de grootste verschuiving mee.
+  let hMargeLon=0, hMargeLat=0;
+  if(bbox.hoeken){
+    for(const k of ['lb','rb','lo','ro']){
+      const hp=bbox.hoeken[k];
+      if(hp){ hMargeLon=Math.max(hMargeLon,Math.abs(hp.dLon)); hMargeLat=Math.max(hMargeLat,Math.abs(hp.dLat)); }
+    }
+  }
   for(const naam in alleLandenFeatureMap){
     if(naam===dutch) continue;
     const info=alleLandenFeatureMap[naam];
     if(!info.kruistDatumgrens){
-      if(info.maxLat < bbox.minLat || info.minLat > bbox.maxLat) continue;
-      if(info.maxLon < bbox.minLon || info.minLon > bbox.maxLon) continue;
+      if(info.maxLat < bbox.minLat-hMargeLat || info.minLat > bbox.maxLat+hMargeLat) continue;
+      if(info.maxLon < bbox.minLon-hMargeLon || info.minLon > bbox.maxLon+hMargeLon) continue;
     }
     const g=info.feature.geometry;
     const polys=g.type==='Polygon'?[g.coordinates]:g.coordinates;
@@ -2914,23 +2988,40 @@ function drawGlobe(){
     }
     ctx.strokeStyle='#ff2d2d'; ctx.lineWidth=2; ctx.stroke();
 
-    // Geel gestippeld kader: waar de rand van de afbeelding ligt
+    // Geel gestippeld kader: waar de rand van de afbeelding ligt.
+    // Loopt via vervormLonLat, zodat het kader meebuigt als er aan een
+    // hoek getrokken is — je ziet dus precies waar de afbeelding eindigt.
     const kb=kalibratieBBox, SEG=16;
     ctx.beginPath();
     let kaderPen=false;
-    const kaderPunt=(lon,lat)=>{
+    const kaderPunt=(u,v)=>{
+      const [lon,lat]=vervormLonLat(kb,u,v);
       const [x,y,z]=roteerPunt(lonLatTo3D(lon,lat),rotM);
       if(z<=0){ kaderPen=false; return; }
       const sx=CX+x*R, sy=CY-y*R;
       if(!kaderPen){ ctx.moveTo(sx,sy); kaderPen=true; } else ctx.lineTo(sx,sy);
     };
-    for(let i=0;i<=SEG;i++) kaderPunt(kb.minLon+(kb.maxLon-kb.minLon)*i/SEG, kb.maxLat); // boven
-    for(let i=0;i<=SEG;i++) kaderPunt(kb.maxLon, kb.maxLat-(kb.maxLat-kb.minLat)*i/SEG); // rechts
-    for(let i=0;i<=SEG;i++) kaderPunt(kb.maxLon-(kb.maxLon-kb.minLon)*i/SEG, kb.minLat); // onder
-    for(let i=0;i<=SEG;i++) kaderPunt(kb.minLon, kb.minLat+(kb.maxLat-kb.minLat)*i/SEG); // links
+    for(let i=0;i<=SEG;i++) kaderPunt(i/SEG, 0);   // boven
+    for(let i=0;i<=SEG;i++) kaderPunt(1, i/SEG);   // rechts
+    for(let i=0;i<=SEG;i++) kaderPunt(1-i/SEG, 1); // onder
+    for(let i=0;i<=SEG;i++) kaderPunt(0, 1-i/SEG); // links
     ctx.setLineDash([6,5]);
     ctx.strokeStyle='#ffd400'; ctx.lineWidth=1.5; ctx.stroke();
     ctx.setLineDash([]);
+
+    // Gekozen hoek markeren met een gevulde gele stip
+    if(kalibratieHoek>0){
+      const HOEK_UV={1:[0,0],2:[1,0],3:[0,1],4:[1,1]};
+      const [hu,hv]=HOEK_UV[kalibratieHoek];
+      const [hlon,hlat]=vervormLonLat(kb,hu,hv);
+      const [hx,hy,hz]=roteerPunt(lonLatTo3D(hlon,hlat),rotM);
+      if(hz>0){
+        ctx.beginPath();
+        ctx.arc(CX+hx*R, CY-hy*R, 7, 0, Math.PI*2);
+        ctx.fillStyle='#ffd400'; ctx.fill();
+        ctx.strokeStyle='#7a5c00'; ctx.lineWidth=2; ctx.stroke();
+      }
+    }
     ctx.restore();
   }
 
