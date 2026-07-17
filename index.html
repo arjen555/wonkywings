@@ -565,7 +565,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.39</div>
+  <div id="versie-label">v0.2.40</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1840,6 +1840,7 @@ const VERTRAGING=0.88;
 let rotM;
 let focusSx=W/2, focusSy=H*0.56;
 let hoverLand=null;
+let vorigHoverLand=null; // voor het vasthouden van gekalibreerde landen boven "hun" zee
 
 // Simpele "nep"-GEOJSON-feature voor de Noordpool: geen echte polygoon (de ijskap heeft
 // geen scherpe landgrens), maar wel een dutch-naam zodat de bestaande hover/illustratie-
@@ -3811,6 +3812,30 @@ function updateSpel(){
       }
     }
   }
+  if(!hoverLand && vorigHoverLand){
+    // Nog steeds zee, maar we kwamen nét van een gekalibreerd land: houd dat
+    // land vast zolang het focuspunt binnen zijn afbeeldingsgebied blijft
+    // (rechthoek + eventueel naar buiten getrokken hoeken). Zo blijft de
+    // zoomstand rustig staan bij bijv. de oversteek Italië -> Sicilië: de
+    // zee daartussen hoort immers gewoon bij de afbeelding. Zodra de speler
+    // het afbeeldingsgebied echt verlaat, laat het spel los als vanouds.
+    const vorigeNaam=vorigHoverLand.properties.dutch||vorigHoverLand.properties.name;
+    const kal=getIllustratieKalibratie(vorigeNaam);
+    if(kal){
+      let mLon=0, mLat=0;
+      if(kal.hoeken){
+        for(const k of ['lb','rb','lo','ro']){
+          const hp=kal.hoeken[k];
+          if(hp){ mLon=Math.max(mLon,Math.abs(hp.dLon)); mLat=Math.max(mLat,Math.abs(hp.dLat)); }
+        }
+      }
+      if(wonkyLon>=kal.minLon-mLon && wonkyLon<=kal.maxLon+mLon &&
+         wonkyLat>=kal.minLat-mLat && wonkyLat<=kal.maxLat+mLat){
+        hoverLand=vorigHoverLand;
+      }
+    }
+  }
+  vorigHoverLand=hoverLand;
   if(hoverLand&&huidigModus==='verkennen'){
     hoverEl.textContent=hoverLand.properties.dutch||hoverLand.properties.name;
     hoverEl.style.opacity='1';
