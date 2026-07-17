@@ -565,7 +565,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.40</div>
+  <div id="versie-label">v0.2.42</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1047,6 +1047,55 @@ let alleLandenFeatureMap = {};
     alleLandenFeatureMap[naam] = {feature:f, minLon,maxLon,minLat,maxLat,kruistDatumgrens};
   }
 })();
+
+// ── Alaska als los kalibreerbaar pseudo-land ──────────
+// Alaska zit in de kaartdata gewoon bij "Verenigde Staten" (zelfde feature),
+// maar ligt zo ver van het vasteland en zo krom over de bol dat het los
+// kalibreren nodig is (zie ook het aparte __Alaska-plaatje hierboven).
+// We knippen daarom hier, één keer bij het opstarten, alle polygonen met
+// een westgrens voorbij -140° lengtegraad eruit en zetten die apart onder
+// de naam "Alaska" in dezelfde tabel. Alles wat hierna met een gewoon land
+// kan (kalibreren, vrij tekenen, buurlanden gummen, gouden grenzen) werkt
+// dan vanzelf ook voor Alaska.
+(function initAlaskaAlsPseudoLand(){
+  const info = alleLandenFeatureMap['Verenigde Staten'];
+  if(!info) return;
+  const g = info.feature.geometry;
+  const polys = g.type==='Polygon' ? [g.coordinates] : g.coordinates;
+  const alaskaPolys=[];
+  for(const poly of polys){
+    if(!poly[0]||poly[0].length<3) continue;
+    const lonMin=Math.min(...poly[0].map(p=>p[0]));
+    // Let op: puur op lengtegraad selecteren pakt óók de Hawaïaanse eilanden
+    // mee (die liggen ook ver westelijk, rond 155-178°W) — dus de breedtegraad
+    // moet ook "noordelijk genoeg" zijn (Hawaï blijft onder 29°N, Alaska/de
+    // Aleoeten beginnen pas boven 45°N).
+    const latMax=Math.max(...poly[0].map(p=>p[1]));
+    if(lonMin < -140 && latMax > 45) alaskaPolys.push(poly);
+  }
+  if(!alaskaPolys.length) return;
+  let minLon=Infinity,maxLon=-Infinity,minLat=Infinity,maxLat=-Infinity;
+  for(const poly of alaskaPolys) for(const [lo,la] of poly[0]){
+    if(lo<minLon)minLon=lo; if(lo>maxLon)maxLon=lo;
+    if(la<minLat)minLat=la; if(la>maxLat)maxLat=la;
+  }
+  const alaskaFeature = {
+    type:'Feature',
+    properties:{dutch:'Alaska', name:'Alaska'},
+    geometry:{type:'MultiPolygon', coordinates: alaskaPolys}
+  };
+  alleLandenFeatureMap['Alaska'] = {
+    feature:alaskaFeature, minLon,maxLon,minLat,maxLat,
+    kruistDatumgrens:(maxLon-minLon)>180
+  };
+})();
+
+// Alaska en Verenigde Staten zijn qua kaartdata hetzelfde land — bij het
+// gummen van buurlanden en het tekenen van gouden grenzen mogen ze elkaar
+// dus nooit als "ander land" wegknippen of ompiepen.
+function zelfdeLandAlsAlaska(a,b){
+  return (a==='Alaska'&&b==='Verenigde Staten') || (a==='Verenigde Staten'&&b==='Alaska');
+}
 
 // ── Startscherm ───────────────────────────────────────
 // Maakt het menupaneel (#start-rechts) 33% breder dan zijn normale breedte en
@@ -2099,8 +2148,45 @@ function berekenLandBBoxGraden(feature){
 // Wél wordt de afbeelding weggegumd waar hij over een ÁNDER land valt.
 // Waarden instelbaar in het spel zelf: vlieg boven het land en druk op K.
 const ILLUSTRATIE_KALIBRATIE = {
-  "Bahama's": { minLon:-80.5, maxLon:-72.5, minLat:20.8, maxLat:27.5 },
-  "Belize":   { minLon:-89.5, maxLon:-85.5, minLat:15.6, maxLat:18.8 },
+  "Bahama's": {"minLon":-80.5,"maxLon":-72.5,"minLat":20.8,"maxLat":27.5},
+  "België": {"minLon":2.273,"maxLon":6.614,"minLat":49.384,"maxLat":51.611,"zoomMax":32.16},
+  "Belize": {"minLon":-89.5,"maxLon":-85.5,"minLat":15.6,"maxLat":18.8},
+  "Bulgarije": {"minLon":21.377,"maxLon":29.611,"minLat":41.029,"maxLat":44.429,"zoomMax":21.49},
+  "Canada": {"minLon":-145.283,"maxLon":-50.026,"minLat":41.255,"maxLat":78.985,"zoomMax":2.01,"hoeken":{"lb":{"dLon":-17.078,"dLat":5.457},"lo":{"dLon":14.516,"dLat":0},"ro":{"dLon":-0.854,"dLat":-5.457}}},
+  "Denemarken": {"minLon":6.796,"maxLon":15.353,"minLat":54.569,"maxLat":57.737,"zoomMax":21.87,"hoeken":{"lb":{"dLon":0.086,"dLat":0.095},"lo":{"dLon":0,"dLat":-0.222},"ro":{"dLon":0.513,"dLat":-0.412}}},
+  "Duitsland": {"minLon":5.294,"maxLon":15.214,"minLat":47.229,"maxLat":55.243,"zoomMax":11.66},
+  "Estland": {"minLon":21.173,"maxLon":28.623,"minLat":57.35,"maxLat":59.779,"zoomMax":29.79},
+  "Finland": {"minLon":19.137,"maxLon":32.095,"minLat":59.811,"maxLat":70.075,"zoomMax":9.47,"hoeken":{"rb":{"dLon":1.573,"dLat":0},"ro":{"dLon":0.259,"dLat":0}}},
+  "Frankrijk": {"minLon":-5.286,"maxLon":9.619,"minLat":41.526,"maxLat":50.898,"zoomMax":10.46,"hoeken":{"ro":{"dLon":0,"dLat":-0.187}}},
+  "Georgië": {"minLon":40.053,"maxLon":46.762,"minLat":40.369,"maxLat":43.551,"zoomMax":22.05},
+  "Groenland": {"minLon":-57.145,"maxLon":-20.205,"minLat":59.989,"maxLat":83.634,"zoomMax":2.72,"hoeken":{"lb":{"dLon":-19.689,"dLat":-1.419},"rb":{"dLon":8.864,"dLat":0.473},"lo":{"dLon":4.708,"dLat":-0.236},"ro":{"dLon":-5.885,"dLat":0}}},
+  "Hongarije": {"minLon":15.708,"maxLon":23.417,"minLat":45.672,"maxLat":48.471,"zoomMax":22.71},
+  "IJsland": {"minLon":-24.594,"maxLon":-13.466,"minLat":63.365,"maxLat":66.505,"zoomMax":17.76},
+  "Ierland": {"minLon":-11.622,"maxLon":-5.295,"minLat":50.943,"maxLat":55.608,"zoomMax":16.29},
+  "Italië": {"minLon":7.082,"maxLon":18.99,"minLat":36.655,"maxLat":47.085,"zoomMax":11.6,"hoeken":{"lb":{"dLon":-1.429,"dLat":0.209},"lo":{"dLon":0.715,"dLat":-0.313},"ro":{"dLon":-0.715,"dLat":0}}},
+  "Kroatië": {"minLon":12.947,"maxLon":20.005,"minLat":42.365,"maxLat":46.623,"zoomMax":27,"hoeken":{"lb":{"dLon":0,"dLat":0.085},"lo":{"dLon":0.282,"dLat":-0.426}}},
+  "Letland": {"minLon":20.557,"maxLon":28.317,"minLat":55.533,"maxLat":58.075,"zoomMax":23.75},
+  "Litouwen": {"minLon":20.8,"maxLon":26.84,"minLat":53.887,"maxLat":56.443,"zoomMax":25.12},
+  "Moldavië": {"minLon":26.618,"maxLon":30.132,"minLat":45.462,"maxLat":48.484,"zoomMax":21.25},
+  "Nederland": {"minLon":3.09,"maxLon":7.025,"minLat":50.817,"maxLat":53.545,"zoomMax":23.78,"hoeken":{"lb":{"dLon":-0.42,"dLat":0.109},"rb":{"dLon":0.344,"dLat":0.082},"lo":{"dLon":-0.267,"dLat":-0.191}}},
+  "Noorwegen": {"minLon":2.704,"maxLon":22.392,"minLat":57.993,"maxLat":71.127,"zoomMax":5.67,"hoeken":{"lb":{"dLon":-0.963,"dLat":0},"rb":{"dLon":8.602,"dLat":0},"lo":{"dLon":1.524,"dLat":-0.394},"ro":{"dLon":1.927,"dLat":-0.263}}},
+  "Oekraïne": {"minLon":20.261,"maxLon":42.476,"minLat":43.942,"maxLat":52.566,"zoomMax":8.69,"hoeken":{"lo":{"dLon":0,"dLat":-0.085},"ro":{"dLon":1.307,"dLat":1.281}}},
+  "Oostenrijk": {"minLon":8.955,"maxLon":17.716,"minLat":46.13,"maxLat":49.433,"zoomMax":26.52,"hoeken":{"rb":{"dLon":0.085,"dLat":0}}},
+  "Polen": {"minLon":13.73,"maxLon":24.902,"minLat":48.662,"maxLat":55.053,"zoomMax":13.51},
+  "Portugal": {"minLon":-10.727,"maxLon":-5.205,"minLat":36.626,"maxLat":42.431,"zoomMax":18.29,"hoeken":{"rb":{"dLon":0.166,"dLat":0.058}}},
+  "Roemenië": {"minLon":20.051,"maxLon":29.891,"minLat":43.65,"maxLat":48.275,"zoomMax":13.88},
+  "Servië": {"minLon":18.856,"maxLon":22.984,"minLat":42.242,"maxLat":46.164,"zoomMax":17.89},
+  "Slovenië": {"minLon":13.366,"maxLon":16.5,"minLat":45.43,"maxLat":46.863,"zoomMax":40},
+  "Slowakije": {"minLon":16.42,"maxLon":22.964,"minLat":47.621,"maxLat":49.749,"zoomMax":27.49},
+  "Spanje": {"minLon":-10.905,"maxLon":3.714,"minLat":36.007,"maxLat":43.793,"hoeken":{"lb":{"dLon":-0.146,"dLat":0.234},"lo":{"dLon":1.023,"dLat":0}}},
+  "Tsjechië": {"minLon":12.076,"maxLon":18.833,"minLat":48.559,"maxLat":51.037,"zoomMax":23.43},
+  "Tunesië": {"minLon":7.433,"maxLon":12.291,"minLat":30.086,"maxLat":37.346,"zoomMax":14.06},
+  "Turkije": {"minLon":25.363,"maxLon":44.704,"minLat":35.506,"maxLat":41.779,"zoomMax":7.7,"hoeken":{"lb":{"dLon":-0.387,"dLat":0.439},"rb":{"dLon":0.58,"dLat":0.125},"lo":{"dLon":0.193,"dLat":-0.063},"ro":{"dLon":0.387,"dLat":-0.753}}},
+  "Verenigd Koninkrijk": {"minLon":-9.22,"maxLon":2.665,"minLat":49.598,"maxLat":60.554,"zoomMax":12.17,"hoeken":{"lb":{"dLon":-0.832,"dLat":-0.657}}},
+  "Verenigde Staten": {"minLon":-124.394,"maxLon":-70.581,"minLat":24.326,"maxLat":53.039,"zoomMax":2.47,"hoeken":{"lb":{"dLon":-2.153,"dLat":0},"rb":{"dLon":7.534,"dLat":-3.158},"lo":{"dLon":3.229,"dLat":0},"ro":{"dLon":-5.919,"dLat":0}}},
+  "Wit-Rusland": {"minLon":23.07,"maxLon":32.815,"minLat":50.643,"maxLat":56.066,"zoomMax":13.05,"hoeken":{"lb":{"dLon":-0.487,"dLat":0.207}}},
+  "Zweden": {"minLon":11.585,"maxLon":23.483,"minLat":55.247,"maxLat":69.864,"zoomMax":6.91,"hoeken":{"lb":{"dLon":-2.296,"dLat":0},"rb":{"dLon":3.222,"dLat":0.152},"lo":{"dLon":-2.755,"dLat":-0.457},"ro":{"dLon":-4.476,"dLat":-1.523}}},
+  "Zwitserland": {"minLon":5.799,"maxLon":10.527,"minLat":45.782,"maxLat":47.8},
 };
 
 // Lokaal opgeslagen kalibraties (gemaakt met de K-modus) gaan vóór de
@@ -2178,15 +2264,25 @@ function updateKalibratieHud(){
 
 function startKalibratie(){
   if(!hoverLand){ return; } // alleen boven een land te starten
-  const naam=hoverLand.properties.dutch||hoverLand.properties.name;
+  let naam=hoverLand.properties.dutch||hoverLand.properties.name;
+  let featureVoorKalibratie=hoverLand;
+  // Vlieg je boven het Alaska-deel van de VS, dan kalibreren we Alaska als
+  // eigen los land (zie initAlaskaAlsPseudoLand) i.p.v. de hele VS ineens —
+  // anders moet je bij het kalibreren de hele kromming van de bol tussen
+  // het vasteland en Alaska mee compenseren.
+  if(naam==='Verenigde Staten' && wonkyLon < -140 && alleLandenFeatureMap['Alaska']){
+    naam='Alaska';
+    featureVoorKalibratie = alleLandenFeatureMap['Alaska'].feature;
+  }
   if(naam==='Noordpool') return; // eigen projectie, hier niet kalibreerbaar
-  laadIllustratie(naam);
+  if(naam==='Alaska') laadIllustratie('Verenigde Staten'); // laadt ook __Alaska mee, zie laadIllustratie
+  else laadIllustratie(naam);
   kalibratieNaam=naam;
-  kalibratieFeature=hoverLand;
+  kalibratieFeature=featureVoorKalibratie;
   // Beginstand: bestaande kalibratie, of anders de automatisch gemeten
   // graden-rechthoek van het land (zelfde meting als de oude weergave).
   const bestaand=getIllustratieKalibratie(naam);
-  const auto=berekenLandBBoxGraden(hoverLand);
+  const auto=berekenLandBBoxGraden(featureVoorKalibratie);
   const bron=bestaand||auto;
   if(!bron) return;
   kalibratieBBox={minLon:bron.minLon,maxLon:bron.maxLon,minLat:bron.minLat,maxLat:bron.maxLat,
@@ -2383,7 +2479,7 @@ function getGebakkenIllustratie(naam, img, bbox){
   bctx.fillStyle='#000';
   bctx.beginPath();
   for(const nm in alleLandenFeatureMap){
-    if(nm===naam) continue;
+    if(nm===naam || zelfdeLandAlsAlaska(nm,naam)) continue;
     const info=alleLandenFeatureMap[nm];
     if(!info.kruistDatumgrens){
       if(info.maxLat < bbox.minLat-hMargeLat || info.minLat > bbox.maxLat+hMargeLat) continue;
@@ -2461,7 +2557,7 @@ const landGrensCache = {};
 // hele wereld hoeven te worden nagelopen)
 function puntInAnderLand(lon,lat,eigenNaam){
   for(const naam in alleLandenFeatureMap){
-    if(naam===eigenNaam) continue;
+    if(naam===eigenNaam || zelfdeLandAlsAlaska(naam,eigenNaam)) continue;
     const info=alleLandenFeatureMap[naam];
     if(!info.kruistDatumgrens){
       if(lat<info.minLat||lat>info.maxLat||lon<info.minLon||lon>info.maxLon) continue;
@@ -2735,36 +2831,36 @@ function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
     return;
   }
 
-  // ── Gekalibreerde landen: illustratie vrij tekenen, niet knippen op de
-  // eigen landgrens (zee en transparante rand blijven zichtbaar), maar wel
-  // weggummen boven buurlanden. Zie ILLUSTRATIE_KALIBRATIE + de K-modus.
-  // Tijdens het kalibreren tekent de kalibratiemodus dit land zelf, dus
-  // slaan we het hier over om dubbel tekenen te voorkomen.
-  if(kalibratieActief && dutch===kalibratieNaam) return;
-  const kal = getIllustratieKalibratie(dutch);
-  if(kal){
-    tekenIllustratieVrij(dutch, img, kal, doorzicht);
-    return;
+  // ── Gedeelde route: kalibratie/vrij tekenen, anders de oude clip-methode ──
+  // Zowel het gewone land als (indien van toepassing) het losse Alaska-deel
+  // lopen hierdoorheen, zodat beide evengoed kalibreerbaar zijn.
+  function tekenLandDelen(naam, delen, deelImg){
+    if(kalibratieActief && naam===kalibratieNaam) return; // kalibratiemodus tekent dit zelf
+    const kal = getIllustratieKalibratie(naam);
+    if(kal){ tekenIllustratieVrij(naam, deelImg, kal, doorzicht); return; }
+    tekenPolyGroep(delen, deelImg, doorzicht, naam);
   }
 
   // Speciaal geval: Alaska ligt zo ver los van de rest van de VS, dat één
   // plaatje over beide heen stretchen er raar uitziet. Als er een apart
-  // Alaska-plaatje geladen is, tekenen we Alaska (alles onder -140° lengtegraad)
-  // apart, met zijn eigen rechthoek.
+  // Alaska-plaatje geladen is, behandelen we Alaska als eigen pseudo-land
+  // (alles onder -140° lengtegraad), met zijn eigen kalibratie en rechthoek.
   if(dutch==='Verenigde Staten' && landIllustraties['__Alaska']){
     const alaskaDelen=[], hoofdDelen=[];
     for(const poly of polysLijst){
       if(!poly[0]||poly[0].length<3){ hoofdDelen.push(poly); continue; }
       const lonMin=Math.min(...poly[0].map(p=>p[0]));
-      if(lonMin < -140) alaskaDelen.push(poly);
+      const latMax=Math.max(...poly[0].map(p=>p[1]));
+      // Zelfde Hawaii-uitzondering als bij initAlaskaAlsPseudoLand hierboven.
+      if(lonMin < -140 && latMax > 45) alaskaDelen.push(poly);
       else hoofdDelen.push(poly);
     }
-    tekenPolyGroep(hoofdDelen, img, doorzicht, dutch);
-    tekenPolyGroep(alaskaDelen, landIllustraties['__Alaska'], doorzicht, dutch);
+    tekenLandDelen('Verenigde Staten', hoofdDelen, img);
+    tekenLandDelen('Alaska', alaskaDelen, landIllustraties['__Alaska']);
     return;
   }
 
-  tekenPolyGroep(polysLijst, img, doorzicht, dutch);
+  tekenLandDelen(dutch, polysLijst, img);
 }
 
 
@@ -3109,6 +3205,7 @@ function drawGlobe(){
     const lonMargeGraden = Math.min(90, latMargeGraden / Math.max(0.15, Math.cos(wonkyLat*Math.PI/180)));
 
     for(const naam in alleLandenFeatureMap){
+      if(naam==='Alaska') continue; // los pseudo-land, geen eigen sluipeffect
       const info = alleLandenFeatureMap[naam];
       if(hoverLand && info.feature===hoverLand) continue;
       if(!info.kruistDatumgrens){
@@ -3133,8 +3230,14 @@ function drawGlobe(){
   // De illustratie op de werk-rechthoek (altijd zichtbaar, ongeacht zoom),
   // de echte landgrens in rood, en de rand van de afbeelding als geel kader.
   if(kalibratieActief && kalibratieFeature && kalibratieBBox){
-    laadIllustratie(kalibratieNaam);
-    const kalImg=landIllustraties[kalibratieNaam];
+    let kalImg;
+    if(kalibratieNaam==='Alaska'){
+      laadIllustratie('Verenigde Staten'); // laadt ook __Alaska mee
+      kalImg = landIllustraties['__Alaska'];
+    } else {
+      laadIllustratie(kalibratieNaam);
+      kalImg = landIllustraties[kalibratieNaam];
+    }
     if(kalImg) tekenIllustratieVrij(kalibratieNaam, kalImg, kalibratieBBox, 0.85);
 
     // Rode lijn: de echte landgrens uit de kaartdata
