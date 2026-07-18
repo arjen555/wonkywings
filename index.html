@@ -565,7 +565,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.43</div>
+  <div id="versie-label">v0.2.44</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2429,6 +2429,60 @@ function vervormLonLat(bbox, u, v){
 
 const gebakkenIllustraties = {}; // naam -> {sleutel, bronImg, canvas}
 
+// ── Enclave-bescherming voor het gummen ───────────────
+// Bij het weggummen van "andere landen" uit een gebakken illustratie werd
+// per land alleen de buitenrand gebruikt. Voor enclaves gaat dat mis: de
+// buitenrand van Zuid-Afrika omsluit héél Lesotho (de kaartdata heeft daar
+// geen gat), dus bij het bakken van de Lesotho-illustratie werd letterlijk
+// alles weggegumd. Oplossing, in lijn met de klein-wint-van-groot-regel:
+// per (groot) land onthouden welke kleinere landen er middenin liggen, en
+// die gebieden bij het gummen beschermen (via de evenodd-vulregel: een
+// extra ring binnen een gumring maakt dat stuk weer "niet gegumd").
+const enclavesBinnenCache = {};
+function representatiefPunt(feature){
+  // Middelpunt van het grootste losse deel van het land (gemiddelde van de
+  // buitenring) — ruim voldoende om "ligt dit land binnen dat land?" te toetsen.
+  const polys=feature.geometry.type==='Polygon'?[feature.geometry.coordinates]:feature.geometry.coordinates;
+  let beste=null, besteN=-1;
+  for(const poly of polys){
+    if(poly[0] && poly[0].length>besteN){ beste=poly[0]; besteN=poly[0].length; }
+  }
+  if(!beste) return null;
+  let sLon=0,sLat=0;
+  for(const [lo,la] of beste){ sLon+=lo; sLat+=la; }
+  return [sLon/beste.length, sLat/beste.length];
+}
+function getEnclavesBinnen(naam){
+  if(enclavesBinnenCache[naam]) return enclavesBinnenCache[naam];
+  const lijst=[];
+  const infoGroot=alleLandenFeatureMap[naam];
+  if(!infoGroot){ enclavesBinnenCache[naam]=lijst; return lijst; }
+  const oppGroot=getFeatureOppervlakte(infoGroot.feature);
+  const gPolys=infoGroot.feature.geometry.type==='Polygon'?[infoGroot.feature.geometry.coordinates]:infoGroot.feature.geometry.coordinates;
+  for(const kleinNaam in alleLandenFeatureMap){
+    if(kleinNaam===naam || zelfdeLandAlsAlaska(kleinNaam,naam)) continue;
+    const infoKlein=alleLandenFeatureMap[kleinNaam];
+    if(getFeatureOppervlakte(infoKlein.feature) >= oppGroot) continue;
+    // Snelle voorcheck: bbox van het kleine land moet binnen die van het grote vallen
+    if(infoKlein.minLon < infoGroot.minLon || infoKlein.maxLon > infoGroot.maxLon ||
+       infoKlein.minLat < infoGroot.minLat || infoKlein.maxLat > infoGroot.maxLat) continue;
+    const punt=representatiefPunt(infoKlein.feature);
+    if(!punt) continue;
+    for(const poly of gPolys){
+      if(!poly[0] || poly[0].length<3) continue;
+      if(!puntInPolygoon(punt[0],punt[1],poly[0])) continue;
+      // Heeft de kaartdata hier zelf al een gat voor dit land? Dan regelt de
+      // evenodd-vulling het al en zou een extra ring het juist wéér omdraaien.
+      let alGat=false;
+      for(let h=1;h<poly.length;h++) if(puntInPolygoon(punt[0],punt[1],poly[h])){ alGat=true; break; }
+      if(!alGat) lijst.push(infoKlein.feature);
+      break;
+    }
+  }
+  enclavesBinnenCache[naam]=lijst;
+  return lijst;
+}
+
 function getGebakkenIllustratie(naam, img, bbox){
   const sleutel=JSON.stringify(bbox);
   const cache=gebakkenIllustraties[naam];
@@ -2487,15 +2541,34 @@ function getGebakkenIllustratie(naam, img, bbox){
     }
     const g=info.feature.geometry;
     const polys=g.type==='Polygon'?[g.coordinates]:g.coordinates;
+    // Alle ringen meenemen (buitenrand én gaten): een gat in de kaartdata
+    // wordt door de evenodd-vulling vanzelf NIET gegumd.
     for(const poly of polys){
-      const ring=poly[0];
-      if(!ring||ring.length<3) continue;
-      let eerste=true;
-      for(const [plon,plat] of ring){
-        const [px,py]=naarPixel(plon,plat);
-        if(eerste){ bctx.moveTo(px,py); eerste=false; } else bctx.lineTo(px,py);
+      for(const ring of poly){
+        if(!ring||ring.length<3) continue;
+        let eerste=true;
+        for(const [plon,plat] of ring){
+          const [px,py]=naarPixel(plon,plat);
+          if(eerste){ bctx.moveTo(px,py); eerste=false; } else bctx.lineTo(px,py);
+        }
+        bctx.closePath();
       }
-      bctx.closePath();
+    }
+    // Enclave-bescherming: kleinere landen die binnen dit land liggen (zoals
+    // Lesotho in Zuid-Afrika — en ook het land van deze illustratie zelf!)
+    // krijgen hier een extra ring, zodat hun gebied niet mee wordt weggegumd.
+    for(const enclave of getEnclavesBinnen(nm)){
+      const ePolys=enclave.geometry.type==='Polygon'?[enclave.geometry.coordinates]:enclave.geometry.coordinates;
+      for(const poly of ePolys){
+        const ring=poly[0];
+        if(!ring||ring.length<3) continue;
+        let eerste=true;
+        for(const [plon,plat] of ring){
+          const [px,py]=naarPixel(plon,plat);
+          if(eerste){ bctx.moveTo(px,py); eerste=false; } else bctx.lineTo(px,py);
+        }
+        bctx.closePath();
+      }
     }
   }
   bctx.fill('evenodd');
@@ -3026,11 +3099,12 @@ function schatFeatureOppervlakte(f){
   }
   return Math.max(totaal,0);
 }
-const FEATURES_KLEIN_NAAR_GROOT = (function(){
-  const opp = new Map();
-  for(const f of GEOJSON.features) opp.set(f, schatFeatureOppervlakte(f));
-  return GEOJSON.features.slice().sort((a,b)=>opp.get(a)-opp.get(b));
-})();
+const featureOppervlakteCache = new Map();
+function getFeatureOppervlakte(f){
+  if(!featureOppervlakteCache.has(f)) featureOppervlakteCache.set(f, schatFeatureOppervlakte(f));
+  return featureOppervlakteCache.get(f);
+}
+const FEATURES_KLEIN_NAAR_GROOT = GEOJSON.features.slice().sort((a,b)=>getFeatureOppervlakte(a)-getFeatureOppervlakte(b));
 
 function getLandOpPunt(lon,lat){
   let lo=lon%360; if(lo>180)lo-=360; if(lo<-180)lo+=360;
