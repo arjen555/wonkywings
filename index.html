@@ -565,7 +565,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.42</div>
+  <div id="versie-label">v0.2.43</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2990,9 +2990,51 @@ function puntInPolygoon(lon,lat,ring){
   }
   return binnen;
 }
+// ── Vaste matchvolgorde: klein land wint van groot land ──
+// Sommige landen liggen (deels) BINNEN een ander land in de kaartdata:
+// Lesotho in Zuid-Afrika, San Marino in Italië. Welke van de twee je dan
+// "raakt" hing af van de toevallige volgorde in de kaartdata — en die zette
+// het grote land soms eerst. Oplossing: bij het opstarten alle landen één
+// keer sorteren op geschatte oppervlakte, van klein naar groot, en overal
+// waar we bepalen "boven welk land vlieg ik" die volgorde aflopen. Het
+// kleinste (meest specifieke) land wint dan automatisch, zonder dat er
+// ergens namen hardcoded hoeven te staan.
+function schatFeatureOppervlakte(f){
+  const polys=f.geometry.type==='Polygon'?[f.geometry.coordinates]:f.geometry.coordinates;
+  let totaal=0;
+  for(const poly of polys){
+    for(let r=0;r<poly.length;r++){
+      const ring=poly[r]; if(!ring||ring.length<3) continue;
+      // Lengtegraden "uitrollen" zodat landen over de datumgrens (Rusland,
+      // Fiji) geen absurde schijn-oppervlakte krijgen door de sprong ±180°.
+      const pts=[]; let vorigLon=ring[0][0], somLat=0;
+      for(const [lo,la] of ring){
+        let l=lo;
+        while(l-vorigLon>180) l-=360;
+        while(l-vorigLon<-180) l+=360;
+        vorigLon=l; pts.push([l,la]); somLat+=la;
+      }
+      // Schoenveterformule op graden, gecorrigeerd voor het smaller worden
+      // van lengtegraden richting de polen. Ruwe schatting, maar voor het
+      // SORTEREN telt alleen de onderlinge volgorde — die klopt hiermee.
+      const schaal=Math.max(0.05,Math.abs(Math.cos((somLat/pts.length)*Math.PI/180)));
+      let opp=0, j=pts.length-1;
+      for(let i=0;i<pts.length;i++){ opp+=pts[j][0]*pts[i][1]-pts[i][0]*pts[j][1]; j=i; }
+      opp=Math.abs(opp)/2*schaal;
+      totaal += (r===0 ? opp : -opp); // buitenring erbij, gaten eraf
+    }
+  }
+  return Math.max(totaal,0);
+}
+const FEATURES_KLEIN_NAAR_GROOT = (function(){
+  const opp = new Map();
+  for(const f of GEOJSON.features) opp.set(f, schatFeatureOppervlakte(f));
+  return GEOJSON.features.slice().sort((a,b)=>opp.get(a)-opp.get(b));
+})();
+
 function getLandOpPunt(lon,lat){
   let lo=lon%360; if(lo>180)lo-=360; if(lo<-180)lo+=360;
-  for(const f of GEOJSON.features){
+  for(const f of FEATURES_KLEIN_NAAR_GROOT){
     const polys=f.geometry.type==='Polygon'?[f.geometry.coordinates]:f.geometry.coordinates;
     for(const poly of polys){
       if(!poly[0]||poly[0].length<3) continue;
@@ -3381,11 +3423,48 @@ function dropVlag(sx,sy,ex,ey){
 
 // ── Besturing ─────────────────────────────────────────
 const keys={};
+// Toetsnaam normaliseren: losse letters altijd als kleine letter opslaan.
+// Zonder dit kan een toets "vast" komen te zitten: indrukken als 'a' maar
+// (door Shift of CapsLock die tussentijds wisselt) loslaten als 'A' — dan
+// blijft keys['a'] eeuwig op ingedrukt staan en vliegt Wonky vanzelf door.
+function normToets(e){ return e.key.length===1 ? e.key.toLowerCase() : e.key; }
+
+// Waakhond-administratie tegen gemiste keyup-events (zie toetsWaakhond hieronder)
+const toetsLaatstGezien={};   // per toets: tijdstip van het laatste keydown-event
+const toetsHerhaaldGezien={}; // per toets: is er tijdens deze druk een herhaal-event gezien?
+
 document.addEventListener('keydown',e=>{
-  keys[e.key]=true;
+  const k=normToets(e);
+  keys[k]=true;
+  toetsLaatstGezien[k]=performance.now();
+  // e.repeat is true bij de automatische herhalingen die de browser stuurt
+  // zolang een toets fysiek ingedrukt blijft. Bij een verse druk (repeat=false)
+  // resetten we de markering, zodat de waakhond per druk opnieuw beslist.
+  if(e.repeat) toetsHerhaaldGezien[k]=true; else toetsHerhaaldGezien[k]=false;
   if([' ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
 });
-document.addEventListener('keyup',e=>{ keys[e.key]=false; });
+document.addEventListener('keyup',e=>{ keys[normToets(e)]=false; });
+
+// ── Waakhond tegen "spooktoetsen" ─────────────────────
+// Soms mist de browser een keyup-event zónder dat het venster de focus
+// verliest (systeemsneltoets, Windows-toets, notificatie, ...). De toets
+// blijft dan voor het spel eeuwig ingedrukt en Wonky slaat op hol.
+// Truc: zolang een toets ECHT vastgehouden wordt, stuurt de browser vanzelf
+// herhaal-keydowns. Hebben we bij deze druk al herhalingen gezien, maar
+// blijft er ineens ruim een seconde niets meer komen terwijl de toets
+// volgens ons nog "aan" staat? Dan is de keyup gemist en zetten we de
+// toets alsnog op los. (Alleen bij toetsen waarvan we herhalingen zagen,
+// zodat systemen zonder toetsherhaling nooit per ongeluk "loslaten".)
+const TOETS_WAAKHOND_MS = 1500;
+function toetsWaakhond(){
+  const nu=performance.now();
+  for(const k in keys){
+    if(keys[k] && toetsHerhaaldGezien[k] && nu-toetsLaatstGezien[k] > TOETS_WAAKHOND_MS){
+      keys[k]=false;
+      toetsHerhaaldGezien[k]=false;
+    }
+  }
+}
 
 // Voorkomt "vastzittende" toetsen: als het venster/tabblad focus verliest
 // (bijv. door een scroll-interactie of van tabblad wisselen) kan een keyup
@@ -3651,14 +3730,14 @@ function updateSpel(){
   const effectiefMax = dynamischMax;
 
   const nuTijd = performance.now();
-  if(keys['z']||keys['Z']||touchZoomInActief||gamepadZoomInActief){
+  if(keys['z']||touchZoomInActief||gamepadZoomInActief){
     if(!zHoudSinds) zHoudSinds = nuTijd;
     const duur = nuTijd - zHoudSinds;
     const versnelling = 1 + (ZOOM_VERSNELLING_MAX-1)*Math.min(1, duur/ZOOM_VERSNELLING_TIJD);
     zoomNiveau = Math.min(zoomNiveauMaxVoorHuidigLand(), zoomNiveau + ZOOM_STAP_BASIS*versnelling);
     zetZoomIndicator(zoomNiveau);
   } else { zHoudSinds = 0; }
-  if(keys['x']||keys['X']||touchZoomUitActief||gamepadZoomUitActief){
+  if(keys['x']||touchZoomUitActief||gamepadZoomUitActief){
     if(!xHoudSinds) xHoudSinds = nuTijd;
     const duur = nuTijd - xHoudSinds;
     const versnelling = 1 + (ZOOM_VERSNELLING_MAX-1)*Math.min(1, duur/ZOOM_VERSNELLING_TIJD);
@@ -3743,10 +3822,10 @@ function updateSpel(){
       }
     }
   } else if(!wachten){
-  if(keys['ArrowLeft']  || keys['a'] || keys['A']) dx=-1;
-  if(keys['ArrowRight'] || keys['d'] || keys['D']) dx= 1;
-  if(keys['ArrowUp']    || keys['w'] || keys['W']) dy= 1;
-  if(keys['ArrowDown']  || keys['s'] || keys['S']) dy=-1;
+  if(keys['ArrowLeft']  || keys['a']) dx=-1;
+  if(keys['ArrowRight'] || keys['d']) dx= 1;
+  if(keys['ArrowUp']    || keys['w']) dy= 1;
+  if(keys['ArrowDown']  || keys['s']) dy=-1;
   if(dx===0 && dy===0){ dx=touchStuurDx; dy=touchStuurDy; }
   if(dx===0 && dy===0){ dx=gamepadStuurDx; dy=gamepadStuurDy; }
 
@@ -4105,7 +4184,7 @@ function toonReactie(type) {
 }
 
 // ── Loop ──────────────────────────────────────────────
-function loop(){ pollGamepad(); updateSpel(); drawGlobe(); requestAnimationFrame(loop); }
+function loop(){ toetsWaakhond(); pollGamepad(); updateSpel(); drawGlobe(); requestAnimationFrame(loop); }
 </script>
 </body>
 </html>
