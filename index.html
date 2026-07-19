@@ -565,7 +565,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.44</div>
+  <div id="versie-label">v0.2.45</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -3473,6 +3473,80 @@ function drawGlobe(){
   const atm=ctx.createRadialGradient(CX,CY,R*.70,CX,CY,R*1.02);
   atm.addColorStop(0,'rgba(0,0,0,0)');atm.addColorStop(.7,'rgba(0,20,60,0.3)');atm.addColorStop(1,'rgba(0,10,40,0.85)');
   ctx.beginPath(); ctx.arc(CX,CY,R*1.02,0,Math.PI*2); ctx.fillStyle=atm; ctx.fill();
+
+  tekenRook(); // rookwolkjes als laatste, zodat ze boven de kaart liggen (Wonky zelf is een los plaatje en blijft er automatisch bovenop)
+}
+
+// ── Rookwolkjes: Wonky is een ouwe rammelpot ──────────
+// Zwarte pruttelwolkjes uit de staart, in wisselende grootte, die groeien,
+// wegdrijven en vervagen. Turbo geeft extra rook; bij stilhangen verschijnt
+// er telkens één wolkje op een vaste plek achter het vliegtuig.
+const rookImgs=['images/rookwolkje1.png','images/rookwolkje2.png'].map(pad=>{
+  const img=new Image(); img.src=pad; return img;
+});
+let rookWolkjes=[];
+let rookVolgende=0; // tijdstip waarop het volgende wolkje mag verschijnen
+
+function updateRook(wx,wy,scaleX,dx,dy,turbo,wonkyBreedte){
+  const nu=performance.now();
+  if(nu<rookVolgende) return;
+  // Beweegt Wonky? Input telt, en ook nog-uitrollende snelheid na het loslaten.
+  const beweegt = dx!==0 || dy!==0 || Math.abs(lonSnelheid)>0.004 || Math.abs(latSnelheid)>0.004;
+  if(rookWolkjes.length>=14) return; // vangnet: nooit onbeperkt veel deeltjes
+
+  // scaleX=1: Wonky kijkt naar links, staart (met de rook) zit dus rechts — en andersom.
+  const staartX = wx + scaleX*wonkyBreedte*0.55;
+  const staartY = wy + wonkyBreedte*0.08;
+
+  if(beweegt){
+    // Pruttelritme: bewust onregelmatig (een rammelpot blaast niet in de maat);
+    // met turbo ruwweg 2,5x zo vaak.
+    rookVolgende = nu + (turbo?150:380)*(0.6+Math.random()*0.9);
+    rookWolkjes.push({
+      img: Math.floor(Math.random()*rookImgs.length),
+      x: staartX + (Math.random()-0.5)*10,
+      y: staartY + (Math.random()-0.5)*10,
+      // Drift: van de neus vandaan, plus een vleugje omhoog; bij klimmen/duiken
+      // (dy) buigt het spoor mee naar beneden/boven-achter.
+      vx: scaleX*(28+Math.random()*30),
+      vy: -8 + dy*22 + (Math.random()-0.5)*10,
+      schaal: 0.35+Math.random()*0.5,
+      rot: (Math.random()-0.5)*0.9,
+      alpha0: turbo?0.9:0.8,
+      start: nu,
+      duur: 900+Math.random()*500
+    });
+  } else {
+    // Stilhangen: telkens precies één wolkje op een vaste plek, dat ter
+    // plekke opbolt en verdwijnt. Interval > levensduur, dus nooit twee tegelijk.
+    rookVolgende = nu + 1150;
+    rookWolkjes.push({
+      img: 1, x: staartX, y: staartY,
+      vx: 0, vy: -6,           // heel licht opstijgen, verder blijft hij op zijn plek
+      schaal: 0.45, rot: 0,
+      alpha0: 0.75, start: nu, duur: 900
+    });
+  }
+}
+
+function tekenRook(){
+  if(!rookWolkjes.length) return;
+  const nu=performance.now();
+  rookWolkjes=rookWolkjes.filter(w=>nu-w.start<w.duur);
+  for(const w of rookWolkjes){
+    const img=rookImgs[w.img];
+    if(!img.complete || !img.naturalWidth) continue;
+    const f=(nu-w.start)/w.duur;          // 0 = net geboren, 1 = weg
+    const t=(nu-w.start)/1000;
+    const sc=w.schaal*(1+0.4*f);          // ondertussen iets opbollen
+    const bw=img.naturalWidth*sc, bh=img.naturalHeight*sc;
+    ctx.save();
+    ctx.globalAlpha=w.alpha0*(1-f);       // steeds transparanter tot hij weg is
+    ctx.translate(w.x+w.vx*t, w.y+w.vy*t);
+    ctx.rotate(w.rot*f);
+    ctx.drawImage(img,-bw/2,-bh/2,bw,bh);
+    ctx.restore();
+  }
 }
 
 // ── Vlaganimatie ──────────────────────────────────────
@@ -4045,6 +4119,9 @@ function updateSpel(){
     // Gefixed: dy>0 (omhoog) = neus omhoog (+rot), dy<0 (omlaag) = neus omlaag (-rot)
     wonkyEl.style.transform=`scaleX(${scaleX}) rotate(${dx*14+dy*12}deg)`;
   }
+
+  // Rookwolkjes bijhouden nu positie, kijkrichting en turbo-stand bekend zijn
+  updateRook(wx, wy, laatsteScaleX, dx, dy, turbo, wonkyEl.offsetWidth||120);
 
   // Blij volgt Timbo's positie ook als hij is geactiveerd buiten deze update-tak om (bij een goede drop)
   if(wonkyBlijEl.style.display !== 'none'){
