@@ -29,7 +29,7 @@
     .score-ticker-kaart {
       display:inline-flex; align-items:baseline; gap:8px;
       padding:0 22px; border-right:1px solid rgba(255,255,255,0.15);
-      font-size:0.7rem; white-space:nowrap;
+      font-size:0.95rem; white-space:nowrap;
     }
     .score-ticker-kop { color:#ffd700; font-weight:800; }
     .score-ticker-namen { color:rgba(255,255,255,0.8); }
@@ -548,7 +548,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.47</div>
+  <div id="versie-label">v0.2.48</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -565,7 +565,7 @@
       <span id="illustraties-vinkje">✅</span>
     </button>
     <button id="help-knop" class="startscherm-knop" onclick="openHulp()">
-      ❓ Zo werkt de besturing
+      Zo werkt de besturing
     </button>
   </div>
 </div>
@@ -3283,12 +3283,12 @@ function drawGlobe(){
     // helderheid, ook als het toevallig geen deel uitmaakt van de levellijst
     // (bijv. Wonky dwaalt af). Boven zee is hoverLand null en slaan we dit over -
     // de buurlanden-loop hieronder zorgt dan alsnog voor de geleidelijke opbouw.
-    if(hoverLand){
-      const dutchHuidig=hoverLand.properties.dutch||hoverLand.properties.name;
-      laadIllustratie(dutchHuidig);
-      const illHuidig=landIllustraties[dutchHuidig];
-      if(illHuidig) tekenLandIllustratie(hoverLand,illHuidig,zoomNiveau,doorzichtHuidig);
-    }
+    //
+    // TEKENVOLGORDE: eerst alle buurlanden, en het land waar Wonky nu boven
+    // vliegt als allerlaatste — dus altijd BOVENOP. Landen kunnen elkaar
+    // overlappen (Somalië/Somaliland: overlappende kaartdata én bewust
+    // aangehouden groene randen in het artwork). Wat onder de witte stip
+    // ligt, wint dan altijd van wat eroverheen geschoven zou worden.
 
     // Buurlanden overal ter wereld: alleen zichtbaar binnen de grensnabijheids-
     // zone, met een doorzicht die meeschaalt met het huidige zoomniveau. Dit
@@ -3324,6 +3324,14 @@ function drawGlobe(){
       const doorzicht = doorzichtHuidig * nabijheid;
       if(doorzicht <= 0.01) continue;
       tekenLandIllustratie(info.feature,ill,zoomNiveau,doorzicht);
+    }
+
+    // Het huidige land als allerlaatste: altijd bovenop al het andere.
+    if(hoverLand){
+      const dutchHuidig=hoverLand.properties.dutch||hoverLand.properties.name;
+      laadIllustratie(dutchHuidig);
+      const illHuidig=landIllustraties[dutchHuidig];
+      if(illHuidig) tekenLandIllustratie(hoverLand,illHuidig,zoomNiveau,doorzichtHuidig);
     }
   }
 
