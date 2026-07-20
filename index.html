@@ -330,7 +330,7 @@
     .richting-knop:hover { transform:scale(1.08); }
     .richting-knop.richting-uit { opacity:0.3; filter:grayscale(1); cursor:default; pointer-events:none; }
     #richting-pijl {
-      position:fixed; width:clamp(50px,7vmin,90px); pointer-events:none;
+      position:fixed; width:clamp(25px,3.5vmin,45px); pointer-events:none;
       z-index:21; display:none; opacity:1;
       filter:drop-shadow(0 0 10px rgba(120,230,255,0.8));
     }
@@ -548,7 +548,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.48</div>
+  <div id="versie-label">v0.2.49</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1778,28 +1778,36 @@ function gebruikRichtingwijzer(i){
 }
 function schietRichtingpijl(doelPunt){
   const toRad=Math.PI/180, toDeg=180/Math.PI;
+
+  // Start bij het vliegtuigje zelf (exact dezelfde formule als waar Wonky
+  // getekend wordt), niet bij de witte positiestip eronder.
+  const wx=focusSx + wonkySchermX*W, wy=focusSy-90;
+
+  // Aardrijkskundige koers (bearing) vanaf Wonky's positie — alleen nog
+  // nodig als terugvaloptie wanneer het doel achter de bol ligt.
   const phi1=wonkyLat*toRad, phi2=doelPunt[1]*toRad;
   const dLambda=(doelPunt[0]-wonkyLon)*toRad;
   const y=Math.sin(dLambda)*Math.cos(phi2);
   const x=Math.cos(phi1)*Math.sin(phi2)-Math.sin(phi1)*Math.cos(phi2)*Math.cos(dLambda);
   let bearing=Math.atan2(y,x)*toDeg;
   if(bearing<0) bearing+=360;
-  const rot=bearing-AANWIJZER_BASISHOEK;
-
-  // Start precies op Wonky's ECHTE positie (dezelfde plek als de gele land-markering),
-  // niet op het iets hogere tekenpunt van het personage zelf.
-  const wx=focusSx, wy=focusSy;
 
   // Vliegafstand: nooit verder dan het doel zelf, zodat de pijl er niet overheen schiet.
   const doelP3=roteerPunt(lonLatTo3D(doelPunt[0],doelPunt[1]),rotM);
   let afstand;
   if(doelP3[2]>0){
+    // Doel is zichtbaar: mik in schermcoördinaten rechtstreeks van het
+    // vliegtuigje naar het doel. Dan klopt de hoek exact, ongeacht het
+    // vertrekpunt — geen bolmeetkunde nodig.
     const doelSx=CX+doelP3[0]*R, doelSy=CY-doelP3[1]*R;
+    bearing=Math.atan2(doelSx-wx, wy-doelSy)*toDeg; // schermhoek, 0 = recht omhoog
+    if(bearing<0) bearing+=360;
     const echteAfstand=Math.hypot(doelSx-wx, doelSy-wy);
     afstand=Math.max(40, Math.min(echteAfstand*0.8, Math.min(W,H)*0.35));
   } else {
     afstand=Math.min(W,H)*0.30; // doel ligt nu net aan de andere kant van de bol: val terug op vaste afstand
   }
+  const rot=bearing-AANWIJZER_BASISHOEK;
   const dx=Math.sin(bearing*toRad)*afstand;
   const dy=-Math.cos(bearing*toRad)*afstand;
 
