@@ -548,7 +548,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.49</div>
+  <div id="versie-label">v0.2.50</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2268,7 +2268,7 @@ function startKalibratie(){
     naam='Alaska';
     featureVoorKalibratie = alleLandenFeatureMap['Alaska'].feature;
   }
-  if(naam==='Noordpool') return; // eigen projectie, hier niet kalibreerbaar
+  if(naam==='Noordpool'||naam==='Antarctica') return; // eigen projectie, hier niet kalibreerbaar
   if(naam==='Alaska') laadIllustratie('Verenigde Staten'); // laadt ook __Alaska mee, zie laadIllustratie
   else laadIllustratie(naam);
   kalibratieNaam=naam;
@@ -2841,6 +2841,33 @@ function tekenPolyGroep(polysLijst,img,doorzicht,dutch){
   ctx.restore();
 }
 
+// ── Zuidpool-schijf: Antarctica.png voorbereiden voor de azimutale projectie ──
+// Eenmalig: de (rechthoekige) afbeelding gecentreerd in een vierkant plaatsen,
+// zodat de hele tekening binnen de ronde schijf past, en de buitenste rand
+// geleidelijk laten vervagen zodat de zee van de illustratie zacht overloopt
+// in de oceaan van het spel (geen harde cirkelrand).
+let zuidpoolSchijfCache=null;
+function getZuidpoolSchijf(img){
+  if(zuidpoolSchijfCache) return zuidpoolSchijfCache;
+  const w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+  if(!w||!h) return null;
+  const S=Math.max(w,h);
+  const c=document.createElement('canvas');
+  c.width=S; c.height=S;
+  const g=c.getContext('2d');
+  g.drawImage(img,(S-w)/2,(S-h)/2,w,h);
+  // Radiale vervaging: vanaf 86% van de straal langzaam naar volledig transparant
+  const grad=g.createRadialGradient(S/2,S/2,S/2*0.86,S/2,S/2,S/2);
+  grad.addColorStop(0,'rgba(0,0,0,0)');
+  grad.addColorStop(1,'rgba(0,0,0,1)');
+  g.globalCompositeOperation='destination-out';
+  g.fillStyle=grad;
+  g.fillRect(0,0,S,S);
+  g.globalCompositeOperation='source-over';
+  zuidpoolSchijfCache=c;
+  return c;
+}
+
 function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
   const geom=feature.geometry;
   const polysLijst=geom.type==='Polygon'?[geom.coordinates]:geom.coordinates;
@@ -2891,6 +2918,59 @@ function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
           tekenDriehoek(img,p00.bx,p00.by,p10.bx,p10.by,p01.bx,p01.by,p00.sx,p00.sy,p10.sx,p10.sy,p01.sx,p01.sy,1.05);
         if(p10.zichtbaar&&p11.zichtbaar&&p01.zichtbaar)
           tekenDriehoek(img,p10.bx,p10.by,p11.bx,p11.by,p01.bx,p01.by,p10.sx,p10.sy,p11.sx,p11.sy,p01.sx,p01.sy,1.05);
+      }
+    }
+    ctx.globalAlpha=1.0;
+    ctx.restore();
+    return;
+  }
+
+  // ── Antarctica: zelfde schijf-aanpak als de Noordpool ──
+  // Via de normale lon/lat-rechthoek raakt alles bij de zuidpool enorm
+  // uitgerekt (alle lengtegraden komen daar samen) en ontstaat een naad bij
+  // ±180°. Daarom hier dezelfde azimutale projectie als de Noordpool: de
+  // afbeelding als ronde schijf plat op de pool (hoek = lengtegraad, straal =
+  // afstand tot de pool). Scherp, onvervormd en zonder naad.
+  if(dutch==='Antarctica'){
+    // Afstelconstanten (eenmalig, net als de uitlijning van de Noordpool):
+    const ANTARCTICA_RAND_LAT = -60; // buitenrand van de schijf (graden zuiderbreedte)
+    const ANTARCTICA_ROTATIE  = 5;   // draaiing van de afbeelding in graden
+    // Snelle voorcheck: pool zelf of een randpunt zichtbaar?
+    const [,,mzPool]=roteerPunt(lonLatTo3D(0,-90),rotM);
+    let mzRandMax=-1;
+    for(let hk=0;hk<360;hk+=45){
+      const [,,mzr]=roteerPunt(lonLatTo3D(hk,ANTARCTICA_RAND_LAT),rotM);
+      if(mzr>mzRandMax) mzRandMax=mzr;
+    }
+    if(mzPool<=0.01 && mzRandMax<=0.01) return;
+    const schijf=getZuidpoolSchijf(img);
+    if(!schijf) return;
+    const RASTER_HOEK=24, RASTER_STRAAL=8;
+    const S=schijf.width, scx=S/2, scy=S/2, maxR=S/2;
+    const rijen=[];
+    for(let j=0;j<=RASTER_STRAAL;j++){
+      const rij=[];
+      const straalFractie=j/RASTER_STRAAL; // 0 = pool zelf, 1 = buitenrand
+      for(let i=0;i<=RASTER_HOEK;i++){
+        const lonHoek=i/RASTER_HOEK*360-180;
+        const lat=-90+(90+ANTARCTICA_RAND_LAT)*straalFractie;
+        const [x,y,z]=roteerPunt(lonLatTo3D(lonHoek,lat),rotM);
+        const a=(lonHoek+ANTARCTICA_ROTATIE)*Math.PI/180;
+        const bx=scx+Math.sin(a)*straalFractie*maxR;
+        const by=scy-Math.cos(a)*straalFractie*maxR;
+        rij.push({ zichtbaar:z>0.01, sx:CX+x*R, sy:CY-y*R, bx, by });
+      }
+      rijen.push(rij);
+    }
+    ctx.save();
+    ctx.globalAlpha=(doorzicht!==undefined?doorzicht:0.93);
+    for(let j=0;j<RASTER_STRAAL;j++){
+      for(let i=0;i<RASTER_HOEK;i++){
+        const p00=rijen[j][i],p10=rijen[j][i+1],p01=rijen[j+1][i],p11=rijen[j+1][i+1];
+        if(p00.zichtbaar&&p10.zichtbaar&&p01.zichtbaar)
+          tekenDriehoek(schijf,p00.bx,p00.by,p10.bx,p10.by,p01.bx,p01.by,p00.sx,p00.sy,p10.sx,p10.sy,p01.sx,p01.sy,1.05);
+        if(p10.zichtbaar&&p11.zichtbaar&&p01.zichtbaar)
+          tekenDriehoek(schijf,p10.bx,p10.by,p11.bx,p11.by,p01.bx,p01.by,p10.sx,p10.sy,p11.sx,p11.sy,p01.sx,p01.sy,1.05);
       }
     }
     ctx.globalAlpha=1.0;
