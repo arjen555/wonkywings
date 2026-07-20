@@ -548,7 +548,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.50</div>
+  <div id="versie-label">v0.2.51</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1304,6 +1304,11 @@ let zHoudSinds = 0, xHoudSinds = 0;
 const DOEL_LAND_HOOGTE_FRACTIE = 0.65; // land moet 65% schermhoogte vullen bij volledig ingezoomd (niveau 1)
 const DOEL_LAND_BREEDTE_FRACTIE = 0.75; // land mag max. 75% schermbreedte vullen bij volledig ingezoomd
 const ZOOM_REFERENTIE_MAX = 4.5; // 'typisch' maximum voor het grootste (stabiele) deel van de zoomrange
+// Beide polen krijgen bewust exact dezelfde vaste waarde (in plaats van de
+// normale, per-land berekende zoom-afstand): zo staan ze bij 100% gegarandeerd
+// even ver van het ijs, ongeacht van welke kant je aankomt. Eén getal om aan
+// te draaien voor allebei tegelijk.
+const POOL_ZOOM_MAX = 6.5;
 const ZOOM_OMSLAGPUNT = 0.75;    // vanaf dit zoomniveau (0-1) past de zoom zich pas aan op het specifieke land
 const ZOOM_NIVEAU_MAX_RUSLAND = 0.5; // Rusland mag nooit verder inzoomen dan 50%, ongeacht de camera-ruimte die er nog is
 
@@ -2202,6 +2207,7 @@ function getIllustratieKalibratie(naam){
 // juist te laat "vol scherm" komt te staan. Wordt net als de illustratie-
 // kalibratie samen met de rest van het land opgeslagen.
 function getZoomMaxOverride(naam){
+  if(naam==='Noordpool'||naam==='Antarctica') return POOL_ZOOM_MAX;
   const bron = kalibratieOverrides[naam] || ILLUSTRATIE_KALIBRATIE[naam];
   return (bron && bron.zoomMax!==undefined) ? bron.zoomMax : null;
 }
