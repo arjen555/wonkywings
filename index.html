@@ -548,7 +548,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.51</div>
+  <div id="versie-label">v0.2.55</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1048,32 +1048,38 @@ let alleLandenFeatureMap = {};
   if(!info) return;
   const g = info.feature.geometry;
   const polys = g.type==='Polygon' ? [g.coordinates] : g.coordinates;
-  const alaskaPolys=[];
+  const alaskaPolys=[], hawaiPolys=[];
   for(const poly of polys){
     if(!poly[0]||poly[0].length<3) continue;
     const lonMin=Math.min(...poly[0].map(p=>p[0]));
     // Let op: puur op lengtegraad selecteren pakt óók de Hawaïaanse eilanden
     // mee (die liggen ook ver westelijk, rond 155-178°W) — dus de breedtegraad
     // moet ook "noordelijk genoeg" zijn (Hawaï blijft onder 29°N, Alaska/de
-    // Aleoeten beginnen pas boven 45°N).
+    // Aleoeten beginnen pas boven 45°N). Hawaï zelf (incl. de onbewoonde
+    // noordwestelijke eilandjes tot Kure) wordt met dezelfde grens er apart uitgetild.
     const latMax=Math.max(...poly[0].map(p=>p[1]));
     if(lonMin < -140 && latMax > 45) alaskaPolys.push(poly);
+    else if(lonMin < -140 && latMax < 29) hawaiPolys.push(poly);
   }
-  if(!alaskaPolys.length) return;
-  let minLon=Infinity,maxLon=-Infinity,minLat=Infinity,maxLat=-Infinity;
-  for(const poly of alaskaPolys) for(const [lo,la] of poly[0]){
-    if(lo<minLon)minLon=lo; if(lo>maxLon)maxLon=lo;
-    if(la<minLat)minLat=la; if(la>maxLat)maxLat=la;
+  function maakPseudoLand(naam, delenPolys){
+    if(!delenPolys.length) return;
+    let minLon=Infinity,maxLon=-Infinity,minLat=Infinity,maxLat=-Infinity;
+    for(const poly of delenPolys) for(const [lo,la] of poly[0]){
+      if(lo<minLon)minLon=lo; if(lo>maxLon)maxLon=lo;
+      if(la<minLat)minLat=la; if(la>maxLat)maxLat=la;
+    }
+    const feature = {
+      type:'Feature',
+      properties:{dutch:naam, name:naam},
+      geometry:{type:'MultiPolygon', coordinates: delenPolys}
+    };
+    alleLandenFeatureMap[naam] = {
+      feature, minLon,maxLon,minLat,maxLat,
+      kruistDatumgrens:(maxLon-minLon)>180
+    };
   }
-  const alaskaFeature = {
-    type:'Feature',
-    properties:{dutch:'Alaska', name:'Alaska'},
-    geometry:{type:'MultiPolygon', coordinates: alaskaPolys}
-  };
-  alleLandenFeatureMap['Alaska'] = {
-    feature:alaskaFeature, minLon,maxLon,minLat,maxLat,
-    kruistDatumgrens:(maxLon-minLon)>180
-  };
+  maakPseudoLand('Alaska', alaskaPolys);
+  maakPseudoLand('Hawaï', hawaiPolys);
 })();
 
 // Alaska en Verenigde Staten zijn qua kaartdata hetzelfde land — bij het
@@ -1081,6 +1087,55 @@ let alleLandenFeatureMap = {};
 // dus nooit als "ander land" wegknippen of ompiepen.
 function zelfdeLandAlsAlaska(a,b){
   return (a==='Alaska'&&b==='Verenigde Staten') || (a==='Verenigde Staten'&&b==='Alaska');
+}
+// Zelfde bescherming, maar dan voor Hawaï/Verenigde Staten.
+function zelfdeLandAlsHawai(a,b){
+  return (a==='Hawaï'&&b==='Verenigde Staten') || (a==='Verenigde Staten'&&b==='Hawaï');
+}
+
+// ── Oost-Maleisië als los kalibreerbaar pseudo-land ───
+// Zelfde verhaal als Alaska hierboven: Maleisië bestaat uit een schiereiland-
+// deel (rond 100-104°O) en een Borneo-deel (rond 109-119°O), met de hele
+// Zuid-Chinese Zee ertussen. Eén afbeelding over beide uitrekken vervormt
+// het te veel — dus knippen we ook hier, eenmalig bij het opstarten, het
+// oostelijke deel eruit als eigen pseudo-land.
+(function initOostMaleisieAlsPseudoLand(){
+  const info = alleLandenFeatureMap['Maleisië'];
+  if(!info) return;
+  const g = info.feature.geometry;
+  const polys = g.type==='Polygon' ? [g.coordinates] : g.coordinates;
+  const MALEISIE_KNIP_LON = 107; // ruim in de lege zee tussen beide delen
+  const oostPolys=[];
+  for(const poly of polys){
+    if(!poly[0]||poly[0].length<3) continue;
+    const lonMin=Math.min(...poly[0].map(p=>p[0]));
+    if(lonMin > MALEISIE_KNIP_LON) oostPolys.push(poly);
+  }
+  if(!oostPolys.length) return;
+  let minLon=Infinity,maxLon=-Infinity,minLat=Infinity,maxLat=-Infinity;
+  for(const poly of oostPolys) for(const [lo,la] of poly[0]){
+    if(lo<minLon)minLon=lo; if(lo>maxLon)maxLon=lo;
+    if(la<minLat)minLat=la; if(la>maxLat)maxLat=la;
+  }
+  const oostFeature = {
+    type:'Feature',
+    properties:{dutch:'Oost-Maleisië', name:'Oost-Maleisië'},
+    geometry:{type:'MultiPolygon', coordinates: oostPolys}
+  };
+  alleLandenFeatureMap['Oost-Maleisië'] = {
+    feature:oostFeature, minLon,maxLon,minLat,maxLat,
+    kruistDatumgrens:(maxLon-minLon)>180
+  };
+})();
+
+// Zelfde bescherming als zelfdeLandAlsAlaska, maar dan voor Maleisië/Oost-Maleisië.
+function zelfdeLandAlsOostMaleisie(a,b){
+  return (a==='Oost-Maleisië'&&b==='Maleisië') || (a==='Maleisië'&&b==='Oost-Maleisië');
+}
+// Gedeelde check voor alle pseudo-land-paren samen, zodat de gum-/sluipeffect-
+// loops verderop met één aanroep beide gevallen afdekken.
+function zelfdePseudoLand(a,b){
+  return zelfdeLandAlsAlaska(a,b) || zelfdeLandAlsHawai(a,b) || zelfdeLandAlsOostMaleisie(a,b);
 }
 
 // ── Startscherm ───────────────────────────────────────
@@ -1308,7 +1363,17 @@ const ZOOM_REFERENTIE_MAX = 4.5; // 'typisch' maximum voor het grootste (stabiel
 // normale, per-land berekende zoom-afstand): zo staan ze bij 100% gegarandeerd
 // even ver van het ijs, ongeacht van welke kant je aankomt. Eén getal om aan
 // te draaien voor allebei tegelijk.
-const POOL_ZOOM_MAX = 6.5;
+// Camera-afstand bij 100% zoom voor de twee polen. Bewust GEEN gedeelde
+// waarde meer: de Noordpool-schijf toont in de kaartdata alleen het gebied
+// vanaf ~78-84°NB (een straal van amper 10-14° rond de pool, puur het
+// ijskap-gebied), terwijl Antarctica.png een straal van 30° beslaat
+// (ANTARCTICA_RAND_LAT, tot 60°ZB — het hele continent inclusief het
+// schiereiland). Bij dezelfde cameraz-afstand oogt die 2-3x grotere schijf
+// dus vanzelf al fors dichterbij. ANTARCTICA_ZOOM_MAX staat daarom lager,
+// zodat de camera verder terugstaat en het schermformaat van beide schijven
+// weer met elkaar overeenkomt.
+const NOORDPOOL_ZOOM_MAX = 6.5;
+const ANTARCTICA_ZOOM_MAX = 2.7;
 const ZOOM_OMSLAGPUNT = 0.75;    // vanaf dit zoomniveau (0-1) past de zoom zich pas aan op het specifieke land
 const ZOOM_NIVEAU_MAX_RUSLAND = 0.5; // Rusland mag nooit verder inzoomen dan 50%, ongeacht de camera-ruimte die er nog is
 
@@ -1383,6 +1448,24 @@ function laadIllustratie(naam, forceHerlaad) {
     alaskaImg.onload  = () => { landIllustraties['__Alaska'] = alaskaImg; };
     alaskaImg.onerror = () => { landIllustraties['__Alaska'] = false; };
     alaskaImg.src = 'images/landen/Verenigde_Staten_Alaska.png';
+  }
+  // Speciaal geval: Hawaï hoort bij de VS, maar heeft een eigen plaatje —
+  // zelfde reden en aanpak als Alaska hierboven.
+  if(naam==='Verenigde Staten' && landIllustraties['__Hawaii']===undefined){
+    landIllustraties['__Hawaii'] = null;
+    const hawaiImg = new Image();
+    hawaiImg.onload  = () => { landIllustraties['__Hawaii'] = hawaiImg; };
+    hawaiImg.onerror = () => { landIllustraties['__Hawaii'] = false; };
+    hawaiImg.src = 'images/landen/Verenigde_Staten_Hawaii.png';
+  }
+  // Speciaal geval: Oost-Maleisië (Borneo-deel) hoort bij Maleisië, maar
+  // heeft een eigen plaatje — zelfde reden en aanpak als Alaska hierboven.
+  if(naam==='Maleisië' && landIllustraties['__OostMaleisie']===undefined){
+    landIllustraties['__OostMaleisie'] = null;
+    const oostImg = new Image();
+    oostImg.onload  = () => { landIllustraties['__OostMaleisie'] = oostImg; };
+    oostImg.onerror = () => { landIllustraties['__OostMaleisie'] = false; };
+    oostImg.src = 'images/landen/Maleisie_OostMaleisie.png';
   }
   // Speciaal geval: Noordpool heeft twee plaatjes - Noordpool2.png (eenvoudige witte
   // vlek, getoond tot het omslagpunt) en Noordpool.png (illustratie met dieren/mensen,
@@ -2132,7 +2215,17 @@ function berekenLandBBoxGraden(feature){
   const ankerLon=(hapNaLon>180)?hapNaLon-360:hapNaLon;
   let minLon=Infinity,maxLon=-Infinity;
   for(const lon of alleLons){
-    const uitgevouwen = ankerLon + ((lon-ankerLon+360)%360);
+    // Veiligheidsmarge: bij een land dat vlak tegen de datumgrens aan ligt
+    // (zoals Fiji) kan een punt dat feitelijk GELIJK is aan ankerLon door een
+    // piepklein afrondingsverschil (de +360/-360 hierboven komt niet altijd
+    // bit-exact terug op hetzelfde getal) net iets ONDER ankerLon uitkomen.
+    // Zonder marge duwt de modulo zo'n punt dan een volledige 360° verderop,
+    // en klapt de hele meting open tot een rechthoek die de hele aardbol
+    // omspant. Een marge van 1e-6° (~10 cm op aarde) voorkomt dat zonder
+    // ergens anders effect te hebben.
+    let d = (lon-ankerLon+360)%360;
+    if(d > 360-1e-6) d = 0;
+    const uitgevouwen = ankerLon + d;
     minLon=Math.min(minLon,uitgevouwen);
     maxLon=Math.max(maxLon,uitgevouwen);
   }
@@ -2207,7 +2300,8 @@ function getIllustratieKalibratie(naam){
 // juist te laat "vol scherm" komt te staan. Wordt net als de illustratie-
 // kalibratie samen met de rest van het land opgeslagen.
 function getZoomMaxOverride(naam){
-  if(naam==='Noordpool'||naam==='Antarctica') return POOL_ZOOM_MAX;
+  if(naam==='Noordpool') return NOORDPOOL_ZOOM_MAX;
+  if(naam==='Antarctica') return ANTARCTICA_ZOOM_MAX;
   const bron = kalibratieOverrides[naam] || ILLUSTRATIE_KALIBRATIE[naam];
   return (bron && bron.zoomMax!==undefined) ? bron.zoomMax : null;
 }
@@ -2270,12 +2364,28 @@ function startKalibratie(){
   // eigen los land (zie initAlaskaAlsPseudoLand) i.p.v. de hele VS ineens —
   // anders moet je bij het kalibreren de hele kromming van de bol tussen
   // het vasteland en Alaska mee compenseren.
-  if(naam==='Verenigde Staten' && wonkyLon < -140 && alleLandenFeatureMap['Alaska']){
+  if(naam==='Verenigde Staten' && wonkyLon < -140 && wonkyLat > 45 && alleLandenFeatureMap['Alaska']){
     naam='Alaska';
     featureVoorKalibratie = alleLandenFeatureMap['Alaska'].feature;
   }
+  // Zelfde principe voor Hawaï — met een breedtegraad-check erbij, want
+  // zowel Alaska als Hawaï liggen westelijk van -140°; alleen de
+  // breedtegraad (ver noordelijk vs. rond de tropen) onderscheidt ze.
+  if(naam==='Verenigde Staten' && wonkyLon < -140 && wonkyLat < 29 && alleLandenFeatureMap['Hawaï']){
+    naam='Hawaï';
+    featureVoorKalibratie = alleLandenFeatureMap['Hawaï'].feature;
+  }
+  // Zelfde principe voor Maleisië: boven het Borneo-deel kalibreer je
+  // Oost-Maleisië los, i.p.v. de kromming tussen beide delen te moeten
+  // compenseren in één kalibratie.
+  if(naam==='Maleisië' && wonkyLon > 107 && alleLandenFeatureMap['Oost-Maleisië']){
+    naam='Oost-Maleisië';
+    featureVoorKalibratie = alleLandenFeatureMap['Oost-Maleisië'].feature;
+  }
   if(naam==='Noordpool'||naam==='Antarctica') return; // eigen projectie, hier niet kalibreerbaar
   if(naam==='Alaska') laadIllustratie('Verenigde Staten'); // laadt ook __Alaska mee, zie laadIllustratie
+  else if(naam==='Hawaï') laadIllustratie('Verenigde Staten'); // laadt ook __Hawaii mee
+  else if(naam==='Oost-Maleisië') laadIllustratie('Maleisië'); // laadt ook __OostMaleisie mee
   else laadIllustratie(naam);
   kalibratieNaam=naam;
   kalibratieFeature=featureVoorKalibratie;
@@ -2460,7 +2570,7 @@ function getEnclavesBinnen(naam){
   const oppGroot=getFeatureOppervlakte(infoGroot.feature);
   const gPolys=infoGroot.feature.geometry.type==='Polygon'?[infoGroot.feature.geometry.coordinates]:infoGroot.feature.geometry.coordinates;
   for(const kleinNaam in alleLandenFeatureMap){
-    if(kleinNaam===naam || zelfdeLandAlsAlaska(kleinNaam,naam)) continue;
+    if(kleinNaam===naam || zelfdePseudoLand(kleinNaam,naam)) continue;
     const infoKlein=alleLandenFeatureMap[kleinNaam];
     if(getFeatureOppervlakte(infoKlein.feature) >= oppGroot) continue;
     // Snelle voorcheck: bbox van het kleine land moet binnen die van het grote vallen
@@ -2533,7 +2643,7 @@ function getGebakkenIllustratie(naam, img, bbox){
   bctx.fillStyle='#000';
   bctx.beginPath();
   for(const nm in alleLandenFeatureMap){
-    if(nm===naam || zelfdeLandAlsAlaska(nm,naam)) continue;
+    if(nm===naam || zelfdePseudoLand(nm,naam)) continue;
     const info=alleLandenFeatureMap[nm];
     if(!info.kruistDatumgrens){
       if(info.maxLat < bbox.minLat-hMargeLat || info.minLat > bbox.maxLat+hMargeLat) continue;
@@ -2630,7 +2740,7 @@ const landGrensCache = {};
 // hele wereld hoeven te worden nagelopen)
 function puntInAnderLand(lon,lat,eigenNaam){
   for(const naam in alleLandenFeatureMap){
-    if(naam===eigenNaam || zelfdeLandAlsAlaska(naam,eigenNaam)) continue;
+    if(naam===eigenNaam || zelfdePseudoLand(naam,eigenNaam)) continue;
     const info=alleLandenFeatureMap[naam];
     if(!info.kruistDatumgrens){
       if(lat<info.minLat||lat>info.maxLat||lon<info.minLon||lon>info.maxLon) continue;
@@ -2776,7 +2886,12 @@ function tekenPolyGroep(polysLijst,img,doorzicht,dutch){
   const ankerLon = (hapNaLon>180) ? hapNaLon-360 : hapNaLon;
   let minLon=Infinity,maxLon=-Infinity;
   for(const lon of alleLons){
-    const uitgevouwen = ankerLon + ((lon-ankerLon+360)%360);
+    // Zelfde afrondingsveiligheid als in berekenLandBBoxGraden hierboven —
+    // zie de toelichting daar (voorkomt een 360°-brede rechthoek bij landen
+    // die vlak tegen de datumgrens aan liggen, zoals Fiji).
+    let d = (lon-ankerLon+360)%360;
+    if(d > 360-1e-6) d = 0;
+    const uitgevouwen = ankerLon + d;
     minLon=Math.min(minLon,uitgevouwen);
     maxLon=Math.max(maxLon,uitgevouwen);
   }
@@ -2998,18 +3113,35 @@ function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
   // plaatje over beide heen stretchen er raar uitziet. Als er een apart
   // Alaska-plaatje geladen is, behandelen we Alaska als eigen pseudo-land
   // (alles onder -140° lengtegraad), met zijn eigen kalibratie en rechthoek.
-  if(dutch==='Verenigde Staten' && landIllustraties['__Alaska']){
-    const alaskaDelen=[], hoofdDelen=[];
+  if(dutch==='Verenigde Staten' && (landIllustraties['__Alaska']||landIllustraties['__Hawaii'])){
+    const alaskaDelen=[], hawaiDelen=[], hoofdDelen=[];
     for(const poly of polysLijst){
       if(!poly[0]||poly[0].length<3){ hoofdDelen.push(poly); continue; }
       const lonMin=Math.min(...poly[0].map(p=>p[0]));
       const latMax=Math.max(...poly[0].map(p=>p[1]));
-      // Zelfde Hawaii-uitzondering als bij initAlaskaAlsPseudoLand hierboven.
-      if(lonMin < -140 && latMax > 45) alaskaDelen.push(poly);
+      // Zelfde selectie als bij initAlaskaAlsPseudoLand hierboven.
+      if(lonMin < -140 && latMax > 45 && landIllustraties['__Alaska']) alaskaDelen.push(poly);
+      else if(lonMin < -140 && latMax < 29 && landIllustraties['__Hawaii']) hawaiDelen.push(poly);
       else hoofdDelen.push(poly);
     }
     tekenLandDelen('Verenigde Staten', hoofdDelen, img);
-    tekenLandDelen('Alaska', alaskaDelen, landIllustraties['__Alaska']);
+    if(landIllustraties['__Alaska']) tekenLandDelen('Alaska', alaskaDelen, landIllustraties['__Alaska']);
+    if(landIllustraties['__Hawaii']) tekenLandDelen('Hawaï', hawaiDelen, landIllustraties['__Hawaii']);
+    return;
+  }
+
+  // Zelfde aanpak voor Maleisië: schiereiland-deel en Borneo-deel (Oost-
+  // Maleisië) los behandelen zodra er een apart Oost-Maleisië-plaatje is.
+  if(dutch==='Maleisië' && landIllustraties['__OostMaleisie']){
+    const oostDelen=[], hoofdDelen=[];
+    for(const poly of polysLijst){
+      if(!poly[0]||poly[0].length<3){ hoofdDelen.push(poly); continue; }
+      const lonMin=Math.min(...poly[0].map(p=>p[0]));
+      if(lonMin > 107) oostDelen.push(poly);
+      else hoofdDelen.push(poly);
+    }
+    tekenLandDelen('Maleisië', hoofdDelen, img);
+    tekenLandDelen('Oost-Maleisië', oostDelen, landIllustraties['__OostMaleisie']);
     return;
   }
 
@@ -3401,7 +3533,7 @@ function drawGlobe(){
     const lonMargeGraden = Math.min(90, latMargeGraden / Math.max(0.15, Math.cos(wonkyLat*Math.PI/180)));
 
     for(const naam in alleLandenFeatureMap){
-      if(naam==='Alaska') continue; // los pseudo-land, geen eigen sluipeffect
+      if(naam==='Alaska'||naam==='Hawaï'||naam==='Oost-Maleisië') continue; // los pseudo-land, geen eigen sluipeffect
       const info = alleLandenFeatureMap[naam];
       if(hoverLand && info.feature===hoverLand) continue;
       if(!info.kruistDatumgrens){
@@ -3438,6 +3570,12 @@ function drawGlobe(){
     if(kalibratieNaam==='Alaska'){
       laadIllustratie('Verenigde Staten'); // laadt ook __Alaska mee
       kalImg = landIllustraties['__Alaska'];
+    } else if(kalibratieNaam==='Hawaï'){
+      laadIllustratie('Verenigde Staten'); // laadt ook __Hawaii mee
+      kalImg = landIllustraties['__Hawaii'];
+    } else if(kalibratieNaam==='Oost-Maleisië'){
+      laadIllustratie('Maleisië'); // laadt ook __OostMaleisie mee
+      kalImg = landIllustraties['__OostMaleisie'];
     } else {
       laadIllustratie(kalibratieNaam);
       kalImg = landIllustraties[kalibratieNaam];
