@@ -548,7 +548,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.61</div>
+  <div id="versie-label">v0.2.62</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1327,10 +1327,49 @@ function zelfdeLandAlsGalapagos(a,b){
 function zelfdeLandAlsOostMaleisie(a,b){
   return (a==='Oost-Maleisië'&&b==='Maleisië') || (a==='Maleisië'&&b==='Oost-Maleisië');
 }
+
+// ── West-China als los kalibreerbaar pseudo-land ──────
+// China is zo breed (73°–135°O) dat één illustratie het hele land niet
+// fatsoenlijk kan afdekken. Knip: alles ten westen van 105°O (Tibet,
+// Xinjiang, Qinghai) wordt "West-China", de rest blijft "China".
+(function initChinaWestAlsPseudoLand(){
+  const info = alleLandenFeatureMap['China'];
+  if(!info) return;
+  const g = info.feature.geometry;
+  const polys = g.type==='Polygon' ? [g.coordinates] : g.coordinates;
+  const CHINA_KNIP_LON = 105;
+  const westPolys=[];
+  for(const poly of polys){
+    if(!poly[0]||poly[0].length<3) continue;
+    const lonMax=Math.max(...poly[0].map(p=>p[0]));
+    if(lonMax < CHINA_KNIP_LON) westPolys.push(poly);
+  }
+  if(!westPolys.length) return;
+  let minLon=Infinity,maxLon=-Infinity,minLat=Infinity,maxLat=-Infinity;
+  for(const poly of westPolys) for(const [lo,la] of poly[0]){
+    if(lo<minLon)minLon=lo; if(lo>maxLon)maxLon=lo;
+    if(la<minLat)minLat=la; if(la>maxLat)maxLat=la;
+  }
+  const westFeature = {
+    type:'Feature',
+    properties:{dutch:'West-China', name:'West-China'},
+    geometry:{type:'MultiPolygon', coordinates: westPolys}
+  };
+  alleLandenFeatureMap['West-China'] = {
+    feature:westFeature, minLon,maxLon,minLat,maxLat,
+    kruistDatumgrens:(maxLon-minLon)>180
+  };
+})();
+
+// Zelfde bescherming als zelfdeLandAlsAlaska, maar dan voor China/West-China.
+function zelfdeLandAlsChinaWest(a,b){
+  return (a==='West-China'&&b==='China') || (a==='China'&&b==='West-China');
+}
+
 // Gedeelde check voor alle pseudo-land-paren samen, zodat de gum-/sluipeffect-
 // loops verderop met één aanroep beide gevallen afdekken.
 function zelfdePseudoLand(a,b){
-  return zelfdeLandAlsAlaska(a,b) || zelfdeLandAlsHawai(a,b) || zelfdeLandAlsGalapagos(a,b) || zelfdeLandAlsCanaria(a,b) || zelfdeLandAlsAzoren(a,b) || zelfdeLandAlsReunion(a,b) || zelfdeLandAlsMayotte(a,b) || zelfdeLandAlsOostMaleisie(a,b);
+  return zelfdeLandAlsAlaska(a,b) || zelfdeLandAlsHawai(a,b) || zelfdeLandAlsGalapagos(a,b) || zelfdeLandAlsCanaria(a,b) || zelfdeLandAlsAzoren(a,b) || zelfdeLandAlsReunion(a,b) || zelfdeLandAlsMayotte(a,b) || zelfdeLandAlsOostMaleisie(a,b) || zelfdeLandAlsChinaWest(a,b);
 }
 
 // ── Startscherm ───────────────────────────────────────
@@ -1701,6 +1740,15 @@ function laadIllustratie(naam, forceHerlaad) {
     mayImg.onload  = () => { landIllustraties['__Mayotte'] = mayImg; };
     mayImg.onerror = () => { landIllustraties['__Mayotte'] = false; };
     mayImg.src = 'images/landen/Frankrijk_Mayotte.png';
+  }
+  // Speciaal geval: West-China hoort bij China, maar heeft een eigen plaatje —
+  // zelfde reden en aanpak als Alaska hierboven.
+  if(naam==='China' && landIllustraties['__ChinaWest']===undefined){
+    landIllustraties['__ChinaWest'] = null;
+    const cwImg = new Image();
+    cwImg.onload  = () => { landIllustraties['__ChinaWest'] = cwImg; };
+    cwImg.onerror = () => { landIllustraties['__ChinaWest'] = false; };
+    cwImg.src = 'images/landen/China_WestChina.png';
   }
   // Speciaal geval: Noordpool heeft twee plaatjes - Noordpool2.png (eenvoudige witte
   // vlek, getoond tot het omslagpunt) en Noordpool.png (illustratie met dieren/mensen,
@@ -2722,6 +2770,7 @@ function effectiefPseudoLand(naam, lon, lat){
   if(naam==='Portugal' && lon < -20 && alleLandenFeatureMap['Azoren']) return 'Azoren';
   if(naam==='Frankrijk' && lon > 50 && alleLandenFeatureMap['Réunion']) return 'Réunion';
   if(naam==='Frankrijk' && lon > 20 && lon < 50 && alleLandenFeatureMap['Mayotte']) return 'Mayotte';
+  if(naam==='China' && lon < 105 && alleLandenFeatureMap['West-China']) return 'West-China';
   return naam;
 }
 
@@ -2742,6 +2791,7 @@ function startKalibratie(){
   else if(naam==='Azoren') laadIllustratie('Portugal'); // laadt ook __Azoren mee
   else if(naam==='Réunion') laadIllustratie('Frankrijk'); // laadt ook __Reunion mee
   else if(naam==='Mayotte') laadIllustratie('Frankrijk'); // laadt ook __Mayotte mee
+  else if(naam==='West-China') laadIllustratie('China'); // laadt ook __ChinaWest mee
   else laadIllustratie(naam);
   kalibratieNaam=naam;
   kalibratieFeature=featureVoorKalibratie;
@@ -3546,6 +3596,21 @@ function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
     return;
   }
 
+  // Zelfde aanpak voor China: oost-deel en west-deel (Tibet, Xinjiang) los
+  // behandelen zodra er een apart West-China-plaatje is.
+  if(dutch==='China' && landIllustraties['__ChinaWest']){
+    const westDelen=[], hoofdDelen=[];
+    for(const poly of polysLijst){
+      if(!poly[0]||poly[0].length<3){ hoofdDelen.push(poly); continue; }
+      const lonMax=Math.max(...poly[0].map(p=>p[0]));
+      if(lonMax < 105) westDelen.push(poly);
+      else hoofdDelen.push(poly);
+    }
+    tekenLandDelen('China', hoofdDelen, img);
+    tekenLandDelen('West-China', westDelen, landIllustraties['__ChinaWest']);
+    return;
+  }
+
   // Zelfde aanpak voor Frankrijk: vasteland, Réunion en Mayotte los
   // behandelen zodra er een apart plaatje voor is.
   if(dutch==='Frankrijk' && (landIllustraties['__Reunion']||landIllustraties['__Mayotte'])){
@@ -3951,7 +4016,7 @@ function drawGlobe(){
     const lonMargeGraden = Math.min(90, latMargeGraden / Math.max(0.15, Math.cos(wonkyLat*Math.PI/180)));
 
     for(const naam in alleLandenFeatureMap){
-      if(naam==='Alaska'||naam==='Hawaï'||naam==='Galápagos'||naam==='Canarische Eilanden'||naam==='Azoren'||naam==='Réunion'||naam==='Mayotte'||naam==='Oost-Maleisië') continue; // los pseudo-land, geen eigen sluipeffect
+      if(naam==='Alaska'||naam==='Hawaï'||naam==='Galápagos'||naam==='Canarische Eilanden'||naam==='Azoren'||naam==='Réunion'||naam==='Mayotte'||naam==='Oost-Maleisië'||naam==='West-China') continue; // los pseudo-land, geen eigen sluipeffect
       const info = alleLandenFeatureMap[naam];
       if(hoverLand && info.feature===hoverLand) continue;
       if(!info.kruistDatumgrens){
@@ -4009,6 +4074,9 @@ function drawGlobe(){
     } else if(kalibratieNaam==='Mayotte'){
       laadIllustratie('Frankrijk'); // laadt ook __Mayotte mee
       kalImg = landIllustraties['__Mayotte'];
+    } else if(kalibratieNaam==='West-China'){
+      laadIllustratie('China'); // laadt ook __ChinaWest mee
+      kalImg = landIllustraties['__ChinaWest'];
     } else {
       laadIllustratie(kalibratieNaam);
       kalImg = landIllustraties[kalibratieNaam];
