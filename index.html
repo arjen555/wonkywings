@@ -548,7 +548,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.57</div>
+  <div id="versie-label">v0.2.58</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2513,36 +2513,33 @@ function updateKalibratieHud(){
     (kalibratieMelding?'\n\n'+kalibratieMelding:'');
 }
 
+// ── Welk (pseudo-)land ben je écht boven? ─────────────
+// Gedeeld door kalibratiemodus én de live camera-zoom hieronder. Zonder dit
+// denkt de zoom-berekening tijdens het vliegen altijd dat je "gewoon"
+// boven de Verenigde Staten/Maleisië/Ecuador bent — ook boven Hawaï,
+// Alaska, Oost-Maleisië of Galápagos — omdat hoverLand altijd naar het
+// hele, originele land wijst (deze pseudo-landen bestaan niet als eigen
+// vorm in de kaartdata zelf, alleen in alleLandenFeatureMap). Voor de
+// afbeelding zelf maakte dat niets uit (tekenLandDelen roept dit apart op),
+// maar voor "hoe ver moet de camera bij 100% staan" wel: zonder deze
+// omzetting werd voor Hawaï altijd de zoom-instelling van de hele VS
+// gebruikt, en leek bijstellen van Hawaï's eigen maximum geen enkel effect
+// te hebben.
+function effectiefPseudoLand(naam, lon, lat){
+  if(naam==='Verenigde Staten' && lon < -140 && lat > 45 && alleLandenFeatureMap['Alaska']) return 'Alaska';
+  if(naam==='Verenigde Staten' && lon < -140 && lat < 29 && alleLandenFeatureMap['Hawaï']) return 'Hawaï';
+  if(naam==='Maleisië' && lon > 107 && alleLandenFeatureMap['Oost-Maleisië']) return 'Oost-Maleisië';
+  if(naam==='Ecuador' && lon < -85 && alleLandenFeatureMap['Galápagos']) return 'Galápagos';
+  return naam;
+}
+
 function startKalibratie(){
   if(!hoverLand){ return; } // alleen boven een land te starten
   let naam=hoverLand.properties.dutch||hoverLand.properties.name;
   let featureVoorKalibratie=hoverLand;
-  // Vlieg je boven het Alaska-deel van de VS, dan kalibreren we Alaska als
-  // eigen los land (zie initAlaskaAlsPseudoLand) i.p.v. de hele VS ineens —
-  // anders moet je bij het kalibreren de hele kromming van de bol tussen
-  // het vasteland en Alaska mee compenseren.
-  if(naam==='Verenigde Staten' && wonkyLon < -140 && wonkyLat > 45 && alleLandenFeatureMap['Alaska']){
-    naam='Alaska';
-    featureVoorKalibratie = alleLandenFeatureMap['Alaska'].feature;
-  }
-  // Zelfde principe voor Hawaï — met een breedtegraad-check erbij, want
-  // zowel Alaska als Hawaï liggen westelijk van -140°; alleen de
-  // breedtegraad (ver noordelijk vs. rond de tropen) onderscheidt ze.
-  if(naam==='Verenigde Staten' && wonkyLon < -140 && wonkyLat < 29 && alleLandenFeatureMap['Hawaï']){
-    naam='Hawaï';
-    featureVoorKalibratie = alleLandenFeatureMap['Hawaï'].feature;
-  }
-  // Zelfde principe voor Maleisië: boven het Borneo-deel kalibreer je
-  // Oost-Maleisië los, i.p.v. de kromming tussen beide delen te moeten
-  // compenseren in één kalibratie.
-  if(naam==='Maleisië' && wonkyLon > 107 && alleLandenFeatureMap['Oost-Maleisië']){
-    naam='Oost-Maleisië';
-    featureVoorKalibratie = alleLandenFeatureMap['Oost-Maleisië'].feature;
-  }
-  // Zelfde principe voor Ecuador: boven Galápagos kalibreer je Galápagos los.
-  if(naam==='Ecuador' && wonkyLon < -85 && alleLandenFeatureMap['Galápagos']){
-    naam='Galápagos';
-    featureVoorKalibratie = alleLandenFeatureMap['Galápagos'].feature;
+  naam = effectiefPseudoLand(naam, wonkyLon, wonkyLat);
+  if(naam!==(hoverLand.properties.dutch||hoverLand.properties.name)){
+    featureVoorKalibratie = alleLandenFeatureMap[naam].feature;
   }
   if(naam==='Noordpool'||naam==='Antarctica') return; // eigen projectie, hier niet kalibreerbaar
   if(naam==='Alaska') laadIllustratie('Verenigde Staten'); // laadt ook __Alaska mee, zie laadIllustratie
@@ -4276,7 +4273,9 @@ function updateSpel(){
   // elke frame herberekend, en Z/X schuiven het zoomniveau (0-1) geleidelijk
   // op, met versnelling naarmate je de toets langer ingedrukt houdt.
   berekenStand3Zoom();
-  const zoomOverride = hoverLand ? getZoomMaxOverride(hoverLand.properties.dutch||hoverLand.properties.name) : null;
+  const zoomOverride = hoverLand
+    ? getZoomMaxOverride(effectiefPseudoLand(hoverLand.properties.dutch||hoverLand.properties.name, wonkyLon, wonkyLat))
+    : null;
   const dynamischMax = zoomOverride!==null ? zoomOverride : Math.max(stand3DoelFactor, ZOOM_MIN+0.01);
   // Geen ondergrens meer op de referentie: een reuzenland als Rusland mag bij
   // 100% ook écht minder ingezoomd blijven dan de referentie, zodat het
