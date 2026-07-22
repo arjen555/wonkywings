@@ -548,7 +548,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.55</div>
+  <div id="versie-label">v0.2.56</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1093,6 +1093,45 @@ function zelfdeLandAlsHawai(a,b){
   return (a==='Hawaï'&&b==='Verenigde Staten') || (a==='Verenigde Staten'&&b==='Hawaï');
 }
 
+// ── Galápagos als los kalibreerbaar pseudo-land ───────
+// Zelfde verhaal: de Galápagoseilanden liggen zo'n 1000 km uit de kust van
+// het Ecuadoraanse vasteland — te ver om één illustratie fatsoenlijk over
+// beide te laten lopen. Knip: alles voorbij -85° lengtegraad is Galápagos
+// (het vasteland blijft tussen -81° en -75°, ruim daarbinnen).
+(function initGalapagosAlsPseudoLand(){
+  const info = alleLandenFeatureMap['Ecuador'];
+  if(!info) return;
+  const g = info.feature.geometry;
+  const polys = g.type==='Polygon' ? [g.coordinates] : g.coordinates;
+  const GALAPAGOS_KNIP_LON = -85;
+  const galapagosPolys=[];
+  for(const poly of polys){
+    if(!poly[0]||poly[0].length<3) continue;
+    const lonMax=Math.max(...poly[0].map(p=>p[0]));
+    if(lonMax < GALAPAGOS_KNIP_LON) galapagosPolys.push(poly);
+  }
+  if(!galapagosPolys.length) return;
+  let minLon=Infinity,maxLon=-Infinity,minLat=Infinity,maxLat=-Infinity;
+  for(const poly of galapagosPolys) for(const [lo,la] of poly[0]){
+    if(lo<minLon)minLon=lo; if(lo>maxLon)maxLon=lo;
+    if(la<minLat)minLat=la; if(la>maxLat)maxLat=la;
+  }
+  const galapagosFeature = {
+    type:'Feature',
+    properties:{dutch:'Galápagos', name:'Galápagos'},
+    geometry:{type:'MultiPolygon', coordinates: galapagosPolys}
+  };
+  alleLandenFeatureMap['Galápagos'] = {
+    feature:galapagosFeature, minLon,maxLon,minLat,maxLat,
+    kruistDatumgrens:(maxLon-minLon)>180
+  };
+})();
+
+// Zelfde bescherming als zelfdeLandAlsAlaska, maar dan voor Ecuador/Galápagos.
+function zelfdeLandAlsGalapagos(a,b){
+  return (a==='Galápagos'&&b==='Ecuador') || (a==='Ecuador'&&b==='Galápagos');
+}
+
 // ── Oost-Maleisië als los kalibreerbaar pseudo-land ───
 // Zelfde verhaal als Alaska hierboven: Maleisië bestaat uit een schiereiland-
 // deel (rond 100-104°O) en een Borneo-deel (rond 109-119°O), met de hele
@@ -1135,7 +1174,7 @@ function zelfdeLandAlsOostMaleisie(a,b){
 // Gedeelde check voor alle pseudo-land-paren samen, zodat de gum-/sluipeffect-
 // loops verderop met één aanroep beide gevallen afdekken.
 function zelfdePseudoLand(a,b){
-  return zelfdeLandAlsAlaska(a,b) || zelfdeLandAlsHawai(a,b) || zelfdeLandAlsOostMaleisie(a,b);
+  return zelfdeLandAlsAlaska(a,b) || zelfdeLandAlsHawai(a,b) || zelfdeLandAlsGalapagos(a,b) || zelfdeLandAlsOostMaleisie(a,b);
 }
 
 // ── Startscherm ───────────────────────────────────────
@@ -1466,6 +1505,14 @@ function laadIllustratie(naam, forceHerlaad) {
     oostImg.onload  = () => { landIllustraties['__OostMaleisie'] = oostImg; };
     oostImg.onerror = () => { landIllustraties['__OostMaleisie'] = false; };
     oostImg.src = 'images/landen/Maleisie_OostMaleisie.png';
+  }
+  // Speciaal geval: Galápagos hoort bij Ecuador, maar heeft een eigen plaatje.
+  if(naam==='Ecuador' && landIllustraties['__Galapagos']===undefined){
+    landIllustraties['__Galapagos'] = null;
+    const galImg = new Image();
+    galImg.onload  = () => { landIllustraties['__Galapagos'] = galImg; };
+    galImg.onerror = () => { landIllustraties['__Galapagos'] = false; };
+    galImg.src = 'images/landen/Ecuador_Galapagos.png';
   }
   // Speciaal geval: Noordpool heeft twee plaatjes - Noordpool2.png (eenvoudige witte
   // vlek, getoond tot het omslagpunt) en Noordpool.png (illustratie met dieren/mensen,
@@ -2382,10 +2429,16 @@ function startKalibratie(){
     naam='Oost-Maleisië';
     featureVoorKalibratie = alleLandenFeatureMap['Oost-Maleisië'].feature;
   }
+  // Zelfde principe voor Ecuador: boven Galápagos kalibreer je Galápagos los.
+  if(naam==='Ecuador' && wonkyLon < -85 && alleLandenFeatureMap['Galápagos']){
+    naam='Galápagos';
+    featureVoorKalibratie = alleLandenFeatureMap['Galápagos'].feature;
+  }
   if(naam==='Noordpool'||naam==='Antarctica') return; // eigen projectie, hier niet kalibreerbaar
   if(naam==='Alaska') laadIllustratie('Verenigde Staten'); // laadt ook __Alaska mee, zie laadIllustratie
   else if(naam==='Hawaï') laadIllustratie('Verenigde Staten'); // laadt ook __Hawaii mee
   else if(naam==='Oost-Maleisië') laadIllustratie('Maleisië'); // laadt ook __OostMaleisie mee
+  else if(naam==='Galápagos') laadIllustratie('Ecuador'); // laadt ook __Galapagos mee
   else laadIllustratie(naam);
   kalibratieNaam=naam;
   kalibratieFeature=featureVoorKalibratie;
@@ -3145,6 +3198,21 @@ function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
     return;
   }
 
+  // Zelfde aanpak voor Ecuador: het vasteland en Galápagos los behandelen
+  // zodra er een apart Galápagos-plaatje is.
+  if(dutch==='Ecuador' && landIllustraties['__Galapagos']){
+    const galDelen=[], hoofdDelen=[];
+    for(const poly of polysLijst){
+      if(!poly[0]||poly[0].length<3){ hoofdDelen.push(poly); continue; }
+      const lonMax=Math.max(...poly[0].map(p=>p[0]));
+      if(lonMax < -85) galDelen.push(poly);
+      else hoofdDelen.push(poly);
+    }
+    tekenLandDelen('Ecuador', hoofdDelen, img);
+    tekenLandDelen('Galápagos', galDelen, landIllustraties['__Galapagos']);
+    return;
+  }
+
   tekenLandDelen(dutch, polysLijst, img);
 }
 
@@ -3533,7 +3601,7 @@ function drawGlobe(){
     const lonMargeGraden = Math.min(90, latMargeGraden / Math.max(0.15, Math.cos(wonkyLat*Math.PI/180)));
 
     for(const naam in alleLandenFeatureMap){
-      if(naam==='Alaska'||naam==='Hawaï'||naam==='Oost-Maleisië') continue; // los pseudo-land, geen eigen sluipeffect
+      if(naam==='Alaska'||naam==='Hawaï'||naam==='Galápagos'||naam==='Oost-Maleisië') continue; // los pseudo-land, geen eigen sluipeffect
       const info = alleLandenFeatureMap[naam];
       if(hoverLand && info.feature===hoverLand) continue;
       if(!info.kruistDatumgrens){
@@ -3576,6 +3644,9 @@ function drawGlobe(){
     } else if(kalibratieNaam==='Oost-Maleisië'){
       laadIllustratie('Maleisië'); // laadt ook __OostMaleisie mee
       kalImg = landIllustraties['__OostMaleisie'];
+    } else if(kalibratieNaam==='Galápagos'){
+      laadIllustratie('Ecuador'); // laadt ook __Galapagos mee
+      kalImg = landIllustraties['__Galapagos'];
     } else {
       laadIllustratie(kalibratieNaam);
       kalImg = landIllustraties[kalibratieNaam];
