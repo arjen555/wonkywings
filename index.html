@@ -548,7 +548,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.59</div>
+  <div id="versie-label">v0.2.61</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1093,6 +1093,162 @@ function zelfdeLandAlsHawai(a,b){
   return (a==='Hawaï'&&b==='Verenigde Staten') || (a==='Verenigde Staten'&&b==='Hawaï');
 }
 
+// ── Canarische Eilanden als los kalibreerbaar pseudo-land ──
+// Zelfde verhaal: de Canarische Eilanden liggen zo'n 1000 km uit de kust
+// van het Spaanse vasteland. Knip: alles voorbij -11° lengtegraad is de
+// Canarische Eilanden (het vasteland + Ceuta/Melilla/Balearen blijven
+// ruim daarbinnen, tussen -9,3° en 3,5°).
+(function initCanarischeEilandenAlsPseudoLand(){
+  const info = alleLandenFeatureMap['Spanje'];
+  if(!info) return;
+  const g = info.feature.geometry;
+  const polys = g.type==='Polygon' ? [g.coordinates] : g.coordinates;
+  const CANARIA_KNIP_LON = -11;
+  const canariaPolys=[];
+  for(const poly of polys){
+    if(!poly[0]||poly[0].length<3) continue;
+    const lonMax=Math.max(...poly[0].map(p=>p[0]));
+    if(lonMax < CANARIA_KNIP_LON) canariaPolys.push(poly);
+  }
+  if(!canariaPolys.length) return;
+  let minLon=Infinity,maxLon=-Infinity,minLat=Infinity,maxLat=-Infinity;
+  for(const poly of canariaPolys) for(const [lo,la] of poly[0]){
+    if(lo<minLon)minLon=lo; if(lo>maxLon)maxLon=lo;
+    if(la<minLat)minLat=la; if(la>maxLat)maxLat=la;
+  }
+  const canariaFeature = {
+    type:'Feature',
+    properties:{dutch:'Canarische Eilanden', name:'Canarische Eilanden'},
+    geometry:{type:'MultiPolygon', coordinates: canariaPolys}
+  };
+  alleLandenFeatureMap['Canarische Eilanden'] = {
+    feature:canariaFeature, minLon,maxLon,minLat,maxLat,
+    kruistDatumgrens:(maxLon-minLon)>180
+  };
+})();
+
+// Zelfde bescherming als zelfdeLandAlsAlaska, maar dan voor Spanje/Canarische Eilanden.
+function zelfdeLandAlsCanaria(a,b){
+  return (a==='Canarische Eilanden'&&b==='Spanje') || (a==='Spanje'&&b==='Canarische Eilanden');
+}
+
+// ── Azoren als los kalibreerbaar pseudo-land ──────────
+// Zelfde verhaal voor Portugal: de Azoren liggen zo'n 1500 km uit de kust
+// in de Atlantische Oceaan, ver voorbij Madeira. Knip: alles voorbij -20°
+// lengtegraad is de Azoren (het vasteland blijft tussen -9,5° en -6,2°,
+// Madeira tussen -17,25° en -16,28° — dus ook Madeira blijft binnen deze
+// knip bij het vasteland; die kun je zelf nog los trekken als je wilt).
+(function initAzorenAlsPseudoLand(){
+  const info = alleLandenFeatureMap['Portugal'];
+  if(!info) return;
+  const g = info.feature.geometry;
+  const polys = g.type==='Polygon' ? [g.coordinates] : g.coordinates;
+  const AZOREN_KNIP_LON = -20;
+  const azorenPolys=[];
+  for(const poly of polys){
+    if(!poly[0]||poly[0].length<3) continue;
+    const lonMax=Math.max(...poly[0].map(p=>p[0]));
+    if(lonMax < AZOREN_KNIP_LON) azorenPolys.push(poly);
+  }
+  if(!azorenPolys.length) return;
+  let minLon=Infinity,maxLon=-Infinity,minLat=Infinity,maxLat=-Infinity;
+  for(const poly of azorenPolys) for(const [lo,la] of poly[0]){
+    if(lo<minLon)minLon=lo; if(lo>maxLon)maxLon=lo;
+    if(la<minLat)minLat=la; if(la>maxLat)maxLat=la;
+  }
+  const azorenFeature = {
+    type:'Feature',
+    properties:{dutch:'Azoren', name:'Azoren'},
+    geometry:{type:'MultiPolygon', coordinates: azorenPolys}
+  };
+  alleLandenFeatureMap['Azoren'] = {
+    feature:azorenFeature, minLon,maxLon,minLat,maxLat,
+    kruistDatumgrens:(maxLon-minLon)>180
+  };
+})();
+
+// Zelfde bescherming als zelfdeLandAlsAlaska, maar dan voor Portugal/Azoren.
+function zelfdeLandAlsAzoren(a,b){
+  return (a==='Azoren'&&b==='Portugal') || (a==='Portugal'&&b==='Azoren');
+}
+
+// ── Réunion als los kalibreerbaar pseudo-land ─────────
+// Réunion hoort in de kaartdata bij Frankrijk (overzees departement), maar
+// ligt zo'n 9300 km van het Franse vasteland — een gewone Frankrijk-
+// illustratie zou daar nooit overheen passen. Knip: alles voorbij 50°O is
+// Réunion (het vasteland + Corsica blijven ruim daaronder, tot 9-10°O).
+(function initReunionAlsPseudoLand(){
+  const info = alleLandenFeatureMap['Frankrijk'];
+  if(!info) return;
+  const g = info.feature.geometry;
+  const polys = g.type==='Polygon' ? [g.coordinates] : g.coordinates;
+  const REUNION_KNIP_LON = 50;
+  const reunionPolys=[];
+  for(const poly of polys){
+    if(!poly[0]||poly[0].length<3) continue;
+    const lonMin=Math.min(...poly[0].map(p=>p[0]));
+    if(lonMin > REUNION_KNIP_LON) reunionPolys.push(poly);
+  }
+  if(!reunionPolys.length) return;
+  let minLon=Infinity,maxLon=-Infinity,minLat=Infinity,maxLat=-Infinity;
+  for(const poly of reunionPolys) for(const [lo,la] of poly[0]){
+    if(lo<minLon)minLon=lo; if(lo>maxLon)maxLon=lo;
+    if(la<minLat)minLat=la; if(la>maxLat)maxLat=la;
+  }
+  const reunionFeature = {
+    type:'Feature',
+    properties:{dutch:'Réunion', name:'Réunion'},
+    geometry:{type:'MultiPolygon', coordinates: reunionPolys}
+  };
+  alleLandenFeatureMap['Réunion'] = {
+    feature:reunionFeature, minLon,maxLon,minLat,maxLat,
+    kruistDatumgrens:(maxLon-minLon)>180
+  };
+})();
+
+// Zelfde bescherming als zelfdeLandAlsAlaska, maar dan voor Frankrijk/Réunion.
+function zelfdeLandAlsReunion(a,b){
+  return (a==='Réunion'&&b==='Frankrijk') || (a==='Frankrijk'&&b==='Réunion');
+}
+
+// ── Mayotte als los kalibreerbaar pseudo-land ─────────
+// Zelfde verhaal: Mayotte hoort bij Frankrijk, ligt bij de Comoren, ook
+// duizenden kilometers van het vasteland. Knip: alles tussen 20° en 50°O
+// (dus vóór de Réunion-knip hierboven) is Mayotte.
+(function initMayotteAlsPseudoLand(){
+  const info = alleLandenFeatureMap['Frankrijk'];
+  if(!info) return;
+  const g = info.feature.geometry;
+  const polys = g.type==='Polygon' ? [g.coordinates] : g.coordinates;
+  const MAYOTTE_MIN_LON = 20, MAYOTTE_MAX_LON = 50;
+  const mayottePolys=[];
+  for(const poly of polys){
+    if(!poly[0]||poly[0].length<3) continue;
+    const lonMin=Math.min(...poly[0].map(p=>p[0]));
+    if(lonMin > MAYOTTE_MIN_LON && lonMin < MAYOTTE_MAX_LON) mayottePolys.push(poly);
+  }
+  if(!mayottePolys.length) return;
+  let minLon=Infinity,maxLon=-Infinity,minLat=Infinity,maxLat=-Infinity;
+  for(const poly of mayottePolys) for(const [lo,la] of poly[0]){
+    if(lo<minLon)minLon=lo; if(lo>maxLon)maxLon=lo;
+    if(la<minLat)minLat=la; if(la>maxLat)maxLat=la;
+  }
+  const mayotteFeature = {
+    type:'Feature',
+    properties:{dutch:'Mayotte', name:'Mayotte'},
+    geometry:{type:'MultiPolygon', coordinates: mayottePolys}
+  };
+  alleLandenFeatureMap['Mayotte'] = {
+    feature:mayotteFeature, minLon,maxLon,minLat,maxLat,
+    kruistDatumgrens:(maxLon-minLon)>180
+  };
+})();
+
+// Zelfde bescherming als zelfdeLandAlsAlaska, maar dan voor Frankrijk/Mayotte.
+function zelfdeLandAlsMayotte(a,b){
+  return (a==='Mayotte'&&b==='Frankrijk') || (a==='Frankrijk'&&b==='Mayotte');
+}
+
 // ── Galápagos als los kalibreerbaar pseudo-land ───────
 // Zelfde verhaal: de Galápagoseilanden liggen zo'n 1000 km uit de kust van
 // het Ecuadoraanse vasteland — te ver om één illustratie fatsoenlijk over
@@ -1174,7 +1330,7 @@ function zelfdeLandAlsOostMaleisie(a,b){
 // Gedeelde check voor alle pseudo-land-paren samen, zodat de gum-/sluipeffect-
 // loops verderop met één aanroep beide gevallen afdekken.
 function zelfdePseudoLand(a,b){
-  return zelfdeLandAlsAlaska(a,b) || zelfdeLandAlsHawai(a,b) || zelfdeLandAlsGalapagos(a,b) || zelfdeLandAlsOostMaleisie(a,b);
+  return zelfdeLandAlsAlaska(a,b) || zelfdeLandAlsHawai(a,b) || zelfdeLandAlsGalapagos(a,b) || zelfdeLandAlsCanaria(a,b) || zelfdeLandAlsAzoren(a,b) || zelfdeLandAlsReunion(a,b) || zelfdeLandAlsMayotte(a,b) || zelfdeLandAlsOostMaleisie(a,b);
 }
 
 // ── Startscherm ───────────────────────────────────────
@@ -1513,6 +1669,38 @@ function laadIllustratie(naam, forceHerlaad) {
     galImg.onload  = () => { landIllustraties['__Galapagos'] = galImg; };
     galImg.onerror = () => { landIllustraties['__Galapagos'] = false; };
     galImg.src = 'images/landen/Ecuador_Galapagos.png';
+  }
+  // Speciaal geval: Canarische Eilanden horen bij Spanje, eigen plaatje.
+  if(naam==='Spanje' && landIllustraties['__Canaria']===undefined){
+    landIllustraties['__Canaria'] = null;
+    const canImg = new Image();
+    canImg.onload  = () => { landIllustraties['__Canaria'] = canImg; };
+    canImg.onerror = () => { landIllustraties['__Canaria'] = false; };
+    canImg.src = 'images/landen/Spanje_CanarischeEilanden.png';
+  }
+  // Speciaal geval: Azoren horen bij Portugal, eigen plaatje.
+  if(naam==='Portugal' && landIllustraties['__Azoren']===undefined){
+    landIllustraties['__Azoren'] = null;
+    const azoImg = new Image();
+    azoImg.onload  = () => { landIllustraties['__Azoren'] = azoImg; };
+    azoImg.onerror = () => { landIllustraties['__Azoren'] = false; };
+    azoImg.src = 'images/landen/Portugal_Azoren.png';
+  }
+  // Speciaal geval: Réunion hoort bij Frankrijk, eigen plaatje.
+  if(naam==='Frankrijk' && landIllustraties['__Reunion']===undefined){
+    landIllustraties['__Reunion'] = null;
+    const reuImg = new Image();
+    reuImg.onload  = () => { landIllustraties['__Reunion'] = reuImg; };
+    reuImg.onerror = () => { landIllustraties['__Reunion'] = false; };
+    reuImg.src = 'images/landen/Frankrijk_Reunion.png';
+  }
+  // Speciaal geval: Mayotte hoort bij Frankrijk, eigen plaatje.
+  if(naam==='Frankrijk' && landIllustraties['__Mayotte']===undefined){
+    landIllustraties['__Mayotte'] = null;
+    const mayImg = new Image();
+    mayImg.onload  = () => { landIllustraties['__Mayotte'] = mayImg; };
+    mayImg.onerror = () => { landIllustraties['__Mayotte'] = false; };
+    mayImg.src = 'images/landen/Frankrijk_Mayotte.png';
   }
   // Speciaal geval: Noordpool heeft twee plaatjes - Noordpool2.png (eenvoudige witte
   // vlek, getoond tot het omslagpunt) en Noordpool.png (illustratie met dieren/mensen,
@@ -2530,6 +2718,10 @@ function effectiefPseudoLand(naam, lon, lat){
   if(naam==='Verenigde Staten' && lon < -140 && lat < 29 && alleLandenFeatureMap['Hawaï']) return 'Hawaï';
   if(naam==='Maleisië' && lon > 107 && alleLandenFeatureMap['Oost-Maleisië']) return 'Oost-Maleisië';
   if(naam==='Ecuador' && lon < -85 && alleLandenFeatureMap['Galápagos']) return 'Galápagos';
+  if(naam==='Spanje' && lon < -11 && alleLandenFeatureMap['Canarische Eilanden']) return 'Canarische Eilanden';
+  if(naam==='Portugal' && lon < -20 && alleLandenFeatureMap['Azoren']) return 'Azoren';
+  if(naam==='Frankrijk' && lon > 50 && alleLandenFeatureMap['Réunion']) return 'Réunion';
+  if(naam==='Frankrijk' && lon > 20 && lon < 50 && alleLandenFeatureMap['Mayotte']) return 'Mayotte';
   return naam;
 }
 
@@ -2546,6 +2738,10 @@ function startKalibratie(){
   else if(naam==='Hawaï') laadIllustratie('Verenigde Staten'); // laadt ook __Hawaii mee
   else if(naam==='Oost-Maleisië') laadIllustratie('Maleisië'); // laadt ook __OostMaleisie mee
   else if(naam==='Galápagos') laadIllustratie('Ecuador'); // laadt ook __Galapagos mee
+  else if(naam==='Canarische Eilanden') laadIllustratie('Spanje'); // laadt ook __Canaria mee
+  else if(naam==='Azoren') laadIllustratie('Portugal'); // laadt ook __Azoren mee
+  else if(naam==='Réunion') laadIllustratie('Frankrijk'); // laadt ook __Reunion mee
+  else if(naam==='Mayotte') laadIllustratie('Frankrijk'); // laadt ook __Mayotte mee
   else laadIllustratie(naam);
   kalibratieNaam=naam;
   kalibratieFeature=featureVoorKalibratie;
@@ -3320,6 +3516,53 @@ function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
     return;
   }
 
+  // Zelfde aanpak voor Spanje: vasteland en Canarische Eilanden los
+  // behandelen zodra er een apart Canarische-Eilanden-plaatje is.
+  if(dutch==='Spanje' && landIllustraties['__Canaria']){
+    const canDelen=[], hoofdDelen=[];
+    for(const poly of polysLijst){
+      if(!poly[0]||poly[0].length<3){ hoofdDelen.push(poly); continue; }
+      const lonMax=Math.max(...poly[0].map(p=>p[0]));
+      if(lonMax < -11) canDelen.push(poly);
+      else hoofdDelen.push(poly);
+    }
+    tekenLandDelen('Spanje', hoofdDelen, img);
+    tekenLandDelen('Canarische Eilanden', canDelen, landIllustraties['__Canaria']);
+    return;
+  }
+
+  // Zelfde aanpak voor Portugal: vasteland en Azoren los behandelen zodra
+  // er een apart Azoren-plaatje is.
+  if(dutch==='Portugal' && landIllustraties['__Azoren']){
+    const azoDelen=[], hoofdDelen=[];
+    for(const poly of polysLijst){
+      if(!poly[0]||poly[0].length<3){ hoofdDelen.push(poly); continue; }
+      const lonMax=Math.max(...poly[0].map(p=>p[0]));
+      if(lonMax < -20) azoDelen.push(poly);
+      else hoofdDelen.push(poly);
+    }
+    tekenLandDelen('Portugal', hoofdDelen, img);
+    tekenLandDelen('Azoren', azoDelen, landIllustraties['__Azoren']);
+    return;
+  }
+
+  // Zelfde aanpak voor Frankrijk: vasteland, Réunion en Mayotte los
+  // behandelen zodra er een apart plaatje voor is.
+  if(dutch==='Frankrijk' && (landIllustraties['__Reunion']||landIllustraties['__Mayotte'])){
+    const reuDelen=[], mayDelen=[], hoofdDelen=[];
+    for(const poly of polysLijst){
+      if(!poly[0]||poly[0].length<3){ hoofdDelen.push(poly); continue; }
+      const lonMin=Math.min(...poly[0].map(p=>p[0]));
+      if(lonMin > 50 && landIllustraties['__Reunion']) reuDelen.push(poly);
+      else if(lonMin > 20 && lonMin < 50 && landIllustraties['__Mayotte']) mayDelen.push(poly);
+      else hoofdDelen.push(poly);
+    }
+    tekenLandDelen('Frankrijk', hoofdDelen, img);
+    if(landIllustraties['__Reunion']) tekenLandDelen('Réunion', reuDelen, landIllustraties['__Reunion']);
+    if(landIllustraties['__Mayotte']) tekenLandDelen('Mayotte', mayDelen, landIllustraties['__Mayotte']);
+    return;
+  }
+
   tekenLandDelen(dutch, polysLijst, img);
 }
 
@@ -3708,7 +3951,7 @@ function drawGlobe(){
     const lonMargeGraden = Math.min(90, latMargeGraden / Math.max(0.15, Math.cos(wonkyLat*Math.PI/180)));
 
     for(const naam in alleLandenFeatureMap){
-      if(naam==='Alaska'||naam==='Hawaï'||naam==='Galápagos'||naam==='Oost-Maleisië') continue; // los pseudo-land, geen eigen sluipeffect
+      if(naam==='Alaska'||naam==='Hawaï'||naam==='Galápagos'||naam==='Canarische Eilanden'||naam==='Azoren'||naam==='Réunion'||naam==='Mayotte'||naam==='Oost-Maleisië') continue; // los pseudo-land, geen eigen sluipeffect
       const info = alleLandenFeatureMap[naam];
       if(hoverLand && info.feature===hoverLand) continue;
       if(!info.kruistDatumgrens){
@@ -3754,6 +3997,18 @@ function drawGlobe(){
     } else if(kalibratieNaam==='Galápagos'){
       laadIllustratie('Ecuador'); // laadt ook __Galapagos mee
       kalImg = landIllustraties['__Galapagos'];
+    } else if(kalibratieNaam==='Canarische Eilanden'){
+      laadIllustratie('Spanje'); // laadt ook __Canaria mee
+      kalImg = landIllustraties['__Canaria'];
+    } else if(kalibratieNaam==='Azoren'){
+      laadIllustratie('Portugal'); // laadt ook __Azoren mee
+      kalImg = landIllustraties['__Azoren'];
+    } else if(kalibratieNaam==='Réunion'){
+      laadIllustratie('Frankrijk'); // laadt ook __Reunion mee
+      kalImg = landIllustraties['__Reunion'];
+    } else if(kalibratieNaam==='Mayotte'){
+      laadIllustratie('Frankrijk'); // laadt ook __Mayotte mee
+      kalImg = landIllustraties['__Mayotte'];
     } else {
       laadIllustratie(kalibratieNaam);
       kalImg = landIllustraties[kalibratieNaam];
