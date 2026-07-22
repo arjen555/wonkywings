@@ -548,7 +548,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.58</div>
+  <div id="versie-label">v0.2.59</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2634,7 +2634,7 @@ document.addEventListener('keydown', e=>{
   else if(e.key==='c'||e.key==='C'){ kopieerKalibraties(); }
   else if(e.key>='0'&&e.key<='4'){ kalibratieHoek=+e.key; }
   else if((e.key==='r'||e.key==='R')&&hoekActief){ hoekActief.dLon=0; hoekActief.dLat=0; }
-  else if(e.key===']'){ b.zoomMax = Math.min(40, b.zoomMax*(1+(kalibratieFijn?0.005:0.03))); }
+  else if(e.key===']'){ b.zoomMax = Math.min(80, b.zoomMax*(1+(kalibratieFijn?0.005:0.03))); }
   else if(e.key==='['){ b.zoomMax = Math.max(1.0, b.zoomMax*(1-(kalibratieFijn?0.005:0.03))); }
   else if(hoekActief && e.key==='ArrowLeft' ){ hoekActief.dLon-=dLon; }
   else if(hoekActief && e.key==='ArrowRight'){ hoekActief.dLon+=dLon; }
