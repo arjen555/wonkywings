@@ -509,6 +509,29 @@
       color:#ffe9a8; font-size:0.85rem; font-weight:900;
       letter-spacing:0.02em; text-shadow:0 1px 3px rgba(0,0,0,0.65);
     }
+    /* ── Zoekbalk (verkenningsmodus), rechtsboven, zelfde steampunk-stijl als de zoom-indicator ── */
+    #zoek-balk {
+      position:fixed; top:14px; right:24px; z-index:25;
+      display:none; align-items:center; gap:6px;
+      background:linear-gradient(180deg, rgba(64,42,20,0.85), rgba(28,16,7,0.85));
+      border:1.5px solid rgba(255,215,0,0.45);
+      border-radius:22px; padding:6px 8px 6px 16px;
+      box-shadow:0 3px 12px rgba(0,0,0,0.4), inset 0 0 10px rgba(255,215,0,0.1);
+      pointer-events:all;
+    }
+    #zoek-input {
+      background:transparent; border:none; outline:none;
+      color:#ffe9a8; font-family:'Baloo 2',sans-serif; font-weight:600; font-size:0.9rem;
+      width:150px; max-width:34vw;
+    }
+    #zoek-input::placeholder { color:rgba(255,233,168,0.5); }
+    #zoek-knop {
+      background:rgba(255,215,0,0.18); border:1px solid rgba(255,215,0,0.4);
+      border-radius:50%; width:28px; height:28px; cursor:pointer; flex:none;
+      display:flex; align-items:center; justify-content:center; font-size:0.9rem;
+      color:#ffe9a8; padding:0;
+    }
+    #zoek-knop:hover { background:rgba(255,215,0,0.3); }
     #hud-bottom {
       position:fixed; bottom:0; left:0; right:0;
       display:flex; flex-direction:column; align-items:center; padding-bottom:20px;
@@ -548,7 +571,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.64</div>
+  <div id="versie-label">v0.2.65</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -766,6 +789,10 @@
       </div>
     </div>
     <div id="zoom-indicator"><span id="zoom-icoon">🔍</span><span id="zoom-percentage">0%</span></div>
+    <div id="zoek-balk">
+      <input type="text" id="zoek-input" placeholder="Zoek land of hoofdstad..." autocomplete="off" />
+      <button id="zoek-knop" onclick="zoekEnVlieg()" aria-label="Zoeken">🔍</button>
+    </div>
     <div id="score-box">
       <div id="scorebord-wrap">
         <img id="scorebord-img" src="images/scorebord.png" alt="Scorebord"/>
@@ -1524,6 +1551,87 @@ for(const naam of EILANDENGROEP_LANDEN){
   if(bbox) eilandengroepBBox[naam] = {...bbox, feature:f};
 }
 
+// ── Zoekbalk (verkenningsmodus) ───────────────────────
+// Bouwt één keer een doorzoekbare lijst van alle landen (inclusief de
+// pseudo-landen als Hawaï/Galápagos/West-China, want die staan ook gewoon
+// in alleLandenFeatureMap) én alle hoofdsteden uit de HOOFDSTEDEN-tabel.
+// Normaliseren (kleine letters, accenten eraf) zodat "belgie" ook "België"
+// vindt; bij geen exacte match wordt de kleinste type-afstand (Levenshtein)
+// gebruikt om kleine tikfouten op te vangen.
+function normaliseerZoekTekst(s){
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+}
+function levenshteinAfstand(a,b){
+  const m=a.length, n=b.length;
+  if(m===0) return n;
+  if(n===0) return m;
+  const d=new Array(n+1);
+  for(let j=0;j<=n;j++) d[j]=j;
+  for(let i=1;i<=m;i++){
+    let vorige=d[0]; d[0]=i;
+    for(let j=1;j<=n;j++){
+      const temp=d[j];
+      d[j]=Math.min(d[j]+1, d[j-1]+1, vorige+(a[i-1]===b[j-1]?0:1));
+      vorige=temp;
+    }
+  }
+  return d[n];
+}
+const ZOEK_INDEX=[];
+function bouwZoekIndex(){
+  for(const naam in alleLandenFeatureMap){
+    const punt=representatiefPunt(alleLandenFeatureMap[naam].feature);
+    if(!punt || !isFinite(punt[0]) || !isFinite(punt[1])) continue;
+    ZOEK_INDEX.push({weergaveNaam:naam, genormaliseerd:normaliseerZoekTekst(naam), lon:punt[0], lat:punt[1]});
+  }
+  for(const landNaam in HOOFDSTEDEN){
+    const cap=HOOFDSTEDEN[landNaam];
+    ZOEK_INDEX.push({weergaveNaam:cap.naam, genormaliseerd:normaliseerZoekTekst(cap.naam), lon:cap.lon, lat:cap.lat});
+  }
+}
+bouwZoekIndex();
+function zoekBesteMatch(tekst){
+  const q=normaliseerZoekTekst(tekst);
+  if(!q) return null;
+  for(const entry of ZOEK_INDEX){
+    if(entry.genormaliseerd===q) return entry;
+  }
+  let beste=null, besteAfstand=Infinity;
+  for(const entry of ZOEK_INDEX){
+    const afstand=levenshteinAfstand(q, entry.genormaliseerd);
+    if(afstand<besteAfstand){ besteAfstand=afstand; beste=entry; }
+  }
+  if(!beste) return null;
+  const drempel = beste.genormaliseerd.length<=4 ? 1 : beste.genormaliseerd.length<=8 ? 2 : 3;
+  return besteAfstand<=drempel ? beste : null;
+}
+function starttZoekVlucht(lon,lat,naam){
+  lonSnelheid=0; latSnelheid=0;
+  zoekVluchtActief=true;
+  zoekVluchtStartTijd=performance.now();
+  const afstandKm=afstandKmTussenPunten(wonkyLon,wonkyLat,lon,lat);
+  zoekVluchtDuur=Math.max(900, Math.min(4500, afstandKm*1.1));
+  zoekVluchtStartVec=lonLatTo3D(wonkyLon,wonkyLat);
+  zoekVluchtEindVec=lonLatTo3D(lon,lat);
+  toonFeedback('✈ Onderweg naar '+naam,'#ffd700');
+}
+function zoekEnVlieg(){
+  const input=document.getElementById('zoek-input');
+  const tekst=input.value;
+  if(!tekst.trim()) return;
+  const match=zoekBesteMatch(tekst);
+  if(!match){
+    toonFeedback('🔍 Niet gevonden: "'+tekst.trim()+'"','#ff9900');
+    return;
+  }
+  starttZoekVlucht(match.lon, match.lat, match.weergaveNaam);
+  input.value='';
+  input.blur();
+}
+document.getElementById('zoek-input').addEventListener('keydown', e=>{
+  if(e.key==='Enter'){ e.preventDefault(); zoekEnVlieg(); }
+});
+
 bouwStartscherm();
 illustratiesKnopBijwerken();
 
@@ -1592,6 +1700,11 @@ let correctieLabelDubbel=null; // {hoofdstad, land} - zet het correctie-label in
 let vluchtStartVec=null, vluchtEindVec=null, vluchtEindLon=0, vluchtEindLat=0;
 let vluchtScoreVoor=0, vluchtScoreNa=0, vluchtAfwijkingKm=0, vluchtDoelLand=null;
 let correctieLand=null, correctieLandStartTijd=0;
+// ── Zoekbalk (verkenningsmodus): eigen, eenvoudige vlucht-animatie, los van
+// het vluchtActief-systeem hierboven (dat zit vol quiz-scorelogica die hier
+// niet van toepassing is). Hergebruikt wel dezelfde slerp/lonLatTo3D-wiskunde.
+let zoekVluchtActief=false, zoekVluchtStartTijd=0, zoekVluchtDuur=0;
+let zoekVluchtStartVec=null, zoekVluchtEindVec=null;
 const CORRECTIE_GLOW_DUUR=900; // ms pulsen, daarna blijft het land geel staan
 let jokerBeschikbaar=true, misserAutoTimer=null, goedAutoTimer=null;
 const MISSER_AUTO_MS=4000; // hoe lang de foutcorrectie in beeld blijft voor 'ie vanzelf doorschakelt
@@ -1908,6 +2021,7 @@ function startSpel(levelId, modus) {
   document.getElementById('richting-rij').style.display = (modus==='spelen') ? 'flex' : 'none';
   updateRichtingKnoppen();
   zetZoomIndicator(zoomNiveau);
+  document.getElementById('zoek-balk').style.display = (modus==='verkennen') ? 'flex' : 'none';
 
   if(modus==='verkennen'){
     document.getElementById('opdracht-label').textContent='🔍 Verkennen';
@@ -1937,6 +2051,7 @@ function naarStart(){
   document.getElementById('joker-knop').style.display='none';
   document.getElementById('richting-rij').style.display='none';
   document.getElementById('richting-pijl').style.display='none';
+  document.getElementById('zoek-balk').style.display='none';
   if(misserAutoTimer){ clearTimeout(misserAutoTimer); misserAutoTimer=null; }
   vlagGrond.style.display='none'; vlagValt.style.display='none';
   bouwScoreTickers();
@@ -4389,6 +4504,11 @@ const toetsLaatstGezien={};   // per toets: tijdstip van het laatste keydown-eve
 const toetsHerhaaldGezien={}; // per toets: is er tijdens deze druk een herhaal-event gezien?
 
 document.addEventListener('keydown',e=>{
+  // Terwijl er in een tekstveld getypt wordt (bijv. de zoekbalk), mag een
+  // toets als "a" of een pijltje gewoon typen/de cursor verplaatsen - niet
+  // ook nog Wonky laten vliegen.
+  const actiefEl=document.activeElement;
+  if(actiefEl && (actiefEl.tagName==='INPUT' || actiefEl.tagName==='TEXTAREA')) return;
   const k=normToets(e);
   keys[k]=true;
   toetsLaatstGezien[k]=performance.now();
@@ -4734,7 +4854,26 @@ function updateSpel(){
   const s=(turbo?1.8:0.7)/zoomFactor;
   let dx=0,dy=0;
 
-  if(vluchtActief){
+  // Zodra de speler tijdens een zoek-vlucht zelf weer stuurt, breekt dat de
+  // automatische vlucht direct af en neemt de speler de controle terug.
+  const handmatigeStuurInputActief = keys['ArrowLeft']||keys['ArrowRight']||keys['ArrowUp']||keys['ArrowDown']||
+    keys['a']||keys['d']||keys['w']||keys['s']||touchStuurDx!==0||touchStuurDy!==0||gamepadStuurDx!==0||gamepadStuurDy!==0;
+  if(zoekVluchtActief && handmatigeStuurInputActief){
+    zoekVluchtActief=false;
+  }
+
+  if(zoekVluchtActief){
+    const tRuw=Math.min(1,(performance.now()-zoekVluchtStartTijd)/zoekVluchtDuur);
+    const t = tRuw<0.5 ? 2*tRuw*tRuw : 1-Math.pow(-2*tRuw+2,2)/2; // ease-in-out
+    const prevLon=wonkyLon, prevLat=wonkyLat;
+    const v=slerp3(zoekVluchtStartVec,zoekVluchtEindVec,t);
+    const [nLon,nLat]=vec3NaarLonLat(v);
+    wonkyLon=nLon; wonkyLat=nLat;
+    dx=Math.sign(lonVerschil(prevLon,nLon))||0;
+    dy=Math.sign(nLat-prevLat)||0;
+    rotM=maakRotMatrix(wonkyLon,wonkyLat);
+    if(tRuw>=1){ zoekVluchtActief=false; }
+  } else if(vluchtActief){
     const tRuw=Math.min(1,(performance.now()-vluchtStartTijd)/vluchtDuur);
     const t = tRuw<0.5 ? 2*tRuw*tRuw : 1-Math.pow(-2*tRuw+2,2)/2; // ease-in-out
     const prevLon=wonkyLon, prevLat=wonkyLat;
