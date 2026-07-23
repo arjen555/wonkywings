@@ -548,7 +548,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.63</div>
+  <div id="versie-label">v0.2.64</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2310,6 +2310,10 @@ let rotM;
 let focusSx=W/2, focusSy=H*0.56;
 let hoverLand=null;
 let vorigHoverLand=null; // voor het vasthouden van gekalibreerde landen boven "hun" zee
+// Zelfde soort geheugen als vorigHoverLand, maar dan specifiek voor het
+// opgeknipte pseudo-land (Hawaï, Galápagos, ...) waar je het laatst
+// "effectief" boven vloog — zie de sticky-uitbreiding in updateSpel().
+let vorigEffectiefPseudoLand=null;
 
 // Simpele "nep"-GEOJSON-feature voor de Noordpool: geen echte polygoon (de ijskap heeft
 // geen scherpe landgrens), maar wel een dutch-naam zodat de bestaande hover/illustratie-
@@ -2828,6 +2832,19 @@ function effectiefPseudoLand(naam, lon, lat){
   if(naam==='China' && lon < 105 && alleLandenFeatureMap['West-China']) return 'West-China';
   return naam;
 }
+
+// Omgekeerde richting van effectiefPseudoLand hierboven: bij welk "echt"
+// land (zoals het spel dat quizt/toont) hoort een pseudo-land? Gebruikt door
+// de sticky-hover-uitbreiding hieronder, zodat je bij het vasthouden boven
+// eigen zee altijd bij het originele land uitkomt (Hawaï -> Verenigde
+// Staten), nooit bij het pseudo-land zelf.
+const MOEDERLAND_VAN_PSEUDOLAND = {
+  'Alaska':'Verenigde Staten', 'Hawaï':'Verenigde Staten',
+  'Oost-Maleisië':'Maleisië', 'Galápagos':'Ecuador',
+  'Canarische Eilanden':'Spanje', 'Azoren':'Portugal',
+  'Réunion':'Frankrijk', 'Mayotte':'Frankrijk',
+  'West-China':'China'
+};
 
 function startKalibratie(){
   if(!hoverLand){ return; } // alleen boven een land te starten
@@ -3696,7 +3713,18 @@ function berekenStand3Zoom() {
     return;
   }
 
-  const geom = hoverLand.geometry;
+  // Zit je boven een opgeknipt pseudo-land (Hawaï, Galápagos, ...)? Meet dan
+  // de afmetingen van dát stukje, niet van het hele moederland — anders
+  // denkt deze berekening dat je boven bijv. de hele Verenigde Staten vliegt
+  // (inclusief vasteland) terwijl je maar een klein eilandje ziet, en komt
+  // er een veel te ver uitgezoomd "automatisch" niveau uit.
+  const ruweNaam = hoverLand.properties.dutch||hoverLand.properties.name;
+  const effectieveNaam = effectiefPseudoLand(ruweNaam, wonkyLon, wonkyLat);
+  const effectieveFeature = (effectieveNaam!==ruweNaam && alleLandenFeatureMap[effectieveNaam])
+    ? alleLandenFeatureMap[effectieveNaam].feature
+    : hoverLand;
+
+  const geom = effectieveFeature.geometry;
   const polysLijst = geom.type==='Polygon' ? [geom.coordinates] : geom.coordinates;
   let grootstePoly=null, grootsteN=0;
   for(const poly of polysLijst){
@@ -4949,7 +4977,45 @@ function updateSpel(){
       }
     }
   }
+  // ── Sticky-gedrag voor opgeknipte pseudo-landen (Hawaï, Galápagos, ...) ──
+  // Los van de check hierboven (die werkt op het HELE, ruwe land): als je
+  // net nog boven zo'n stukje eilandengroep vloog en nu boven de zee
+  // ertussen zit, binnen het gebied van dát specifieke stukje, blijf je
+  // "in" het moederland hangen. Zonder dit viel hoverLand hier telkens
+  // terug op null zodra je tussen bijv. twee Hawaïaanse eilandjes door
+  // vloog, waarna de zoom-berekening even (verkeerd) uitging van het hele
+  // moederland — vandaar de zoomsprongen die dit repareert.
+  if(!hoverLand && vorigEffectiefPseudoLand){
+    const info=alleLandenFeatureMap[vorigEffectiefPseudoLand];
+    if(info){
+      const kal=getIllustratieKalibratie(vorigEffectiefPseudoLand);
+      let minLon=info.minLon, maxLon=info.maxLon, minLat=info.minLat, maxLat=info.maxLat;
+      let mLon=0, mLat=0;
+      if(kal){
+        minLon=kal.minLon; maxLon=kal.maxLon; minLat=kal.minLat; maxLat=kal.maxLat;
+        if(kal.hoeken){
+          for(const k of ['lb','rb','lo','ro']){
+            const hp=kal.hoeken[k];
+            if(hp){ mLon=Math.max(mLon,Math.abs(hp.dLon)); mLat=Math.max(mLat,Math.abs(hp.dLat)); }
+          }
+        }
+      }
+      if(wonkyLon>=minLon-mLon && wonkyLon<=maxLon+mLon &&
+         wonkyLat>=minLat-mLat && wonkyLat<=maxLat+mLat){
+        const moederNaam=MOEDERLAND_VAN_PSEUDOLAND[vorigEffectiefPseudoLand];
+        const moederInfo=moederNaam && alleLandenFeatureMap[moederNaam];
+        if(moederInfo) hoverLand=moederInfo.feature;
+      }
+    }
+  }
   vorigHoverLand=hoverLand;
+  // Onthouden welk pseudo-land dit precies was (of null, als het gewoon een
+  // heel/normaal land was) — nodig voor de sticky-check hierboven volgende frame.
+  {
+    const ruweNaamNu = hoverLand ? (hoverLand.properties.dutch||hoverLand.properties.name) : null;
+    const effNaamNu = ruweNaamNu ? effectiefPseudoLand(ruweNaamNu, wonkyLon, wonkyLat) : null;
+    vorigEffectiefPseudoLand = (effNaamNu && effNaamNu!==ruweNaamNu) ? effNaamNu : null;
+  }
   if(hoverLand&&huidigModus==='verkennen'){
     hoverEl.textContent=hoverLand.properties.dutch||hoverLand.properties.name;
     hoverEl.style.opacity='1';
