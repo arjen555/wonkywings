@@ -26,26 +26,18 @@
   #menu-knop {
     position:absolute; left:4%; top:6.5%; width:14%; height:8.5%;
     background:none; border:none; cursor:pointer;
-    color:#ffe9a8; font-family:'Baloo 2',sans-serif; font-weight:800;
-    font-size:clamp(0.7rem, 1.3vw, 1.05rem); letter-spacing:0.03em;
-    display:flex; align-items:center; justify-content:center;
   }
-  #menu-knop:hover { color:#fff; }
 
-  .label-vast {
-    position:absolute;
-    font-family:'Baloo 2',sans-serif; font-weight:800; color:#5a3a1a;
-    text-align:center; line-height:1.15;
-  }
-  #label-werelddeel { left:19%; top:6%; width:26%; height:9%; font-size:clamp(0.55rem, 1.15vw, 0.95rem); display:flex; align-items:flex-end; justify-content:center; padding-bottom:1%; }
-  #werelddeel-waarde { position:absolute; left:19%; top:11.5%; width:26%; text-align:center; font-family:'Baloo 2',sans-serif; font-weight:700; color:#3b2a18; font-size:clamp(0.55rem, 1.05vw, 0.85rem); }
-  #label-speler { left:62%; top:6%; width:14%; height:9%; font-size:clamp(0.55rem, 1.15vw, 0.95rem); display:flex; align-items:flex-end; justify-content:center; padding-bottom:1%; }
-  #speler-waarde { position:absolute; left:62%; top:11.5%; width:14%; text-align:center; font-family:'Baloo 2',sans-serif; font-weight:700; color:#3b2a18; font-size:clamp(0.55rem, 1.05vw, 0.85rem); }
+  /* "MENU", "WERELDDEEL:" en "SPELER:" staan al getekend in de achtergrond-
+     afbeelding zelf - hier komt dus alleen de WAARDE overheen, netjes op de
+     onderstrepingslijn/het vakje eronder, zonder de labeltekst te herhalen. */
+  #werelddeel-waarde { position:absolute; left:19%; top:14.5%; width:26%; text-align:center; font-family:'Baloo 2',sans-serif; font-weight:700; color:#3b2a18; font-size:clamp(0.55rem, 1.15vw, 0.9rem); }
+  #speler-waarde { position:absolute; left:62%; top:14.5%; width:14%; text-align:center; font-family:'Baloo 2',sans-serif; font-weight:700; color:#3b2a18; font-size:clamp(0.55rem, 1.15vw, 0.9rem); }
   #goed-waarde {
-    position:absolute; left:73.5%; top:7.3%; width:12.5%; height:6.5%;
+    position:absolute; left:73.5%; top:11.5%; width:12.5%; height:5.5%;
     display:flex; align-items:center; justify-content:center;
     font-family:'Baloo 2',sans-serif; font-weight:800; color:#ffe9a8;
-    font-size:clamp(0.85rem, 2vw, 1.5rem); text-shadow:0 1px 3px rgba(0,0,0,0.6);
+    font-size:clamp(0.6rem, 1.3vw, 1rem); text-shadow:0 1px 3px rgba(0,0,0,0.6);
   }
 
   /* ── Timer: over het gauge-icoontje linksboven ── */
@@ -71,17 +63,22 @@
   .scherm { display:none; width:100%; height:100%; flex-direction:column; align-items:center; justify-content:center; }
   .scherm.actief { display:flex; }
 
+  /* — Naam-scherm (allereerste scherm) — */
+  .naam-titel {
+    font-family:'Baloo 2',sans-serif; font-weight:800; color:#3b2a18;
+    font-size:clamp(1rem,2.2vw,1.7rem); text-align:center; margin-bottom:5%;
+    max-width:90%; line-height:1.3;
+  }
+  #scherm-naam input {
+    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:clamp(0.85rem,1.8vw,1.3rem);
+    border:2px solid #8a6a3a; border-radius:10px; padding:8px 16px; background:#fffaf0; color:#3b2a18;
+    width:60%; max-width:20em; text-align:center; margin-bottom:4%;
+  }
+
   /* — Categorie-kiesscherm — */
   #scherm-kies { justify-content:flex-start; overflow-y:auto; }
-  .kies-titel { font-family:'Baloo 2',sans-serif; font-weight:800; color:#3b2a18; font-size:clamp(0.85rem,1.7vw,1.3rem); margin:0 0 2%; text-align:center; }
-  .naam-rij { display:flex; align-items:center; gap:6px; margin-bottom:3%; }
-  .naam-rij label { font-family:'Baloo 2',sans-serif; font-weight:700; color:#5a3a1a; font-size:clamp(0.55rem,1.05vw,0.85rem); }
-  .naam-rij input {
-    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:clamp(0.55rem,1.05vw,0.85rem);
-    border:1.5px solid #8a6a3a; border-radius:8px; padding:4px 8px; background:#fffaf0; color:#3b2a18;
-    width:9em;
-  }
-  .kies-groep-kop { font-family:'Baloo 2',sans-serif; font-weight:800; color:#5a3a1a; font-size:clamp(0.65rem,1.25vw,1rem);
+  .kies-titel { font-family:'Baloo 2',sans-serif; font-weight:800; color:#3b2a18; font-size:clamp(0.95rem,2vw,1.55rem); margin:0 0 2.5%; text-align:center; }
+  .kies-groep-kop { font-family:'Baloo 2',sans-serif; font-weight:800; color:#5a3a1a; font-size:clamp(0.8rem,1.6vw,1.25rem);
     margin:2% 0 1%; width:100%; border-bottom:2px solid rgba(90,58,26,0.3); padding-bottom:2px; }
   .kies-lijst { display:flex; flex-direction:column; gap:3px; width:100%; margin-bottom:2%; }
   .kies-rij {
@@ -90,7 +87,7 @@
     padding:4px 8px; cursor:pointer; transition:background 0.15s;
   }
   .kies-rij:hover { background:rgba(90,58,26,0.18); }
-  .kies-naam { font-family:'Baloo 2',sans-serif; font-weight:700; color:#3b2a18; font-size:clamp(0.55rem,1.05vw,0.85rem); }
+  .kies-naam { font-family:'Baloo 2',sans-serif; font-weight:700; color:#3b2a18; font-size:clamp(0.7rem,1.5vw,1.1rem); }
   .kies-aantal { font-size:clamp(0.5rem,0.9vw,0.7rem); color:#7a5a30; margin-left:6px; }
   .kies-scores-btn { background:none; border:none; cursor:pointer; font-size:clamp(0.7rem,1.3vw,1rem); }
 
@@ -137,23 +134,23 @@
 <body>
 
 <div id="kader">
-  <button id="menu-knop" onclick="window.location.href='index.html'">MENU</button>
-  <div id="label-werelddeel" class="label-vast">WERELDDEEL:</div>
+  <button id="menu-knop" onclick="window.location.href='index.html'" aria-label="Menu"></button>
   <div id="werelddeel-waarde">—</div>
-  <div id="label-speler" class="label-vast">SPELER:</div>
   <div id="speler-waarde">—</div>
-  <div id="goed-waarde">0</div>
+  <div id="goed-waarde">0 van de 10</div>
   <div id="pauze-icoon">⏸</div>
   <div id="timer-vak">0:00.0</div>
 
   <div id="perkament-vak">
 
-    <div id="scherm-kies" class="scherm actief">
+    <div id="scherm-naam" class="scherm actief">
+      <div class="naam-titel">Je naam voor eeuwige roem &amp; glorie!</div>
+      <input type="text" id="naam-input" maxlength="16" placeholder="Jouw naam" autofocus/>
+      <button class="actie-btn" id="btn-naam-door" onclick="bevestigNaam()">Doorgaan ▶</button>
+    </div>
+
+    <div id="scherm-kies" class="scherm">
       <div class="kies-titel">Kies een categorie</div>
-      <div class="naam-rij">
-        <label for="naam-input">Speler:</label>
-        <input type="text" id="naam-input" maxlength="16" placeholder="Jouw naam"/>
-      </div>
       <div id="kies-inhoud" style="width:100%;"></div>
     </div>
 
@@ -213,8 +210,26 @@ function ladenSpelerNaam(){
 document.getElementById('naam-input').addEventListener('input', e=>{
   localStorage.setItem(NAAM_SLEUTEL, e.target.value);
 });
+document.getElementById('naam-input').addEventListener('keydown', e=>{
+  if(e.key==='Enter'){ e.preventDefault(); bevestigNaam(); }
+});
 function huidigeSpelerNaam(){
   return (document.getElementById('naam-input').value || '').trim() || 'Speler';
+}
+// Eerste scherm dat de speler ziet: verplicht (een niet-lege) naam invullen
+// voordat er een categorie gekozen kan worden - dat voorkomt dat spelers
+// vergeten hun naam in te vullen en daardoor niet op het scorebord komen.
+function bevestigNaam(){
+  const input = document.getElementById('naam-input');
+  const naam = input.value.trim();
+  if(!naam){
+    input.style.borderColor = '#b03a2a';
+    input.placeholder = 'Vul eerst je naam in...';
+    input.focus();
+    return;
+  }
+  localStorage.setItem(NAAM_SLEUTEL, naam);
+  toonScherm('scherm-kies');
 }
 
 // ── Schermwissel ──
@@ -258,10 +273,13 @@ function startCategorie(catId){
   tijdVerstreken = 0;
   document.getElementById('werelddeel-waarde').textContent = huidigeCategorie.naam;
   document.getElementById('speler-waarde').textContent = huidigeSpelerNaam();
-  document.getElementById('goed-waarde').textContent = '0';
+  updateGoedWeergave();
   toonScherm('scherm-spel');
   startTimer();
   toonVraag();
+}
+function updateGoedWeergave(){
+  document.getElementById('goed-waarde').textContent = aantalGoed+' van de '+vraagLijst.length;
 }
 
 function shuffle(arr){
@@ -329,7 +347,7 @@ function beantwoord(gekozen, correct, btnEl){
 
   if(gekozen===correct){
     aantalGoed++;
-    document.getElementById('goed-waarde').textContent = String(aantalGoed);
+    updateGoedWeergave();
   }
 
   setTimeout(()=>{
@@ -441,7 +459,7 @@ function opnieuwSpelen(){
 function terugNaarKiezen(){
   document.getElementById('werelddeel-waarde').textContent = '—';
   document.getElementById('speler-waarde').textContent = '—';
-  document.getElementById('goed-waarde').textContent = '0';
+  document.getElementById('goed-waarde').textContent = '0 van de 10';
   document.getElementById('timer-vak').textContent = '0:00.0';
   toonScherm('scherm-kies');
 }
