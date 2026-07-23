@@ -503,7 +503,27 @@
     }
     #zoom-indicator.zoom-puls { animation:zoomPuls 0.32s ease; }
     @keyframes zoomPuls { 0%{transform:scale(1);} 45%{transform:scale(1.1);} 100%{transform:scale(1);} }
-    #zoom-icoon { position:relative; z-index:1; font-size:0.9rem; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
+    #zoom-icoon-wrap {
+      position:relative; z-index:1; flex:none;
+      width:24px; aspect-ratio:1024/683;
+      filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+    }
+    #zoom-icoon-img { display:block; width:100%; height:100%; }
+    /* De twee lens-vlekken: procentuele positie/straal gemeten op de bron-
+       afbeelding (images/Verrekijker.png, 1024x683), zodat ze exact binnen
+       de lens blijven staan. Groeien via --lens-pip-schaal (0.12 tot 1),
+       bijgewerkt in zetZoomIndicator() - dus synchroon met het percentage. */
+    .zoom-lens-pip {
+      position:absolute;
+      width:19.5%; height:28.3%;
+      border-radius:50%;
+      background:#fff;
+      box-shadow:0 0 5px rgba(255,255,255,0.95);
+      transform:translate(-50%,-50%) scale(var(--lens-pip-schaal, 0.12));
+      transition:transform 0.35s ease;
+    }
+    .zoom-lens-pip-links  { left:25.44%; top:52.2%; }
+    .zoom-lens-pip-rechts { left:74.41%; top:52.2%; }
     #zoom-percentage {
       position:relative; z-index:1; min-width:2.4em; text-align:right;
       color:#ffe9a8; font-size:0.85rem; font-weight:900;
@@ -571,7 +591,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.65</div>
+  <div id="versie-label">v0.2.66</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -788,7 +808,14 @@
         <span class="badge-tekst" id="speler-tekst" style="left:66.46%;top:64.25%;max-width:25.10%;"></span>
       </div>
     </div>
-    <div id="zoom-indicator"><span id="zoom-icoon">🔍</span><span id="zoom-percentage">0%</span></div>
+    <div id="zoom-indicator">
+      <div id="zoom-icoon-wrap">
+        <img id="zoom-icoon-img" src="images/Verrekijker.png" alt="" />
+        <div class="zoom-lens-pip zoom-lens-pip-links"></div>
+        <div class="zoom-lens-pip zoom-lens-pip-rechts"></div>
+      </div>
+      <span id="zoom-percentage">0%</span>
+    </div>
     <div id="zoek-balk">
       <input type="text" id="zoek-input" placeholder="Zoek land of hoofdstad..." autocomplete="off" />
       <button id="zoek-knop" onclick="zoekEnVlieg()" aria-label="Zoeken">🔍</button>
@@ -5183,6 +5210,12 @@ function zetZoomIndicator(niveau){
   const el = document.getElementById('zoom-indicator');
   document.getElementById('zoom-percentage').textContent = pct+'%';
   el.style.setProperty('--zoom-vulling', pct+'%');
+  // Witte lens-vlekken: bij nauwelijks ingezoomd twee kleine puntjes, die
+  // meegroeien tot ze bij 100% de hele lens vullen - zelfde niveau als het
+  // getoonde percentage, dus altijd in sync.
+  const LENS_PIP_MIN = 0.12;
+  const schaal = LENS_PIP_MIN + (1-LENS_PIP_MIN)*Math.max(0,Math.min(1,niveau));
+  el.style.setProperty('--lens-pip-schaal', schaal.toFixed(3));
   el.classList.remove('zoom-puls');
   void el.offsetWidth; // forceer reflow zodat de animatie elke keer opnieuw start
   el.classList.add('zoom-puls');
