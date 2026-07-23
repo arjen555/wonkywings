@@ -594,7 +594,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.68</div>
+  <div id="versie-label">v0.2.69</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1007,9 +1007,6 @@ const MENU = [
         altijd_alle:false, beschikbaar:true },
       { id:'eu-west', naam:'West-Europa', start:{lon:5, lat:50},
         landen:["Nederland","België","Duitsland","Frankrijk","Verenigd Koninkrijk","Ierland","Luxemburg","Oostenrijk","Zwitserland","Denemarken"],
-        altijd_alle:false, beschikbaar:true },
-      { id:'eu-zuid', naam:'Zuid-Europa', start:{lon:15, lat:42},
-        landen:["Spanje","Portugal","Italië","Griekenland"],
         altijd_alle:false, beschikbaar:true },
       { id:'eu-oost', naam:'Oost-Europa & Balkan', kort:'Oost-Europa', start:{lon:28, lat:50},
         landen:["Rusland","Polen","Oekraïne","Tsjechië","Slowakije","Hongarije","Roemenië","Bulgarije","Wit-Rusland","Moldavië","Servië","Kroatië","Bosnië-Herzegovina","Slovenië","Albanië","Noord-Macedonië","Montenegro","Kosovo"],
@@ -1585,6 +1582,18 @@ function bouwStartscherm() {
     groepEl.appendChild(subLijst);
     lijst.appendChild(groepEl);
   }
+
+  // ── Losse tegel: linkt naar het aparte raadspel (eigen pagina, geen
+  // accordion-sublijst nodig - één klik en je bent weg naar raadspel.html) ──
+  const raadspelEl = document.createElement('div');
+  raadspelEl.className = 'menu-groep';
+  raadspelEl.innerHTML = `<div class="menu-groep-kop">
+    <span class="menu-groep-icoon">🖼️</span>
+    <span class="menu-groep-label">Raad het land bij het plaatje</span>
+    <span class="menu-groep-pijl">↗</span>
+  </div>`;
+  raadspelEl.querySelector('.menu-groep-kop').onclick = () => { window.location.href = 'raadspel.html'; };
+  lijst.appendChild(raadspelEl);
 }
 // ── Eilandengroepen: illustratie blijft staan zolang Wonky binnen het hele
 // gebied van het land vliegt, ook boven zee tussen de eilandjes door.
