@@ -548,7 +548,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.62</div>
+  <div id="versie-label">v0.2.63</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1328,22 +1328,77 @@ function zelfdeLandAlsOostMaleisie(a,b){
   return (a==='Oost-Maleisië'&&b==='Maleisië') || (a==='Maleisië'&&b==='Oost-Maleisië');
 }
 
+// ── Polygoon-knipfunctie (voor landen die als één aaneengesloten vorm in de
+// kaartdata staan, zoals China, in tegenstelling tot losse eilandengroepen
+// als Alaska/Hawaï) ────────────────────────────────────────────────────
+// In tegenstelling tot de eilanden-pseudo-landen hierboven kun je bij zo'n
+// land niet simpelweg "welke losse vormen liggen ver genoeg naar het
+// westen" filteren — er ís geen losse vorm, het is één ononderbroken
+// kustlijn. Deze functie snijdt zo'n ring letterlijk door bij een gegeven
+// lengtegraad (standaardtechniek: Sutherland-Hodgman-clipping tegen één
+// rechte lijn), en levert een nette, gesloten ring terug voor elke kant.
+// Dit raakt alleen hoe het land getekend/gekalibreerd wordt: de originele,
+// ongesplitste vorm in FEATURES_KLEIN_NAAR_GROOT (gebruikt voor "boven welk
+// land vlieg je") blijft altijd intact.
+function snijpuntBijLon(a,b,knipLon){
+  const t=(knipLon-a[0])/(b[0]-a[0]);
+  return [knipLon, a[1]+t*(b[1]-a[1])];
+}
+function saagRingBijLon(ring, knipLon, houdKleinerDan){
+  const n=ring.length;
+  if(n<3) return [];
+  const inside = houdKleinerDan ? (p)=>p[0]<=knipLon : (p)=>p[0]>=knipLon;
+  const output=[];
+  for(let i=0;i<n;i++){
+    const curr=ring[i], prev=ring[(i-1+n)%n];
+    const currIn=inside(curr), prevIn=inside(prev);
+    if(currIn){
+      if(!prevIn) output.push(snijpuntBijLon(prev,curr,knipLon));
+      output.push(curr);
+    } else if(prevIn){
+      output.push(snijpuntBijLon(prev,curr,knipLon));
+    }
+  }
+  return output;
+}
+// Knipt een hele verzameling polygonen (elk zonder gaten) bij een lengtegraad.
+// Polygonen die al helemaal aan één kant liggen, blijven ongemoeid; alleen de
+// polygoon die de knip daadwerkelijk kruist wordt echt doorgesneden.
+function knipPolygonenBijLon(polys, knipLon){
+  const westPolys=[], oostPolys=[];
+  for(const poly of polys){
+    const ring=poly[0];
+    if(!ring||ring.length<3) continue;
+    const lonMin=Math.min(...ring.map(p=>p[0]));
+    const lonMax=Math.max(...ring.map(p=>p[0]));
+    if(lonMax<=knipLon){ westPolys.push(poly); continue; }
+    if(lonMin>=knipLon){ oostPolys.push(poly); continue; }
+    const westRing=saagRingBijLon(ring,knipLon,true);
+    const oostRing=saagRingBijLon(ring,knipLon,false);
+    if(westRing.length>=3) westPolys.push([westRing]);
+    if(oostRing.length>=3) oostPolys.push([oostRing]);
+  }
+  return {westPolys, oostPolys};
+}
+
 // ── West-China als los kalibreerbaar pseudo-land ──────
 // China is zo breed (73°–135°O) dat één illustratie het hele land niet
-// fatsoenlijk kan afdekken. Knip: alles ten westen van 105°O (Tibet,
-// Xinjiang, Qinghai) wordt "West-China", de rest blijft "China".
+// fatsoenlijk kan afdekken. In tegenstelling tot Alaska/Hawaï/Galápagos is
+// het vasteland van China in de kaartdata één ononderbroken vorm (geen
+// losse eilanden) — dus knippen we hem hier écht door bij 105°O (Tibet,
+// Xinjiang, Qinghai worden "West-China", de rest blijft "China"). De
+// resultaten worden hier eenmalig berekend en hergebruikt bij het tekenen
+// (zie tekenLandIllustratie), zodat dit niet elk frame opnieuw hoeft.
+let CHINA_OOST_POLYS=null, CHINA_WEST_POLYS=null;
 (function initChinaWestAlsPseudoLand(){
   const info = alleLandenFeatureMap['China'];
   if(!info) return;
   const g = info.feature.geometry;
   const polys = g.type==='Polygon' ? [g.coordinates] : g.coordinates;
   const CHINA_KNIP_LON = 105;
-  const westPolys=[];
-  for(const poly of polys){
-    if(!poly[0]||poly[0].length<3) continue;
-    const lonMax=Math.max(...poly[0].map(p=>p[0]));
-    if(lonMax < CHINA_KNIP_LON) westPolys.push(poly);
-  }
+  const {westPolys, oostPolys} = knipPolygonenBijLon(polys, CHINA_KNIP_LON);
+  CHINA_OOST_POLYS = oostPolys;
+  CHINA_WEST_POLYS = westPolys;
   if(!westPolys.length) return;
   let minLon=Infinity,maxLon=-Infinity,minLat=Infinity,maxLat=-Infinity;
   for(const poly of westPolys) for(const [lo,la] of poly[0]){
@@ -3597,17 +3652,14 @@ function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
   }
 
   // Zelfde aanpak voor China: oost-deel en west-deel (Tibet, Xinjiang) los
-  // behandelen zodra er een apart West-China-plaatje is.
-  if(dutch==='China' && landIllustraties['__ChinaWest']){
-    const westDelen=[], hoofdDelen=[];
-    for(const poly of polysLijst){
-      if(!poly[0]||poly[0].length<3){ hoofdDelen.push(poly); continue; }
-      const lonMax=Math.max(...poly[0].map(p=>p[0]));
-      if(lonMax < 105) westDelen.push(poly);
-      else hoofdDelen.push(poly);
-    }
-    tekenLandDelen('China', hoofdDelen, img);
-    tekenLandDelen('West-China', westDelen, landIllustraties['__ChinaWest']);
+  // behandelen zodra er een apart West-China-plaatje is. In tegenstelling tot
+  // de andere pseudo-landen hierboven is China's vasteland één aaneengesloten
+  // vorm, dus gebruiken we de bij het opstarten al doorgesneden polygonen
+  // (CHINA_OOST_POLYS/CHINA_WEST_POLYS, zie initChinaWestAlsPseudoLand)
+  // in plaats van losse eilanden te filteren.
+  if(dutch==='China' && landIllustraties['__ChinaWest'] && CHINA_WEST_POLYS){
+    tekenLandDelen('China', CHINA_OOST_POLYS, img);
+    tekenLandDelen('West-China', CHINA_WEST_POLYS, landIllustraties['__ChinaWest']);
     return;
   }
 
