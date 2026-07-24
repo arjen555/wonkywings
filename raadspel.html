@@ -16,8 +16,8 @@
 
   #kader {
     position:relative;
-    width:min(96vw, 96vh*1.2497);
-    aspect-ratio:1402/1122;
+    width:min(96vw, 96vh*1.2475);
+    aspect-ratio:1401/1123;
     background:url('images/interface.jpg') center/contain no-repeat;
     filter:drop-shadow(0 10px 40px rgba(0,0,0,0.6));
   }
@@ -54,7 +54,7 @@
 
   /* ── Perkament-inhoudsvak ── */
   #perkament-vak {
-    position:absolute; left:19.5%; top:27.5%; width:59.7%; height:48.6%;
+    position:absolute; left:19.6%; top:27.2%; width:59.3%; height:50%;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     padding:1.5% 3%;
     overflow:hidden;
@@ -93,19 +93,47 @@
 
   /* — Spelscherm — */
   #voortgang { font-family:'Baloo 2',sans-serif; font-weight:700; color:#5a3a1a; font-size:clamp(0.55rem,1.05vw,0.85rem); margin-bottom:1%; }
-  #land-illustratie-wrap { flex:1; display:flex; align-items:center; justify-content:center; width:100%; min-height:0; margin-bottom:2%; }
-  #land-illustratie { max-width:92%; max-height:100%; object-fit:contain; border-radius:10px; box-shadow:0 4px 16px rgba(0,0,0,0.35); }
-  #antwoorden-grid { display:grid; grid-template-columns:1fr 1fr; gap:2%; width:100%; }
-  .antwoord-btn {
-    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:clamp(0.55rem,1.15vw,0.95rem);
-    color:#3b2a18; background:linear-gradient(180deg,#fdf6e3,#ecdcb5);
-    border:1.5px solid #8a6a3a; border-radius:10px; padding:clamp(4px,1vh,10px) 6px;
-    cursor:pointer; transition:transform 0.1s, background 0.15s;
+  #land-illustratie-wrap { flex:1; display:flex; align-items:center; justify-content:center; width:100%; min-height:0; }
+  #land-illustratie {
+    max-width:94%; max-height:100%; object-fit:contain; border-radius:10px;
+    box-shadow:0 4px 16px rgba(0,0,0,0.35); cursor:zoom-in; transition:box-shadow 0.15s;
   }
-  .antwoord-btn:hover:not(:disabled) { transform:translateY(-2px); background:linear-gradient(180deg,#fffaf0,#f5e6bf); }
+  #land-illustratie:hover { box-shadow:0 4px 20px rgba(0,0,0,0.5); }
+  /* Uitvergrote illustratie: los van het perkament, over het hele kader (en de
+     kaderrand) heen. Nogmaals klikken of Escape brengt 'm terug naar normaal. */
+  #illustratie-achtergrond {
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55);
+    z-index:999; cursor:zoom-out;
+  }
+  #illustratie-achtergrond.actief { display:block; }
+  #land-illustratie.uitvergroot {
+    position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+    max-width:92vw; max-height:92vh; width:auto; height:auto;
+    z-index:1000; cursor:zoom-out; box-shadow:0 10px 50px rgba(0,0,0,0.7);
+  }
+
+  /* ── Antwoordknoppen: los van het perkament, exact over de 4 getekende
+     balken in de achtergrondafbeelding (2 boven, 2 onder, links en rechts
+     van het kompas-ornament). Doorzichtig zodat de getekende balk zichtbaar
+     blijft — alleen tekst plus een lichte hover/feedback-tint erbovenop. ── */
+  #antwoorden-grid { position:absolute; inset:0; pointer-events:none; display:none; }
+  #antwoorden-grid.actief { display:block; }
+  .antwoord-btn {
+    position:absolute;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:clamp(0.6rem,1.3vw,1.05rem);
+    color:#3b2a18; background:transparent; border:none; border-radius:8px;
+    padding:0 4%; pointer-events:auto;
+    cursor:pointer; transition:background 0.15s, color 0.15s;
+  }
+  .antwoord-btn.plek-0 { left:20.4%; top:87.4%; width:19.4%; height:3.3%; }
+  .antwoord-btn.plek-1 { left:58.5%; top:87.4%; width:19.4%; height:3.3%; }
+  .antwoord-btn.plek-2 { left:20.4%; top:93.0%; width:19.4%; height:3.1%; }
+  .antwoord-btn.plek-3 { left:58.5%; top:93.0%; width:19.4%; height:3.1%; }
+  .antwoord-btn:hover:not(:disabled) { background:rgba(90,58,26,0.16); }
   .antwoord-btn:disabled { cursor:default; }
-  .antwoord-btn.goed { background:linear-gradient(180deg,#bfe6a0,#8fc766); border-color:#4a7a2a; }
-  .antwoord-btn.fout { background:linear-gradient(180deg,#f0a8a0,#d9695c); border-color:#8a2a1a; }
+  .antwoord-btn.goed { background:rgba(143,199,102,0.55); color:#1e3a0e; }
+  .antwoord-btn.fout { background:rgba(217,105,92,0.55); color:#4a0f08; }
 
   /* — Resultaatscherm — */
   #klaar-titel { font-family:'Baloo 2',sans-serif; font-weight:800; color:#3b2a18; font-size:clamp(0.85rem,1.7vw,1.3rem); margin:0 0 1%; text-align:center; }
@@ -157,7 +185,6 @@
     <div id="scherm-spel" class="scherm">
       <div id="voortgang">Vraag 1 van 10</div>
       <div id="land-illustratie-wrap"><img id="land-illustratie" src="" alt=""/></div>
-      <div id="antwoorden-grid"></div>
     </div>
 
     <div id="scherm-klaar" class="scherm">
@@ -171,6 +198,9 @@
     </div>
 
   </div>
+
+  <div id="illustratie-achtergrond"></div>
+  <div id="antwoorden-grid"></div>
 </div>
 
 <script>
@@ -244,7 +274,32 @@ function bevestigNaam(){
 function toonScherm(id){
   document.querySelectorAll('.scherm').forEach(el=>el.classList.remove('actief'));
   document.getElementById(id).classList.add('actief');
+  document.getElementById('antwoorden-grid').classList.toggle('actief', id==='scherm-spel');
+  sluitUitvergroting();
 }
+
+// ── Landillustratie uitvergroten: klik erop om 'm groot over het hele
+// kader heen te tonen, nogmaals klikken (op de illustratie of de
+// verduisterde achtergrond) of Escape brengt 'm terug naar normaal. ──
+const ILLUSTRATIE_EL = document.getElementById('land-illustratie');
+const ILLUSTRATIE_ACHTERGROND_EL = document.getElementById('illustratie-achtergrond');
+function toonUitvergroting(){
+  if(!ILLUSTRATIE_EL.src) return; // niets te tonen zolang er nog geen illustratie geladen is
+  ILLUSTRATIE_EL.classList.add('uitvergroot');
+  ILLUSTRATIE_ACHTERGROND_EL.classList.add('actief');
+}
+function sluitUitvergroting(){
+  ILLUSTRATIE_EL.classList.remove('uitvergroot');
+  ILLUSTRATIE_ACHTERGROND_EL.classList.remove('actief');
+}
+ILLUSTRATIE_EL.addEventListener('click', () => {
+  if(ILLUSTRATIE_EL.classList.contains('uitvergroot')) sluitUitvergroting();
+  else toonUitvergroting();
+});
+ILLUSTRATIE_ACHTERGROND_EL.addEventListener('click', sluitUitvergroting);
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape') sluitUitvergroting();
+});
 
 // ── Categorie-kiesscherm opbouwen ──
 function bouwKiesScherm(){
@@ -314,13 +369,13 @@ function toonVraag(){
 
   const grid = document.getElementById('antwoorden-grid');
   grid.innerHTML = '';
-  for(const optie of opties){
+  opties.forEach((optie, i)=>{
     const btn = document.createElement('button');
-    btn.className = 'antwoord-btn';
+    btn.className = 'antwoord-btn plek-'+i;
     btn.textContent = optie;
     btn.onclick = () => beantwoord(optie, correct, btn);
     grid.appendChild(btn);
-  }
+  });
 }
 
 // Als een illustratie onverhoopt ontbreekt: vervang deze vraag stilletjes
