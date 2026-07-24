@@ -643,7 +643,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.76</div>
+  <div id="versie-label">v0.2.78</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1751,6 +1751,10 @@ document.getElementById('zoek-input').addEventListener('keydown', e=>{
 // is. Dezelfde localStorage-sleutel wordt ook door raadspel.html gebruikt,
 // zodat de naam overal in het spel hetzelfde is (zie de notitie daar ook).
 const SPELERNAAM_SLEUTEL = 'wonkywings_spelernaam';
+// Alleen tijdens de allereerste, verplichte naam-invoer mag Escape 'm niet
+// wegklikken - zodra er ooit een naam bevestigd is, mag "Verander je naam"
+// altijd geannuleerd worden zonder wijzigingen.
+let naamOverlayVerplicht = true;
 
 function bevestigSpelerNaam(){
   const input = document.getElementById('naam-overlay-input');
@@ -1763,6 +1767,15 @@ function bevestigSpelerNaam(){
   }
   localStorage.setItem(SPELERNAAM_SLEUTEL, naam);
   spelerNaam = naam;
+  naamOverlayVerplicht = false; // vanaf nu is er altijd al een geldige naam bekend
+  document.getElementById('naam-overlay').style.display = 'none';
+  document.getElementById('level-lijst').classList.remove('vergrendeld');
+}
+// Sluit de banner zonder wijzigingen - alleen toegestaan als er al eerder
+// een geldige naam is bevestigd (dus nooit bij de allereerste, verplichte
+// keer). Gebruikt door zowel Escape als het sluiten via de knop hieronder.
+function annuleerNaamOverlay(){
+  if(naamOverlayVerplicht) return;
   document.getElementById('naam-overlay').style.display = 'none';
   document.getElementById('level-lijst').classList.remove('vergrendeld');
 }
@@ -1778,8 +1791,10 @@ function heropenNaamOverlay(){
   hintEl.classList.add('verborgen');
   overlay.style.display = 'flex';
   document.getElementById('level-lijst').classList.add('vergrendeld');
-  input.focus();
-  input.select();
+  // Even uitstellen: de knop die dit aanroept pikt de focus anders soms
+  // net ná onze eigen input.focus() weer terug (browser-eigenaardigheid),
+  // waardoor Enter niet meteen op het invulveld werkte.
+  setTimeout(()=>{ input.focus(); input.select(); }, 0);
 }
 
 (function initNaamOverlay(){
@@ -1787,21 +1802,32 @@ function heropenNaamOverlay(){
   const foutEl = document.getElementById('naam-overlay-fout');
   const hintEl = document.getElementById('naam-overlay-hint');
 
-  // Bewust GEEN vooraf ingevulde naam hier: dit eerste scherm moet altijd
-  // leeg starten met de oplichtende hint, ook als er van een vorig bezoek
-  // al een naam bekend is (die blijft uiteraard gewoon bewaard en in
-  // gebruik voor scores etc. - alleen dit invulvak start altijd fris).
-  input.value = '';
-  document.getElementById('level-lijst').classList.add('vergrendeld');
+  const alBekend = (localStorage.getItem(SPELERNAAM_SLEUTEL) || '').trim();
+  if(alBekend){
+    // Naam al bekend (bijv. terug via de MENU-knop vanuit raadspel.html, of
+    // een volgend bezoek): meteen door naar het startscherm, niet opnieuw
+    // het verplichte naamscherm tonen. (spelerNaam zelf wordt pas gezet
+    // zodra startSpel() draait - hier nog niet, want die variabele wordt
+    // verderop in het bestand pas gedeclareerd.)
+    naamOverlayVerplicht = false;
+    document.getElementById('naam-overlay').style.display = 'none';
+    document.getElementById('level-lijst').classList.remove('vergrendeld');
+  } else {
+    // Nog nooit een naam ingevuld: dit eerste scherm moet leeg starten met
+    // de oplichtende hint.
+    input.value = '';
+    document.getElementById('level-lijst').classList.add('vergrendeld');
+  }
 
   input.addEventListener('keydown', e=>{
     if(e.key==='Enter'){ e.preventDefault(); bevestigSpelerNaam(); }
+    else if(e.key==='Escape'){ e.preventDefault(); annuleerNaamOverlay(); }
   });
   input.addEventListener('input', ()=>{
     foutEl.classList.remove('zichtbaar');
     hintEl.classList.add('verborgen');
   });
-  input.focus();
+  if(!alBekend) input.focus();
 })();
 
 bouwStartscherm();
