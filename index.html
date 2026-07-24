@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Wonky Wings</title>
-  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Berkshire+Swash&display=swap" rel="stylesheet"/>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
     html { font-size: clamp(12px, 1.45vmin, 18px); }
@@ -134,28 +134,22 @@
       filter:drop-shadow(0 8px 30px rgba(0,0,0,0.55));
     }
     #naam-banner-img { width:100%; height:100%; display:block; opacity:0.93; }
-    /* Dekt de "VUL HIER JE NAAM IN..." tekst af die al in de afbeelding zelf
-       staat getekend - zonder dit stond onze eigen tekst/placeholder er
-       dwars doorheen (dubbel, wazig). Kleur is gemeten uit de afbeelding. */
-    #naam-overlay-dekvlak {
-      position:absolute; left:22.3%; top:58.2%; width:54.7%; height:16.2%;
-      background:#e2be86; border-radius:6px;
-    }
     #naam-overlay-input {
-      position:absolute; left:23.5%; top:59.3%; width:53%; height:13.5%;
+      position:absolute; left:23.5%; top:58%; width:53%; height:16%;
       background:transparent; border:none; outline:none;
-      color:#3b2a18; font-family:'Baloo 2',sans-serif; font-weight:700;
-      font-size:clamp(0.75rem, 1.6vw, 1.25rem); text-align:center;
+      color:#3b2a18; font-family:'Berkshire Swash',cursive; font-weight:400;
+      font-size:clamp(1.3rem, 3.2vw, 2.3rem); text-align:center;
     }
     /* Onze eigen hint-tekst (i.p.v. de standaard placeholder), die één keer
        goud oplicht om de aandacht erop te vestigen. Verdwijnt zodra de
        speler begint te typen (zie JS), of meteen als er al een naam is
-       voorgevuld. */
+       voorgevuld. Zwierig lettertype - alleen hier gebruikt, nergens anders
+       in het spel - past bij het "eeuwige roem"-gevoel van de banner. */
     #naam-overlay-hint {
-      position:absolute; left:23.5%; top:59.3%; width:53%; height:13.5%;
+      position:absolute; left:23.5%; top:58%; width:53%; height:16%;
       display:flex; align-items:center; justify-content:center; text-align:center;
-      color:#6b4a20; font-family:'Baloo 2',sans-serif; font-weight:700;
-      font-size:clamp(0.65rem, 1.35vw, 1.05rem); letter-spacing:0.03em;
+      color:#6b4a20; font-family:'Berkshire Swash',cursive; font-weight:400;
+      font-size:clamp(1rem, 2.3vw, 1.6rem); letter-spacing:0.02em;
       pointer-events:none; transition:opacity 0.3s;
       animation:naamHintGloed 1.8s ease-out 1;
     }
@@ -636,7 +630,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.71</div>
+  <div id="versie-label">v0.2.72</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -658,7 +652,6 @@
   <div id="naam-overlay-zone">
     <div id="naam-banner-wrap">
       <img id="naam-banner-img" src="images/naam-banner.png" alt="Je naam voor eeuwige roem en glorie"/>
-      <div id="naam-overlay-dekvlak"></div>
       <div id="naam-overlay-hint">VUL EERST HIER JE NAAM IN</div>
       <input type="text" id="naam-overlay-input" maxlength="20" autocomplete="off"/>
       <div id="naam-overlay-fout">Vul eerst je naam in!</div>
