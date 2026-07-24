@@ -31,34 +31,45 @@
   /* "MENU", "WERELDDEEL:" en "SPELER:" staan al getekend in de achtergrond-
      afbeelding zelf - hier komt dus alleen de WAARDE overheen, netjes op de
      onderstrepingslijn/het vakje eronder, zonder de labeltekst te herhalen. */
-  #werelddeel-waarde { position:absolute; left:19%; top:14.5%; width:26%; text-align:center; font-family:'Baloo 2',sans-serif; font-weight:700; color:#3b2a18; font-size:clamp(0.55rem, 1.15vw, 0.9rem); }
+  #werelddeel-waarde { position:absolute; left:19%; top:14.5%; width:26%; text-align:left; padding-left:2%; font-family:'Baloo 2',sans-serif; font-weight:700; color:#3b2a18; font-size:clamp(0.55rem, 1.15vw, 0.9rem); }
   #speler-waarde { position:absolute; left:61%; top:14%; width:16%; text-align:center; font-family:'Baloo 2',sans-serif; font-weight:700; color:#3b2a18; font-size:clamp(0.75rem, 1.55vw, 1.2rem); }
   #goed-waarde {
-    position:absolute; left:72.5%; top:11%; width:14.5%; height:6.5%;
+    position:absolute; left:72.5%; top:12.5%; width:14.5%; height:6.5%;
     display:flex; align-items:center; justify-content:center;
     font-family:'Baloo 2',sans-serif; font-weight:800; color:#ffe9a8;
     font-size:clamp(0.8rem, 1.7vw, 1.3rem); text-shadow:0 1px 3px rgba(0,0,0,0.6);
   }
 
-  /* ── Timer: over het gauge-icoontje linksboven ── */
+  /* ── Timer: in het midden van de globe rechtsonder (was eerst over het
+     gauge-icoontje linksboven, maar viel daar niet goed op) ── */
   #timer-vak {
-    position:absolute; left:1.2%; top:26%; width:11%; height:11%;
+    position:absolute; left:80%; top:70%; width:13%; height:12%;
     display:flex; align-items:center; justify-content:center;
     font-family:'Baloo 2',sans-serif; font-weight:800; color:#ffe9a8;
     font-size:clamp(0.9rem, 1.6vw, 1.35rem); text-shadow:0 1px 3px rgba(0,0,0,0.7);
     pointer-events:none;
   }
   #timer-vak.gepauzeerd { color:#ff9b4a; }
-  #pauze-icoon { position:absolute; left:1.2%; top:20%; width:11%; text-align:center; font-size:clamp(0.7rem,1.4vw,1.1rem); opacity:0; transition:opacity 0.15s; }
+  #pauze-icoon { position:absolute; left:80%; top:63%; width:13%; text-align:center; font-size:clamp(0.7rem,1.4vw,1.1rem); opacity:0; transition:opacity 0.15s; }
   #pauze-icoon.zichtbaar { opacity:1; }
 
-  /* ── Perkament-inhoudsvak ── */
+  /* ── Perkament-inhoudsvak (voor naam/kies/klaar-schermen) ── */
   #perkament-vak {
     position:absolute; left:19.6%; top:27.2%; width:59.3%; height:50%;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     padding:1.5% 3%;
     overflow:hidden;
   }
+
+  /* ── Spelscherm: los van het perkament, groter (tot waar voorheen de
+     rode pijl wees) en met een blokkentoren links van de illustratie. ── */
+  #scherm-spel {
+    position:absolute; left:19.6%; top:24%; width:59.3%; height:60%;
+    gap:3%;
+  }
+  #scherm-spel.actief { display:flex; flex-direction:row; align-items:stretch; justify-content:center; }
+  #blokkentoren { width:8%; height:100%; display:flex; flex-direction:column-reverse; gap:2%; flex-shrink:0; }
+  .blok-img { width:100%; flex:1; min-height:0; object-fit:contain; }
 
   .scherm { display:none; width:100%; height:100%; flex-direction:column; align-items:center; justify-content:center; }
   .scherm.actief { display:flex; }
@@ -92,11 +103,11 @@
   .kies-scores-btn { background:none; border:none; cursor:pointer; font-size:clamp(0.7rem,1.3vw,1rem); }
 
   /* — Spelscherm — */
-  #voortgang { font-family:'Baloo 2',sans-serif; font-weight:700; color:#5a3a1a; font-size:clamp(0.55rem,1.05vw,0.85rem); margin-bottom:1%; }
-  #land-illustratie-wrap { flex:1; display:flex; align-items:center; justify-content:center; width:100%; min-height:0; }
+  #land-illustratie-wrap { flex:1; display:flex; align-items:center; justify-content:center; min-width:0; min-height:0; height:100%; }
   #land-illustratie {
-    max-width:94%; max-height:100%; object-fit:contain; border-radius:10px;
-    box-shadow:0 4px 16px rgba(0,0,0,0.35); cursor:zoom-in; transition:box-shadow 0.15s;
+    max-width:96%; max-height:100%; object-fit:contain; border-radius:10px;
+    box-shadow:0 4px 16px rgba(0,0,0,0.35); transition:box-shadow 0.15s;
+    cursor:url('images/vergrootglas.png') 32 32, zoom-in;
   }
   #land-illustratie:hover { box-shadow:0 4px 20px rgba(0,0,0,0.5); }
   /* Uitvergrote illustratie: los van het perkament, over het hele kader (en de
@@ -115,14 +126,14 @@
   /* ── Antwoordknoppen: los van het perkament, exact over de 4 getekende
      balken in de achtergrondafbeelding (2 boven, 2 onder, links en rechts
      van het kompas-ornament). Doorzichtig zodat de getekende balk zichtbaar
-     blijft — alleen tekst plus een lichte hover/feedback-tint erbovenop. ── */
+     blijft — alleen (grotere, witte) tekst plus een lichte hover/feedback-tint. ── */
   #antwoorden-grid { position:absolute; inset:0; pointer-events:none; display:none; }
   #antwoorden-grid.actief { display:block; }
   .antwoord-btn {
     position:absolute;
     display:flex; align-items:center; justify-content:center;
-    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:clamp(0.6rem,1.3vw,1.05rem);
-    color:#3b2a18; background:transparent; border:none; border-radius:8px;
+    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:clamp(0.85rem,1.9vw,1.5rem);
+    color:#ffffff; text-shadow:0 1px 4px rgba(0,0,0,0.75); background:transparent; border:none; border-radius:8px;
     padding:0 4%; pointer-events:auto;
     cursor:pointer; transition:background 0.15s, color 0.15s;
   }
@@ -182,11 +193,6 @@
       <div id="kies-inhoud" style="width:100%;"></div>
     </div>
 
-    <div id="scherm-spel" class="scherm">
-      <div id="voortgang">Vraag 1 van 10</div>
-      <div id="land-illustratie-wrap"><img id="land-illustratie" src="" alt=""/></div>
-    </div>
-
     <div id="scherm-klaar" class="scherm">
       <div id="klaar-titel">Klaar!</div>
       <div id="klaar-resultaat"></div>
@@ -197,6 +203,11 @@
       </div>
     </div>
 
+  </div>
+
+  <div id="scherm-spel" class="scherm">
+    <div id="blokkentoren"></div>
+    <div id="land-illustratie-wrap"><img id="land-illustratie" src="" alt=""/></div>
   </div>
 
   <div id="illustratie-achtergrond"></div>
@@ -357,7 +368,7 @@ function shuffle(arr){
 function toonVraag(){
   vraagAfgehandeld = false;
   const correct = vraagLijst[vraagIdx];
-  document.getElementById('voortgang').textContent = 'Vraag '+(vraagIdx+1)+' van '+vraagLijst.length;
+  bouwBlokkentoren();
 
   // 3 foute opties uit dezelfde categorie, nooit de goede zelf
   const anderen = huidigeCategorie.landen.filter(n=>n!==correct);
@@ -376,6 +387,21 @@ function toonVraag(){
     btn.onclick = () => beantwoord(optie, correct, btn);
     grid.appendChild(btn);
   });
+}
+
+// ── Blokkentoren: 10 bouwblokjes links van de illustratie, van onder naar
+// boven ingevuld naarmate er meer vragen zijn afgerond (vraagIdx = aantal
+// al afgeronde vragen). Onderste blok het eerst gevuld. ──
+function bouwBlokkentoren(){
+  const toren = document.getElementById('blokkentoren');
+  toren.innerHTML = '';
+  for(let i=0; i<vraagLijst.length; i++){
+    const blok = document.createElement('img');
+    blok.className = 'blok-img';
+    blok.src = i < vraagIdx ? 'images/blokvol.png' : 'images/blokleeg.png';
+    blok.alt = '';
+    toren.appendChild(blok);
+  }
 }
 
 // Als een illustratie onverhoopt ontbreekt: vervang deze vraag stilletjes
