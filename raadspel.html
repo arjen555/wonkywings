@@ -134,7 +134,7 @@
 <body>
 
 <div id="kader">
-  <button id="menu-knop" onclick="window.location.href='index.html'" aria-label="Menu"></button>
+  <button id="menu-knop" onclick="ganNaarMenu()" aria-label="Menu"></button>
   <div id="werelddeel-waarde">—</div>
   <div id="speler-waarde">—</div>
   <div id="goed-waarde">0 van de 10</div>
@@ -192,6 +192,14 @@ function landNaarBestand(naam) {
 
 const AANTAL_VRAGEN_MAX = 10;
 const NAAM_SLEUTEL = 'wonkywings_spelernaam'; // zelfde sleutel als index.html
+// Zelfde sessionStorage-sleutel als index.html gebruikt: laat weten dat we
+// via de MENU-knop terugkomen (dus niet opnieuw het verplichte naamscherm
+// tonen daar - de naam is hier al bekend en actief gebruikt).
+const VAN_MENU_NAVIGATIE_SLEUTEL = 'wonkywings_van_menu_navigatie';
+function ganNaarMenu(){
+  sessionStorage.setItem(VAN_MENU_NAVIGATIE_SLEUTEL, '1');
+  window.location.href = 'index.html';
+}
 
 let huidigeCategorie = null;
 let vraagLijst = [];       // de landen die deze ronde gevraagd worden

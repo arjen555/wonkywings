@@ -644,7 +644,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.79</div>
+  <div id="versie-label">v0.2.80</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1804,20 +1804,20 @@ function heropenNaamOverlay(){
   const hintEl = document.getElementById('naam-overlay-hint');
 
   // #naam-overlay staat standaard op display:none (zie CSS) - dus geen
-  // flits meer bij het laden. Alleen als er nog geen naam bekend is,
-  // voegen we de 'tonen'-class toe.
-  const alBekend = (localStorage.getItem(SPELERNAAM_SLEUTEL) || '').trim();
-  if(alBekend){
-    // Naam al bekend (bijv. terug via de MENU-knop vanuit raadspel.html, of
-    // een volgend bezoek): meteen door naar het startscherm, niet opnieuw
-    // het verplichte naamscherm tonen. (spelerNaam zelf wordt pas gezet
-    // zodra startSpel() draait - hier nog niet, want die variabele wordt
-    // verderop in het bestand pas gedeclareerd.)
+  // flits meer bij het laden. Het naamscherm verschijnt bij ELKE echte
+  // opening van het spel (ook als er al een naam bekend is) - alleen bij
+  // terugkeer via de MENU-knop vanuit raadspel.html (die een sessievlag
+  // zet, zie daar) slaan we het over.
+  const vanMenuNavigatie = sessionStorage.getItem('wonkywings_van_menu_navigatie');
+  if(vanMenuNavigatie){
+    sessionStorage.removeItem('wonkywings_van_menu_navigatie');
     naamOverlayVerplicht = false;
     document.getElementById('level-lijst').classList.remove('vergrendeld');
   } else {
-    // Nog nooit een naam ingevuld: dit eerste scherm moet leeg starten met
-    // de oplichtende hint.
+    // Altijd leeg starten met de oplichtende hint, ook als er al een naam
+    // bekend is (die blijft uiteraard gewoon bewaard en in gebruik voor
+    // scores etc. - alleen dit invulvak start bij elke opening fris, en
+    // moet ook elke keer opnieuw bevestigd worden).
     input.value = '';
     document.getElementById('naam-overlay').classList.add('tonen');
     document.getElementById('level-lijst').classList.add('vergrendeld');
@@ -1831,7 +1831,7 @@ function heropenNaamOverlay(){
     foutEl.classList.remove('zichtbaar');
     hintEl.classList.add('verborgen');
   });
-  if(!alBekend) input.focus();
+  if(!vanMenuNavigatie) input.focus();
 })();
 
 bouwStartscherm();
