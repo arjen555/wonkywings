@@ -134,13 +134,37 @@
       filter:drop-shadow(0 8px 30px rgba(0,0,0,0.55));
     }
     #naam-banner-img { width:100%; height:100%; display:block; opacity:0.93; }
+    /* Dekt de "VUL HIER JE NAAM IN..." tekst af die al in de afbeelding zelf
+       staat getekend - zonder dit stond onze eigen tekst/placeholder er
+       dwars doorheen (dubbel, wazig). Kleur is gemeten uit de afbeelding. */
+    #naam-overlay-dekvlak {
+      position:absolute; left:22.3%; top:58.2%; width:54.7%; height:16.2%;
+      background:#e2be86; border-radius:6px;
+    }
     #naam-overlay-input {
       position:absolute; left:23.5%; top:59.3%; width:53%; height:13.5%;
       background:transparent; border:none; outline:none;
       color:#3b2a18; font-family:'Baloo 2',sans-serif; font-weight:700;
       font-size:clamp(0.75rem, 1.6vw, 1.25rem); text-align:center;
     }
-    #naam-overlay-input::placeholder { color:rgba(59,42,24,0.45); }
+    /* Onze eigen hint-tekst (i.p.v. de standaard placeholder), die één keer
+       goud oplicht om de aandacht erop te vestigen. Verdwijnt zodra de
+       speler begint te typen (zie JS), of meteen als er al een naam is
+       voorgevuld. */
+    #naam-overlay-hint {
+      position:absolute; left:23.5%; top:59.3%; width:53%; height:13.5%;
+      display:flex; align-items:center; justify-content:center; text-align:center;
+      color:#6b4a20; font-family:'Baloo 2',sans-serif; font-weight:700;
+      font-size:clamp(0.65rem, 1.35vw, 1.05rem); letter-spacing:0.03em;
+      pointer-events:none; transition:opacity 0.3s;
+      animation:naamHintGloed 1.8s ease-out 1;
+    }
+    #naam-overlay-hint.verborgen { opacity:0; }
+    @keyframes naamHintGloed {
+      0%   { color:#6b4a20; text-shadow:none; }
+      30%  { color:#fff3c4; text-shadow:0 0 10px #ffd700, 0 0 22px #ffb700; }
+      100% { color:#6b4a20; text-shadow:none; }
+    }
     #naam-overlay-fout {
       position:absolute; left:23.5%; top:76%; width:53%; text-align:center;
       color:#b03a2a; font-family:'Baloo 2',sans-serif; font-weight:700;
@@ -612,7 +636,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.70</div>
+  <div id="versie-label">v0.2.71</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -634,7 +658,9 @@
   <div id="naam-overlay-zone">
     <div id="naam-banner-wrap">
       <img id="naam-banner-img" src="images/naam-banner.png" alt="Je naam voor eeuwige roem en glorie"/>
-      <input type="text" id="naam-overlay-input" maxlength="20" autocomplete="off" placeholder="Vul hier je naam in..."/>
+      <div id="naam-overlay-dekvlak"></div>
+      <div id="naam-overlay-hint">VUL EERST HIER JE NAAM IN</div>
+      <input type="text" id="naam-overlay-input" maxlength="20" autocomplete="off"/>
       <div id="naam-overlay-fout">Vul eerst je naam in!</div>
     </div>
   </div>
@@ -1720,9 +1746,11 @@ const SPELERNAAM_SLEUTEL = 'wonkywings_spelernaam';
   const overlay = document.getElementById('naam-overlay');
   const input = document.getElementById('naam-overlay-input');
   const foutEl = document.getElementById('naam-overlay-fout');
+  const hintEl = document.getElementById('naam-overlay-hint');
 
   const opgeslagen = localStorage.getItem(SPELERNAAM_SLEUTEL) || '';
   input.value = opgeslagen;
+  if(opgeslagen) hintEl.classList.add('verborgen'); // al een naam bekend: geen hint nodig
 
   function bevestig(){
     const naam = input.value.trim();
@@ -1737,7 +1765,10 @@ const SPELERNAAM_SLEUTEL = 'wonkywings_spelernaam';
   input.addEventListener('keydown', e=>{
     if(e.key==='Enter'){ e.preventDefault(); bevestig(); }
   });
-  input.addEventListener('input', ()=> foutEl.classList.remove('zichtbaar'));
+  input.addEventListener('input', ()=>{
+    foutEl.classList.remove('zichtbaar');
+    hintEl.classList.add('verborgen');
+  });
   // Klikken buiten het invulveld (maar wel binnen de banner-zone) bevestigt ook,
   // zodat je niet per se Enter hoeft te raken.
   overlay.addEventListener('click', (e)=>{
