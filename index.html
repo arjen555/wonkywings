@@ -133,7 +133,7 @@
       position:relative; width:50%; aspect-ratio:800/533;
       filter:drop-shadow(0 8px 30px rgba(0,0,0,0.55));
     }
-    #naam-banner-img { width:100%; height:100%; display:block; opacity:0.93; }
+    #naam-banner-img { width:100%; height:100%; display:block; opacity:0.82; }
     #naam-overlay-input {
       position:absolute; left:23.5%; top:58%; width:53%; height:16%;
       background:transparent; border:none; outline:none;
@@ -159,8 +159,15 @@
       30%  { color:#fff3c4; text-shadow:0 0 10px #ffd700, 0 0 22px #ffb700; }
       100% { color:#6b4a20; text-shadow:none; }
     }
+    #naam-overlay-knop {
+      position:absolute; left:35%; top:75.5%; width:30%; height:6.5%;
+      font-family:'Baloo 2',sans-serif; font-weight:800; font-size:clamp(0.6rem,1.3vw,0.95rem);
+      color:#fff6d8; background:linear-gradient(180deg,#3a6a4a,#1e4a2e);
+      border:1.5px solid rgba(255,215,0,0.55); border-radius:8px; cursor:pointer;
+    }
+    #naam-overlay-knop:hover { filter:brightness(1.15); }
     #naam-overlay-fout {
-      position:absolute; left:23.5%; top:76%; width:53%; text-align:center;
+      position:absolute; left:23.5%; top:84%; width:53%; text-align:center;
       color:#b03a2a; font-family:'Baloo 2',sans-serif; font-weight:700;
       font-size:clamp(0.6rem,1.2vw,0.9rem); opacity:0; transition:opacity 0.2s;
     }
@@ -257,7 +264,8 @@
     }
     .menu-groep-kop:hover { background:rgba(255,255,255,0.13); border-color:rgba(255,215,0,0.35); }
     .menu-groep-kop.open { background:rgba(255,255,255,0.11); border-color:rgba(255,215,0,0.5); }
-    .menu-groep-icoon { font-size:1.1rem; }
+    .menu-groep-icoon { font-size:1.1rem; width:26px; height:26px; flex:none; display:flex; align-items:center; justify-content:center; }
+    .menu-groep-icoon img { width:100%; height:100%; object-fit:contain; display:block; }
     .menu-groep-label { flex:1; font-size:0.8rem; font-weight:800; color:#fff; letter-spacing:0.4px; }
     .menu-groep-pijl { font-size:0.7rem; color:rgba(255,255,255,0.5); transition:transform 0.2s; }
     .menu-groep-kop.open .menu-groep-pijl { transform:rotate(90deg); }
@@ -630,7 +638,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.72</div>
+  <div id="versie-label">v0.2.74</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -645,6 +653,9 @@
     <button id="help-knop" class="startscherm-knop" onclick="openHulp()">
       Zo werkt de besturing
     </button>
+    <button id="verander-naam-knop" class="startscherm-knop" onclick="heropenNaamOverlay()">
+      Verander je naam
+    </button>
   </div>
 </div>
 
@@ -654,6 +665,7 @@
       <img id="naam-banner-img" src="images/naam-banner.png" alt="Je naam voor eeuwige roem en glorie"/>
       <div id="naam-overlay-hint">VUL EERST HIER JE NAAM IN</div>
       <input type="text" id="naam-overlay-input" maxlength="20" autocomplete="off"/>
+      <button id="naam-overlay-knop" onclick="bevestigSpelerNaam()">Doorgaan ▶</button>
       <div id="naam-overlay-fout">Vul eerst je naam in!</div>
     </div>
   </div>
@@ -1040,7 +1052,7 @@ const HOOFDSTEDEN = {
 
 const MENU = [
   {
-    id: 'europa', label: 'Europa', icoon: '🌍', kleur: '#1a6fa8',
+    id: 'europa', label: 'Europa', icoon: '<img src="images/europa-icoon.png" alt="Europa"/>', kleur: '#1a6fa8',
     levels: [
       { id:'eu-alles', naam:'Heel Europa', start:{lon:20, lat:52},
         landen:["Nederland","België","Duitsland","Frankrijk","Verenigd Koninkrijk","Ierland","Luxemburg","Oostenrijk","Zwitserland","Spanje","Portugal","Italië","Griekenland","Zweden","Noorwegen","Denemarken","Finland","IJsland","Estland","Letland","Litouwen","Rusland","Polen","Oekraïne","Tsjechië","Slowakije","Hongarije","Roemenië","Bulgarije","Wit-Rusland","Moldavië","Servië","Kroatië","Bosnië-Herzegovina","Slovenië","Albanië","Noord-Macedonië","Montenegro","Kosovo"],
@@ -1060,7 +1072,7 @@ const MENU = [
     ]
   },
   {
-    id: 'wereld', label: 'Wereld', icoon: '🌐', kleur: '#1a7a4a',
+    id: 'wereld', label: 'Wereld', icoon: '<img src="images/wereld-icoon.png" alt="Wereld"/>', kleur: '#1a7a4a',
     levels: [
       { id:'w-alles', naam:'Alle landen wereld', kort:'Alle landen', start:{lon:0, lat:20},
         landen:["Indonesië","Maleisië","Chili","Bolivia","Peru","Argentinië","Cyprus","India","China","Israël","Palestina","Libanon","Ethiopië","Zuid-Soedan","Somalië","Kenia","Malawi","Tanzania","Syrië","Frankrijk","Suriname","Guyana","Zuid-Korea","Noord-Korea","Marokko","Westelijke Sahara","Costa Rica","Nicaragua","Congo-Brazzaville","Congo-Kinshasa","Bhutan","Oekraïne","Wit-Rusland","Namibië","Zuid-Afrika","Oman","Oezbekistan","Kazachstan","Tadzjikistan","Litouwen","Brazilië","Uruguay","Mongolië","Rusland","Tsjechië","Duitsland","Estland","Letland","Noorwegen","Zweden","Finland","Vietnam","Cambodja","Luxemburg","Verenigde Arabische Emiraten","België","Georgië","Noord-Macedonië","Albanië","Azerbeidzjan","Kosovo","Turkije","Spanje","Laos","Kirgizië","Armenië","Denemarken","Libië","Tunesië","Roemenië","Hongarije","Slowakije","Polen","Ierland","Verenigd Koninkrijk","Griekenland","Zambia","Sierra Leone","Guinee","Liberia","Centraal-Afrikaanse Republiek","Soedan","Djibouti","Eritrea","Oostenrijk","Irak","Italië","Zwitserland","Iran","Nederland","Ivoorkust","Servië","Mali","Senegal","Nigeria","Benin","Angola","Kroatië","Slovenië","Qatar","Saoedi-Arabië","Botswana","Zimbabwe","Pakistan","Bulgarije","Thailand","Haïti","Dominicaanse Republiek","Tsjaad","Koeweit","El Salvador","Guatemala","Oost-Timor","Algerije","Mozambique","Burundi","Rwanda","Myanmar","Bangladesh","Afghanistan","Montenegro","Bosnië-Herzegovina","Oeganda","Cuba","Honduras","Ecuador","Colombia","Paraguay","Portugal","Moldavië","Jordanië","Nepal","Lesotho","Kameroen","Gabon","Niger","Burkina Faso","Togo","Ghana","Guinee-Bissau","Gibraltar","Verenigde Staten","Canada","Mexico","Belize","Panama","Venezuela","Papoea-Nieuw-Guinea","Egypte","Jemen","Mauritanië","Equatoriaal-Guinea","Gambia","Antarctica","Australië","Groenland","Fiji","Nieuw-Zeeland","Madagaskar","Filipijnen","Sri Lanka","Taiwan","Japan","IJsland","Jamaica","Singapore","Bahrein"],
@@ -1089,7 +1101,7 @@ const MENU = [
     ]
   },
   {
-    id: 'hoofdsteden', label: 'Hoofdsteden', icoon: '🏛️', kleur: '#a8781a',
+    id: 'hoofdsteden', label: 'Hoofdsteden', icoon: '<img src="images/hoofdsteden-icoon.png" alt="Hoofdsteden"/>', kleur: '#a8781a',
     levels: [
       { id:'hs-europa', naam:'Europa', start:{lon:20, lat:52},
         landen:["Nederland","België","Duitsland","Frankrijk","Verenigd Koninkrijk","Ierland","Luxemburg","Oostenrijk","Zwitserland","Spanje","Portugal","Italië","Griekenland","Zweden","Noorwegen","Denemarken","Finland","IJsland","Estland","Letland","Litouwen","Rusland","Polen","Oekraïne","Tsjechië","Slowakije","Hongarije","Roemenië","Bulgarije","Wit-Rusland","Moldavië","Servië","Kroatië","Bosnië-Herzegovina","Slovenië","Albanië","Noord-Macedonië","Montenegro","Kosovo"],
@@ -1631,7 +1643,7 @@ function bouwStartscherm() {
   const raadspelEl = document.createElement('div');
   raadspelEl.className = 'menu-groep';
   raadspelEl.innerHTML = `<div class="menu-groep-kop">
-    <span class="menu-groep-icoon">🖼️</span>
+    <span class="menu-groep-icoon"><img src="images/raadspel-icoon.png" alt="Raad het land bij het plaatje"/></span>
     <span class="menu-groep-label">Raad het land bij het plaatje</span>
     <span class="menu-groep-pijl">↗</span>
   </div>`;
@@ -1735,8 +1747,36 @@ document.getElementById('zoek-input').addEventListener('keydown', e=>{
 // is. Dezelfde localStorage-sleutel wordt ook door raadspel.html gebruikt,
 // zodat de naam overal in het spel hetzelfde is (zie de notitie daar ook).
 const SPELERNAAM_SLEUTEL = 'wonkywings_spelernaam';
-(function initNaamOverlay(){
+
+function bevestigSpelerNaam(){
+  const input = document.getElementById('naam-overlay-input');
+  const foutEl = document.getElementById('naam-overlay-fout');
+  const naam = input.value.trim();
+  if(!naam){
+    foutEl.classList.add('zichtbaar');
+    input.focus();
+    return;
+  }
+  localStorage.setItem(SPELERNAAM_SLEUTEL, naam);
+  spelerNaam = naam;
+  document.getElementById('naam-overlay').style.display = 'none';
+}
+
+// Voor de "Verander je naam"-knop onderin het menu: opent de banner opnieuw,
+// nu met de huidige naam al ingevuld (geen hint nodig, dit is geen eerste
+// keer meer).
+function heropenNaamOverlay(){
   const overlay = document.getElementById('naam-overlay');
+  const input = document.getElementById('naam-overlay-input');
+  const hintEl = document.getElementById('naam-overlay-hint');
+  input.value = localStorage.getItem(SPELERNAAM_SLEUTEL) || '';
+  hintEl.classList.add('verborgen');
+  overlay.style.display = 'flex';
+  input.focus();
+  input.select();
+}
+
+(function initNaamOverlay(){
   const input = document.getElementById('naam-overlay-input');
   const foutEl = document.getElementById('naam-overlay-fout');
   const hintEl = document.getElementById('naam-overlay-hint');
@@ -1745,28 +1785,12 @@ const SPELERNAAM_SLEUTEL = 'wonkywings_spelernaam';
   input.value = opgeslagen;
   if(opgeslagen) hintEl.classList.add('verborgen'); // al een naam bekend: geen hint nodig
 
-  function bevestig(){
-    const naam = input.value.trim();
-    if(!naam){
-      foutEl.classList.add('zichtbaar');
-      input.focus();
-      return;
-    }
-    localStorage.setItem(SPELERNAAM_SLEUTEL, naam);
-    overlay.style.display = 'none';
-  }
   input.addEventListener('keydown', e=>{
-    if(e.key==='Enter'){ e.preventDefault(); bevestig(); }
+    if(e.key==='Enter'){ e.preventDefault(); bevestigSpelerNaam(); }
   });
   input.addEventListener('input', ()=>{
     foutEl.classList.remove('zichtbaar');
     hintEl.classList.add('verborgen');
-  });
-  // Klikken buiten het invulveld (maar wel binnen de banner-zone) bevestigt ook,
-  // zodat je niet per se Enter hoeft te raken.
-  overlay.addEventListener('click', (e)=>{
-    if(e.target===input) return;
-    bevestig();
   });
   input.focus();
 })();
