@@ -31,26 +31,25 @@
   /* "MENU", "WERELDDEEL:" en "SPELER:" staan al getekend in de achtergrond-
      afbeelding zelf - hier komt dus alleen de WAARDE overheen, netjes op de
      onderstrepingslijn/het vakje eronder, zonder de labeltekst te herhalen. */
-  #werelddeel-waarde { position:absolute; left:19%; top:14.5%; width:26%; text-align:left; padding-left:2%; font-family:'Baloo 2',sans-serif; font-weight:700; color:#3b2a18; font-size:clamp(0.55rem, 1.15vw, 0.9rem); }
-  #speler-waarde { position:absolute; left:61%; top:14%; width:16%; text-align:center; font-family:'Baloo 2',sans-serif; font-weight:700; color:#3b2a18; font-size:clamp(0.75rem, 1.55vw, 1.2rem); }
+  #werelddeel-waarde { position:absolute; left:22.7%; top:14.5%; width:20%; text-align:left; font-family:'Baloo 2',sans-serif; font-weight:700; color:#3b2a18; font-size:clamp(0.55rem, 1.15vw, 0.9rem); }
+  #speler-waarde { position:absolute; left:65.1%; top:14%; width:20%; text-align:left; font-family:'Baloo 2',sans-serif; font-weight:700; color:#3b2a18; font-size:clamp(0.75rem, 1.55vw, 1.2rem); }
   #goed-waarde {
     position:absolute; left:72.5%; top:12.5%; width:14.5%; height:6.5%;
     display:flex; align-items:center; justify-content:center;
     font-family:'Baloo 2',sans-serif; font-weight:800; color:#ffe9a8;
-    font-size:clamp(0.8rem, 1.7vw, 1.3rem); text-shadow:0 1px 3px rgba(0,0,0,0.6);
+    font-size:clamp(0.9rem, 1.9vw, 1.5rem); text-shadow:0 1px 3px rgba(0,0,0,0.6);
   }
 
-  /* ── Timer: in het midden van de globe rechtsonder (was eerst over het
-     gauge-icoontje linksboven, maar viel daar niet goed op) ── */
+  /* ── Timer: bij de globe rechtsonder ── */
   #timer-vak {
-    position:absolute; left:80%; top:70%; width:13%; height:12%;
+    position:absolute; left:79%; top:69%; width:15%; height:14%;
     display:flex; align-items:center; justify-content:center;
     font-family:'Baloo 2',sans-serif; font-weight:800; color:#ffe9a8;
-    font-size:clamp(0.9rem, 1.6vw, 1.35rem); text-shadow:0 1px 3px rgba(0,0,0,0.7);
+    font-size:clamp(1.05rem, 1.9vw, 1.6rem); text-shadow:0 1px 3px rgba(0,0,0,0.7);
     pointer-events:none;
   }
   #timer-vak.gepauzeerd { color:#ff9b4a; }
-  #pauze-icoon { position:absolute; left:80%; top:63%; width:13%; text-align:center; font-size:clamp(0.7rem,1.4vw,1.1rem); opacity:0; transition:opacity 0.15s; }
+  #pauze-icoon { position:absolute; left:79%; top:62%; width:15%; text-align:center; font-size:clamp(0.7rem,1.4vw,1.1rem); opacity:0; transition:opacity 0.15s; }
   #pauze-icoon.zichtbaar { opacity:1; }
 
   /* ── Perkament-inhoudsvak (voor naam/kies/klaar-schermen) ── */
@@ -110,41 +109,46 @@
     cursor:url('images/vergrootglas.png') 32 32, zoom-in;
   }
   #land-illustratie:hover { box-shadow:0 4px 20px rgba(0,0,0,0.5); }
-  /* Uitvergrote illustratie: los van het perkament, over het hele kader (en de
-     kaderrand) heen. Nogmaals klikken of Escape brengt 'm terug naar normaal. */
+  /* Uitvergrote illustratie: los van het perkament, over het hele kader,
+     de kaderrand én de antwoordbalken heen — vult het scherm van boven naar
+     onder. Nogmaals klikken of Escape brengt 'm terug naar normaal. */
   #illustratie-achtergrond {
     display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55);
-    z-index:999; cursor:zoom-out;
+    z-index:999; cursor:url('images/vergrootglas.png') 32 32, zoom-out;
   }
   #illustratie-achtergrond.actief { display:block; }
   #land-illustratie.uitvergroot {
-    position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
-    max-width:92vw; max-height:92vh; width:auto; height:auto;
-    z-index:1000; cursor:zoom-out; box-shadow:0 10px 50px rgba(0,0,0,0.7);
+    position:fixed; top:0; left:0; width:100vw; height:100vh;
+    max-width:100vw; max-height:100vh; object-fit:contain;
+    z-index:1000; cursor:url('images/vergrootglas.png') 32 32, zoom-out;
+    box-shadow:0 10px 50px rgba(0,0,0,0.7); border-radius:0;
   }
 
   /* ── Antwoordknoppen: los van het perkament, exact over de 4 getekende
      balken in de achtergrondafbeelding (2 boven, 2 onder, links en rechts
-     van het kompas-ornament). Doorzichtig zodat de getekende balk zichtbaar
-     blijft — alleen (grotere, witte) tekst plus een lichte hover/feedback-tint. ── */
+     van het kompas-ornament). Een zachte, halfdoorzichtige tint (altijd
+     zichtbaar, niet alleen bij hover) laat duidelijker zien dat dit de 4
+     te kiezen opties zijn, zonder de getekende balk te overschreeuwen. ── */
   #antwoorden-grid { position:absolute; inset:0; pointer-events:none; display:none; }
   #antwoorden-grid.actief { display:block; }
   .antwoord-btn {
     position:absolute;
     display:flex; align-items:center; justify-content:center;
     font-family:'Baloo 2',sans-serif; font-weight:700; font-size:clamp(0.85rem,1.9vw,1.5rem);
-    color:#ffffff; text-shadow:0 1px 4px rgba(0,0,0,0.75); background:transparent; border:none; border-radius:8px;
+    color:#3b2a18; background:rgba(255,244,214,0.32);
+    box-shadow:inset 0 0 0 1.5px rgba(90,58,26,0.4);
+    border:none; border-radius:8px;
     padding:0 4%; pointer-events:auto;
-    cursor:pointer; transition:background 0.15s, color 0.15s;
+    cursor:pointer; transition:background 0.15s, color 0.15s, box-shadow 0.15s;
   }
   .antwoord-btn.plek-0 { left:20.4%; top:87.4%; width:19.4%; height:3.3%; }
   .antwoord-btn.plek-1 { left:58.5%; top:87.4%; width:19.4%; height:3.3%; }
   .antwoord-btn.plek-2 { left:20.4%; top:93.0%; width:19.4%; height:3.1%; }
   .antwoord-btn.plek-3 { left:58.5%; top:93.0%; width:19.4%; height:3.1%; }
-  .antwoord-btn:hover:not(:disabled) { background:rgba(90,58,26,0.16); }
+  .antwoord-btn:hover:not(:disabled) { background:rgba(255,244,214,0.55); box-shadow:inset 0 0 0 2px rgba(90,58,26,0.6); }
   .antwoord-btn:disabled { cursor:default; }
-  .antwoord-btn.goed { background:rgba(143,199,102,0.55); color:#1e3a0e; }
-  .antwoord-btn.fout { background:rgba(217,105,92,0.55); color:#4a0f08; }
+  .antwoord-btn.goed { background:rgba(143,199,102,0.55); color:#1e3a0e; box-shadow:inset 0 0 0 1.5px rgba(30,58,14,0.5); }
+  .antwoord-btn.fout { background:rgba(217,105,92,0.55); color:#4a0f08; box-shadow:inset 0 0 0 1.5px rgba(74,15,8,0.5); }
 
   /* — Resultaatscherm — */
   #klaar-titel { font-family:'Baloo 2',sans-serif; font-weight:800; color:#3b2a18; font-size:clamp(0.85rem,1.7vw,1.3rem); margin:0 0 1%; text-align:center; }
@@ -219,7 +223,7 @@
 // Let op bij toekomstige aanpassingen aan categorieën in index.html: deze
 // lijst hier moet dan handmatig mee worden bijgewerkt (zie ook de notitie
 // in index.html zelf bij de MENU-definitie).
-const CATEGORIEEN = [{"id":"eu-noord","naam":"Noord-Europa","groep":"Europa","landen":["Zweden","Noorwegen","Denemarken","Finland","IJsland","Estland","Letland","Litouwen","Groenland"]},{"id":"eu-zuid","naam":"Zuid-Europa","groep":"Europa","landen":["Frankrijk","Zwitserland","Oostenrijk","Hongarije","Roemenië","Moldavië","Spanje","Portugal","Italië","Griekenland","Bulgarije","Servië","Kroatië","Bosnië-Herzegovina","Slovenië","Albanië","Noord-Macedonië","Montenegro","Kosovo"]},{"id":"eu-alles","naam":"Heel Europa","groep":"Europa","landen":["Nederland","België","Duitsland","Frankrijk","Verenigd Koninkrijk","Ierland","Luxemburg","Oostenrijk","Zwitserland","Spanje","Portugal","Italië","Griekenland","Zweden","Noorwegen","Denemarken","Finland","IJsland","Estland","Letland","Litouwen","Rusland","Polen","Oekraïne","Tsjechië","Slowakije","Hongarije","Roemenië","Bulgarije","Wit-Rusland","Moldavië","Servië","Kroatië","Bosnië-Herzegovina","Slovenië","Albanië","Noord-Macedonië","Montenegro","Kosovo"]},{"id":"w-alles","naam":"Alle landen","groep":"Wereld","landen":["Indonesië","Maleisië","Chili","Bolivia","Peru","Argentinië","Cyprus","India","China","Israël","Palestina","Libanon","Ethiopië","Zuid-Soedan","Somalië","Kenia","Malawi","Tanzania","Syrië","Frankrijk","Suriname","Guyana","Zuid-Korea","Noord-Korea","Marokko","Westelijke Sahara","Costa Rica","Nicaragua","Congo-Brazzaville","Congo-Kinshasa","Bhutan","Oekraïne","Wit-Rusland","Namibië","Zuid-Afrika","Oman","Oezbekistan","Kazachstan","Tadzjikistan","Litouwen","Brazilië","Uruguay","Mongolië","Rusland","Tsjechië","Duitsland","Estland","Letland","Noorwegen","Zweden","Finland","Vietnam","Cambodja","Luxemburg","Verenigde Arabische Emiraten","België","Georgië","Noord-Macedonië","Albanië","Azerbeidzjan","Kosovo","Turkije","Spanje","Laos","Kirgizië","Armenië","Denemarken","Libië","Tunesië","Roemenië","Hongarije","Slowakije","Polen","Ierland","Verenigd Koninkrijk","Griekenland","Zambia","Sierra Leone","Guinee","Liberia","Centraal-Afrikaanse Republiek","Soedan","Djibouti","Eritrea","Oostenrijk","Irak","Italië","Zwitserland","Iran","Nederland","Ivoorkust","Servië","Mali","Senegal","Nigeria","Benin","Angola","Kroatië","Slovenië","Qatar","Saoedi-Arabië","Botswana","Zimbabwe","Pakistan","Bulgarije","Thailand","Haïti","Dominicaanse Republiek","Tsjaad","Koeweit","El Salvador","Guatemala","Oost-Timor","Algerije","Mozambique","Burundi","Rwanda","Myanmar","Bangladesh","Afghanistan","Montenegro","Bosnië-Herzegovina","Oeganda","Cuba","Honduras","Ecuador","Colombia","Paraguay","Portugal","Moldavië","Jordanië","Nepal","Lesotho","Kameroen","Gabon","Niger","Burkina Faso","Togo","Ghana","Guinee-Bissau","Gibraltar","Verenigde Staten","Canada","Mexico","Belize","Panama","Venezuela","Papoea-Nieuw-Guinea","Egypte","Jemen","Mauritanië","Equatoriaal-Guinea","Gambia","Antarctica","Australië","Groenland","Fiji","Nieuw-Zeeland","Madagaskar","Filipijnen","Sri Lanka","Taiwan","Japan","IJsland","Jamaica","Singapore","Bahrein"]},{"id":"w-makkelijk","naam":"Makkelijke landen","groep":"Wereld","landen":["Frankrijk","Spanje","Nederland","Italië","Duitsland","Verenigd Koninkrijk","Turkije","Verenigde Staten","Canada","Mexico","Brazilië","China","India","Japan","Indonesië","Australië","Zuid-Afrika","Rusland"]},{"id":"w-amerika","naam":"Amerika","groep":"Wereld","landen":["Canada","Verenigde Staten","Mexico","Guatemala","Belize","Honduras","El Salvador","Nicaragua","Costa Rica","Panama","Cuba","Haïti","Dominicaanse Republiek","Jamaica","Colombia","Venezuela","Guyana","Suriname","Frans Guyana","Brazilië","Ecuador","Peru","Bolivia","Chili","Argentinië","Uruguay","Paraguay"]},{"id":"w-zuid-amerika","naam":"Zuid-Amerika","groep":"Wereld","landen":["Colombia","Venezuela","Guyana","Suriname","Frans Guyana","Brazilië","Ecuador","Peru","Bolivia","Chili","Argentinië","Uruguay","Paraguay"]},{"id":"w-azie","naam":"Azië & Oceanië","groep":"Wereld","landen":["Rusland","China","India","Japan","Zuid-Korea","Noord-Korea","Mongolië","Kazachstan","Oezbekistan","Turkmenistan","Kirgizië","Tadzjikistan","Afghanistan","Pakistan","Iran","Irak","Saoedi-Arabië","Jemen","Oman","Verenigde Arabische Emiraten","Qatar","Koeweit","Jordanië","Israël","Libanon","Syrië","Turkije","Azerbeidzjan","Georgië","Armenië","Nepal","Bhutan","Bangladesh","Myanmar","Thailand","Vietnam","Cambodja","Laos","Maleisië","Indonesië","Filipijnen","Taiwan","Singapore","Sri Lanka","Australië","Nieuw-Zeeland","Papoea-Nieuw-Guinea"]},{"id":"w-afrika","naam":"Afrika","groep":"Wereld","landen":["Marokko","Algerije","Tunesië","Libië","Egypte","Mauritanië","Mali","Niger","Tsjaad","Soedan","Ethiopië","Eritrea","Djibouti","Somalië","Kenia","Tanzania","Mozambique","Zimbabwe","Zuid-Afrika","Namibië","Botswana","Angola","Zambia","Malawi","Madagaskar","Congo-Kinshasa","Congo-Brazzaville","Gabon","Kameroen","Nigeria","Centraal-Afrikaanse Republiek","Zuid-Soedan","Oeganda","Rwanda","Burundi","Ghana","Ivoorkust","Senegal","Gambia","Guinee","Sierra Leone","Liberia","Burkina Faso","Benin","Togo","Equatoriaal-Guinea"]},{"id":"w-kleinmaarfijn","naam":"Klein maar fijn","groep":"Wereld","landen":["Tonga","Samoa","Salomonseilanden","Tuvalu","Nauru","Micronesia","Palau","Vanuatu","Nieuw-Caledonië","Frans-Polynesië","Trinidad en Tobago","Grenada","Barbados","Saint Lucia","Dominica","Antigua en Barbuda","Saint Kitts en Nevis","Seychellen","Comoren","Sao Tomé en Principe","Kaapverdië","Mauritius","Maldiven","San Marino","Vaticaanstad","Monaco","Andorra","Liechtenstein","Malta","Faeröer","Brunei","Falklandeilanden"]}];
+const CATEGORIEEN = [{"id":"eu-noord","naam":"Noord-Europa","groep":"Europa","landen":["IJsland","Noorwegen","Zweden","Finland","Estland","Letland","Litouwen","Wit-Rusland","Polen","Tsjechië","Slowakije","Oekraïne","Nederland","Duitsland","Luxemburg","Verenigd Koninkrijk","Ierland","België","Denemarken","Rusland","Groenland"]},{"id":"eu-zuid","naam":"Zuid-Europa","groep":"Europa","landen":["Frankrijk","Zwitserland","Oostenrijk","Hongarije","Roemenië","Moldavië","Spanje","Portugal","Italië","Griekenland","Bulgarije","Servië","Kroatië","Bosnië-Herzegovina","Slovenië","Albanië","Noord-Macedonië","Montenegro","Kosovo"]},{"id":"eu-alles","naam":"Heel Europa","groep":"Europa","landen":["Frankrijk","Zwitserland","Oostenrijk","Hongarije","Roemenië","Moldavië","Spanje","Portugal","Italië","Griekenland","Bulgarije","Servië","Kroatië","Bosnië-Herzegovina","Slovenië","Albanië","Noord-Macedonië","Montenegro","Kosovo","IJsland","Noorwegen","Zweden","Finland","Estland","Letland","Litouwen","Wit-Rusland","Polen","Tsjechië","Slowakije","Oekraïne","Nederland","Duitsland","Luxemburg","Verenigd Koninkrijk","Ierland","België","Denemarken","Rusland","Groenland"]},{"id":"w-alles","naam":"Alle landen","groep":"Wereld","landen":["Indonesië","Maleisië","Chili","Bolivia","Peru","Argentinië","Cyprus","India","China","Israël","Palestina","Libanon","Ethiopië","Zuid-Soedan","Somalië","Kenia","Malawi","Tanzania","Syrië","Frankrijk","Suriname","Guyana","Zuid-Korea","Noord-Korea","Marokko","Westelijke Sahara","Costa Rica","Nicaragua","Congo-Brazzaville","Congo-Kinshasa","Bhutan","Oekraïne","Wit-Rusland","Namibië","Zuid-Afrika","Oman","Oezbekistan","Kazachstan","Tadzjikistan","Litouwen","Brazilië","Uruguay","Mongolië","Rusland","Tsjechië","Duitsland","Estland","Letland","Noorwegen","Zweden","Finland","Vietnam","Cambodja","Luxemburg","Verenigde Arabische Emiraten","België","Georgië","Noord-Macedonië","Albanië","Azerbeidzjan","Kosovo","Turkije","Spanje","Laos","Kirgizië","Armenië","Denemarken","Libië","Tunesië","Roemenië","Hongarije","Slowakije","Polen","Ierland","Verenigd Koninkrijk","Griekenland","Zambia","Sierra Leone","Guinee","Liberia","Centraal-Afrikaanse Republiek","Soedan","Djibouti","Eritrea","Oostenrijk","Irak","Italië","Zwitserland","Iran","Nederland","Ivoorkust","Servië","Mali","Senegal","Nigeria","Benin","Angola","Kroatië","Slovenië","Qatar","Saoedi-Arabië","Botswana","Zimbabwe","Pakistan","Bulgarije","Thailand","Haïti","Dominicaanse Republiek","Tsjaad","Koeweit","El Salvador","Guatemala","Oost-Timor","Algerije","Mozambique","Burundi","Rwanda","Myanmar","Bangladesh","Afghanistan","Montenegro","Bosnië-Herzegovina","Oeganda","Cuba","Honduras","Ecuador","Colombia","Paraguay","Portugal","Moldavië","Jordanië","Nepal","Lesotho","Kameroen","Gabon","Niger","Burkina Faso","Togo","Ghana","Guinee-Bissau","Gibraltar","Verenigde Staten","Canada","Mexico","Belize","Panama","Venezuela","Papoea-Nieuw-Guinea","Egypte","Jemen","Mauritanië","Equatoriaal-Guinea","Gambia","Antarctica","Australië","Groenland","Fiji","Nieuw-Zeeland","Madagaskar","Filipijnen","Sri Lanka","Taiwan","Japan","IJsland","Jamaica","Singapore","Bahrein"]},{"id":"w-makkelijk","naam":"Makkelijke landen","groep":"Wereld","landen":["Frankrijk","Spanje","Nederland","Italië","Duitsland","Verenigd Koninkrijk","Turkije","Verenigde Staten","Canada","Mexico","Brazilië","China","India","Japan","Indonesië","Australië","Zuid-Afrika","Rusland"]},{"id":"w-amerika","naam":"Amerika","groep":"Wereld","landen":["Canada","Verenigde Staten","Mexico","Guatemala","Belize","Honduras","El Salvador","Nicaragua","Costa Rica","Panama","Cuba","Haïti","Dominicaanse Republiek","Jamaica","Colombia","Venezuela","Guyana","Suriname","Frans Guyana","Brazilië","Ecuador","Peru","Bolivia","Chili","Argentinië","Uruguay","Paraguay"]},{"id":"w-zuid-amerika","naam":"Zuid-Amerika","groep":"Wereld","landen":["Colombia","Venezuela","Guyana","Suriname","Frans Guyana","Brazilië","Ecuador","Peru","Bolivia","Chili","Argentinië","Uruguay","Paraguay"]},{"id":"w-azie","naam":"Azië & Oceanië","groep":"Wereld","landen":["Rusland","China","India","Japan","Zuid-Korea","Noord-Korea","Mongolië","Kazachstan","Oezbekistan","Turkmenistan","Kirgizië","Tadzjikistan","Afghanistan","Pakistan","Iran","Irak","Saoedi-Arabië","Jemen","Oman","Verenigde Arabische Emiraten","Qatar","Koeweit","Jordanië","Israël","Libanon","Syrië","Turkije","Azerbeidzjan","Georgië","Armenië","Nepal","Bhutan","Bangladesh","Myanmar","Thailand","Vietnam","Cambodja","Laos","Maleisië","Indonesië","Filipijnen","Taiwan","Singapore","Sri Lanka","Australië","Nieuw-Zeeland","Papoea-Nieuw-Guinea"]},{"id":"w-afrika","naam":"Afrika","groep":"Wereld","landen":["Marokko","Algerije","Tunesië","Libië","Egypte","Mauritanië","Mali","Niger","Tsjaad","Soedan","Ethiopië","Eritrea","Djibouti","Somalië","Kenia","Tanzania","Mozambique","Zimbabwe","Zuid-Afrika","Namibië","Botswana","Angola","Zambia","Malawi","Madagaskar","Congo-Kinshasa","Congo-Brazzaville","Gabon","Kameroen","Nigeria","Centraal-Afrikaanse Republiek","Zuid-Soedan","Oeganda","Rwanda","Burundi","Ghana","Ivoorkust","Senegal","Gambia","Guinee","Sierra Leone","Liberia","Burkina Faso","Benin","Togo","Equatoriaal-Guinea"]},{"id":"w-kleinmaarfijn","naam":"Klein maar fijn","groep":"Wereld","landen":["Tonga","Samoa","Salomonseilanden","Tuvalu","Nauru","Micronesia","Palau","Vanuatu","Nieuw-Caledonië","Frans-Polynesië","Trinidad en Tobago","Grenada","Barbados","Saint Lucia","Dominica","Antigua en Barbuda","Saint Kitts en Nevis","Seychellen","Comoren","Sao Tomé en Principe","Kaapverdië","Mauritius","Maldiven","San Marino","Vaticaanstad","Monaco","Andorra","Liechtenstein","Malta","Faeröer","Brunei","Falklandeilanden"]}];
 
 // Zelfde bestandsnaam-regel als index.html (landNaarBestand): accenten eraf,
 // spaties naar underscore, streepjes blijven staan.
@@ -390,15 +394,15 @@ function toonVraag(){
 }
 
 // ── Blokkentoren: 10 bouwblokjes links van de illustratie, van onder naar
-// boven ingevuld naarmate er meer vragen zijn afgerond (vraagIdx = aantal
-// al afgeronde vragen). Onderste blok het eerst gevuld. ──
+// boven ingevuld naarmate je verder komt (bij vraag 1 is het onderste blok
+// al vol, bij vraag 2 de onderste twee, enz. — vraagIdx is 0-based). ──
 function bouwBlokkentoren(){
   const toren = document.getElementById('blokkentoren');
   toren.innerHTML = '';
   for(let i=0; i<vraagLijst.length; i++){
     const blok = document.createElement('img');
     blok.className = 'blok-img';
-    blok.src = i < vraagIdx ? 'images/blokvol.png' : 'images/blokleeg.png';
+    blok.src = i <= vraagIdx ? 'images/blokvol.png' : 'images/blokleeg.png';
     blok.alt = '';
     toren.appendChild(blok);
   }
