@@ -123,8 +123,9 @@
        rest van het scherm (level-lijst, knoppen) totdat er een naam staat. ── */
     #naam-overlay {
       position:fixed; inset:0; z-index:200;
-      display:flex; align-items:center; justify-content:center;
+      display:none; align-items:center; justify-content:center;
     }
+    #naam-overlay.tonen { display:flex; }
     #naam-overlay-zone {
       position:absolute; left:0; top:0; width:80%; height:100%;
       display:flex; align-items:center; justify-content:center;
@@ -643,7 +644,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.78</div>
+  <div id="versie-label">v0.2.79</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1768,7 +1769,7 @@ function bevestigSpelerNaam(){
   localStorage.setItem(SPELERNAAM_SLEUTEL, naam);
   spelerNaam = naam;
   naamOverlayVerplicht = false; // vanaf nu is er altijd al een geldige naam bekend
-  document.getElementById('naam-overlay').style.display = 'none';
+  document.getElementById('naam-overlay').classList.remove('tonen');
   document.getElementById('level-lijst').classList.remove('vergrendeld');
 }
 // Sluit de banner zonder wijzigingen - alleen toegestaan als er al eerder
@@ -1776,7 +1777,7 @@ function bevestigSpelerNaam(){
 // keer). Gebruikt door zowel Escape als het sluiten via de knop hieronder.
 function annuleerNaamOverlay(){
   if(naamOverlayVerplicht) return;
-  document.getElementById('naam-overlay').style.display = 'none';
+  document.getElementById('naam-overlay').classList.remove('tonen');
   document.getElementById('level-lijst').classList.remove('vergrendeld');
 }
 
@@ -1789,7 +1790,7 @@ function heropenNaamOverlay(){
   const hintEl = document.getElementById('naam-overlay-hint');
   input.value = localStorage.getItem(SPELERNAAM_SLEUTEL) || '';
   hintEl.classList.add('verborgen');
-  overlay.style.display = 'flex';
+  overlay.classList.add('tonen');
   document.getElementById('level-lijst').classList.add('vergrendeld');
   // Even uitstellen: de knop die dit aanroept pikt de focus anders soms
   // net ná onze eigen input.focus() weer terug (browser-eigenaardigheid),
@@ -1802,6 +1803,9 @@ function heropenNaamOverlay(){
   const foutEl = document.getElementById('naam-overlay-fout');
   const hintEl = document.getElementById('naam-overlay-hint');
 
+  // #naam-overlay staat standaard op display:none (zie CSS) - dus geen
+  // flits meer bij het laden. Alleen als er nog geen naam bekend is,
+  // voegen we de 'tonen'-class toe.
   const alBekend = (localStorage.getItem(SPELERNAAM_SLEUTEL) || '').trim();
   if(alBekend){
     // Naam al bekend (bijv. terug via de MENU-knop vanuit raadspel.html, of
@@ -1810,12 +1814,12 @@ function heropenNaamOverlay(){
     // zodra startSpel() draait - hier nog niet, want die variabele wordt
     // verderop in het bestand pas gedeclareerd.)
     naamOverlayVerplicht = false;
-    document.getElementById('naam-overlay').style.display = 'none';
     document.getElementById('level-lijst').classList.remove('vergrendeld');
   } else {
     // Nog nooit een naam ingevuld: dit eerste scherm moet leeg starten met
     // de oplichtende hint.
     input.value = '';
+    document.getElementById('naam-overlay').classList.add('tonen');
     document.getElementById('level-lijst').classList.add('vergrendeld');
   }
 
