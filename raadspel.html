@@ -191,7 +191,7 @@ function landNaarBestand(naam) {
 }
 
 const AANTAL_VRAGEN_MAX = 10;
-const NAAM_SLEUTEL = 'wonkywings_raadspel_naam';
+const NAAM_SLEUTEL = 'wonkywings_spelernaam'; // zelfde sleutel als index.html
 
 let huidigeCategorie = null;
 let vraagLijst = [];       // de landen die deze ronde gevraagd worden
@@ -465,8 +465,15 @@ function terugNaarKiezen(){
 }
 
 // ── Init ──
+// Zelfde naam-sleutel als index.html: als de speler daar al een naam heeft
+// ingevuld (het normale pad), slaan we dit eigen naam-scherm gewoon over.
+// Alleen wie via een directe link hier terechtkomt zonder ooit index.html
+// bezocht te hebben, ziet dit scherm nog als vangnet.
 ladenSpelerNaam();
 bouwKiesScherm();
+if((localStorage.getItem(NAAM_SLEUTEL)||'').trim()){
+  toonScherm('scherm-kies');
+}
 </script>
 
 </body>

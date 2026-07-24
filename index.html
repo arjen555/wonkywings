@@ -116,19 +116,37 @@
       letter-spacing:1.5px; text-transform:uppercase;
       text-align:center; position:relative;
     }
-    #naam-rij {
-      display:flex; flex-direction:column; gap:4px;
-      width:100%; position:relative;
-    }
-    #naam-rij label { color:rgba(255,255,255,0.7); font-size:0.8rem; font-weight:600; letter-spacing:0.5px; }
-    #naam-input {
-      background:rgba(255,255,255,0.1); border:2px solid rgba(255,255,255,0.2);
-      color:#fff; font-size:0.82rem; padding:6px 12px; border-radius:10px;
-      outline:none; width:100%;
-    }
-    #naam-input::placeholder { color:rgba(255,255,255,0.35); }
-    #naam-input:focus { border-color:rgba(255,215,0,0.6); background:rgba(255,255,255,0.15); }
     #level-lijst { display:flex; flex-direction:column; gap:6px; width:100%; position:relative; }
+
+    /* ── Naam-overlay: verplicht in te vullen, bovenop de Timbo-afbeelding
+       links op het startscherm (50% van die afbeelding breed). Blokkeert de
+       rest van het scherm (level-lijst, knoppen) totdat er een naam staat. ── */
+    #naam-overlay {
+      position:fixed; inset:0; z-index:200;
+      display:flex; align-items:center; justify-content:center;
+    }
+    #naam-overlay-zone {
+      position:absolute; left:0; top:0; width:80%; height:100%;
+      display:flex; align-items:center; justify-content:center;
+    }
+    #naam-banner-wrap {
+      position:relative; width:50%; aspect-ratio:800/533;
+      filter:drop-shadow(0 8px 30px rgba(0,0,0,0.55));
+    }
+    #naam-banner-img { width:100%; height:100%; display:block; opacity:0.93; }
+    #naam-overlay-input {
+      position:absolute; left:23.5%; top:59.3%; width:53%; height:13.5%;
+      background:transparent; border:none; outline:none;
+      color:#3b2a18; font-family:'Baloo 2',sans-serif; font-weight:700;
+      font-size:clamp(0.75rem, 1.6vw, 1.25rem); text-align:center;
+    }
+    #naam-overlay-input::placeholder { color:rgba(59,42,24,0.45); }
+    #naam-overlay-fout {
+      position:absolute; left:23.5%; top:76%; width:53%; text-align:center;
+      color:#b03a2a; font-family:'Baloo 2',sans-serif; font-weight:700;
+      font-size:clamp(0.6rem,1.2vw,0.9rem); opacity:0; transition:opacity 0.2s;
+    }
+    #naam-overlay-fout.zichtbaar { opacity:1; }
 
     /* Help-knop styling now shared via .startscherm-knop */
 
@@ -594,17 +612,13 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.69</div>
+  <div id="versie-label">v0.2.70</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
   <div id="start-rechts">
     <img id="start-titel-logo" src="images/Ohmooiewereld.png" alt="Oh mooie wereld!"/>
     <div id="start-subtitel">✈ Vliegenderwijs topografie leren ✈</div>
-    <div id="naam-rij">
-      <label for="naam-input">Jouw naam:</label>
-      <input id="naam-input" type="text" placeholder="Vul je naam in..." maxlength="20" autocomplete="off"/>
-    </div>
     <div id="level-lijst"></div>
     <button id="illustraties-knop" class="startscherm-knop" onclick="zetIllustratiesAan(!illustratiesAan); illustratiesKnopBijwerken();">
       <span>Dichtbij vliegend zie je afbeeldingen</span>
@@ -613,6 +627,16 @@
     <button id="help-knop" class="startscherm-knop" onclick="openHulp()">
       Zo werkt de besturing
     </button>
+  </div>
+</div>
+
+<div id="naam-overlay">
+  <div id="naam-overlay-zone">
+    <div id="naam-banner-wrap">
+      <img id="naam-banner-img" src="images/naam-banner.png" alt="Je naam voor eeuwige roem en glorie"/>
+      <input type="text" id="naam-overlay-input" maxlength="20" autocomplete="off" placeholder="Vul hier je naam in..."/>
+      <div id="naam-overlay-fout">Vul eerst je naam in!</div>
+    </div>
   </div>
 </div>
 
@@ -1688,6 +1712,41 @@ document.getElementById('zoek-input').addEventListener('keydown', e=>{
   if(e.key==='Enter'){ e.preventDefault(); zoekEnVlieg(); }
 });
 
+// ── Naam-overlay: verplicht in te vullen vóórdat het startscherm bruikbaar
+// is. Dezelfde localStorage-sleutel wordt ook door raadspel.html gebruikt,
+// zodat de naam overal in het spel hetzelfde is (zie de notitie daar ook).
+const SPELERNAAM_SLEUTEL = 'wonkywings_spelernaam';
+(function initNaamOverlay(){
+  const overlay = document.getElementById('naam-overlay');
+  const input = document.getElementById('naam-overlay-input');
+  const foutEl = document.getElementById('naam-overlay-fout');
+
+  const opgeslagen = localStorage.getItem(SPELERNAAM_SLEUTEL) || '';
+  input.value = opgeslagen;
+
+  function bevestig(){
+    const naam = input.value.trim();
+    if(!naam){
+      foutEl.classList.add('zichtbaar');
+      input.focus();
+      return;
+    }
+    localStorage.setItem(SPELERNAAM_SLEUTEL, naam);
+    overlay.style.display = 'none';
+  }
+  input.addEventListener('keydown', e=>{
+    if(e.key==='Enter'){ e.preventDefault(); bevestig(); }
+  });
+  input.addEventListener('input', ()=> foutEl.classList.remove('zichtbaar'));
+  // Klikken buiten het invulveld (maar wel binnen de banner-zone) bevestigt ook,
+  // zodat je niet per se Enter hoeft te raken.
+  overlay.addEventListener('click', (e)=>{
+    if(e.target===input) return;
+    bevestig();
+  });
+  input.focus();
+})();
+
 bouwStartscherm();
 illustratiesKnopBijwerken();
 
@@ -2002,7 +2061,7 @@ function zetOpdrachtTekst(){
   }
 }
 function startSpel(levelId, modus) {
-  spelerNaam = document.getElementById('naam-input').value.trim() || 'Speler';
+  spelerNaam = localStorage.getItem(SPELERNAAM_SLEUTEL) || 'Speler';
   huidigLevel = levelId; huidigModus = modus; score = 0;
   wachten = false; // vangnet: als een vorig level per ongeluk 'wachten' aan liet staan
                     // (bijv. bij het afronden van het allerlaatste land), mag dat een
