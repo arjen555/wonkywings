@@ -103,7 +103,7 @@
 
   /* — Spelscherm — */
   #land-illustratie-kolom { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:0; min-height:0; height:100%; }
-  #plek-naam-label { display:none; font-family:'Baloo 2',sans-serif; font-weight:800; color:#3b2a18; font-size:clamp(0.85rem,1.9vw,1.4rem); text-align:center; margin-bottom:1.5%; text-shadow:0 1px 2px rgba(255,255,255,0.4); }
+  #plek-naam-label { display:none; font-family:'Baloo 2',sans-serif; font-weight:800; color:#3b2a18; font-size:clamp(0.85rem,1.9vw,1.4rem); text-align:center; margin-top:3%; margin-bottom:1.5%; text-shadow:0 1px 2px rgba(255,255,255,0.4); }
   #land-illustratie-wrap { flex:1; display:flex; align-items:center; justify-content:center; min-width:0; min-height:0; width:100%; }
   #land-illustratie {
     max-width:96%; max-height:100%; object-fit:contain; border-radius:10px;
@@ -219,9 +219,15 @@
     </div>
   </div>
 
-  <div id="illustratie-achtergrond"></div>
   <div id="antwoorden-grid"></div>
 </div>
+
+<!-- Buiten #kader geplaatst (niet erbinnen): #kader heeft een drop-shadow-
+     filter, en zo'n filter zorgt er in CSS voor dat 'position:fixed'
+     kinderen daar ineens NIET meer relatief aan het hele scherm gepositioneerd
+     worden, maar aan #kader zelf - met een scheefgetrokken/naar-rechts-
+     geschoven uitvergroting tot gevolg. Buiten #kader plaatsen lost dat op. -->
+<div id="illustratie-achtergrond"></div>
 
 <script>
 // ── Categorieën: exacte kopie van de landenlijsten uit index.html (MENU).
@@ -306,18 +312,26 @@ function toonScherm(id){
 }
 
 // ── Landillustratie uitvergroten: klik erop om 'm groot over het hele
-// kader heen te tonen, nogmaals klikken (op de illustratie of de
-// verduisterde achtergrond) of Escape brengt 'm terug naar normaal. ──
+// scherm heen te tonen, nogmaals klikken (op de illustratie of de
+// verduisterde achtergrond) of Escape brengt 'm terug naar normaal.
+// De illustratie zelf verhuist tijdelijk naar <body>, buiten #kader: zolang
+// hij binnen #kader bleef, werd 'position:fixed' door #kader's eigen
+// drop-shadow-filter opeens relatief aan #kader in plaats van aan het hele
+// scherm - vandaar dat de uitvergroting eerder scheef/naar rechts geschoven
+// stond in plaats van gecentreerd. ──
 const ILLUSTRATIE_EL = document.getElementById('land-illustratie');
+const ILLUSTRATIE_WRAP_EL = document.getElementById('land-illustratie-wrap');
 const ILLUSTRATIE_ACHTERGROND_EL = document.getElementById('illustratie-achtergrond');
 function toonUitvergroting(){
   if(!ILLUSTRATIE_EL.src) return; // niets te tonen zolang er nog geen illustratie geladen is
+  document.body.appendChild(ILLUSTRATIE_EL);
   ILLUSTRATIE_EL.classList.add('uitvergroot');
   ILLUSTRATIE_ACHTERGROND_EL.classList.add('actief');
 }
 function sluitUitvergroting(){
   ILLUSTRATIE_EL.classList.remove('uitvergroot');
   ILLUSTRATIE_ACHTERGROND_EL.classList.remove('actief');
+  ILLUSTRATIE_WRAP_EL.appendChild(ILLUSTRATIE_EL); // terug naar zijn normale plek in het perkament
 }
 ILLUSTRATIE_EL.addEventListener('click', () => {
   if(ILLUSTRATIE_EL.classList.contains('uitvergroot')) sluitUitvergroting();
