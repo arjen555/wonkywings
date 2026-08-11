@@ -639,9 +639,11 @@
        alsof je langzaam uitzoomt vanaf één detail. */
     #plek-venster {
       /* z-index boven #hud-top (20) zodat het venster nooit meer achter de
-         km/tijd-kaart wegvalt; top staat ruim genoeg om die kaart altijd
-         vrij te laten, ook op een kleiner laptopscherm. */
-      position:fixed; right:clamp(10px,2vmin,22px); top:clamp(108px,16vmin,182px); z-index:21;
+         km/tijd-kaart wegvalt. De top-waarde hieronder is alleen een
+         fallback voor de allereerste tekening - zodra het spel draait,
+         zet positioneerPlekVenster() 'm exact onder de km/tijd-kaart,
+         hoe groot of klein die kaart ook is op dit scherm. */
+      position:fixed; right:clamp(10px,2vmin,22px); top:182px; z-index:21;
       width:clamp(240px, 36vmin, 456px); display:none; pointer-events:none;
     }
     #plek-kijkgat {
@@ -654,7 +656,7 @@
          groot kan zien zodra hij volledig is uitgezoomd. */
       pointer-events:auto; cursor:pointer;
     }
-    #plek-kijkgat.plek-klaar-voor-groot { cursor:zoom-in; }
+    #plek-kijkgat.plek-klaar-voor-groot { cursor: url('images/vergrootglas.png') 16 16, zoom-in; }
     #plek-afbeelding {
       position:absolute; left:0; top:0; transform-origin:0 0;
       /* breedte/hoogte en transform worden per frame door de JS gezet */
@@ -693,7 +695,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.94</div>
+  <div id="versie-label">v0.2.95</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2198,11 +2200,25 @@ function startPlekOnthulling(plek){
   img.style.visibility = 'hidden';
   img.src = 'images/plekken/' + plek.bestand + '.jpg';
   venster.style.display = 'block';
+  positioneerPlekVenster();
   plekOnthullingStart = performance.now();
   plekOnthullingActief = true;
   plekOnthullingVast = null;
   tekenPlekOnthulling();
 }
+
+// Plakt het onthullingsvenster altijd ONDER de km/tijd-kaart (#score-box),
+// hoe groot die kaart ook is op dit scherm - in plaats van een vaste
+// afstand die op een kleiner beeldscherm alsnog kon overlappen.
+function positioneerPlekVenster(){
+  const venster = document.getElementById('plek-venster');
+  const scoreBox = document.getElementById('score-box');
+  if(!venster || !scoreBox) return;
+  const marge = 14;
+  const r = scoreBox.getBoundingClientRect();
+  venster.style.top = Math.round(r.bottom + marge) + 'px';
+}
+window.addEventListener('resize', positioneerPlekVenster);
 
 // Bevriezen zodra het vlaggetje valt (verder uitzoomen zou verklappen)
 function bevriesPlekOnthulling(){
