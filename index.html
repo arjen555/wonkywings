@@ -670,8 +670,8 @@
       text-shadow:0 2px 8px rgba(0,0,0,0.8); min-height:1.2em;
     }
     /* Kalibratiestand: kijkgat groter en klikbaar, met dradenkruis */
-    #plek-venster.kalibreren { width:min(70vmin,70vh); pointer-events:auto; }
-    #plek-venster.kalibreren #plek-kijkgat { cursor:crosshair; border-color:#ffd700; }
+    /* Kalibratiestand (L-toets) is verwijderd; het kijkgat toont nu altijd
+       de normale grootte. */
     /* ── Grootweergave: klik/tik/LB op een volledig uitgezoomde plek-foto ── */
     #plek-groot-overlay {
       position:fixed; inset:0; z-index:80; display:none;
@@ -778,7 +778,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.96</div>
+  <div id="versie-label">v0.2.97</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1320,14 +1320,13 @@ const PLEKKEN = [
 const PLEKKEN_MAP = {};
 for(const p of PLEKKEN) PLEKKEN_MAP[p.naam] = p;
 
-// ── Kalibratie van de uitzoom-onthulling ──────────────────────────────
+// ── Instelling van de uitzoom-onthulling ──────────────────────────────
 // De illustratie begint ingezoomd op één detail en zoomt langzaam uit naar
 // de hele plaat. Per plek leggen we vast WAAR hij begint:
 //   x, y  - het startpunt als fractie van de afbeelding (0..1, 0.5/0.5 = midden)
-//   zoom  - hoe ver ingezoomd hij begint (4 = 4x vergroot, dus een klein detail)
+//   zoom  - hoe ver ingezoomd hij begint (6 = 6x vergroot, dus een klein detail)
 // Plekken die hier niet in staan, beginnen midden op de plaat met STANDAARD_ZOOM.
-// Arjen kalibreert in-game met de L-toets en levert de tabel periodiek los aan.
-const PLEK_ONTHULLING_STANDAARD = { x:0.5, y:0.5, zoom:4 };
+const PLEK_ONTHULLING_STANDAARD = { x:0.5, y:0.5, zoom:6 };
 const PLEK_ONTHULLING_SECONDEN = 12; // in hoeveel seconden zoomt hij helemaal uit
 const PLEK_ONTHULLING = {
 };
@@ -1406,10 +1405,8 @@ const MENU = [
     ]
   },
   {
-    // Zolang images/plekken-icoon.png er nog niet is, valt het icoon netjes
-    // terug op een emoji in plaats van een gebroken-plaatje-icoontje.
-    id: 'plekken', label: 'Plekken', kleur: '#2a7d5f',
-    icoon: '<img src="images/plekken-icoon.png" alt="Plekken" onerror="this.replaceWith(document.createTextNode(\'🗺️\'))"/>',
+    id: 'plekken', label: 'Iconische plekken', kleur: '#2a7d5f',
+    icoon: '<img src="images/plekken-icoon.png" alt="Iconische plekken" onerror="this.replaceWith(document.createTextNode(\'🗺️\'))"/>',
     levels: [
       { id:'pl-wereld', naam:'Iconische plekken', start:{lon:10, lat:30},
         landen:PLEKKEN.map(p=>p.naam),
@@ -2229,8 +2226,12 @@ let plekOnthullingStart = 0;      // performance.now() bij het begin van de onth
 let plekOnthullingActief = false; // loopt de uitzoom nu?
 let plekOnthullingVast = null;    // niet-null = bevroren op deze voortgang (0..1)
 let huidigePlek = null;           // het PLEKKEN-object van de huidige vraag
-let plekKalibratieActief = false; // staat de L-kalibratie aan?
-let plekKalibratieData = {};      // wat Arjen tijdens het kalibreren verzamelt
+// Kalibratie (L-toets) is verwijderd - stopPlekKalibratie() blijft als lege,
+// veilige functie staan omdat die her en der (levelstart, nieuw land) nog
+// wordt aangeroepen als opschoonstap.
+function stopPlekKalibratie(){
+  document.getElementById('plek-onderschrift').textContent = '';
+}
 
 function isPlekkenLevel(){
   return !!(LEVELS[huidigLevel] && LEVELS[huidigLevel].plekken);
@@ -2504,7 +2505,6 @@ function tekenPlekOnthulling(){
 let plekGrootWeergaveActief = false;
 function togglePlekGroot(){
   if(!isPlekkenLevel() || !huidigePlek) return;
-  if(plekKalibratieActief) return; // in kalibratiestand doet klikken iets anders
   if(!plekGrootWeergaveActief && plekOnthullingVoortgang() < 1) return;
   plekGrootWeergaveActief = !plekGrootWeergaveActief;
   const overlay = document.getElementById('plek-groot-overlay');
@@ -2515,76 +2515,8 @@ function togglePlekGroot(){
     overlay.style.display = 'none';
   }
 }
-document.getElementById('plek-kijkgat').addEventListener('click', ()=>{
-  if(plekKalibratieActief) return; // calibratie heeft zijn eigen click-listener hieronder
-  togglePlekGroot();
-});
+document.getElementById('plek-kijkgat').addEventListener('click', togglePlekGroot);
 
-// ── Kalibratiestand (L-toets) ────────────────────────────────────────
-// Klik in het kijkgat = startpunt, scrollen = startzoom, Enter = volgende
-// plek. Aan het eind krijg je één blok dat je in PLEK_ONTHULLING plakt.
-function startPlekKalibratie(){
-  if(!isPlekkenLevel() || !huidigePlek) return;
-  plekKalibratieActief = true;
-  plekOnthullingActief = false;
-  plekOnthullingVast = 0; // volledig ingezoomd tonen zodat je het detail ziet
-  document.getElementById('plek-venster').classList.add('kalibreren');
-  const inst = plekOnthullingInstelling(huidigePlek);
-  plekKalibratieData[huidigePlek.bestand] =
-    plekKalibratieData[huidigePlek.bestand] || { x:inst.x, y:inst.y, zoom:inst.zoom };
-  toonPlekKalibratieHulp();
-  tekenPlekOnthulling();
-}
-function stopPlekKalibratie(){
-  plekKalibratieActief = false;
-  document.getElementById('plek-venster').classList.remove('kalibreren');
-  document.getElementById('plek-onderschrift').textContent = '';
-}
-function toonPlekKalibratieHulp(){
-  const d = plekKalibratieData[huidigePlek.bestand];
-  document.getElementById('plek-onderschrift').textContent =
-    huidigePlek.naam + ' — klik = startpunt · scroll = zoom (' + d.zoom.toFixed(1) + 'x) · L = tabel';
-}
-// De kalibratie-instelling wint tijdens het kalibreren van de vaste tabel
-const _origPlekInst = plekOnthullingInstelling;
-plekOnthullingInstelling = function(plek){
-  if(plekKalibratieActief && plek && plekKalibratieData[plek.bestand]){
-    return plekKalibratieData[plek.bestand];
-  }
-  return _origPlekInst(plek);
-};
-function plekKalibratieTabel(){
-  const regels = Object.keys(plekKalibratieData).sort().map(k=>{
-    const d = plekKalibratieData[k];
-    return '  "' + k + '": { x:' + d.x.toFixed(3) + ', y:' + d.y.toFixed(3) +
-           ', zoom:' + d.zoom.toFixed(1) + ' },';
-  });
-  return 'const PLEK_ONTHULLING = {\n' + regels.join('\n') + '\n};';
-}
-document.getElementById('plek-kijkgat').addEventListener('click', e=>{
-  if(!plekKalibratieActief || !huidigePlek) return;
-  const img = document.getElementById('plek-afbeelding');
-  const r = e.currentTarget.getBoundingClientRect();
-  const klikX = e.clientX - r.left, klikY = e.clientY - r.top;
-  // Van kijkgat-coördinaat terug naar een fractie van de afbeelding zelf
-  const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\)/.exec(img.style.transform || '');
-  const offX = m ? parseFloat(m[1]) : 0, offY = m ? parseFloat(m[2]) : 0;
-  const bw = parseFloat(img.style.width) || img.naturalWidth;
-  const bh = parseFloat(img.style.height) || img.naturalHeight;
-  const d = plekKalibratieData[huidigePlek.bestand];
-  d.x = Math.max(0, Math.min(1, (klikX - offX) / bw));
-  d.y = Math.max(0, Math.min(1, (klikY - offY) / bh));
-  toonPlekKalibratieHulp();
-  tekenPlekOnthulling();
-});
-document.getElementById('plek-kijkgat').addEventListener('wheel', e=>{
-  if(!plekKalibratieActief || !huidigePlek) return;
-  e.preventDefault();
-  const d = plekKalibratieData[huidigePlek.bestand];
-  d.zoom = Math.max(1.2, Math.min(12, d.zoom * (e.deltaY < 0 ? 1.1 : 1/1.1)));
-  toonPlekKalibratieHulp();
-  tekenPlekOnthulling();
-}, {passive:false});
 // ── Zoekbalk (verkenningsmodus): eigen, eenvoudige vlucht-animatie, los van
 // het vluchtActief-systeem hierboven (dat zit vol quiz-scorelogica die hier
 // niet van toepassing is). Hergebruikt wel dezelfde slerp/lonLatTo3D-wiskunde.
@@ -2857,12 +2789,15 @@ function startSpel(levelId, modus) {
     plekkenScore = 0;
     plekkenResultaten = [];
     zetPlekScorebordCijfer();
-    positioneerPlekScorebord();
   }
+  // Vorige-ronde-schermen altijd verbergen bij een nieuwe start - anders
+  // kan bijvoorbeeld het eindoverzicht van een vorig potje blijven staan.
+  document.getElementById('plekken-eind-overlay').style.display = 'none';
+  document.getElementById('plek-uitslag-overlay').style.display = 'none';
+  if(plekUitslagTimer){ clearTimeout(plekUitslagTimer); plekUitslagTimer=null; }
   // Plekken-modus: het onthullingsvenster neemt de rol van de landillustratie
   // over, dus de illustraties op de bol blijven uit.
   verbergPlekVenster();
-  plekKalibratieData = {};
   stopPlekKalibratie();
   // Hoofdsteden-modus: landenafbeeldingen altijd uit (de hoofdstad-stip is nu het
   // enige visuele aanknopingspunt). Dit raakt alleen deze speelsessie, niet de
@@ -2907,6 +2842,14 @@ function startSpel(levelId, modus) {
 
   document.getElementById('startscherm').style.display='none';
   document.getElementById('spelscherm').style.display='block';
+  if(isPlekken){
+    // Pas nú het scherm echt zichtbaar is (en de badges dus hun echte
+    // afmetingen hebben) de vaste posities opnieuw berekenen - eerder
+    // deed getBoundingClientRect() dat op een nog verborgen (display:none)
+    // scherm, en kwam er dus 0x0 uit, met een overlappend scorebordje tot gevolg.
+    positioneerPlekScorebord();
+    positioneerPlekVenster();
+  }
 
   // Intro-glow: alleen voor geografische levels (niet Water Wonder)
   const doIntro = spelLanden.length > 0 && modus !== 'verkennen';
@@ -6312,20 +6255,6 @@ document.addEventListener('keydown',e=>{
   }
   if(e.key==='Enter'&&spelActief&&huidigModus==='spelen'){
     skipDoorgaan();
-  }
-  // L = kalibratie van de uitzoom-onthulling (alleen in de plekken-modus).
-  // Eerste druk: kalibreren aan. Tweede druk: de verzamelde tabel tonen.
-  if((e.key==='l'||e.key==='L')&&spelActief&&isPlekkenLevel()){
-    if(!plekKalibratieActief){
-      startPlekKalibratie();
-    } else {
-      const tabel = plekKalibratieTabel();
-      console.log(tabel);
-      navigator.clipboard && navigator.clipboard.writeText(tabel);
-      window.prompt('Kalibratietabel (staat ook al op je klembord):', tabel);
-      stopPlekKalibratie();
-      tekenPlekOnthulling();
-    }
   }
 });
 
