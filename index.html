@@ -638,13 +638,13 @@
        vergroot en schuift/krimpt naar zijn volle formaat toe. Zo lijkt het
        alsof je langzaam uitzoomt vanaf één detail. */
     #plek-venster {
-      /* z-index boven #hud-top (20) zodat het venster nooit meer achter de
-         HUD-balk wegvalt. De top-waarde hieronder is alleen een fallback
-         voor de allereerste tekening - zodra het spel draait, zet
-         positioneerPlekVenster() 'm exact onder de HUD-balk bovenin,
-         hoe hoog of laag die balk ook is op dit scherm (bijvoorbeeld
-         zonder de km/tijd-kaart, die bij dit onderdeel verborgen is). */
-      position:fixed; right:clamp(10px,2vmin,22px); top:182px; z-index:21;
+      /* Vaste hoekpositie rechtsboven - bewust GEEN op JS/metingen gebaseerde
+         top meer (dat gaf drift: bij de 2de plek zakte hij soms lager dan bij
+         de 1ste, omdat de HUD-balk waaraan hij gekoppeld was niet altijd op
+         hetzelfde moment al zijn definitieve hoogte had). Simpeler en
+         voorspelbaar: altijd dezelfde afstand vanaf de bovenrand.
+         z-index boven #hud-top (20) zodat hij nooit wegvalt achter de balk. */
+      position:fixed; right:clamp(10px,2vmin,22px); top:clamp(16px,2.6vmin,32px); z-index:21;
       width:clamp(280px, 42vmin, 538px); display:none; pointer-events:none;
     }
     #plek-kijkgat {
@@ -677,7 +677,7 @@
       position:fixed; inset:0; z-index:80; display:none;
       align-items:center; justify-content:center;
       background:rgba(5,10,16,0.86);
-      cursor:zoom-out;
+      cursor: url('images/vergrootglas.png') 16 16, zoom-out;
     }
     #plek-groot-afbeelding {
       max-width:92vw; max-height:88vh; border-radius:14px;
@@ -778,7 +778,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.97</div>
+  <div id="versie-label">v0.2.99</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2345,7 +2345,7 @@ function positioneerPlekScorebord(){
   const badge = document.getElementById('werelddeel-badge');
   if(!bord || !badge) return;
   const r = badge.getBoundingClientRect();
-  const marge = 12;
+  const marge = 6; // de helft van de vorige 12px, zodat het bordje dichter tegen het werelddeel/speler-bord aan schuift
   bord.style.left = Math.round(r.left) + 'px';
   bord.style.top = Math.round(r.bottom + marge) + 'px';
 }
@@ -2410,25 +2410,11 @@ function startPlekOnthulling(plek){
   img.style.visibility = 'hidden';
   img.src = 'images/plekken/' + plek.bestand + '.jpg';
   venster.style.display = 'block';
-  positioneerPlekVenster();
   plekOnthullingStart = performance.now();
   plekOnthullingActief = true;
   plekOnthullingVast = null;
   tekenPlekOnthulling();
 }
-
-// Plakt het onthullingsvenster altijd ONDER de HUD-balk bovenin (#hud-top),
-// hoe hoog die balk ook is op dit scherm - dat past zich vanzelf aan
-// wanneer bijvoorbeeld de km/tijd-kaart daarin verborgen is (Plekken-modus).
-function positioneerPlekVenster(){
-  const venster = document.getElementById('plek-venster');
-  const hud = document.getElementById('hud-top');
-  if(!venster || !hud) return;
-  const marge = 14;
-  const r = hud.getBoundingClientRect();
-  venster.style.top = Math.round(r.bottom + marge) + 'px';
-}
-window.addEventListener('resize', positioneerPlekVenster);
 
 // Bevriezen zodra het vlaggetje valt (verder uitzoomen zou verklappen)
 function bevriesPlekOnthulling(){
@@ -2843,12 +2829,13 @@ function startSpel(levelId, modus) {
   document.getElementById('startscherm').style.display='none';
   document.getElementById('spelscherm').style.display='block';
   if(isPlekken){
-    // Pas nú het scherm echt zichtbaar is (en de badges dus hun echte
-    // afmetingen hebben) de vaste posities opnieuw berekenen - eerder
+    // Pas nú het scherm echt zichtbaar is (en de badge dus zijn echte
+    // afmetingen heeft) de scorebord-positie opnieuw berekenen - eerder
     // deed getBoundingClientRect() dat op een nog verborgen (display:none)
     // scherm, en kwam er dus 0x0 uit, met een overlappend scorebordje tot gevolg.
+    // De iconische foto zelf staat op een vaste CSS-positie (zie #plek-venster)
+    // en heeft deze herberekening niet nodig.
     positioneerPlekScorebord();
-    positioneerPlekVenster();
   }
 
   // Intro-glow: alleen voor geografische levels (niet Water Wonder)
@@ -6252,6 +6239,12 @@ document.addEventListener('keydown',e=>{
   }
   if((e.key==='j'||e.key==='J')&&spelActief&&huidigModus==='spelen'){
     gebruikJoker();
+  }
+  // Vanaf het Plekken-eindoverzicht gaat Enter direct terug naar het menu,
+  // net als de knop 'Terug naar het menu' zelf.
+  if(e.key==='Enter' && document.getElementById('plekken-eind-overlay').style.display==='flex'){
+    naarStart();
+    return;
   }
   if(e.key==='Enter'&&spelActief&&huidigModus==='spelen'){
     skipDoorgaan();
