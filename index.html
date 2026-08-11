@@ -639,12 +639,13 @@
        alsof je langzaam uitzoomt vanaf één detail. */
     #plek-venster {
       /* z-index boven #hud-top (20) zodat het venster nooit meer achter de
-         km/tijd-kaart wegvalt. De top-waarde hieronder is alleen een
-         fallback voor de allereerste tekening - zodra het spel draait,
-         zet positioneerPlekVenster() 'm exact onder de km/tijd-kaart,
-         hoe groot of klein die kaart ook is op dit scherm. */
+         HUD-balk wegvalt. De top-waarde hieronder is alleen een fallback
+         voor de allereerste tekening - zodra het spel draait, zet
+         positioneerPlekVenster() 'm exact onder de HUD-balk bovenin,
+         hoe hoog of laag die balk ook is op dit scherm (bijvoorbeeld
+         zonder de km/tijd-kaart, die bij dit onderdeel verborgen is). */
       position:fixed; right:clamp(10px,2vmin,22px); top:182px; z-index:21;
-      width:clamp(240px, 36vmin, 456px); display:none; pointer-events:none;
+      width:clamp(280px, 42vmin, 538px); display:none; pointer-events:none;
     }
     #plek-kijkgat {
       position:relative; width:100%; aspect-ratio:1/1; overflow:hidden;
@@ -683,6 +684,88 @@
       box-shadow:0 12px 60px rgba(0,0,0,0.7);
       border:4px solid rgba(198,143,70,0.85);
     }
+
+    /* ── Score-bordje voor Plekken (vervangt het km/tijd-scorebord) ── */
+    #plek-scorebord {
+      position:fixed; left:clamp(10px,2vmin,24px); top:120px; z-index:21;
+      width:clamp(220px, 26vw, 460px); display:none; pointer-events:none;
+    }
+    #plek-scorebord-img { width:100%; height:auto; display:block; }
+    #plek-scorebord-cijfer {
+      position:absolute; left:63%; top:50%; transform:translate(-50%,-50%);
+      font-family:'Baloo 2',sans-serif; font-weight:800; color:#2a1508;
+      font-size:clamp(1.1rem,2.6vmin,1.9rem);
+    }
+
+    /* ── Opbouwschermpje per plek ── */
+    #plek-uitslag-overlay {
+      position:fixed; inset:0; z-index:70; display:none;
+      align-items:center; justify-content:center;
+      background:rgba(5,10,16,0.72);
+    }
+    #plek-uitslag-kaart {
+      width:min(420px,88vw); background:rgba(20,28,20,0.95);
+      border:3px solid rgba(198,143,70,0.9); border-radius:16px;
+      box-shadow:0 14px 50px rgba(0,0,0,0.7);
+      padding:22px 26px; font-family:'Baloo 2',sans-serif;
+    }
+    #plek-uitslag-naam {
+      color:#ffe9a8; font-size:1.35rem; font-weight:800; text-align:center;
+      margin-bottom:14px; text-shadow:0 2px 6px rgba(0,0,0,0.6);
+    }
+    .plek-uitslag-rij {
+      display:flex; justify-content:space-between; align-items:center;
+      font-size:1.05rem; color:#f2e6c8; padding:5px 2px;
+    }
+    .plek-uitslag-label { opacity:0.9; }
+    .plek-uitslag-punten { font-weight:800; color:#ffd700; }
+    .plek-uitslag-streep { border-top:2px dashed rgba(198,143,70,0.6); margin:8px 0; }
+    .plek-uitslag-totaal-rij { font-size:1.3rem; }
+    .plek-uitslag-totaal-rij .plek-uitslag-label { color:#ffe9a8; font-weight:800; }
+    .plek-uitslag-totaal-rij .plek-uitslag-punten { color:#ffd700; font-size:1.4rem; }
+    #plek-uitslag-verder {
+      margin-top:16px; text-align:center; font-size:0.78rem;
+      color:rgba(242,230,200,0.65);
+    }
+
+    /* ── Eindoverzicht na de 10de plek ── */
+    #plekken-eind-overlay {
+      position:fixed; inset:0; z-index:71; display:none;
+      align-items:center; justify-content:center;
+      background:rgba(5,10,16,0.82);
+    }
+    #plekken-eind-kaart {
+      width:min(620px,92vw); max-height:86vh; overflow-y:auto;
+      background:rgba(20,28,20,0.96);
+      border:3px solid rgba(198,143,70,0.9); border-radius:16px;
+      box-shadow:0 14px 50px rgba(0,0,0,0.7);
+      padding:24px 28px; font-family:'Baloo 2',sans-serif;
+    }
+    #plekken-eind-titel {
+      color:#ffe9a8; font-size:1.5rem; font-weight:800; text-align:center;
+      margin-bottom:16px; text-shadow:0 2px 6px rgba(0,0,0,0.6);
+    }
+    .plekken-eind-rij {
+      display:grid; grid-template-columns:2fr 0.8fr 0.9fr 0.9fr 0.9fr;
+      gap:6px; padding:6px 4px; font-size:0.92rem; color:#f2e6c8;
+      border-bottom:1px solid rgba(198,143,70,0.25);
+    }
+    .plekken-eind-koprij {
+      font-weight:800; color:#ffe9a8; border-bottom:2px solid rgba(198,143,70,0.7);
+    }
+    .pe-naam { text-align:left; }
+    .pe-deel, .pe-totaal { text-align:right; font-weight:700; }
+    .pe-totaal { color:#ffd700; }
+    #plekken-eind-totaal {
+      margin-top:16px; text-align:center; font-size:1.35rem; font-weight:800;
+      color:#ffd700; text-shadow:0 2px 6px rgba(0,0,0,0.6);
+    }
+    #plekken-eind-verder {
+      display:block; margin:18px auto 0; padding:10px 22px;
+      font-family:'Baloo 2',sans-serif; font-weight:800; font-size:1rem;
+      color:#2a1508; background:linear-gradient(#ffe9a8,#e0b455);
+      border:2px solid rgba(120,80,20,0.6); border-radius:10px; cursor:pointer;
+    }
   </style>
 </head>
 <body>
@@ -695,7 +778,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.95</div>
+  <div id="versie-label">v0.2.96</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -993,6 +1076,37 @@
        op dezelfde manier. -->
   <div id="plek-groot-overlay" onclick="togglePlekGroot()">
     <img id="plek-groot-afbeelding" src="" alt=""/>
+  </div>
+
+  <!-- Eigen 'Score:'-bordje voor Plekken (in plaats van het km/tijd-scorebord),
+       onder het werelddeel/speler-bord linksboven - zie positioneerPlekScorebord(). -->
+  <div id="plek-scorebord">
+    <img id="plek-scorebord-img" src="images/score.png" alt="Score"/>
+    <span id="plek-scorebord-cijfer">0</span>
+  </div>
+
+  <!-- Opbouwschermpje na elke correctievlucht: laat zien hoe de punten voor
+       déze ene plek tot stand kwamen (land / afstand / snelheid). -->
+  <div id="plek-uitslag-overlay">
+    <div id="plek-uitslag-kaart">
+      <div id="plek-uitslag-naam"></div>
+      <div class="plek-uitslag-rij"><span class="plek-uitslag-label">✅ Juiste land</span><span class="plek-uitslag-punten" id="pu-land"></span></div>
+      <div class="plek-uitslag-rij"><span class="plek-uitslag-label">📍 Afstand</span><span class="plek-uitslag-punten" id="pu-afstand"></span></div>
+      <div class="plek-uitslag-rij"><span class="plek-uitslag-label">⏱️ Snelheid</span><span class="plek-uitslag-punten" id="pu-snelheid"></span></div>
+      <div class="plek-uitslag-streep"></div>
+      <div class="plek-uitslag-rij plek-uitslag-totaal-rij"><span class="plek-uitslag-label">Totaal</span><span class="plek-uitslag-punten" id="pu-totaal"></span></div>
+      <div id="plek-uitslag-verder">Enter, X (gamepad) of dubbeltik om verder te gaan</div>
+    </div>
+  </div>
+
+  <!-- Eindoverzicht na de 10de plek: alle puntenopbouw bij elkaar. -->
+  <div id="plekken-eind-overlay">
+    <div id="plekken-eind-kaart">
+      <div id="plekken-eind-titel">Iconische plekken - eindresultaat</div>
+      <div id="plekken-eind-tabel"></div>
+      <div id="plekken-eind-totaal"></div>
+      <button id="plekken-eind-verder" onclick="naarStart()">Terug naar het menu ▶</button>
+    </div>
   </div>
 </div>
 
@@ -2092,6 +2206,11 @@ let vluchtActief=false, vluchtStartTijd=0, vluchtDuur=0;
 let hoofdstedenGoed=0, hoofdstedenTotaal=0;
 let vluchtIsHoofdstad=false, vluchtIsGoed=false, vluchtHoofdstadNaam='', vluchtGevallenLandNaam='';
 let vluchtIsPlek=false; // true tijdens de correctievlucht na een Plekken-antwoord (zie dropVlaggetje)
+// Tussentijdse opslag van de uitkomst van dropVlaggetje() voor de puntentelling,
+// die pas ná de correctievlucht wordt berekend en getoond (zie vluchtIsPlek hierboven).
+let plekLaatsteKm=0, plekLaatsteJuisteLand=false, plekLaatsteSec=0, plekLaatstePunten=null;
+// Lopende score en puntenopbouw-tabel voor het huidige Plekken-onderdeel.
+let plekkenScore=0, plekkenResultaten=[];
 let hoofdstedenRevealLand=null; // welk land z'n hoofdstad moet gloeien (na het droppen van het vlaggetje)
 let correctieLabelDubbel=null; // {hoofdstad, land} - zet het correctie-label in dual-tekst-modus
 let vluchtStartVec=null, vluchtEindVec=null, vluchtEindLon=0, vluchtEindLat=0;
@@ -2167,6 +2286,96 @@ function kiesPlekBericht(km, juisteLand){
   return lijst[Math.floor(Math.random()*lijst.length)];
 }
 
+// ── Puntentelling Iconische plekken ────────────────────────────────────
+// Per plek maximaal 1000 punten, opgebouwd uit drie onderdelen:
+//  - Juiste land geraden:  400 punten (alles-of-niets)
+//  - Afstand tot de plek:  300 punten bij 0 km, lineair naar 0 bij 3000+ km
+//  - Snelheid van droppen: 300 punten bij 0 sec, lineair naar 0 bij 30+ sec
+//    (geteld vanaf het moment dat de onthulling start - wie er vroeg,
+//    ingezoomd op een detail, al uit is, wordt beloond voor dat risico)
+const PLEK_PUNTEN_LAND = 400;
+const PLEK_PUNTEN_AFSTAND_MAX = 300;
+const PLEK_PUNTEN_AFSTAND_NULPUNT_KM = 3000;
+const PLEK_PUNTEN_SNELHEID_MAX = 300;
+const PLEK_PUNTEN_SNELHEID_NULPUNT_SEC = 30;
+function berekenPlekPunten(km, juisteLand, seconden){
+  const land = juisteLand ? PLEK_PUNTEN_LAND : 0;
+  const afstandFactor = Math.max(0, 1 - km / PLEK_PUNTEN_AFSTAND_NULPUNT_KM);
+  const afstand = Math.round(afstandFactor * PLEK_PUNTEN_AFSTAND_MAX);
+  const snelheidFactor = Math.max(0, 1 - seconden / PLEK_PUNTEN_SNELHEID_NULPUNT_SEC);
+  const snelheid = Math.round(snelheidFactor * PLEK_PUNTEN_SNELHEID_MAX);
+  return { land, afstand, snelheid, totaal: land + afstand + snelheid };
+}
+
+// Hoe lang het opbouwschermpje per plek in beeld blijft voor 'ie vanzelf
+// doorschakelt (kan altijd eerder met Enter/X/dubbeltik, net als elders).
+const PLEK_UITSLAG_MS = 6000;
+let plekUitslagTimer = null;
+function toonPlekUitslag(naam, punten){
+  document.getElementById('plek-uitslag-naam').textContent = naam;
+  document.getElementById('pu-land').textContent = '+'+punten.land;
+  document.getElementById('pu-afstand').textContent = '+'+punten.afstand;
+  document.getElementById('pu-snelheid').textContent = '+'+punten.snelheid;
+  document.getElementById('pu-totaal').textContent = punten.totaal;
+  document.getElementById('plek-uitslag-overlay').style.display = 'flex';
+  clearTimeout(plekUitslagTimer);
+  plekUitslagTimer = setTimeout(sluitPlekUitslag, PLEK_UITSLAG_MS);
+}
+function sluitPlekUitslag(){
+  clearTimeout(plekUitslagTimer); plekUitslagTimer = null;
+  document.getElementById('plek-uitslag-overlay').style.display = 'none';
+  // Pas nú, terwijl het spel weer gaat lopen, telt dit bedrag mee bij de
+  // lopende score linksboven - niet al tijdens het opbouwschermpje zelf.
+  if(plekLaatstePunten){
+    plekkenScore += plekLaatstePunten.totaal;
+    zetPlekScorebordCijfer();
+    plekLaatstePunten = null;
+  }
+  nieuwLand();
+}
+function zetPlekScorebordCijfer(){
+  const el = document.getElementById('plek-scorebord-cijfer');
+  if(el) el.textContent = plekkenScore;
+}
+// Plakt het 'Score:'-bordje altijd onder het werelddeel/speler-bord
+// linksboven, hoe groot dat bord ook is op dit scherm.
+function positioneerPlekScorebord(){
+  const bord = document.getElementById('plek-scorebord');
+  const badge = document.getElementById('werelddeel-badge');
+  if(!bord || !badge) return;
+  const r = badge.getBoundingClientRect();
+  const marge = 12;
+  bord.style.left = Math.round(r.left) + 'px';
+  bord.style.top = Math.round(r.bottom + marge) + 'px';
+}
+window.addEventListener('resize', positioneerPlekScorebord);
+
+// Bouwt het eindoverzicht na de 10de plek: per plek de puntenopbouw, en
+// onderaan de eindscore.
+function toonPlekkenEindoverzicht(){
+  let rijenHtml = '';
+  for(const r of plekkenResultaten){
+    rijenHtml += '<div class="plekken-eind-rij">'
+      + '<span class="pe-naam">'+r.naam+'</span>'
+      + '<span class="pe-deel">'+r.land+'</span>'
+      + '<span class="pe-deel">'+r.afstand+'</span>'
+      + '<span class="pe-deel">'+r.snelheid+'</span>'
+      + '<span class="pe-totaal">'+r.totaal+'</span>'
+      + '</div>';
+  }
+  document.getElementById('plekken-eind-tabel').innerHTML =
+      '<div class="plekken-eind-rij plekken-eind-koprij">'
+      + '<span class="pe-naam">Plek</span>'
+      + '<span class="pe-deel">Land</span>'
+      + '<span class="pe-deel">Afstand</span>'
+      + '<span class="pe-deel">Snelheid</span>'
+      + '<span class="pe-totaal">Totaal</span>'
+      + '</div>' + rijenHtml;
+  document.getElementById('plekken-eind-totaal').textContent =
+      'Eindscore: ' + plekkenScore + ' / ' + (plekkenResultaten.length * 1000);
+  document.getElementById('plekken-eind-overlay').style.display = 'flex';
+}
+
 // Afstand tot een plek: bij meerdere punten telt het dichtstbijzijnde punt,
 // zodat elk stuk van een uitgestrekte plek als 'raak' meetelt.
 function afstandTotPlek(lon, lat, plek){
@@ -2207,15 +2416,15 @@ function startPlekOnthulling(plek){
   tekenPlekOnthulling();
 }
 
-// Plakt het onthullingsvenster altijd ONDER de km/tijd-kaart (#score-box),
-// hoe groot die kaart ook is op dit scherm - in plaats van een vaste
-// afstand die op een kleiner beeldscherm alsnog kon overlappen.
+// Plakt het onthullingsvenster altijd ONDER de HUD-balk bovenin (#hud-top),
+// hoe hoog die balk ook is op dit scherm - dat past zich vanzelf aan
+// wanneer bijvoorbeeld de km/tijd-kaart daarin verborgen is (Plekken-modus).
 function positioneerPlekVenster(){
   const venster = document.getElementById('plek-venster');
-  const scoreBox = document.getElementById('score-box');
-  if(!venster || !scoreBox) return;
+  const hud = document.getElementById('hud-top');
+  if(!venster || !hud) return;
   const marge = 14;
-  const r = scoreBox.getBoundingClientRect();
+  const r = hud.getBoundingClientRect();
   venster.style.top = Math.round(r.bottom + marge) + 'px';
 }
 window.addEventListener('resize', positioneerPlekVenster);
@@ -2639,9 +2848,17 @@ function startSpel(levelId, modus) {
   hoofdstedenGoed=0; hoofdstedenTotaal=0;
   const isHoofdsteden = !!lv.hoofdsteden;
   const isPlekken = !!lv.plekken;
-  document.getElementById('scorebord-wrap').style.display = isHoofdsteden ? 'none' : '';
+  document.getElementById('scorebord-wrap').style.display = (isHoofdsteden||isPlekken) ? 'none' : '';
   document.getElementById('hoofdsteden-teller').style.display = isHoofdsteden ? 'block' : 'none';
+  document.getElementById('plek-scorebord').style.display = isPlekken ? 'block' : 'none';
   if(isHoofdsteden) updateHoofdstedenTeller();
+  if(isPlekken){
+    // Eigen puntentelling voor dit onderdeel: bij elke nieuwe start weer bij 0.
+    plekkenScore = 0;
+    plekkenResultaten = [];
+    zetPlekScorebordCijfer();
+    positioneerPlekScorebord();
+  }
   // Plekken-modus: het onthullingsvenster neemt de rol van de landillustratie
   // over, dus de illustraties op de bol blijven uit.
   verbergPlekVenster();
@@ -2964,6 +3181,8 @@ function skipDoorgaan(){
   if(goedAutoTimer){
     clearTimeout(goedAutoTimer); goedAutoTimer=null;
     nieuwLand();
+  } else if(plekUitslagTimer){
+    sluitPlekUitslag();
   } else if(misserAutoTimer && correctieLand){
     clearTimeout(misserAutoTimer); misserAutoTimer=null;
     stopMisserCountdown();
@@ -3104,6 +3323,10 @@ function nieuwLand(){
     if(LEVELS[huidigLevel] && LEVELS[huidigLevel].hoofdsteden){
       // Hoofdsteden-modus: geen km-highscore, gewoon een rustig goed/totaal-scherm
       toonHoofdstedenResultaat(hoofdstedenGoed, hoofdstedenTotaal);
+    } else if(LEVELS[huidigLevel] && LEVELS[huidigLevel].plekken){
+      // Plekken-modus: eigen puntentelling, dus een eigen eindoverzicht in
+      // plaats van de km-gebaseerde highscore-lijst van de andere modi.
+      toonPlekkenEindoverzicht();
     } else if(huidigModus==='spelen' && !(LEVELS[huidigLevel] && LEVELS[huidigLevel].geenScorebord)){
       const {nieuweRun} = opslaanScore(huidigLevel, spelerNaam, score, laatsteLevelTijd);
       toonFeedback('🏆 Klaar! ('+laatsteLevelTijd+' sec)','#ffd700');
@@ -5636,18 +5859,20 @@ function updateSpel(){
         startMisserCountdown();
         misserAutoTimer=setTimeout(nieuwLand,MISSER_AUTO_MS);
       } else if(vluchtIsPlek){
-        // Plekken-modus: de feedbackzin en de km-punten zijn al bij het
-        // droppen getoond (zie dropVlaggetje). Hier alleen het 'wachten tot
-        // de volgende plek'-ritme starten - geen tweede feedbacktekst, geen
-        // rood/oranje 'fout'-kleur, en geen land om te laten oplichten
-        // (dat mechanisme is voor de Landen-modus, niet voor punten op de kaart).
+        // Plekken-modus: geen tweede feedbacktekst en geen land om te laten
+        // oplichten (dat mechanisme is voor de Landen-modus). In plaats
+        // daarvan tonen we hier het opbouwschermpje met de puntentelling
+        // voor déze ene plek; de score-teller linksboven telt pas mee
+        // zodra dat schermpje weer dichtgaat (zie sluitPlekUitslag).
         vluchtIsPlek=false;
-        score=vluchtScoreNa;
-        document.getElementById('score').textContent=score;
-        updateScorebordCijfers();
         correctieLand=null;
-        startMisserCountdown();
-        misserAutoTimer=setTimeout(nieuwLand,MISSER_AUTO_MS);
+        const punten = berekenPlekPunten(plekLaatsteKm, plekLaatsteJuisteLand, plekLaatsteSec);
+        plekLaatstePunten = punten;
+        plekkenResultaten.push({
+          naam: huidigePlek ? huidigePlek.naam : huidigLand,
+          land: punten.land, afstand: punten.afstand, snelheid: punten.snelheid, totaal: punten.totaal
+        });
+        toonPlekUitslag(huidigePlek ? huidigePlek.naam : huidigLand, punten);
       } else {
         score=vluchtScoreNa;
         document.getElementById('score').textContent=score;
@@ -5957,6 +6182,7 @@ function dropVlaggetje(){
   if(wachten||!spelActief||huidigModus!=='spelen'||hulpActief) return;
   const wx=W*(0.5+wonkySchermX);
   const wy=focusSy-90;
+  const dropTijdstip = performance.now(); // voor de snelheidsbonus bij Plekken: exact moment van droppen
   dropAnimatieActief=true;
   dropAnimatieTimer=performance.now();
   dropVlag(wx,wy,focusSx,focusSy);
@@ -5971,16 +6197,17 @@ function dropVlaggetje(){
       if(!plek){ wachten=false; return; }
       const uit = afstandTotPlek(dropLon, dropLat, plek);
       const km = Math.round(uit.km);
-      score += km;
-      document.getElementById('score').textContent = score;
-      zetKmCijfers(score);
-      toonPunten(km);
       // Land waar het vlaggetje viel, vergeleken met het vaste land van
       // de plek (zie toelichting bij PLEKKEN hierboven).
       const landOpDrop = getLandOpPunt(dropLon, dropLat);
       const naamOpDrop = landOpDrop ? (landOpDrop.properties.dutch||landOpDrop.properties.name) : null;
       const juisteLand = !!(naamOpDrop && naamOpDrop === plek.land);
       const raak = juisteLand && km <= 250;
+      // Bewaren voor de puntenopbouw, die pas ná de correctievlucht wordt
+      // getoond (zie de vluchtIsPlek-tak hieronder in de animatielus).
+      plekLaatsteKm = km;
+      plekLaatsteJuisteLand = juisteLand;
+      plekLaatsteSec = Math.max(0, (dropTijdstip - plekOnthullingStart) / 1000);
       toonFeedback(kiesPlekBericht(km, juisteLand), juisteLand ? '#ffd700' : '#ffe9a8');
       toonReactie(raak ? 'blij' : (juisteLand ? 'blij' : (km<=500 ? 'blij' : 'sad')));
       toonPlekVolledig(plek.naam);
@@ -5996,7 +6223,9 @@ function dropVlaggetje(){
         vluchtStartVec=lonLatTo3D(dropLon,dropLat);
         vluchtEindLon=uit.punt[0]; vluchtEindLat=uit.punt[1];
         vluchtEindVec=lonLatTo3D(vluchtEindLon,vluchtEindLat);
-        vluchtScoreVoor=score-km;
+        // Plekken gebruikt een eigen puntentelling (zie berekenPlekPunten),
+        // los van de km-gebaseerde 'score'-variabele van de andere modi.
+        vluchtScoreVoor=score;
         vluchtScoreNa=score;
         vluchtAfwijkingKm=km;
         vluchtDoelLand=null;
