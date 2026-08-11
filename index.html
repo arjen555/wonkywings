@@ -673,7 +673,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.92</div>
+  <div id="versie-label">v0.2.93</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1099,7 +1099,7 @@ const HOOFDSTEDEN = {
 //
 //   naam    - wat er op het scherm komt te staan na het antwoord
 //   lon/lat - het doelpunt
-//   bestand - de illustratie in images/plekken/ (zonder .png)
+//   bestand - de illustratie in images/plekken/ (zonder .jpg)
 //   punten  - OPTIONEEL. Voor uitgestrekte plekken (het Great Barrier Reef
 //             is 2.300 km lang) een reeks punten; er wordt dan gemeten naar
 //             het DICHTSTBIJZIJNDE punt, zodat elk stuk rif goed rekent.
@@ -2087,7 +2087,7 @@ function startPlekOnthulling(plek){
   };
   img.onload = () => { img.style.visibility = 'visible'; tekenPlekOnthulling(); };
   img.style.visibility = 'hidden';
-  img.src = 'images/plekken/' + plek.bestand + '.png';
+  img.src = 'images/plekken/' + plek.bestand + '.jpg';
   venster.style.display = 'block';
   plekOnthullingStart = performance.now();
   plekOnthullingActief = true;
