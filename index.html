@@ -693,7 +693,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.93</div>
+  <div id="versie-label">v0.2.94</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2089,6 +2089,7 @@ let vluchtActief=false, vluchtStartTijd=0, vluchtDuur=0;
 // ── Hoofdsteden-modus: geen km-score/highscore, wel een goed/totaal-teller ──
 let hoofdstedenGoed=0, hoofdstedenTotaal=0;
 let vluchtIsHoofdstad=false, vluchtIsGoed=false, vluchtHoofdstadNaam='', vluchtGevallenLandNaam='';
+let vluchtIsPlek=false; // true tijdens de correctievlucht na een Plekken-antwoord (zie dropVlaggetje)
 let hoofdstedenRevealLand=null; // welk land z'n hoofdstad moet gloeien (na het droppen van het vlaggetje)
 let correctieLabelDubbel=null; // {hoofdstad, land} - zet het correctie-label in dual-tekst-modus
 let vluchtStartVec=null, vluchtEindVec=null, vluchtEindLon=0, vluchtEindLat=0;
@@ -5618,6 +5619,19 @@ function updateSpel(){
         }
         startMisserCountdown();
         misserAutoTimer=setTimeout(nieuwLand,MISSER_AUTO_MS);
+      } else if(vluchtIsPlek){
+        // Plekken-modus: de feedbackzin en de km-punten zijn al bij het
+        // droppen getoond (zie dropVlaggetje). Hier alleen het 'wachten tot
+        // de volgende plek'-ritme starten - geen tweede feedbacktekst, geen
+        // rood/oranje 'fout'-kleur, en geen land om te laten oplichten
+        // (dat mechanisme is voor de Landen-modus, niet voor punten op de kaart).
+        vluchtIsPlek=false;
+        score=vluchtScoreNa;
+        document.getElementById('score').textContent=score;
+        updateScorebordCijfers();
+        correctieLand=null;
+        startMisserCountdown();
+        misserAutoTimer=setTimeout(nieuwLand,MISSER_AUTO_MS);
       } else {
         score=vluchtScoreNa;
         document.getElementById('score').textContent=score;
@@ -5960,6 +5974,7 @@ function dropVlaggetje(){
       setTimeout(()=>{
         vluchtActief=true;
         vluchtIsHoofdstad=false;
+        vluchtIsPlek=true;
         vluchtStartTijd=performance.now();
         vluchtDuur=Math.max(900, Math.min(3600, km*2.4));
         vluchtStartVec=lonLatTo3D(dropLon,dropLat);
