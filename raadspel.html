@@ -102,7 +102,9 @@
   .kies-scores-btn { background:none; border:none; cursor:pointer; font-size:clamp(0.7rem,1.3vw,1rem); }
 
   /* — Spelscherm — */
-  #land-illustratie-wrap { flex:1; display:flex; align-items:center; justify-content:center; min-width:0; min-height:0; height:100%; }
+  #land-illustratie-kolom { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:0; min-height:0; height:100%; }
+  #plek-naam-label { display:none; font-family:'Baloo 2',sans-serif; font-weight:800; color:#3b2a18; font-size:clamp(0.85rem,1.9vw,1.4rem); text-align:center; margin-bottom:1.5%; text-shadow:0 1px 2px rgba(255,255,255,0.4); }
+  #land-illustratie-wrap { flex:1; display:flex; align-items:center; justify-content:center; min-width:0; min-height:0; width:100%; }
   #land-illustratie {
     max-width:96%; max-height:100%; object-fit:contain; border-radius:10px;
     box-shadow:0 4px 16px rgba(0,0,0,0.35); transition:box-shadow 0.15s;
@@ -138,7 +140,7 @@
     color:#3b2a18; background:rgba(255,244,214,0.32);
     box-shadow:inset 0 0 0 1.5px rgba(90,58,26,0.4);
     border:none; border-radius:8px;
-    padding:0 4%; pointer-events:auto;
+    padding:0 4%; pointer-events:auto; overflow:hidden;
     cursor:pointer; transition:background 0.15s, color 0.15s, box-shadow 0.15s;
   }
   .antwoord-btn.plek-0 { left:20.4%; top:87.4%; width:19.4%; height:3.3%; }
@@ -211,7 +213,10 @@
 
   <div id="scherm-spel" class="scherm">
     <div id="blokkentoren"></div>
-    <div id="land-illustratie-wrap"><img id="land-illustratie" src="" alt=""/></div>
+    <div id="land-illustratie-kolom">
+      <div id="plek-naam-label"></div>
+      <div id="land-illustratie-wrap"><img id="land-illustratie" src="" alt=""/></div>
+    </div>
   </div>
 
   <div id="illustratie-achtergrond"></div>
@@ -223,7 +228,14 @@
 // Let op bij toekomstige aanpassingen aan categorieën in index.html: deze
 // lijst hier moet dan handmatig mee worden bijgewerkt (zie ook de notitie
 // in index.html zelf bij de MENU-definitie).
-const CATEGORIEEN = [{"id":"eu-noord","naam":"Noord-Europa","groep":"Europa","landen":["IJsland","Noorwegen","Zweden","Finland","Estland","Letland","Litouwen","Wit-Rusland","Polen","Tsjechië","Slowakije","Oekraïne","Nederland","Duitsland","Luxemburg","Verenigd Koninkrijk","Ierland","België","Denemarken","Rusland","Groenland"]},{"id":"eu-zuid","naam":"Zuid-Europa","groep":"Europa","landen":["Frankrijk","Zwitserland","Oostenrijk","Hongarije","Roemenië","Moldavië","Spanje","Portugal","Italië","Griekenland","Bulgarije","Servië","Kroatië","Bosnië-Herzegovina","Slovenië","Albanië","Noord-Macedonië","Montenegro","Kosovo"]},{"id":"eu-alles","naam":"Heel Europa","groep":"Europa","landen":["Frankrijk","Zwitserland","Oostenrijk","Hongarije","Roemenië","Moldavië","Spanje","Portugal","Italië","Griekenland","Bulgarije","Servië","Kroatië","Bosnië-Herzegovina","Slovenië","Albanië","Noord-Macedonië","Montenegro","Kosovo","IJsland","Noorwegen","Zweden","Finland","Estland","Letland","Litouwen","Wit-Rusland","Polen","Tsjechië","Slowakije","Oekraïne","Nederland","Duitsland","Luxemburg","Verenigd Koninkrijk","Ierland","België","Denemarken","Rusland","Groenland"]},{"id":"w-alles","naam":"Alle landen","groep":"Wereld","landen":["Indonesië","Maleisië","Chili","Bolivia","Peru","Argentinië","Cyprus","India","China","Israël","Palestina","Libanon","Ethiopië","Zuid-Soedan","Somalië","Kenia","Malawi","Tanzania","Syrië","Frankrijk","Suriname","Guyana","Zuid-Korea","Noord-Korea","Marokko","Westelijke Sahara","Costa Rica","Nicaragua","Congo-Brazzaville","Congo-Kinshasa","Bhutan","Oekraïne","Wit-Rusland","Namibië","Zuid-Afrika","Oman","Oezbekistan","Kazachstan","Tadzjikistan","Litouwen","Brazilië","Uruguay","Mongolië","Rusland","Tsjechië","Duitsland","Estland","Letland","Noorwegen","Zweden","Finland","Vietnam","Cambodja","Luxemburg","Verenigde Arabische Emiraten","België","Georgië","Noord-Macedonië","Albanië","Azerbeidzjan","Kosovo","Turkije","Spanje","Laos","Kirgizië","Armenië","Denemarken","Libië","Tunesië","Roemenië","Hongarije","Slowakije","Polen","Ierland","Verenigd Koninkrijk","Griekenland","Zambia","Sierra Leone","Guinee","Liberia","Centraal-Afrikaanse Republiek","Soedan","Djibouti","Eritrea","Oostenrijk","Irak","Italië","Zwitserland","Iran","Nederland","Ivoorkust","Servië","Mali","Senegal","Nigeria","Benin","Angola","Kroatië","Slovenië","Qatar","Saoedi-Arabië","Botswana","Zimbabwe","Pakistan","Bulgarije","Thailand","Haïti","Dominicaanse Republiek","Tsjaad","Koeweit","El Salvador","Guatemala","Oost-Timor","Algerije","Mozambique","Burundi","Rwanda","Myanmar","Bangladesh","Afghanistan","Montenegro","Bosnië-Herzegovina","Oeganda","Cuba","Honduras","Ecuador","Colombia","Paraguay","Portugal","Moldavië","Jordanië","Nepal","Lesotho","Kameroen","Gabon","Niger","Burkina Faso","Togo","Ghana","Guinee-Bissau","Gibraltar","Verenigde Staten","Canada","Mexico","Belize","Panama","Venezuela","Papoea-Nieuw-Guinea","Egypte","Jemen","Mauritanië","Equatoriaal-Guinea","Gambia","Antarctica","Australië","Groenland","Fiji","Nieuw-Zeeland","Madagaskar","Filipijnen","Sri Lanka","Taiwan","Japan","IJsland","Jamaica","Singapore","Bahrein"]},{"id":"w-makkelijk","naam":"Makkelijke landen","groep":"Wereld","landen":["Frankrijk","Spanje","Nederland","Italië","Duitsland","Verenigd Koninkrijk","Turkije","Verenigde Staten","Canada","Mexico","Brazilië","China","India","Japan","Indonesië","Australië","Zuid-Afrika","Rusland"]},{"id":"w-amerika","naam":"Amerika","groep":"Wereld","landen":["Canada","Verenigde Staten","Mexico","Guatemala","Belize","Honduras","El Salvador","Nicaragua","Costa Rica","Panama","Cuba","Haïti","Dominicaanse Republiek","Jamaica","Colombia","Venezuela","Guyana","Suriname","Frans Guyana","Brazilië","Ecuador","Peru","Bolivia","Chili","Argentinië","Uruguay","Paraguay"]},{"id":"w-zuid-amerika","naam":"Zuid-Amerika","groep":"Wereld","landen":["Colombia","Venezuela","Guyana","Suriname","Frans Guyana","Brazilië","Ecuador","Peru","Bolivia","Chili","Argentinië","Uruguay","Paraguay"]},{"id":"w-azie","naam":"Azië & Oceanië","groep":"Wereld","landen":["Rusland","China","India","Japan","Zuid-Korea","Noord-Korea","Mongolië","Kazachstan","Oezbekistan","Turkmenistan","Kirgizië","Tadzjikistan","Afghanistan","Pakistan","Iran","Irak","Saoedi-Arabië","Jemen","Oman","Verenigde Arabische Emiraten","Qatar","Koeweit","Jordanië","Israël","Libanon","Syrië","Turkije","Azerbeidzjan","Georgië","Armenië","Nepal","Bhutan","Bangladesh","Myanmar","Thailand","Vietnam","Cambodja","Laos","Maleisië","Indonesië","Filipijnen","Taiwan","Singapore","Sri Lanka","Australië","Nieuw-Zeeland","Papoea-Nieuw-Guinea"]},{"id":"w-afrika","naam":"Afrika","groep":"Wereld","landen":["Marokko","Algerije","Tunesië","Libië","Egypte","Mauritanië","Mali","Niger","Tsjaad","Soedan","Ethiopië","Eritrea","Djibouti","Somalië","Kenia","Tanzania","Mozambique","Zimbabwe","Zuid-Afrika","Namibië","Botswana","Angola","Zambia","Malawi","Madagaskar","Congo-Kinshasa","Congo-Brazzaville","Gabon","Kameroen","Nigeria","Centraal-Afrikaanse Republiek","Zuid-Soedan","Oeganda","Rwanda","Burundi","Ghana","Ivoorkust","Senegal","Gambia","Guinee","Sierra Leone","Liberia","Burkina Faso","Benin","Togo","Equatoriaal-Guinea"]},{"id":"w-kleinmaarfijn","naam":"Klein maar fijn","groep":"Wereld","landen":["Tonga","Samoa","Salomonseilanden","Tuvalu","Nauru","Micronesia","Palau","Vanuatu","Nieuw-Caledonië","Frans-Polynesië","Trinidad en Tobago","Grenada","Barbados","Saint Lucia","Dominica","Antigua en Barbuda","Saint Kitts en Nevis","Seychellen","Comoren","Sao Tomé en Principe","Kaapverdië","Mauritius","Maldiven","San Marino","Vaticaanstad","Monaco","Andorra","Liechtenstein","Malta","Faeröer","Brunei","Falklandeilanden"]}];
+// Plekken-data voor de categorie 'Iconische plekken': exacte kopie van de
+// PLEKKEN-array in index.html (naam/bestand/land). Bij toekomstige nieuwe
+// iconische plekken moet deze lijst hier handmatig worden bijgewerkt.
+const PLEKKEN_DATA = [{"naam": "Eiffeltoren", "bestand": "Eiffeltoren", "land": "Frankrijk"}, {"naam": "Colosseum", "bestand": "Colosseum", "land": "Italië"}, {"naam": "Stonehenge", "bestand": "Stonehenge", "land": "Verenigd Koninkrijk"}, {"naam": "Akropolis", "bestand": "Akropolis", "land": "Griekenland"}, {"naam": "Sagrada Família", "bestand": "Sagrada_Familia", "land": "Spanje"}, {"naam": "Scheve toren van Pisa", "bestand": "Toren_van_Pisa", "land": "Italië"}, {"naam": "Geysir", "bestand": "Geysir", "land": "IJsland"}, {"naam": "Geirangerfjord", "bestand": "Geirangerfjord", "land": "Noorwegen"}, {"naam": "Pompeii", "bestand": "Pompeii", "land": "Italië"}, {"naam": "Neuschwanstein", "bestand": "Neuschwanstein", "land": "Duitsland"}, {"naam": "Loch Ness", "bestand": "Loch_Ness", "land": "Verenigd Koninkrijk"}, {"naam": "Tower Bridge", "bestand": "Tower_Bridge", "land": "Verenigd Koninkrijk"}, {"naam": "Kinderdijk", "bestand": "Kinderdijk", "land": "Nederland"}, {"naam": "Atomium", "bestand": "Atomium", "land": "België"}, {"naam": "Efteling", "bestand": "Efteling", "land": "Nederland"}, {"naam": "Disneyland Paris", "bestand": "Disneyland_Paris", "land": "Frankrijk"}, {"naam": "Legoland Billund", "bestand": "Legoland_Billund", "land": "Denemarken"}, {"naam": "Walt Disney World", "bestand": "Walt_Disney_World", "land": "Verenigde Staten"}, {"naam": "Piramides van Gizeh", "bestand": "Piramides_van_Gizeh", "land": "Egypte"}, {"naam": "Victoriawatervallen", "bestand": "Victoriawatervallen", "land": "Zimbabwe"}, {"naam": "Kilimanjaro", "bestand": "Kilimanjaro", "land": "Tanzania"}, {"naam": "Tafelberg", "bestand": "Tafelberg", "land": "Zuid-Afrika"}, {"naam": "Taj Mahal", "bestand": "Taj_Mahal", "land": "India"}, {"naam": "Grote Muur van China", "bestand": "Grote_Muur", "land": "China"}, {"naam": "Mount Everest", "bestand": "Mount_Everest", "land": "Nepal"}, {"naam": "Angkor Wat", "bestand": "Angkor_Wat", "land": "Cambodja"}, {"naam": "Petra", "bestand": "Petra", "land": "Jordanië"}, {"naam": "Fuji", "bestand": "Fuji", "land": "Japan"}, {"naam": "Burj Khalifa", "bestand": "Burj_Khalifa", "land": "Verenigde Arabische Emiraten"}, {"naam": "Terracottaleger", "bestand": "Terracottaleger", "land": "China"}, {"naam": "Plein van de Hemelse Vrede", "bestand": "Plein_van_de_Hemelse_Vrede", "land": "China"}, {"naam": "Kremlin", "bestand": "Kremlin", "land": "Rusland"}, {"naam": "Dode Zee", "bestand": "Dode_Zee", "land": "Jordanië"}, {"naam": "Vrijheidsbeeld", "bestand": "Vrijheidsbeeld", "land": "Verenigde Staten"}, {"naam": "Grand Canyon", "bestand": "Grand_Canyon", "land": "Verenigde Staten"}, {"naam": "Chichén Itzá", "bestand": "Chichen_Itza", "land": "Mexico"}, {"naam": "Niagarawatervallen", "bestand": "Niagarawatervallen", "land": "Canada"}, {"naam": "Golden Gate Bridge", "bestand": "Golden_Gate_Bridge", "land": "Verenigde Staten"}, {"naam": "Mount Rushmore", "bestand": "Mount_Rushmore", "land": "Verenigde Staten"}, {"naam": "Machu Picchu", "bestand": "Machu_Picchu", "land": "Peru"}, {"naam": "Christus de Verlosser", "bestand": "Christus_de_Verlosser", "land": "Brazilië"}, {"naam": "Nazca-lijnen", "bestand": "Nazca-lijnen", "land": "Peru"}, {"naam": "Sydney Opera House", "bestand": "Sydney_Opera_House", "land": "Australië"}, {"naam": "Uluru", "bestand": "Uluru", "land": "Australië"}, {"naam": "Moai (Paaseiland)", "bestand": "Moai_Paaseiland", "land": "Chili"}, {"naam": "Great Barrier Reef", "bestand": "Great_Barrier_Reef", "land": "Australië"}];
+const PLEKKEN_BIJ_NAAM = {};
+for(const p of PLEKKEN_DATA) PLEKKEN_BIJ_NAAM[p.naam] = p;
+
+const CATEGORIEEN = [{"id":"eu-noord","naam":"Noord-Europa","groep":"Europa","landen":["IJsland","Noorwegen","Zweden","Finland","Estland","Letland","Litouwen","Wit-Rusland","Polen","Tsjechië","Slowakije","Oekraïne","Nederland","Duitsland","Luxemburg","Verenigd Koninkrijk","Ierland","België","Denemarken","Rusland","Groenland"]},{"id":"eu-zuid","naam":"Zuid-Europa","groep":"Europa","landen":["Frankrijk","Zwitserland","Oostenrijk","Hongarije","Roemenië","Moldavië","Spanje","Portugal","Italië","Griekenland","Bulgarije","Servië","Kroatië","Bosnië-Herzegovina","Slovenië","Albanië","Noord-Macedonië","Montenegro","Kosovo"]},{"id":"eu-alles","naam":"Heel Europa","groep":"Europa","landen":["Frankrijk","Zwitserland","Oostenrijk","Hongarije","Roemenië","Moldavië","Spanje","Portugal","Italië","Griekenland","Bulgarije","Servië","Kroatië","Bosnië-Herzegovina","Slovenië","Albanië","Noord-Macedonië","Montenegro","Kosovo","IJsland","Noorwegen","Zweden","Finland","Estland","Letland","Litouwen","Wit-Rusland","Polen","Tsjechië","Slowakije","Oekraïne","Nederland","Duitsland","Luxemburg","Verenigd Koninkrijk","Ierland","België","Denemarken","Rusland","Groenland"]},{"id":"w-alles","naam":"Alle landen","groep":"Wereld","landen":["Indonesië","Maleisië","Chili","Bolivia","Peru","Argentinië","Cyprus","India","China","Israël","Palestina","Libanon","Ethiopië","Zuid-Soedan","Somalië","Kenia","Malawi","Tanzania","Syrië","Frankrijk","Suriname","Guyana","Zuid-Korea","Noord-Korea","Marokko","Westelijke Sahara","Costa Rica","Nicaragua","Congo-Brazzaville","Congo-Kinshasa","Bhutan","Oekraïne","Wit-Rusland","Namibië","Zuid-Afrika","Oman","Oezbekistan","Kazachstan","Tadzjikistan","Litouwen","Brazilië","Uruguay","Mongolië","Rusland","Tsjechië","Duitsland","Estland","Letland","Noorwegen","Zweden","Finland","Vietnam","Cambodja","Luxemburg","Verenigde Arabische Emiraten","België","Georgië","Noord-Macedonië","Albanië","Azerbeidzjan","Kosovo","Turkije","Spanje","Laos","Kirgizië","Armenië","Denemarken","Libië","Tunesië","Roemenië","Hongarije","Slowakije","Polen","Ierland","Verenigd Koninkrijk","Griekenland","Zambia","Sierra Leone","Guinee","Liberia","Centraal-Afrikaanse Republiek","Soedan","Djibouti","Eritrea","Oostenrijk","Irak","Italië","Zwitserland","Iran","Nederland","Ivoorkust","Servië","Mali","Senegal","Nigeria","Benin","Angola","Kroatië","Slovenië","Qatar","Saoedi-Arabië","Botswana","Zimbabwe","Pakistan","Bulgarije","Thailand","Haïti","Dominicaanse Republiek","Tsjaad","Koeweit","El Salvador","Guatemala","Oost-Timor","Algerije","Mozambique","Burundi","Rwanda","Myanmar","Bangladesh","Afghanistan","Montenegro","Bosnië-Herzegovina","Oeganda","Cuba","Honduras","Ecuador","Colombia","Paraguay","Portugal","Moldavië","Jordanië","Nepal","Lesotho","Kameroen","Gabon","Niger","Burkina Faso","Togo","Ghana","Guinee-Bissau","Gibraltar","Verenigde Staten","Canada","Mexico","Belize","Panama","Venezuela","Papoea-Nieuw-Guinea","Egypte","Jemen","Mauritanië","Equatoriaal-Guinea","Gambia","Antarctica","Australië","Groenland","Fiji","Nieuw-Zeeland","Madagaskar","Filipijnen","Sri Lanka","Taiwan","Japan","IJsland","Jamaica","Singapore","Bahrein"]},{"id":"w-makkelijk","naam":"Makkelijke landen","groep":"Wereld","landen":["Frankrijk","Spanje","Nederland","Italië","Duitsland","Verenigd Koninkrijk","Turkije","Verenigde Staten","Canada","Mexico","Brazilië","China","India","Japan","Indonesië","Australië","Zuid-Afrika","Rusland"]},{"id":"w-amerika","naam":"Amerika","groep":"Wereld","landen":["Canada","Verenigde Staten","Mexico","Guatemala","Belize","Honduras","El Salvador","Nicaragua","Costa Rica","Panama","Cuba","Haïti","Dominicaanse Republiek","Jamaica","Colombia","Venezuela","Guyana","Suriname","Frans Guyana","Brazilië","Ecuador","Peru","Bolivia","Chili","Argentinië","Uruguay","Paraguay"]},{"id":"w-zuid-amerika","naam":"Zuid-Amerika","groep":"Wereld","landen":["Colombia","Venezuela","Guyana","Suriname","Frans Guyana","Brazilië","Ecuador","Peru","Bolivia","Chili","Argentinië","Uruguay","Paraguay"]},{"id":"w-azie","naam":"Azië & Oceanië","groep":"Wereld","landen":["Rusland","China","India","Japan","Zuid-Korea","Noord-Korea","Mongolië","Kazachstan","Oezbekistan","Turkmenistan","Kirgizië","Tadzjikistan","Afghanistan","Pakistan","Iran","Irak","Saoedi-Arabië","Jemen","Oman","Verenigde Arabische Emiraten","Qatar","Koeweit","Jordanië","Israël","Libanon","Syrië","Turkije","Azerbeidzjan","Georgië","Armenië","Nepal","Bhutan","Bangladesh","Myanmar","Thailand","Vietnam","Cambodja","Laos","Maleisië","Indonesië","Filipijnen","Taiwan","Singapore","Sri Lanka","Australië","Nieuw-Zeeland","Papoea-Nieuw-Guinea"]},{"id":"w-afrika","naam":"Afrika","groep":"Wereld","landen":["Marokko","Algerije","Tunesië","Libië","Egypte","Mauritanië","Mali","Niger","Tsjaad","Soedan","Ethiopië","Eritrea","Djibouti","Somalië","Kenia","Tanzania","Mozambique","Zimbabwe","Zuid-Afrika","Namibië","Botswana","Angola","Zambia","Malawi","Madagaskar","Congo-Kinshasa","Congo-Brazzaville","Gabon","Kameroen","Nigeria","Centraal-Afrikaanse Republiek","Zuid-Soedan","Oeganda","Rwanda","Burundi","Ghana","Ivoorkust","Senegal","Gambia","Guinee","Sierra Leone","Liberia","Burkina Faso","Benin","Togo","Equatoriaal-Guinea"]},{"id":"w-kleinmaarfijn","naam":"Klein maar fijn","groep":"Wereld","landen":["Tonga","Samoa","Salomonseilanden","Tuvalu","Nauru","Micronesia","Palau","Vanuatu","Nieuw-Caledonië","Frans-Polynesië","Trinidad en Tobago","Grenada","Barbados","Saint Lucia","Dominica","Antigua en Barbuda","Saint Kitts en Nevis","Seychellen","Comoren","Sao Tomé en Principe","Kaapverdië","Mauritius","Maldiven","San Marino","Vaticaanstad","Monaco","Andorra","Liechtenstein","Malta","Faeröer","Brunei","Falklandeilanden"]},{"id": "iconische-plekken", "naam": "Iconische plekken", "groep": "Iconische plekken", "landen": ["Eiffeltoren", "Colosseum", "Stonehenge", "Akropolis", "Sagrada Família", "Scheve toren van Pisa", "Geysir", "Geirangerfjord", "Pompeii", "Neuschwanstein", "Loch Ness", "Tower Bridge", "Kinderdijk", "Atomium", "Efteling", "Disneyland Paris", "Legoland Billund", "Walt Disney World", "Piramides van Gizeh", "Victoriawatervallen", "Kilimanjaro", "Tafelberg", "Taj Mahal", "Grote Muur van China", "Mount Everest", "Angkor Wat", "Petra", "Fuji", "Burj Khalifa", "Terracottaleger", "Plein van de Hemelse Vrede", "Kremlin", "Dode Zee", "Vrijheidsbeeld", "Grand Canyon", "Chichén Itzá", "Niagarawatervallen", "Golden Gate Bridge", "Mount Rushmore", "Machu Picchu", "Christus de Verlosser", "Nazca-lijnen", "Sydney Opera House", "Uluru", "Moai (Paaseiland)", "Great Barrier Reef"], "plekken": true}];
 
 // Zelfde bestandsnaam-regel als index.html (landNaarBestand): accenten eraf,
 // spaties naar underscore, streepjes blijven staan.
@@ -320,7 +332,7 @@ document.addEventListener('keydown', e => {
 function bouwKiesScherm(){
   const wrap = document.getElementById('kies-inhoud');
   wrap.innerHTML = '';
-  for(const groepNaam of ['Europa','Wereld']){
+  for(const groepNaam of ['Europa','Wereld','Iconische plekken']){
     const kop = document.createElement('div');
     kop.className = 'kies-groep-kop';
     kop.textContent = groepNaam;
@@ -371,17 +383,43 @@ function shuffle(arr){
 // ── Eén vraag tonen ──
 function toonVraag(){
   vraagAfgehandeld = false;
-  const correct = vraagLijst[vraagIdx];
   bouwBlokkentoren();
 
-  // 3 foute opties uit dezelfde categorie, nooit de goede zelf
-  const anderen = huidigeCategorie.landen.filter(n=>n!==correct);
-  const fouteOpties = shuffle([...anderen]).slice(0, 3);
-  const opties = shuffle([correct, ...fouteOpties]);
-
   const img = document.getElementById('land-illustratie');
-  laadIllustratieMetFallback(correct, img);
+  const plekLabel = document.getElementById('plek-naam-label');
 
+  if(huidigeCategorie.plekken){
+    // Iconische plekken: het plaatje toont een specifieke plek (met naam
+    // erbij als onderschrift), en het antwoord is het LAND waar die plek
+    // ligt - niet de plek zelf. De 3 foute opties zijn andere landen die
+    // ook bij een (andere) iconische plek horen.
+    const plek = PLEKKEN_BIJ_NAAM[vraagLijst[vraagIdx]];
+    const correct = plek.land;
+    plekLabel.textContent = plek.naam;
+    plekLabel.style.display = 'block';
+    img.onerror = null; // deze bestanden horen altijd te bestaan; geen vervang-fallback nodig
+    img.src = 'images/plekken/' + plek.bestand + '.jpg';
+    const anderenLanden = [...new Set(PLEKKEN_DATA.map(p=>p.land))].filter(l=>l!==correct);
+    const fouteOpties = shuffle(anderenLanden).slice(0, 3);
+    bouwAntwoordKnoppen(shuffle([correct, ...fouteOpties]), correct);
+  } else {
+    plekLabel.style.display = 'none';
+    const correct = vraagLijst[vraagIdx];
+    // 3 foute opties uit dezelfde categorie, nooit de goede zelf
+    const anderen = huidigeCategorie.landen.filter(n=>n!==correct);
+    const fouteOpties = shuffle([...anderen]).slice(0, 3);
+    laadIllustratieMetFallback(correct, img);
+    bouwAntwoordKnoppen(shuffle([correct, ...fouteOpties]), correct);
+  }
+}
+
+// Bouwt de 4 antwoordknoppen op hun vaste plek (plek-0 t/m plek-3, exact op
+// de 4 getekende balken in de achtergrondafbeelding) en past per knop de
+// tekstgrootte aan: de balken hebben een vaste hoogte (ze moeten precies op
+// de tekening passen), dus lange namen (bijv. 'Equatoriaal-Guinea',
+// 'Centraal-Afrikaanse Republiek') mogen niet omslaan naar 2 regels - dat
+// liep er zonder deze aanpassing gewoon bovenuit, de illustratie in.
+function bouwAntwoordKnoppen(opties, correct){
   const grid = document.getElementById('antwoorden-grid');
   grid.innerHTML = '';
   opties.forEach((optie, i)=>{
@@ -390,7 +428,18 @@ function toonVraag(){
     btn.textContent = optie;
     btn.onclick = () => beantwoord(optie, correct, btn);
     grid.appendChild(btn);
+    pasKnopTekstAan(btn);
   });
+}
+function pasKnopTekstAan(btn){
+  const basis = 1.5, minimum = 0.55; // rem - basis is dezelfde max-waarde als in de CSS clamp()
+  let grootte = basis;
+  btn.style.whiteSpace = 'nowrap';
+  btn.style.fontSize = grootte + 'rem';
+  while(btn.scrollWidth > btn.clientWidth && grootte > minimum){
+    grootte -= 0.05;
+    btn.style.fontSize = grootte + 'rem';
+  }
 }
 
 // ── Blokkentoren: 10 bouwblokjes links van de illustratie, van onder naar
