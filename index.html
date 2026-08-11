@@ -638,15 +638,23 @@
        vergroot en schuift/krimpt naar zijn volle formaat toe. Zo lijkt het
        alsof je langzaam uitzoomt vanaf één detail. */
     #plek-venster {
-      position:fixed; right:clamp(10px,2vmin,22px); top:clamp(80px,12vmin,140px); z-index:19;
-      width:clamp(200px, 30vmin, 380px); display:none; pointer-events:none;
+      /* z-index boven #hud-top (20) zodat het venster nooit meer achter de
+         km/tijd-kaart wegvalt; top staat ruim genoeg om die kaart altijd
+         vrij te laten, ook op een kleiner laptopscherm. */
+      position:fixed; right:clamp(10px,2vmin,22px); top:clamp(108px,16vmin,182px); z-index:21;
+      width:clamp(240px, 36vmin, 456px); display:none; pointer-events:none;
     }
     #plek-kijkgat {
       position:relative; width:100%; aspect-ratio:1/1; overflow:hidden;
       border-radius:12px; border:3px solid rgba(198,143,70,0.85);
       box-shadow:0 6px 28px rgba(0,0,0,0.6), inset 0 0 30px rgba(0,0,0,0.35);
       background:#0d1b26;
+      /* Los van de pointer-events:none op #plek-venster: het kijkgat zelf
+         mag altijd klikken/tikken ontvangen, want dat is hoe je 'm straks
+         groot kan zien zodra hij volledig is uitgezoomd. */
+      pointer-events:auto; cursor:pointer;
     }
+    #plek-kijkgat.plek-klaar-voor-groot { cursor:zoom-in; }
     #plek-afbeelding {
       position:absolute; left:0; top:0; transform-origin:0 0;
       /* breedte/hoogte en transform worden per frame door de JS gezet */
@@ -661,6 +669,18 @@
     /* Kalibratiestand: kijkgat groter en klikbaar, met dradenkruis */
     #plek-venster.kalibreren { width:min(70vmin,70vh); pointer-events:auto; }
     #plek-venster.kalibreren #plek-kijkgat { cursor:crosshair; border-color:#ffd700; }
+    /* ── Grootweergave: klik/tik/LB op een volledig uitgezoomde plek-foto ── */
+    #plek-groot-overlay {
+      position:fixed; inset:0; z-index:80; display:none;
+      align-items:center; justify-content:center;
+      background:rgba(5,10,16,0.86);
+      cursor:zoom-out;
+    }
+    #plek-groot-afbeelding {
+      max-width:92vw; max-height:88vh; border-radius:14px;
+      box-shadow:0 12px 60px rgba(0,0,0,0.7);
+      border:4px solid rgba(198,143,70,0.85);
+    }
   </style>
 </head>
 <body>
@@ -786,6 +806,10 @@
           <div class="help-toetsen"><kbd>X</kbd></div>
           <div class="help-uitleg">Direct doorgaan na goed/fout</div>
         </div>
+        <div class="help-rij">
+          <div class="help-toetsen"><kbd>LB</kbd></div>
+          <div class="help-uitleg">Plekken-foto groot bekijken (als hij volledig is uitgezoomd)</div>
+        </div>
       </div>
     </div>
 
@@ -815,6 +839,10 @@
         <div class="help-rij">
           <div class="help-toetsen"><kbd>👆👆 dubbeltik</kbd></div>
           <div class="help-uitleg">Direct doorgaan na goed/fout</div>
+        </div>
+        <div class="help-rij">
+          <div class="help-toetsen"><kbd>👆 tik op foto</kbd></div>
+          <div class="help-uitleg">Plekken-foto groot bekijken (als hij volledig is uitgezoomd)</div>
         </div>
       </div>
     </div>
@@ -958,6 +986,12 @@
     </div>
     <div id="plek-onderschrift"></div>
   </div>
+  <!-- Grootweergave: verschijnt zodra je op de volledig uitgezoomde
+       plek-foto klikt/tikt (of LB op de gamepad drukt), en verdwijnt weer
+       op dezelfde manier. -->
+  <div id="plek-groot-overlay" onclick="togglePlekGroot()">
+    <img id="plek-groot-afbeelding" src="" alt=""/>
+  </div>
 </div>
 
 <script>
@@ -1100,64 +1134,68 @@ const HOOFDSTEDEN = {
 //   naam    - wat er op het scherm komt te staan na het antwoord
 //   lon/lat - het doelpunt
 //   bestand - de illustratie in images/plekken/ (zonder .jpg)
+//   land    - het land dat als 'juist' geldt bij de feedbackzin (vast
+//             toegekend in plaats van geografisch afgeleid: een puntcheck
+//             werkt niet betrouwbaar bij plekken in zee of op piepkleine
+//             eilanden zoals het Vrijheidsbeeld).
 //   punten  - OPTIONEEL. Voor uitgestrekte plekken (het Great Barrier Reef
 //             is 2.300 km lang) een reeks punten; er wordt dan gemeten naar
 //             het DICHTSTBIJZIJNDE punt, zodat elk stuk rif goed rekent.
 const PLEKKEN = [
   // Europa
-  { naam:"Eiffeltoren",            lon:2.2945,    lat:48.8584,  bestand:"Eiffeltoren" },
-  { naam:"Colosseum",              lon:12.4922,   lat:41.8902,  bestand:"Colosseum" },
-  { naam:"Stonehenge",             lon:-1.8262,   lat:51.1789,  bestand:"Stonehenge" },
-  { naam:"Akropolis",              lon:23.7267,   lat:37.9715,  bestand:"Akropolis" },
-  { naam:"Sagrada Família",        lon:2.1744,    lat:41.4036,  bestand:"Sagrada_Familia" },
-  { naam:"Scheve toren van Pisa",  lon:10.3966,   lat:43.7230,  bestand:"Toren_van_Pisa" },
-  { naam:"Geysir",                 lon:-20.2995,  lat:64.3137,  bestand:"Geysir" },
-  { naam:"Geirangerfjord",         lon:7.1290,    lat:62.1210,  bestand:"Geirangerfjord" },
-  { naam:"Pompeii",                lon:14.4869,   lat:40.7497,  bestand:"Pompeii" },
-  { naam:"Neuschwanstein",         lon:10.7498,   lat:47.5576,  bestand:"Neuschwanstein" },
-  { naam:"Loch Ness",              lon:-4.4244,   lat:57.3229,  bestand:"Loch_Ness" },
-  { naam:"Tower Bridge",           lon:-0.0754,   lat:51.5055,  bestand:"Tower_Bridge" },
-  { naam:"Kinderdijk",             lon:4.6494,    lat:51.8825,  bestand:"Kinderdijk" },
-  { naam:"Atomium",                lon:4.3417,    lat:50.8949,  bestand:"Atomium" },
+  { naam:"Eiffeltoren",            lon:2.2945,    lat:48.8584,  bestand:"Eiffeltoren", land:"Frankrijk" },
+  { naam:"Colosseum",              lon:12.4922,   lat:41.8902,  bestand:"Colosseum", land:"Italië" },
+  { naam:"Stonehenge",             lon:-1.8262,   lat:51.1789,  bestand:"Stonehenge", land:"Verenigd Koninkrijk" },
+  { naam:"Akropolis",              lon:23.7267,   lat:37.9715,  bestand:"Akropolis", land:"Griekenland" },
+  { naam:"Sagrada Família",        lon:2.1744,    lat:41.4036,  bestand:"Sagrada_Familia", land:"Spanje" },
+  { naam:"Scheve toren van Pisa",  lon:10.3966,   lat:43.7230,  bestand:"Toren_van_Pisa", land:"Italië" },
+  { naam:"Geysir",                 lon:-20.2995,  lat:64.3137,  bestand:"Geysir", land:"IJsland" },
+  { naam:"Geirangerfjord",         lon:7.1290,    lat:62.1210,  bestand:"Geirangerfjord", land:"Noorwegen" },
+  { naam:"Pompeii",                lon:14.4869,   lat:40.7497,  bestand:"Pompeii", land:"Italië" },
+  { naam:"Neuschwanstein",         lon:10.7498,   lat:47.5576,  bestand:"Neuschwanstein", land:"Duitsland" },
+  { naam:"Loch Ness",              lon:-4.4244,   lat:57.3229,  bestand:"Loch_Ness", land:"Verenigd Koninkrijk" },
+  { naam:"Tower Bridge",           lon:-0.0754,   lat:51.5055,  bestand:"Tower_Bridge", land:"Verenigd Koninkrijk" },
+  { naam:"Kinderdijk",             lon:4.6494,    lat:51.8825,  bestand:"Kinderdijk", land:"Nederland" },
+  { naam:"Atomium",                lon:4.3417,    lat:50.8949,  bestand:"Atomium", land:"België" },
   // Pretparken
-  { naam:"Efteling",               lon:5.0481,    lat:51.6503,  bestand:"Efteling" },
-  { naam:"Disneyland Paris",       lon:2.7758,    lat:48.8722,  bestand:"Disneyland_Paris" },
-  { naam:"Legoland Billund",       lon:9.1223,    lat:55.7347,  bestand:"Legoland_Billund" },
-  { naam:"Walt Disney World",      lon:-81.5639,  lat:28.3852,  bestand:"Walt_Disney_World" },
+  { naam:"Efteling",               lon:5.0481,    lat:51.6503,  bestand:"Efteling", land:"Nederland" },
+  { naam:"Disneyland Paris",       lon:2.7758,    lat:48.8722,  bestand:"Disneyland_Paris", land:"Frankrijk" },
+  { naam:"Legoland Billund",       lon:9.1223,    lat:55.7347,  bestand:"Legoland_Billund", land:"Denemarken" },
+  { naam:"Walt Disney World",      lon:-81.5639,  lat:28.3852,  bestand:"Walt_Disney_World", land:"Verenigde Staten" },
   // Afrika
-  { naam:"Piramides van Gizeh",    lon:31.1342,   lat:29.9792,  bestand:"Piramides_van_Gizeh" },
-  { naam:"Victoriawatervallen",    lon:25.8572,   lat:-17.9243, bestand:"Victoriawatervallen" },
-  { naam:"Kilimanjaro",            lon:37.3556,   lat:-3.0674,  bestand:"Kilimanjaro" },
-  { naam:"Tafelberg",              lon:18.4098,   lat:-33.9628, bestand:"Tafelberg" },
+  { naam:"Piramides van Gizeh",    lon:31.1342,   lat:29.9792,  bestand:"Piramides_van_Gizeh", land:"Egypte" },
+  { naam:"Victoriawatervallen",    lon:25.8572,   lat:-17.9243, bestand:"Victoriawatervallen", land:"Zimbabwe" },
+  { naam:"Kilimanjaro",            lon:37.3556,   lat:-3.0674,  bestand:"Kilimanjaro", land:"Tanzania" },
+  { naam:"Tafelberg",              lon:18.4098,   lat:-33.9628, bestand:"Tafelberg", land:"Zuid-Afrika" },
   // Azië & Midden-Oosten
-  { naam:"Taj Mahal",              lon:78.0421,   lat:27.1751,  bestand:"Taj_Mahal" },
-  { naam:"Grote Muur van China",   lon:116.5704,  lat:40.4319,  bestand:"Grote_Muur",
+  { naam:"Taj Mahal",              lon:78.0421,   lat:27.1751,  bestand:"Taj_Mahal", land:"India" },
+  { naam:"Grote Muur van China",   lon:116.5704,  lat:40.4319,  bestand:"Grote_Muur", land:"China",
     punten:[[98.23,39.81],[102.64,37.93],[106.27,38.47],[109.73,38.28],[113.29,40.13],[116.5704,40.4319],[119.78,39.98]] },
-  { naam:"Mount Everest",          lon:86.9250,   lat:27.9881,  bestand:"Mount_Everest" },
-  { naam:"Angkor Wat",             lon:103.8670,  lat:13.4125,  bestand:"Angkor_Wat" },
-  { naam:"Petra",                  lon:35.4444,   lat:30.3285,  bestand:"Petra" },
-  { naam:"Fuji",                   lon:138.7274,  lat:35.3606,  bestand:"Fuji" },
-  { naam:"Burj Khalifa",           lon:55.2744,   lat:25.1972,  bestand:"Burj_Khalifa" },
-  { naam:"Terracottaleger",        lon:109.2785,  lat:34.3841,  bestand:"Terracottaleger" },
-  { naam:"Plein van de Hemelse Vrede", lon:116.3975, lat:39.9042, bestand:"Plein_van_de_Hemelse_Vrede" },
-  { naam:"Kremlin",                lon:37.6175,   lat:55.7520,  bestand:"Kremlin" },
-  { naam:"Dode Zee",               lon:35.5000,   lat:31.5000,  bestand:"Dode_Zee" },
+  { naam:"Mount Everest",          lon:86.9250,   lat:27.9881,  bestand:"Mount_Everest", land:"Nepal" },
+  { naam:"Angkor Wat",             lon:103.8670,  lat:13.4125,  bestand:"Angkor_Wat", land:"Cambodja" },
+  { naam:"Petra",                  lon:35.4444,   lat:30.3285,  bestand:"Petra", land:"Jordanië" },
+  { naam:"Fuji",                   lon:138.7274,  lat:35.3606,  bestand:"Fuji", land:"Japan" },
+  { naam:"Burj Khalifa",           lon:55.2744,   lat:25.1972,  bestand:"Burj_Khalifa", land:"Verenigde Arabische Emiraten" },
+  { naam:"Terracottaleger",        lon:109.2785,  lat:34.3841,  bestand:"Terracottaleger", land:"China" },
+  { naam:"Plein van de Hemelse Vrede", lon:116.3975, lat:39.9042, bestand:"Plein_van_de_Hemelse_Vrede", land:"China" },
+  { naam:"Kremlin",                lon:37.6175,   lat:55.7520,  bestand:"Kremlin", land:"Rusland" },
+  { naam:"Dode Zee",               lon:35.5000,   lat:31.5000,  bestand:"Dode_Zee", land:"Jordanië" },
   // Amerika
-  { naam:"Vrijheidsbeeld",         lon:-74.0445,  lat:40.6892,  bestand:"Vrijheidsbeeld" },
-  { naam:"Grand Canyon",           lon:-112.1129, lat:36.1069,  bestand:"Grand_Canyon",
+  { naam:"Vrijheidsbeeld",         lon:-74.0445,  lat:40.6892,  bestand:"Vrijheidsbeeld", land:"Verenigde Staten" },
+  { naam:"Grand Canyon",           lon:-112.1129, lat:36.1069,  bestand:"Grand_Canyon", land:"Verenigde Staten",
     punten:[[-113.967,35.983],[-113.05,36.20],[-112.1129,36.1069],[-111.845,36.145],[-111.587,36.867]] },
-  { naam:"Chichén Itzá",           lon:-88.5678,  lat:20.6843,  bestand:"Chichen_Itza" },
-  { naam:"Niagarawatervallen",     lon:-79.0377,  lat:43.0962,  bestand:"Niagarawatervallen" },
-  { naam:"Golden Gate Bridge",     lon:-122.4783, lat:37.8199,  bestand:"Golden_Gate_Bridge" },
-  { naam:"Mount Rushmore",         lon:-103.4591, lat:43.8791,  bestand:"Mount_Rushmore" },
-  { naam:"Machu Picchu",           lon:-72.5450,  lat:-13.1631, bestand:"Machu_Picchu" },
-  { naam:"Christus de Verlosser",  lon:-43.2105,  lat:-22.9519, bestand:"Christus_de_Verlosser" },
-  { naam:"Nazca-lijnen",           lon:-75.1301,  lat:-14.7390, bestand:"Nazca-lijnen" },
+  { naam:"Chichén Itzá",           lon:-88.5678,  lat:20.6843,  bestand:"Chichen_Itza", land:"Mexico" },
+  { naam:"Niagarawatervallen",     lon:-79.0377,  lat:43.0962,  bestand:"Niagarawatervallen", land:"Canada" },
+  { naam:"Golden Gate Bridge",     lon:-122.4783, lat:37.8199,  bestand:"Golden_Gate_Bridge", land:"Verenigde Staten" },
+  { naam:"Mount Rushmore",         lon:-103.4591, lat:43.8791,  bestand:"Mount_Rushmore", land:"Verenigde Staten" },
+  { naam:"Machu Picchu",           lon:-72.5450,  lat:-13.1631, bestand:"Machu_Picchu", land:"Peru" },
+  { naam:"Christus de Verlosser",  lon:-43.2105,  lat:-22.9519, bestand:"Christus_de_Verlosser", land:"Brazilië" },
+  { naam:"Nazca-lijnen",           lon:-75.1301,  lat:-14.7390, bestand:"Nazca-lijnen", land:"Peru" },
   // Oceanië
-  { naam:"Sydney Opera House",     lon:151.2153,  lat:-33.8568, bestand:"Sydney_Opera_House" },
-  { naam:"Uluru",                  lon:131.0369,  lat:-25.3444, bestand:"Uluru" },
-  { naam:"Moai (Paaseiland)",      lon:-109.3497, lat:-27.1127, bestand:"Moai_Paaseiland" },
-  { naam:"Great Barrier Reef",     lon:145.8000,  lat:-16.4000, bestand:"Great_Barrier_Reef",
+  { naam:"Sydney Opera House",     lon:151.2153,  lat:-33.8568, bestand:"Sydney_Opera_House", land:"Australië" },
+  { naam:"Uluru",                  lon:131.0369,  lat:-25.3444, bestand:"Uluru", land:"Australië" },
+  { naam:"Moai (Paaseiland)",      lon:-109.3497, lat:-27.1127, bestand:"Moai_Paaseiland", land:"Chili" },
+  { naam:"Great Barrier Reef",     lon:145.8000,  lat:-16.4000, bestand:"Great_Barrier_Reef", land:"Australië",
     punten:[[143.88,-9.14],[143.88,-10.23],[143.89,-11.32],[143.89,-12.41],[143.90,-13.50],
              [144.53,-14.47],[145.17,-15.43],[145.80,-16.40],[146.53,-17.27],[147.27,-18.13],
              [148.00,-19.00],[148.83,-19.83],[149.67,-20.67],[150.50,-21.50],[151.24,-22.37],
@@ -1726,6 +1764,26 @@ function bouwStartscherm() {
   lijst.innerHTML = '';
 
   for(const groep of MENU){
+    // ── Plekken: net als het raadspel een losse tegel zonder accordeon-
+    // uitklap. Er is maar één level (Iconische plekken), dus één klik
+    // gaat direct het spel in - net als bij de andere hoofdmenu-items
+    // zou een uitklapmenu met maar één regel erin overbodig aanvoelen.
+    // Verkennen en het scorebord laten we hier bewust weg: de scores
+    // krijgen later een eigen verzamelpagina.
+    if(groep.id === 'plekken'){
+      const lv = groep.levels[0];
+      const plekEl = document.createElement('div');
+      plekEl.className = 'menu-groep';
+      plekEl.innerHTML = `<div class="menu-groep-kop">
+        <span class="menu-groep-icoon">${groep.icoon}</span>
+        <span class="menu-groep-label">${groep.label}</span>
+        <span class="menu-groep-pijl">▶</span>
+      </div>`;
+      plekEl.querySelector('.menu-groep-kop').onclick = () => { startSpel(lv.id,'spelen'); };
+      lijst.appendChild(plekEl);
+      continue;
+    }
+
     const groepEl = document.createElement('div');
     groepEl.className = 'menu-groep';
 
@@ -2056,6 +2114,56 @@ function isPlekkenLevel(){
   return !!(LEVELS[huidigLevel] && LEVELS[huidigLevel].plekken);
 }
 
+// ── Feedbackzinnen na het droppen bij Plekken ──────────────────────────
+// Vijf categorieën: eerst wel/niet het juiste land, dan hoe dichtbij.
+// Binnen elke categorie kiezen we willekeurig, zodat het niet elke keer
+// dezelfde zin is.
+const PLEK_BERICHTEN_GOEDLAND_VER = [
+  "Je hebt wél het juiste land gekozen",
+  "Het goede land, al heel knap dus!",
+  "Kijk, hier ligt het precies in het land - dat je goed hebt!",
+];
+const PLEK_BERICHTEN_GOEDLAND_MIDDEN = [
+  "Dit komt al heel erg in de buurt",
+  "Wow, dat is al dichtbij",
+  "Jij weet het te liggen",
+  "Dat is heel aardig gedaan",
+  "Niet verkeerd, komt in de buurt",
+];
+const PLEK_BERICHTEN_GOEDLAND_DICHTBIJ = [
+  "Jij weet het!",
+  "Jij zou een goede reisgids zijn",
+  "Ben je er soms al ooit geweest?",
+  "Wauw, knap gedaan zeg!",
+  "Top-piloot ben jij!",
+  "Hopplakideeeee!",
+  "Oetie woetie ja zo moet ie!",
+  "Ik val bijna flauw, zo goed!",
+];
+const PLEK_BERICHTEN_FOUTLAND_DICHTBIJ = [
+  "Verkeerde land, maar aardig in de buurt",
+  "Je moet nog een grens over, maar dan ben je er al snel",
+  "Op zo'n grote wereld is dit erg dichtbij",
+  "Bijna bijna... je komt er wel",
+];
+const PLEK_BERICHTEN_FOUTLAND_VER = [
+  "Kijk, hier is het",
+  "Ik zal je het laten zien",
+  "Nou, niet helemaal... kijk hier",
+  "Verkeerde land, maar hier is het wel",
+];
+function kiesPlekBericht(km, juisteLand){
+  let lijst;
+  if(juisteLand){
+    lijst = km>500 ? PLEK_BERICHTEN_GOEDLAND_VER
+          : km>250 ? PLEK_BERICHTEN_GOEDLAND_MIDDEN
+          : PLEK_BERICHTEN_GOEDLAND_DICHTBIJ;
+  } else {
+    lijst = km<=500 ? PLEK_BERICHTEN_FOUTLAND_DICHTBIJ : PLEK_BERICHTEN_FOUTLAND_VER;
+  }
+  return lijst[Math.floor(Math.random()*lijst.length)];
+}
+
 // Afstand tot een plek: bij meerdere punten telt het dichtstbijzijnde punt,
 // zodat elk stuk van een uitgestrekte plek als 'raak' meetelt.
 function afstandTotPlek(lon, lat, plek){
@@ -2158,7 +2266,33 @@ function tekenPlekOnthulling(){
   if(bh > gh) y = Math.min(0, Math.max(gh - bh, y)); else y = midY;
 
   img.style.transform = 'translate(' + x + 'px,' + y + 'px)';
+
+  // Zodra hij volledig is uitgezoomd, mag je 'm groot bekijken - een klasse
+  // erbij zodat de cursor dat subtiel laat zien (zie togglePlekGroot).
+  gat.classList.toggle('plek-klaar-voor-groot', t >= 1);
 }
+
+// ── Grootweergave van een volledig uitgezoomde plek-foto ──────────────
+// Kan alleen als de onthulling klaar is (t===1) - niet eerder, anders zou
+// je stiekem de hele foto al vroeg kunnen zien via de grootweergave.
+let plekGrootWeergaveActief = false;
+function togglePlekGroot(){
+  if(!isPlekkenLevel() || !huidigePlek) return;
+  if(plekKalibratieActief) return; // in kalibratiestand doet klikken iets anders
+  if(!plekGrootWeergaveActief && plekOnthullingVoortgang() < 1) return;
+  plekGrootWeergaveActief = !plekGrootWeergaveActief;
+  const overlay = document.getElementById('plek-groot-overlay');
+  if(plekGrootWeergaveActief){
+    document.getElementById('plek-groot-afbeelding').src = document.getElementById('plek-afbeelding').src;
+    overlay.style.display = 'flex';
+  } else {
+    overlay.style.display = 'none';
+  }
+}
+document.getElementById('plek-kijkgat').addEventListener('click', ()=>{
+  if(plekKalibratieActief) return; // calibratie heeft zijn eigen click-listener hieronder
+  togglePlekGroot();
+});
 
 // ── Kalibratiestand (L-toets) ────────────────────────────────────────
 // Klik in het kijkgat = startpunt, scrollen = startzoom, Enter = volgende
@@ -5257,6 +5391,7 @@ let gamepadAKnopVorigeStand = false; // voor eenmalige (edge-triggered) drop, i.
 let gamepadBKnopVorigeStand = false; // B = richtingpijl schieten
 let gamepadYKnopVorigeStand = false; // Y = joker inzetten
 let gamepadXKnopVorigeStand = false; // X = direct doorgaan na goed/fout
+let gamepadLbKnopVorigeStand = false; // LB = plekken-foto groot/klein (alleen als volledig uitgezoomd)
 const GAMEPAD_DODE_ZONE = 0.18; // kleine sticktrilling telt niet mee
 
 window.addEventListener('gamepadconnected', e=>{
@@ -5320,6 +5455,11 @@ function pollGamepad(){
 
   // Rechter schouderknop (RB, buttons[5]) = turbo
   gamepadTurboActief = !!(gp.buttons[5] && gp.buttons[5].pressed);
+
+  // Linker schouderknop (LB, buttons[4]): plekken-foto groot/klein tonen
+  const lbIngedrukt = !!(gp.buttons[4] && gp.buttons[4].pressed);
+  if(lbIngedrukt && !gamepadLbKnopVorigeStand) togglePlekGroot();
+  gamepadLbKnopVorigeStand = lbIngedrukt;
 }
 
 // Muiswiel: scrollen omhoog = inzoomen, omlaag = uitzoomen (naast Z/X)
@@ -5805,11 +5945,14 @@ function dropVlaggetje(){
       document.getElementById('score').textContent = score;
       zetKmCijfers(score);
       toonPunten(km);
-      // Wat mild: binnen 100 km mag als 'raak' voelen, want een punt op een
-      // wereldbol exact aanwijzen is voor een kind niet te doen.
-      const raak = km <= 100;
-      toonFeedback(raak ? '🎉 Goed zo!' : (km<=1000 ? '👍 Aardig dichtbij' : '✈ Kijk mee...'), raak ? '#ffd700' : '#ffe9a8');
-      toonReactie(raak ? 'blij' : 'sad');
+      // Land waar het vlaggetje viel, vergeleken met het vaste land van
+      // de plek (zie toelichting bij PLEKKEN hierboven).
+      const landOpDrop = getLandOpPunt(dropLon, dropLat);
+      const naamOpDrop = landOpDrop ? (landOpDrop.properties.dutch||landOpDrop.properties.name) : null;
+      const juisteLand = !!(naamOpDrop && naamOpDrop === plek.land);
+      const raak = juisteLand && km <= 250;
+      toonFeedback(kiesPlekBericht(km, juisteLand), juisteLand ? '#ffd700' : '#ffe9a8');
+      toonReactie(raak ? 'blij' : (juisteLand ? 'blij' : (km<=500 ? 'blij' : 'sad')));
       toonPlekVolledig(plek.naam);
       document.getElementById('land-naam').textContent = plek.naam;
       zoomNiveau = Math.min(zoomNiveau, 0.5);
