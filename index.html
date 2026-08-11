@@ -778,7 +778,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.2.99</div>
+  <div id="versie-label">v0.3.00</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2782,14 +2782,15 @@ function startSpel(levelId, modus) {
   document.getElementById('plek-uitslag-overlay').style.display = 'none';
   if(plekUitslagTimer){ clearTimeout(plekUitslagTimer); plekUitslagTimer=null; }
   // Plekken-modus: het onthullingsvenster neemt de rol van de landillustratie
-  // over, dus de illustraties op de bol blijven uit.
+  // over, dus dat vervangt niet de landillustraties op de bol - die mogen
+  // gewoon (net als anders) verschijnen zodra je dichtbij genoeg inzoomt.
   verbergPlekVenster();
   stopPlekKalibratie();
   // Hoofdsteden-modus: landenafbeeldingen altijd uit (de hoofdstad-stip is nu het
   // enige visuele aanknopingspunt). Dit raakt alleen deze speelsessie, niet de
-  // opgeslagen voorkeur - bij een gewoon landen-level geldt weer gewoon de
-  // schakelaar zoals die in het menu staat.
-  illustratiesAan = (isHoofdsteden || isPlekken) ? false : (localStorage.getItem('wonkywings_illustraties_aan') !== '0');
+  // opgeslagen voorkeur - bij een gewoon landen-level (én bij Plekken) geldt
+  // weer gewoon de schakelaar zoals die in het menu staat.
+  illustratiesAan = isHoofdsteden ? false : (localStorage.getItem('wonkywings_illustraties_aan') !== '0');
   wonkyLon=lv.start.lon; wonkyLat=lv.start.lat;
   lonSnelheid=0; latSnelheid=0;
   rotM=maakRotMatrix(wonkyLon,wonkyLat);
