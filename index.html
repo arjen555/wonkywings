@@ -187,6 +187,45 @@
       background:rgba(0,0,0,0.65); backdrop-filter:blur(4px);
       align-items:center; justify-content:center;
     }
+    /* ── Kennisvraag-pop-up (bijzonder muntje) ── */
+    #kennisvraag-popup {
+      display:none; position:fixed; inset:0; z-index:998;
+      background:rgba(0,0,0,0.72); backdrop-filter:blur(4px);
+      align-items:center; justify-content:center;
+    }
+    #kennisvraag-kaart {
+      background:linear-gradient(145deg,#3a2408,#1c1204);
+      border:2px solid rgba(255,215,0,0.55);
+      border-radius:24px; padding:40px 46px; width:min(760px,92vw);
+      box-shadow:0 20px 70px rgba(0,0,0,0.8), inset 0 0 30px rgba(255,215,0,0.06);
+      display:flex; flex-direction:column; gap:26px; align-items:center;
+    }
+    #kennisvraag-icoon { width:64px; height:64px; }
+    #kennisvraag-tekst {
+      font-family:'Baloo 2',sans-serif; font-size:1.5rem; font-weight:800;
+      color:#ffe9a8; text-align:center; line-height:1.35;
+      text-shadow:0 2px 8px rgba(0,0,0,0.5);
+    }
+    #kennisvraag-opties {
+      display:grid; grid-template-columns:1fr 1fr; gap:16px; width:100%;
+    }
+    @media (max-width:640px) { #kennisvraag-opties { grid-template-columns:1fr; } }
+    .kennisvraag-optie {
+      font-family:'Baloo 2',sans-serif; font-size:1.05rem; font-weight:700;
+      color:#fff; background:rgba(255,255,255,0.07);
+      border:2.5px solid rgba(255,255,255,0.22); border-radius:16px;
+      padding:16px 20px; cursor:pointer; text-align:center;
+      transition:background 0.15s, border-color 0.15s, transform 0.1s;
+    }
+    .kennisvraag-optie:hover:not(.kennisvraag-optie-fout):not(.kennisvraag-optie-goed) {
+      background:rgba(255,215,0,0.14); border-color:rgba(255,215,0,0.5); transform:translateY(-2px);
+    }
+    .kennisvraag-optie-goed { border-color:#4caf50; background:rgba(76,175,80,0.22); }
+    .kennisvraag-optie-fout { border-color:#e05353; background:rgba(224,83,83,0.22); }
+    #kennisvraag-verdergaan {
+      display:none; font-family:'Baloo 2',sans-serif; font-size:1rem; font-weight:700;
+      color:rgba(255,255,255,0.55); text-align:center; letter-spacing:0.3px;
+    }
     #help-kaart {
       background:linear-gradient(145deg,#0b2540,#0e3060);
       border:1.5px solid rgba(255,255,255,0.15);
@@ -779,7 +818,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.06</div>
+  <div id="versie-label">v0.3.09</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -812,6 +851,15 @@
 </div>
 
 <!-- HELP POPUP -->
+<div id="kennisvraag-popup" onclick="kennisvraagDoorgaan()">
+  <div id="kennisvraag-kaart">
+    <img id="kennisvraag-icoon" src="images/muntje.png" alt=""/>
+    <div id="kennisvraag-tekst"></div>
+    <div id="kennisvraag-opties"></div>
+    <div id="kennisvraag-verdergaan">Klik, tik of druk op een knop om verder te gaan</div>
+  </div>
+</div>
+
 <div id="help-popup" onclick="if(event.target===this)sluitHulp()">
   <div id="help-kaart">
     <div id="help-titel">🎮 Bediening</div>
@@ -2232,6 +2280,152 @@ const MUNTJE_SCHERM_PX = 30; // hoe groot het muntje op het scherm wordt geteken
   muntjeImgGewoon = new Image(); muntjeImgGewoon.src = 'images/muntje2.png';
   muntjeImgBijzonder = new Image(); muntjeImgBijzonder.src = 'images/muntje.png';
 })();
+
+// ── Kennisvragen-pot (voor het bijzondere muntje) ──────────────────────
+// Algemene aardrijkskunde/topografie-vragen, niet gekoppeld aan een
+// specifiek land of specifieke plek. Herkomst: kennisvragen-pot.md.
+const KENNISVRAGEN_POT = [
+  {vraag:'Wat is de langste rivier ter wereld?', opties:['Amazone','Nijl','Rijn','Donau'], goed:1},
+  {vraag:'Wat is het grootste woestijngebied ter wereld?', opties:['Sahara','Gobi','Kalahari','Atacama'], goed:0},
+  {vraag:'Welk land heeft de meeste tijdzones?', opties:['Rusland','Verenigde Staten','China','Canada'], goed:0},
+  {vraag:'Wat is het kleinste land ter wereld?', opties:['Monaco','Vaticaanstad','San Marino','Liechtenstein'], goed:1},
+  {vraag:'In welke woestijn heeft het op sommige plekken al tientallen jaren niet geregend?', opties:['Sahara','Atacama','Gobi','Kalahari'], goed:1},
+  {vraag:'Welk land heeft grenzen met de meeste andere landen (samen met één ander land op de eerste plek)?', opties:['Rusland','Brazilië','Duitsland','Frankrijk'], goed:0},
+  {vraag:'Hoeveel kilometer is de omtrek van de aarde ongeveer?', opties:['4.000 km','12.000 km','40.000 km','100.000 km'], goed:2},
+  {vraag:'In welke oceaan ligt de Marianentrog, het diepste punt van de aarde? Hoe diep is hij, ongeveer?', opties:['3 kilometer','6 kilometer','11 kilometer','20 kilometer'], goed:2},
+  {vraag:'Hoelang geleden kon je nog droogvoets van Nederland naar Engeland lopen?', opties:['Zo\'n 100 jaar geleden','Zo\'n 1.000 jaar geleden','Zo\'n 8.000 jaar geleden','Zo\'n 1 miljoen jaar geleden'], goed:2},
+  {vraag:'Waar sloeg de meteoriet in die (mede) de dinosauriërs deed uitsterven?', opties:['Siberië, Rusland','Yucatán, Mexico','Sahara, Afrika','Australië'], goed:1},
+  {vraag:'Welk eilandenrijk in de Stille Oceaan dreigt door zeespiegelstijging te verdwijnen?', opties:['IJsland','Tuvalu','Cyprus','Malta'], goed:1},
+  {vraag:'Welk land heeft als enige ter wereld een vlag die niet rechthoekig is?', opties:['Duitsland','Nepal','Frankrijk','Zweden'], goed:1},
+  {vraag:'Waar werd de hoogste temperatuur ooit officieel gemeten: maar liefst 56,7°C?', opties:['Sahara, Afrika','Death Valley, Verenigde Staten','Dubai, Verenigde Arabische Emiraten','Atacamawoestijn, Chili'], goed:1},
+  {vraag:'Waar werd de laagste temperatuur ooit officieel gemeten: liefst -89,2°C?', opties:['Antarctica','Siberië, Rusland','Groenland','Noordpool'], goed:0},
+  {vraag:'Wat is het grootste eiland ter wereld?', opties:['Madagaskar','Groenland','Borneo','Nieuw-Guinea'], goed:1},
+  {vraag:'Welk land heeft van alle landen ter wereld de meeste eilanden (ruim 267.000!)?', opties:['Noorwegen','Finland','Zweden','Canada'], goed:2},
+  {vraag:'Welke hoofdstad ligt het hoogst boven zeeniveau, op zo\'n 3.640 meter hoogte?', opties:['Quito, Ecuador','La Paz, Bolivia','Bogotá, Colombia','Kathmandu, Nepal'], goed:1},
+  {vraag:'Wat is het langste land ter wereld, van noord naar zuid gemeten?', opties:['Rusland','Chili','Brazilië','Canada'], goed:1},
+  {vraag:'Tussen twee eilandjes in de Beringstraat, van Rusland en de VS, ligt maar 4 kilometer water — maar wat is er bijzonder aan de tijd daar?', opties:['Er is geen tijdsverschil','Het scheelt bijna een hele dag door de datumgrens','Het is er altijd nacht','De klok loopt er achteruit'], goed:1},
+  {vraag:'Wat klopt over de Noordpool en Antarctica?', opties:['Allebei vast land','De Noordpool is drijvend zee-ijs, Antarctica is een continent','Allebei drijvend ijs','Antarctica is drijvend ijs, de Noordpool is een continent'], goed:1},
+  {vraag:'In welk land kun je \'s zomers de zon dag en nacht zien schijnen, zonder dat het echt donker wordt?', opties:['IJsland','Noorwegen','Canada','Rusland'], goed:1},
+  {vraag:'Wat is de Beringstraat?', opties:['Een beroemde straat in New York','Een weg door een berenreservaat in Canada','Een gebergte in Peru','Een zeeverbinding tussen Rusland en Alaska'], goed:3},
+  {vraag:'Waar vind je de hoogste waterval ter wereld, de Angel Falls, met een val van 979 meter?', opties:['Nederland','Venezuela','Colombia','Peru'], goed:1},
+  {vraag:'Hoe heet een lange, smalle zee-inham tussen steile bergwanden, zoals je in Noorwegen ziet?', opties:['Delta','Fjord','Atol','Kloof'], goed:1},
+  {vraag:'Hoe heet een hete bron die met tussenpozen water en stoom de lucht in spuit?', opties:['Vulkaan','Geiser','Krater','Bron'], goed:1},
+  {vraag:'Hoe heet een ringvormig koraaleiland met een lagune in het midden?', opties:['Atol','Delta','Kaap','Landtong'], goed:0},
+  {vraag:'Hoe heet de plek waar een rivier zich vertakt en in zee uitmondt?', opties:['Fjord','Delta','Estuarium','Kanaal'], goed:1},
+  {vraag:'Hoe heet een dikke, langzaam bewegende ijsmassa in de bergen?', opties:['IJsberg','Gletsjer','Poolkap','Sneeuwveld'], goed:1},
+  {vraag:'Hoe ontstaan de meeste hoge bergketens, zoals de Alpen of de Himalaya?', opties:['Door vulkaanuitbarstingen','Doordat aardplaten tegen elkaar aan botsen','Door meteorietinslagen','Door erosie van rivieren'], goed:1},
+  {vraag:'Wat is erosie?', opties:['Het ontstaan van nieuwe bergen','Het langzaam wegslijten van land door wind, water of ijs','Een soort aardbeving','Het smelten van gletsjers'], goed:1},
+  {vraag:'Wat betekent het woord "toendra" (oorspronkelijk uit het Samisch/Fins)?', opties:['Bevroren zee','Kale, boomloze vlakte','Berggebied','Poolnacht'], goed:1},
+  {vraag:'Wat kan een krokodil niet, in tegenstelling tot mensen?', opties:['Zijn ogen dichtdoen','Zijn tong uitsteken','Zwemmen','Zijn mond openen'], goed:1},
+  {vraag:'Welk land is de enige plek waar je wilde komodovaranen vindt?', opties:['Thailand','Indonesië','Maleisië','Filipijnen'], goed:1},
+  {vraag:'Hoe heet een babykangoeroe?', opties:['Kit','Joey','Cub','Pup'], goed:1},
+  {vraag:'Welk dier is het nationale symbool van China?', opties:['Tijger','Panda','Draak','Kraanvogel'], goed:1},
+  {vraag:'Welk dier draagt zijn baby in een buideltje op de buik en leeft in Amerika?', opties:['Kangoeroe','Opossum','Wasbeer','Stinkdier'], goed:1},
+  {vraag:'Welk dier kan als enige zoogdier echt vliegen?', opties:['Vliegende eekhoorn','Vleermuis','Flying fox','Suikereekhoorn'], goed:1},
+  {vraag:'Welk land heeft als enige wilde giraffen verspreid over meerdere landen?', opties:['Kenia','Alleen in Afrika, verspreid over meerdere landen','Alleen in Zuid-Afrika','Alleen in Tanzania'], goed:1},
+  {vraag:'Hoeveel nekwervels heeft een giraffe, ondanks zijn extreem lange nek?', opties:['3','7','15','24'], goed:1},
+  {vraag:'Klopt het dat een struisvogel zijn kop in het zand steekt als hij bang is?', opties:['Ja, altijd','Nee, dat is een fabeltje','Alleen \'s nachts','Alleen jonge struisvogels'], goed:1},
+  {vraag:'Wat kan een kat, in tegenstelling tot de meeste andere dieren, niet proeven?', opties:['Zout','Zoet','Zuur','Bitter'], goed:1},
+  {vraag:'Welk dier kan niet achteruit lopen of springen?', opties:['Olifant','Kangoeroe','Struisvogel','Giraffe'], goed:1},
+  {vraag:'Waarmee proeft een vlinder zijn eten?', opties:['Met zijn antennes','Met zijn vleugels','Met zijn voeten','Met zijn snuit'], goed:2},
+  {vraag:'Welk Australisch dier poept in kubusvormige (vierkante) keutels?', opties:['Koala','Wombat','Kangoeroe','Wallaby'], goed:1},
+  {vraag:'Hoe waarschuwen bijen elkaar waar de lekkerste bloemen zijn?', opties:['Met geluidjes','Met een speciale dans','Met geurstoffen alleen','Ze vliegen samen op verkenning'], goed:1},
+  {vraag:'Waar zweet een nijlpaard een soort roze vloeistof, die dienstdoet als een natuurlijke zonnebrandcrème?', opties:['Olifant','Neushoorn','Nijlpaard','Varken'], goed:2},
+  {vraag:'Hoeveel harten heeft een octopus?', opties:['1','2','3','8'], goed:2},
+  {vraag:'Hoe groot is het hart van een blauwe vinvis, het grootste dier ter wereld?', opties:['Zo groot als een voetbal','Zo groot als een auto','Zo groot als een koelkast','Zo groot als een mens'], goed:1},
+  {vraag:'Hoeveel keer zijn eigen lichaamsgewicht kan een mier ongeveer dragen?', opties:['2 keer','10 keer','Tientallen keren','100 keer'], goed:2},
+  {vraag:'In welk land eet je traditioneel met stokjes?', opties:['Mexico','China','Egypte','Noorwegen'], goed:1},
+  {vraag:'In welk land is het gebruikelijk om je schoenen uit te doen voordat je binnen bent?', opties:['Frankrijk','Japan','Brazilië','Kenia'], goed:1},
+  {vraag:'In welk land vieren ze het Holi-festival, waarbij mensen elkaar met gekleurd poeder bekogelen?', opties:['Thailand','India','Mexico','Marokko'], goed:1},
+  {vraag:'In welk land is de klederdracht met klompen en een kanten mutsje traditioneel?', opties:['België','Nederland','Duitsland','Denemarken'], goed:1},
+  {vraag:'In welk land is de Dag van de Doden (Día de los Muertos) een grote traditie?', opties:['Spanje','Mexico','Peru','Cuba'], goed:1},
+  {vraag:'In welk land wordt van oudsher gezegd dat je \'s avonds beter geen sinaasappel kunt eten voor het slapengaan? Wat zeggen ze erover?', opties:['Heel gezond','Brengt ongeluk','Gevaarlijk','Verspilling'], goed:2},
+  {vraag:'Van welk Spaans woord komt "tapas"?', opties:['Tapar (bedekken)','Tapiz (tapijt)','Tapa (deksel-doosje)','Tapear (proeven)'], goed:0},
+  {vraag:'In welk land draag je van oudsher een kimono?', opties:['China','Japan','Thailand','Vietnam'], goed:1},
+  {vraag:'In welk land drinkt men van oudsher de meeste thee per persoon?', opties:['China','Turkije','India','Engeland'], goed:1},
+  {vraag:'In welk Afrikaans land is Frans een officiële taal?', opties:['Egypte','Senegal','Kenia','Nigeria'], goed:1},
+  {vraag:'In welk land mag je van oudsher geen kauwgom kopen of verkopen?', opties:['Japan','Singapore','Zuid-Korea','Zwitserland'], goed:1},
+  {vraag:'Uit welk land komt de voorloper van de croissant oorspronkelijk?', opties:['Frankrijk','Oostenrijk','Duitsland','Zwitserland'], goed:1},
+  {vraag:'Welk land meet het geluk van zijn inwoners officieel met "Bruto Nationaal Geluk" in plaats van alleen geld (BNP)?', opties:['Nepal','Bhutan','Bolivia','Fiji'], goed:1},
+  {vraag:'Wat betekent het Japanse woord "sayonara"?', opties:['Welkom','Tot ziens','Dank je wel','Sorry'], goed:1},
+  {vraag:'Wat betekende het Italiaanse "ciao" oorspronkelijk?', opties:['Goedemorgen','Ik ben je dienaar','Tot morgen','Welterusten'], goed:1},
+  {vraag:'Wat betekent het Swahili-woord "safari" letterlijk?', opties:['Avontuur','Reis','Dier','Jacht'], goed:1},
+  {vraag:'Wat betekent het Japanse woord "tsunami" letterlijk?', opties:['Grote golf','Havengolf','Vloedgolf','Zeebeving'], goed:1},
+  {vraag:'Wat betekent het Japanse woord "karaoke" letterlijk?', opties:['Zingende microfoon','Leeg orkest','Volksfeest','Muziekavond'], goed:1},
+  {vraag:'Wat betekent het Inuit-woord "iglo"?', opties:['Sneeuw','Huis','Koude','IJs'], goed:1},
+  {vraag:'Wat betekent het Duitse woord "Wanderlust" letterlijk?', opties:['Bergwandeling','Verlangen om te reizen','Avonturier','Vrije tijd'], goed:1},
+  {vraag:'Welke ontdekkingsreiziger gaf het woord "kannibaal" zijn naam, naar een volk dat hij tegenkwam?', opties:['Marco Polo','Christoffel Columbus','Vasco da Gama','James Cook'], goed:1},
+  {vraag:'In welk land is het bij wet verboden om maar één cavia te hebben, omdat het dier zich dan eenzaam voelt?', opties:['Duitsland','Zwitserland','Oostenrijk','Zweden'], goed:1},
+  {vraag:'In welk land bestaat een festival waarbij baby\'s tegen elkaar "huilwedstrijden" houden, omdat harder huilen geluk zou brengen?', opties:['China','Japan','Zuid-Korea','Thailand'], goed:1},
+  {vraag:'In welk land word je, als je op je 25e verjaardag nog niet getrouwd bent, voor de grap met kaneel bestrooid door vrienden?', opties:['Zweden','Denemarken','Noorwegen','Finland'], goed:1},
+  {vraag:'In welk land is het traditie om met Kerst een boek cadeau te geven en de hele avond samen te lezen?', opties:['Noorwegen','IJsland','Zweden','Finland'], goed:1},
+  {vraag:'In welk land mag je van oudsher overal kamperen en wandelen, zelfs op andermans land, dankzij een oude wet?', opties:['Noorwegen','Zweden','Finland','Denemarken'], goed:1},
+  {vraag:'In welk land is het bij wet verboden om op geldbiljetten te stappen, omdat er een foto van de koning op staat?', opties:['Japan','Thailand','Saoedi-Arabië','Marokko'], goed:1},
+  {vraag:'In welk land wonen de meeste mensen ter wereld?', opties:['China','India','Verenigde Staten','Indonesië'], goed:1},
+  {vraag:'Welk land heeft de meeste officiële landstalen?', opties:['Zuid-Afrika','India','Zwitserland','Papoea-Nieuw-Guinea'], goed:0},
+  {vraag:'Welke taal spreken de meeste mensen als moedertaal ter wereld?', opties:['Engels','Spaans','Mandarijn','Hindi'], goed:2},
+  {vraag:'Welk land heeft het kleinste inwonertal ter wereld?', opties:['Monaco','Vaticaanstad','San Marino','Liechtenstein'], goed:1},
+  {vraag:'Uit welk land komt zangeres Shakira?', opties:['Mexico','Colombia','Spanje','Argentinië'], goed:1},
+  {vraag:'Bij welk land hoorde Suriname tot 1975?', opties:['Frankrijk','Nederland','Engeland','Portugal'], goed:1},
+  {vraag:'Van welk land waren ooit de meeste landen ter wereld een kolonie?', opties:['Spanje','Frankrijk','Groot-Brittannië','Portugal'], goed:2},
+  {vraag:'Welk land heeft het oudste volkslied ter wereld?', opties:['Frankrijk','Nederland','Engeland','Spanje'], goed:1},
+  {vraag:'Waar wonen er meer Ieren dan in Ierland zelf?', opties:['In Amerika en de rest van de wereld samen','In Engeland alleen','Nergens, de meeste Ieren wonen in Ierland','In Australië alleen'], goed:0},
+  {vraag:'In welke stad vind je meer kebabzaken dan in Istanbul?', opties:['Berlijn','Amsterdam','Wenen','Parijs'], goed:0},
+  {vraag:'Wat is het jongste land ter wereld?', opties:['Kosovo','Oost-Timor','Zuid-Soedan','Montenegro'], goed:2},
+  {vraag:'In welk land wonen er meer schapen dan mensen?', opties:['Nieuw-Zeeland','Ierland','Schotland','Australië'], goed:0},
+  {vraag:'Welk land heeft geen enkele rivier?', opties:['Egypte','Saoedi-Arabië','Marokko','Jordanië'], goed:1},
+  {vraag:'In welk land vind je meer fietsen dan mensen?', opties:['Denemarken','Nederland','België','Duitsland'], goed:1},
+  {vraag:'Welk land heeft maar liefst 13.000 eilanden?', opties:['Filipijnen','Griekenland','Indonesië','Japan'], goed:2},
+  {vraag:'In welk land eten mensen het meeste chocolade per persoon?', opties:['België','Duitsland','Zwitserland','Frankrijk'], goed:2},
+  {vraag:'Welk land heeft geen leger?', opties:['Nepal','IJsland','Portugal','Kroatië'], goed:1},
+  {vraag:'In welk land wonen mensen gemiddeld het langst?', opties:['Zwitserland','Zweden','Japan','Italië'], goed:2},
+  {vraag:'In welk land ligt een stad die voor de helft in het ene en voor de helft in een ander land ligt (de stad heet Baarle)?', opties:['Nederland/België','Frankrijk/Duitsland','Spanje/Portugal','Polen/Duitsland'], goed:0},
+  {vraag:'Welk land heeft zoveel meren dat het er meer heeft dan bijna alle andere landen bij elkaar?', opties:['Rusland','Canada','Finland','Verenigde Staten'], goed:1},
+  {vraag:'Welk land gaf als allereerste ter wereld vrouwen het recht om te stemmen?', opties:['Nieuw-Zeeland','Finland','Verenigde Staten','Zweden'], goed:0},
+  {vraag:'Welk land heeft de meeste actieve vulkanen?', opties:['Japan','Indonesië','Verenigde Staten','IJsland'], goed:1},
+  {vraag:'Welk land heeft de meeste verschillende talen (meer dan 800!)?', opties:['India','Papoea-Nieuw-Guinea','Indonesië','Nigeria'], goed:1},
+  {vraag:'In welk land komen van oudsher geen muggen voor?', opties:['Groenland','IJsland','Nieuw-Zeeland','Noorwegen'], goed:1},
+  {vraag:'Welk land had tot 2023 een bijzonder leeftijdssysteem, waarbij je bij je geboorte al 1 jaar oud was?', opties:['Japan','Zuid-Korea','China','Vietnam'], goed:1},
+  {vraag:'Hoe lang blijft honing goed houdbaar?', opties:['Een paar maanden','Een paar jaar','Voor altijd, zelfs duizenden jaren','Ongeveer 10 jaar'], goed:2},
+  {vraag:'Hoe heet een groep flamingo\'s?', opties:['Een zwerm','Een kudde','Een flamboyance','Een vlucht'], goed:2},
+  {vraag:'In welke stad duwen speciale "pushers" mensen letterlijk de overvolle metro in tijdens de spits?', opties:['Peking','Tokio','Seoel','New York'], goed:1},
+  {vraag:'In welk land staat de Taj Mahal?', opties:['Thailand','India','Iran','Marokko'], goed:1},
+  {vraag:'In welke stad staat de Vrijheidsbeeld?', opties:['Washington','New York','Los Angeles','Boston'], goed:1},
+  {vraag:'In welk land staat Petra, de stad uitgehouwen in de rotsen?', opties:['Egypte','Jordanië','Israël','Saoedi-Arabië'], goed:1},
+  {vraag:'In welke stad staat het Colosseum?', opties:['Venetië','Rome','Milaan','Napels'], goed:1},
+  {vraag:'In welk land staat Machu Picchu?', opties:['Bolivia','Peru','Chili','Ecuador'], goed:1},
+  {vraag:'Welk bouwwerk staat bekend als het enige overgebleven wereldwonder van de oudheid?', opties:['Colosseum','Grote Piramide van Gizeh','Stonehenge','Petra'], goed:1},
+  {vraag:'In welk land staat Stonehenge?', opties:['Ierland','Engeland','Schotland','Wales'], goed:1},
+  {vraag:'In welk land staat het Christus de Verlosser-beeld?', opties:['Argentinië','Brazilië','Chili','Peru'], goed:1},
+  {vraag:'Welke stad ligt voor de helft in Europa en voor de helft in Azië?', opties:['Moskou','Istanbul','Athene','Caïro'], goed:1},
+  {vraag:'Welke stad geldt als een van de oudste steden ter wereld?', opties:['Rome','Athene','Parijs','Londen'], goed:1},
+  {vraag:'Welke stad is tegelijk ook een heel land?', opties:['Monaco-Stad','Vaticaanstad','San Marino Stad','Singapore'], goed:1},
+  {vraag:'Welk Welsh dorp heeft de langste plaatsnaam van Europa (58 letters lang)?', opties:['Llanfairpwllgwyngyll','Cwmrhondllanfechgogoch','Betws-y-Coed','Pwllheligogerychwyrndrob'], goed:0},
+  {vraag:'In welk land lagen ooit de legendarische Hangende Tuinen van Babylon, een van de zeven wereldwonderen?', opties:['Egypte','Irak','Iran','Syrië'], goed:1},
+  {vraag:'Op welk Japans eiland lopen honderden wilde, tamme konijnen rond, waardoor het "Konijneneiland" wordt genoemd?', opties:['Okunoshima','Miyajima','Sado','Yakushima'], goed:0},
+  {vraag:'Welke planeet noemen we de rode planeet?', opties:['Venus','Mars','Jupiter','Saturnus'], goed:1},
+  {vraag:'Welk hemellichaam zorgt voor eb en vloed op aarde?', opties:['De zon','De maan','Mars','Een komeet'], goed:1},
+  {vraag:'Hoeveel planeten heeft ons zonnestelsel?', opties:['7','8','9','10'], goed:1},
+  {vraag:'Hoe lang duurt het ongeveer voordat licht van de zon de aarde bereikt?', opties:['8 seconden','8 minuten','8 uur','1 dag'], goed:1},
+  {vraag:'Welke planeet staat het dichtst bij de zon?', opties:['Venus','Mercurius','Mars','Aarde'], goed:1},
+  {vraag:'Welke planeet heeft de mooiste ringen?', opties:['Jupiter','Saturnus','Uranus','Neptunus'], goed:1},
+  {vraag:'Op welke planeet duurt een dag langer dan een heel jaar?', opties:['Mercurius','Venus','Mars','Uranus'], goed:1},
+  {vraag:'Hoeveel manen heeft Mars?', opties:['0','1','2','4'], goed:2},
+  {vraag:'Hoe lang duurt een jaar op Mercurius, de snelste planeet rond de zon?', opties:['365 dagen','88 dagen','200 dagen','700 dagen'], goed:1},
+  {vraag:'Tegen welk land vocht Nederland in de Tachtigjarige Oorlog?', opties:['Frankrijk','Spanje','Engeland','Duitsland'], goed:1},
+  {vraag:'Welk land bezette Nederland in de Tweede Wereldoorlog?', opties:['Frankrijk','Duitsland','Engeland','België'], goed:1},
+  {vraag:'Tegen welk land voerde Nederland in de 17e eeuw meerdere zeeoorlogen?', opties:['Spanje','Engeland','Frankrijk','Portugal'], goed:1},
+  {vraag:'Met welk land vocht Nederland een oorlog rond de onafhankelijkheid van Indonesië?', opties:['Japan','Indonesië','Engeland','Australië'], goed:1},
+  {vraag:'Wat was de kortste oorlog ooit, tussen Engeland en Zanzibar?', opties:['38 minuten','12 uur','3 dagen','7 weken'], goed:0},
+  {vraag:'Welk land voerde 335 jaar oorlog met de Scilly-eilanden, zonder dat er ooit één schot werd gelost?', opties:['Frankrijk','Nederland','Spanje','Portugal'], goed:1},
+  {vraag:'Waar zonk de Titanic?', opties:['Middellandse Zee','Noordzee','Noord-Atlantische Oceaan','Stille Oceaan'], goed:2}
+];
+
+let kennisvraagGebruiktDezeRonde = []; // voorkomt herhaling van dezelfde vraag binnen één ronde van 10
+let kennisvraagActief = false;          // pauzeert het spel zolang de pop-up open staat
+let huidigeKennisvraag = null;          // de op dit moment getoonde vraag (uit KENNISVRAGEN_POT)
+let radActief = false;                  // pauzeert het spel zolang het rad open staat (stap 4)
+
 let vluchtStartVec=null, vluchtEindVec=null, vluchtEindLon=0, vluchtEindLat=0;
 let vluchtScoreVoor=0, vluchtScoreNa=0, vluchtAfwijkingKm=0, vluchtDoelLand=null;
 let correctieLand=null, correctieLandStartTijd=0;
@@ -2928,6 +3122,11 @@ function naarStart(){
   if(misserAutoTimer){ clearTimeout(misserAutoTimer); misserAutoTimer=null; }
   actieveMuntjes = [];
   muntjesPlanning = [];
+  kennisvraagActief = false;
+  kennisvraagWachtOpDoorgaan = false;
+  huidigeKennisvraag = null;
+  document.getElementById('kennisvraag-popup').style.display = 'none';
+  radActief = false;
   vlagGrond.style.display='none'; vlagValt.style.display='none';
   bouwScoreTickers();
 }
@@ -3136,7 +3335,7 @@ function vervangHuidigLand(){
 // er ook echt iets te skippen valt (dus niet tijdens het vallen van het
 // vlaggetje zelf, of tijdens de correctievlucht - dat blijft gewoon zichtbaar).
 function skipDoorgaan(){
-  if(huidigModus!=='spelen' || !spelActief || hulpActief) return;
+  if(huidigModus!=='spelen' || !spelActief || hulpActief || kennisvraagActief || radActief) return;
   if(goedAutoTimer){
     clearTimeout(goedAutoTimer); goedAutoTimer=null;
     nieuwLand();
@@ -3149,7 +3348,7 @@ function skipDoorgaan(){
   }
 }
 function gebruikJoker(){
-  if(!jokerBeschikbaar || huidigModus!=='spelen' || !spelActief || hulpActief) return;
+  if(!jokerBeschikbaar || huidigModus!=='spelen' || !spelActief || hulpActief || kennisvraagActief || radActief) return;
   if(vluchtActief) return;               // vliegtuigje is al onderweg: niet onderbreken
   if(wachten && !correctieLand) return;  // vlaggetje valt nog, uitslag nog niet bekend
 
@@ -5646,9 +5845,13 @@ function pollGamepad(){
   if(yIngedrukt && !gamepadYKnopVorigeStand) gebruikJoker();
   gamepadYKnopVorigeStand = yIngedrukt;
 
-  // X-knop (buttons[2]): direct doorgaan na een goed/fout antwoord
+  // X-knop (buttons[2]): direct doorgaan na een goed/fout antwoord (of, tijdens
+  // een kennisvraag, nadat er een antwoord gekozen is)
   const xIngedrukt = !!(gp.buttons[2] && gp.buttons[2].pressed);
-  if(xIngedrukt && !gamepadXKnopVorigeStand) skipDoorgaan();
+  if(xIngedrukt && !gamepadXKnopVorigeStand){
+    if(kennisvraagActief && kennisvraagWachtOpDoorgaan) kennisvraagDoorgaan();
+    else skipDoorgaan();
+  }
   gamepadXKnopVorigeStand = xIngedrukt;
 
   // Rechter trigger (buttons[7]) = inzoomen, linker trigger (buttons[6]) = uitzoomen
@@ -5694,6 +5897,7 @@ const DROP_ANIMATIE_DUUR = 600;
 function planMuntjesVoorRonde(){
   muntjesPlanning = [];
   actieveMuntjes = [];
+  kennisvraagGebruiktDezeRonde = [];
   const lv = LEVELS[huidigLevel];
   // Alleen in Landen-modus (niet Hoofdsteden, niet Plekken)
   if(!lv || lv.hoofdsteden || lv.plekken) return;
@@ -5716,29 +5920,44 @@ function planMuntjesVoorRonde(){
   ];
 }
 
-// spawnMuntje(): plaatst een muntje op een willekeurig punt op het ZICHTBARE
-// halfrond en geeft het een willekeurige bewegingsrichting in lon/lat-graden per seconde.
+// inverseRoteerPunt(v, lon, lat): de inverse van roteerPunt()+maakRotMatrix().
+// Gegeven een punt in "schermruimte" (na rotatie, zoals roteerPunt() teruggeeft),
+// wat is dan het oorspronkelijke wereld-punt (vóór rotatie)? Nodig om vanuit een
+// scherm-positie terug te rekenen naar een lon/lat op de bol.
+function inverseRoteerPunt(v, lon, lat){
+  const la=lat*Math.PI/180, lo=lon*Math.PI/180;
+  // Stap 1: de X-rotatie (over breedtegraad) ongedaan maken (tegengestelde hoek)
+  const cosX=Math.cos(-la), sinX=Math.sin(-la);
+  const y1=v[1]*cosX - v[2]*sinX, z1=v[1]*sinX + v[2]*cosX, x1=v[0];
+  // Stap 2: de Y-rotatie (over lengtegraad) ongedaan maken (tegengestelde hoek)
+  const cosY=Math.cos(lo), sinY=Math.sin(lo);
+  const x2=x1*cosY + z1*sinY, z2=-x1*sinY + z1*cosY, y2=y1;
+  return [x2,y2,z2];
+}
+
+// willekeurigZichtbaarPunt(): kiest een willekeurig punt dat GEGARANDEERD
+// binnen het huidige zichtbare canvasgebied valt, ongeacht het zoomniveau.
+// Dit vervangt de eerdere lon/lat-gebaseerde aanpak, die bij het inzoomen
+// een muntje soms ver buiten het zoom-kader kon plaatsen (technisch nog wel
+// "aan de voorkant van de bol", maar in de praktijk onzichtbaar voor de speler).
+function willekeurigZichtbaarPunt(){
+  // Straal in pixels waarbinnen het punt mag vallen: nooit groter dan de
+  // getekende bolcirkel (R) zelf, en nooit groter dan het fysieke canvas -
+  // zo blijft het gegarandeerd op het scherm, of je nu uit- of ingezoomd bent.
+  const veiligeStraalPx = Math.min(R*0.85, Math.min(W,H)*0.42);
+  const hoek = Math.random()*Math.PI*2;
+  const straal = Math.sqrt(Math.random()) * veiligeStraalPx; // sqrt = gelijkmatige verdeling over het oppervlak, niet geclusterd in het midden
+  const dx = Math.cos(hoek)*straal, dy = Math.sin(hoek)*straal;
+  const xNdc = dx / R, yNdc = -dy / R;
+  const zNdc = Math.sqrt(Math.max(0, 1 - xNdc*xNdc - yNdc*yNdc));
+  const vWereld = inverseRoteerPunt([xNdc,yNdc,zNdc], wonkyLon, wonkyLat);
+  return vec3NaarLonLat(vWereld);
+}
+
+// spawnMuntje(): plaatst een muntje op een willekeurig, GEGARANDEERD zichtbaar
+// punt (zie willekeurigZichtbaarPunt) en geeft het een willekeurige bewegingsrichting.
 function spawnMuntje(type){
-  // Willekeurig punt op het zichtbare halfrond: we kiezen een punt in 3D dat
-  // op de voorkant van de bol ligt (z > 0 na rotatie), en rekenen dat terug
-  // naar lon/lat. Simpele aanpak: willekeurige richting vanuit het centrum
-  // van het zichtbare halfrond (= wonkyLon/wonkyLat ± een offset).
-  // Makkelijker: willekeurig punt op de halve bol, dan de inverse rotatie toepassen.
-  // Maar het simpelst: kies een lon/lat in de buurt van het midden van het scherm
-  // en check of het zichtbaar is.
-  let spawnLon, spawnLat;
-  for(let poging=0; poging<50; poging++){
-    // Willekeurige offset van Wonky's huidige positie, binnen ~80° zodat het
-    // punt stevig in beeld ligt (niet aan de rand waar het direct wegdraait)
-    spawnLon = wonkyLon + (Math.random()-0.5) * 120;
-    spawnLat = wonkyLat + (Math.random()-0.5) * 80;
-    spawnLat = Math.max(-85, Math.min(85, spawnLat));
-    if(spawnLon > 180) spawnLon -= 360;
-    if(spawnLon < -180) spawnLon += 360;
-    // Check of het punt op de zichtbare kant van de bol ligt
-    const p3 = roteerPunt(lonLatTo3D(spawnLon, spawnLat), rotM);
-    if(p3[2] > 0.15) break; // 0.15 = niet te dicht bij de rand
-  }
+  const [spawnLon, spawnLat] = willekeurigZichtbaarPunt();
   // Willekeurige bewegingsrichting (hoek in radialen)
   const hoek = Math.random() * Math.PI * 2;
   // Snelheid in graden per seconde (afgeleid van de bol-snelheid constante)
@@ -5843,22 +6062,97 @@ function checkMuntjeVangst(wx, wy){
 // sx,sy = de schermpositie waar het muntje gevangen werd (startpunt van de vlucht-animatie).
 // - 'gewoon' (muntje2): een vliegend getal (−50/−100/−200 km) vliegt naar het
 //   scorebord; pas op het moment dat het "aankomt" wordt de score echt bijgewerkt.
-// - 'bijzonder' (muntje1): komt in stap 3 (kennisvraag → rad van fortuin).
-//   Voorlopig verdwijnt hij bij vangst zonder verder gevolg.
+// - 'bijzonder' (muntje1): opent de kennisvraag-pop-up. Goed antwoord leidt naar
+//   het rad van fortuin (stap 4, nu nog een lege stub).
 const MUNTJE_GEWOON_BEDRAGEN = [50, 100, 200];
 function verwerkMuntje(m, sx, sy){
   if(m.type === 'gewoon'){
     const bedrag = MUNTJE_GEWOON_BEDRAGEN[Math.floor(Math.random()*MUNTJE_GEWOON_BEDRAGEN.length)];
     toonMuntjeBeloning(bedrag, sx, sy);
   } else {
-    // Bijzonder muntje: kennisvraag-pop-up en rad van fortuin volgen in stap 3.
+    toonKennisvraag();
   }
+}
+
+// ── Kennisvraag-pop-up (bijzonder muntje) ───────────────────────────────
+let kennisvraagOpenTijd = 0;         // voor het "tijd staat stil"-effect, zelfde principe als hulpOpenTijd
+let kennisvraagWachtOpDoorgaan = false; // true zodra er een antwoord gekozen is, wacht op klik/tik/toets om verder te gaan
+let kennisvraagLaatstGoed = false;   // was het zojuist beantwoorde antwoord goed?
+
+function toonKennisvraag(){
+  // Kies een willekeurige, nog niet gebruikte vraag deze ronde. Zijn ze
+  // allemaal al een keer gebruikt (zou pas gebeuren na 134 bijzondere
+  // muntjes in één sessie, dus in de praktijk nooit), begin dan opnieuw.
+  let beschikbaar = KENNISVRAGEN_POT.filter((_,i)=>!kennisvraagGebruiktDezeRonde.includes(i));
+  if(beschikbaar.length === 0){
+    kennisvraagGebruiktDezeRonde = [];
+    beschikbaar = KENNISVRAGEN_POT;
+  }
+  const gekozen = beschikbaar[Math.floor(Math.random()*beschikbaar.length)];
+  const idx = KENNISVRAGEN_POT.indexOf(gekozen);
+  kennisvraagGebruiktDezeRonde.push(idx);
+  huidigeKennisvraag = gekozen;
+
+  kennisvraagActief = true;
+  kennisvraagOpenTijd = performance.now();
+  kennisvraagWachtOpDoorgaan = false;
+
+  document.getElementById('kennisvraag-tekst').textContent = gekozen.vraag;
+  const optiesEl = document.getElementById('kennisvraag-opties');
+  optiesEl.innerHTML = '';
+  gekozen.opties.forEach((opt, i)=>{
+    const div = document.createElement('div');
+    div.className = 'kennisvraag-optie';
+    div.textContent = opt;
+    div.onclick = (e)=>{ e.stopPropagation(); beantwoordKennisvraag(i); };
+    optiesEl.appendChild(div);
+  });
+  document.getElementById('kennisvraag-verdergaan').style.display = 'none';
+  document.getElementById('kennisvraag-popup').style.display = 'flex';
+}
+
+function beantwoordKennisvraag(gekozenIdx){
+  if(!kennisvraagActief || kennisvraagWachtOpDoorgaan || !huidigeKennisvraag) return;
+  const optieEls = document.getElementById('kennisvraag-opties').children;
+  const goedIdx = huidigeKennisvraag.goed;
+  optieEls[goedIdx].classList.add('kennisvraag-optie-goed');
+  if(gekozenIdx !== goedIdx){
+    optieEls[gekozenIdx].classList.add('kennisvraag-optie-fout');
+  }
+  kennisvraagLaatstGoed = (gekozenIdx === goedIdx);
+  kennisvraagWachtOpDoorgaan = true;
+  document.getElementById('kennisvraag-verdergaan').style.display = 'block';
+}
+
+// kennisvraagDoorgaan(): sluit de pop-up (pas nádat er een antwoord gekozen is)
+// en hervat het spel. Bij een goed antwoord volgt het rad van fortuin.
+function kennisvraagDoorgaan(){
+  if(!kennisvraagActief || !kennisvraagWachtOpDoorgaan) return;
+  document.getElementById('kennisvraag-popup').style.display = 'none';
+  // Net als bij hulpActief: de tijd die de pop-up open stond telt niet mee.
+  if(levelStartTijd){ levelStartTijd += (performance.now() - kennisvraagOpenTijd); }
+  kennisvraagActief = false;
+  kennisvraagWachtOpDoorgaan = false;
+  const wasGoed = kennisvraagLaatstGoed;
+  huidigeKennisvraag = null;
+  if(wasGoed){
+    toonRad();
+  }
+}
+
+// toonRad(): stub - wordt in stap 4 gebouwd (het eigenlijke rad van fortuin).
+// Voorlopig alleen aanwezig zodat kennisvraagDoorgaan() 'm veilig kan aanroepen.
+function toonRad(){
+  // Komt in stap 4.
 }
 
 // toonMuntjeBeloning(): laat een groot "−X km"-getal vanaf de vangstplek
 // naar het scorebord vliegen, kleiner wordend. De score wordt pas op het
 // moment van "aankomen" echt aangepast (kan nooit onder 0 km komen).
-const MUNTJE_VLUCHT_DUUR = 850; // ms
+// Twee fases: eerst even goed leesbaar stilstaan op volle grootte
+// (MUNTJE_LEESPAUZE_MS), dan pas de vlucht naar het scorebord (MUNTJE_VLUCHT_DUUR).
+const MUNTJE_LEESPAUZE_MS = 700; // ms - tijd om het bedrag rustig te kunnen lezen
+const MUNTJE_VLUCHT_DUUR = 1400; // ms - duur van de vlucht zelf
 function toonMuntjeBeloning(bedrag, sx, sy){
   const el = document.getElementById('muntje-feedback');
   const doelRect = document.getElementById('scorebord-wrap').getBoundingClientRect();
@@ -5874,26 +6168,29 @@ function toonMuntjeBeloning(bedrag, sx, sy){
   el.style.opacity = '1';
   void el.offsetWidth; // forceert reflow, zodat de browser de startstand echt toepast
 
-  // Vervolgens de vlucht naar het scorebord animeren
-  el.style.transition = 'left '+MUNTJE_VLUCHT_DUUR+'ms cubic-bezier(.25,.05,.35,1), '
-    +'top '+MUNTJE_VLUCHT_DUUR+'ms cubic-bezier(.25,.05,.35,1), '
-    +'font-size '+MUNTJE_VLUCHT_DUUR+'ms ease-in, opacity '+MUNTJE_VLUCHT_DUUR+'ms ease-in';
-  el.style.left = doelX+'px';
-  el.style.top = doelY+'px';
-  el.style.fontSize = '1rem';
-  el.style.opacity = '0.2';
-
+  // Fase 1: gewoon even blijven staan, groot en goed leesbaar
   setTimeout(()=>{
-    // Het getal "landt": nu pas de score echt aftrekken (nooit onder 0 km)
-    score = Math.max(0, score - bedrag);
-    document.getElementById('score').textContent = score;
-    updateScorebordCijfers();
-    el.style.opacity = '0';
-  }, MUNTJE_VLUCHT_DUUR);
+    // Fase 2: nu pas de vlucht naar het scorebord animeren
+    el.style.transition = 'left '+MUNTJE_VLUCHT_DUUR+'ms cubic-bezier(.4,.0,.6,1), '
+      +'top '+MUNTJE_VLUCHT_DUUR+'ms cubic-bezier(.4,.0,.6,1), '
+      +'font-size '+MUNTJE_VLUCHT_DUUR+'ms ease-in, opacity '+MUNTJE_VLUCHT_DUUR+'ms ease-in';
+    el.style.left = doelX+'px';
+    el.style.top = doelY+'px';
+    el.style.fontSize = '1rem';
+    el.style.opacity = '0.2';
+
+    setTimeout(()=>{
+      // Het getal "landt": nu pas de score echt aftrekken (nooit onder 0 km)
+      score = Math.max(0, score - bedrag);
+      document.getElementById('score').textContent = score;
+      updateScorebordCijfers();
+      el.style.opacity = '0';
+    }, MUNTJE_VLUCHT_DUUR);
+  }, MUNTJE_LEESPAUZE_MS);
 }
 
 function updateSpel(){
-  if(!spelActief || hulpActief) return;
+  if(!spelActief || hulpActief || kennisvraagActief || radActief) return;
 
   updateMuntjes();
   updateJokerKnop();
@@ -6348,7 +6645,7 @@ function toonPunten(p){
 }
 
 function dropVlaggetje(){
-  if(wachten||!spelActief||huidigModus!=='spelen'||hulpActief) return;
+  if(wachten||!spelActief||huidigModus!=='spelen'||hulpActief||kennisvraagActief||radActief) return;
   const wx=W*(0.5+wonkySchermX);
   const wy=focusSy-90;
   const dropTijdstip = performance.now(); // voor de snelheidsbonus bij Plekken: exact moment van droppen
@@ -6470,6 +6767,10 @@ function dropVlaggetje(){
 }
 
 document.addEventListener('keydown',e=>{
+  if(kennisvraagActief && kennisvraagWachtOpDoorgaan && (e.key===' '||e.key==='Enter')){
+    kennisvraagDoorgaan();
+    return;
+  }
   if(e.key===' '&&!wachten&&spelActief&&huidigModus==='spelen'){
     dropVlaggetje();
   }
