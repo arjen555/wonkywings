@@ -884,7 +884,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.12</div>
+  <div id="versie-label">v0.3.15</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2409,7 +2409,7 @@ const KENNISVRAGEN_POT = [
   {vraag:'Waarmee proeft een vlinder zijn eten?', opties:['Met zijn antennes','Met zijn vleugels','Met zijn voeten','Met zijn snuit'], goed:2},
   {vraag:'Welk Australisch dier poept in kubusvormige (vierkante) keutels?', opties:['Koala','Wombat','Kangoeroe','Wallaby'], goed:1},
   {vraag:'Hoe waarschuwen bijen elkaar waar de lekkerste bloemen zijn?', opties:['Met geluidjes','Met een speciale dans','Met geurstoffen alleen','Ze vliegen samen op verkenning'], goed:1},
-  {vraag:'Waar zweet een nijlpaard een soort roze vloeistof, die dienstdoet als een natuurlijke zonnebrandcrème?', opties:['Olifant','Neushoorn','Nijlpaard','Varken'], goed:2},
+  {vraag:'Welk dier zweet een soort roze vloeistof, die dienstdoet als een natuurlijke zonnebrandcrème?', opties:['Olifant','Neushoorn','Nijlpaard','Varken'], goed:2},
   {vraag:'Hoeveel harten heeft een octopus?', opties:['1','2','3','8'], goed:2},
   {vraag:'Hoe groot is het hart van een blauwe vinvis, het grootste dier ter wereld?', opties:['Zo groot als een voetbal','Zo groot als een auto','Zo groot als een koelkast','Zo groot als een mens'], goed:1},
   {vraag:'Hoeveel keer zijn eigen lichaamsgewicht kan een mier ongeveer dragen?', opties:['2 keer','10 keer','Tientallen keren','100 keer'], goed:2},
@@ -2493,7 +2493,7 @@ const KENNISVRAGEN_POT = [
   {vraag:'Tegen welk land vocht Nederland in de Tachtigjarige Oorlog?', opties:['Frankrijk','Spanje','Engeland','Duitsland'], goed:1},
   {vraag:'Welk land bezette Nederland in de Tweede Wereldoorlog?', opties:['Frankrijk','Duitsland','Engeland','België'], goed:1},
   {vraag:'Tegen welk land voerde Nederland in de 17e eeuw meerdere zeeoorlogen?', opties:['Spanje','Engeland','Frankrijk','Portugal'], goed:1},
-  {vraag:'Met welk land vocht Nederland een oorlog rond de onafhankelijkheid van Indonesië?', opties:['Japan','Indonesië','Engeland','Australië'], goed:1},
+  {vraag:'Met welk land vocht Nederland na de Tweede Wereldoorlog een oorlog rond de onafhankelijkheid van een kolonie?', opties:['Japan','Indonesië','Engeland','Australië'], goed:1},
   {vraag:'Wat was de kortste oorlog ooit, tussen Engeland en Zanzibar?', opties:['38 minuten','12 uur','3 dagen','7 weken'], goed:0},
   {vraag:'Welk land voerde 335 jaar oorlog met de Scilly-eilanden, zonder dat er ooit één schot werd gelost?', opties:['Frankrijk','Nederland','Spanje','Portugal'], goed:1},
   {vraag:'Waar zonk de Titanic?', opties:['Middellandse Zee','Noordzee','Noord-Atlantische Oceaan','Stille Oceaan'], goed:2}
@@ -6229,22 +6229,18 @@ function kennisvraagDoorgaan(){
 // 12 gelijke segmenten (30° elk), verdeling uit het MD-bestand.
 // Mispoes en jackpot staan tegenover elkaar (6 segmenten apart).
 const RAD_SEGMENTEN = [
-  // Kwadrant 1 (boven-rechts): −10, −25, Mispoes
-  { tekst:'−10 km',  type:'km', waarde:10 },
-  { tekst:'−25 km',  type:'km', waarde:25 },
-  { tekst:'Helaas!', type:'mispoes', waarde:0 },
-  // Kwadrant 2 (onder-rechts): −10, −50, −100
-  { tekst:'−10 km',  type:'km', waarde:10 },
-  { tekst:'−50 km',  type:'km', waarde:50 },
-  { tekst:'−100 km', type:'km', waarde:100 },
-  // Kwadrant 3 (onder-links): −10, −25, Jackpot
-  { tekst:'−10 km',  type:'km', waarde:10 },
-  { tekst:'−25 km',  type:'km', waarde:25 },
-  { tekst:'−300 km!',type:'jackpot', waarde:300 },
-  // Kwadrant 4 (boven-links): −50, Pijl, −100
-  { tekst:'−50 km',  type:'km', waarde:50 },
-  { tekst:'Pijl ➜',  type:'pijl', waarde:0 },
-  { tekst:'−100 km', type:'km', waarde:100 },
+  { tekst:'−200 km',       type:'km',      waarde:200 },
+  { tekst:'−400 km',       type:'km',      waarde:400 },
+  { tekst:'Helaas!',       type:'mispoes',  waarde:0 },
+  { tekst:'Joker',         type:'joker',    waarde:0 },
+  { tekst:'−25 km',        type:'km',      waarde:25 },
+  { tekst:'−100 km',       type:'km',      waarde:100 },
+  { tekst:'−500 km',       type:'km',      waarde:500 },
+  { tekst:'−50 km',        type:'km',      waarde:50 },
+  { tekst:'Extra draaien', type:'extra',    waarde:0 },
+  { tekst:'−100 km',       type:'km',      waarde:100 },
+  { tekst:'−200 km',       type:'km',      waarde:200 },
+  { tekst:'Extra Pijl',    type:'pijl',    waarde:0 },
 ];
 
 let radHoek = 0;           // huidige rotatie van het rad (in graden)
@@ -6257,7 +6253,8 @@ function bouwRadTeksten(){
   const laag = document.getElementById('rad-tekst-laag');
   laag.innerHTML = '';
   for(let i=0; i<12; i++){
-    const hoek = i*30 + 15; // middenpunt van segment i (30° breed), 0° = boven
+    // Tekst op de scheidingslijn: i*30 graden (niet +15 = midden van segment)
+    const hoek = i * 30;
     const wrap = document.createElement('div');
     wrap.className = 'rad-segment-wrap';
     wrap.style.transform = 'rotate('+hoek+'deg)';
@@ -6315,12 +6312,8 @@ function startRadDraaien(){
   radUitkomstSegment = RAD_SEGMENTEN[doelIdx];
 
   // Bereken de doelhoek: meerdere volledige rondjes + de hoek voor dit segment.
-  // De wijzer van radcompleet.png zit bovenaan het frame. Segment 0 begint bij
-  // 0° (boven). Om segment doelIdx onder de wijzer te krijgen, moet het rad
-  // zo ver draaien dat het MIDDEN van dat segment precies bovenaan staat.
-  // Midden van segment doelIdx = doelIdx * 30 + 15 graden. Maar het rad draait
-  // en de wijzer staat stil, dus het rad moet 360 - (doelIdx*30+15) graden
-  // voorbij een geheel veelvoud van 360 draaien.
+  // De wijzer zit bovenaan het frame. Het MIDDEN van segment doelIdx = doelIdx*30+15°.
+  // Het rad draait, de wijzer staat stil.
   const segmentMidden = doelIdx * 30 + 15;
   const extraRondjes = 4 + Math.floor(Math.random()*3); // 4-6 volle rondjes voor het drama
   const doelHoek = radHoek + extraRondjes * 360 + (360 - segmentMidden - (radHoek % 360 + 360) % 360 + 360) % 360;
@@ -6349,43 +6342,69 @@ function toonRadUitslag(){
   if(seg.type === 'mispoes'){
     el.textContent = 'Helaas, niks!';
     el.style.color = '#e05353';
-  } else if(seg.type === 'jackpot'){
-    el.textContent = 'JACKPOT! −300 km!';
-    el.style.color = '#ffe066';
+  } else if(seg.type === 'joker'){
+    el.textContent = 'Extra joker!';
+    el.style.color = '#a8e06e';
+  } else if(seg.type === 'extra'){
+    el.textContent = 'Extra draaien!';
+    el.style.color = '#ffa94d';
   } else if(seg.type === 'pijl'){
     el.textContent = 'Extra richtingpijl!';
     el.style.color = '#7ec8e3';
+  } else if(seg.waarde >= 500){
+    el.textContent = 'JACKPOT! −'+seg.waarde+' km!';
+    el.style.color = '#ffe066';
   } else {
     el.textContent = '−'+seg.waarde+' km!';
     el.style.color = '#ffe066';
   }
   el.style.display = 'block';
-  // Kort "knal"-effect: even groter inkomen dan terugveren, zodat de uitslag
-  // extra opvalt (net als bij de muntjes-beloning).
   el.style.animation = 'none';
-  void el.offsetWidth; // forceert reflow, zodat de animatie altijd opnieuw start
+  void el.offsetWidth;
   el.style.animation = 'radUitslagKnal 0.5s cubic-bezier(.22,1.4,.36,1)';
-  radKlaarVoorDoorgaan = true;
-  document.getElementById('rad-instructie').textContent = 'Klik, tik of druk op een knop om verder te gaan';
+  // Bij "Extra draaien" mag de speler nog een keer draaien, niet doorgaan
+  if(seg.type === 'extra'){
+    radKlaarVoorDoorgaan = false;
+    radDraait = false;
+    document.getElementById('rad-instructie').textContent = 'Klik, tik of druk op een knop om nogmaals te draaien!';
+  } else {
+    radKlaarVoorDoorgaan = true;
+    document.getElementById('rad-instructie').textContent = 'Klik, tik of druk op een knop om verder te gaan';
+  }
 }
 
-function verwerkRadBeloning(){
+// verwerkRadBeloning(): start de vlucht-animatie naar het juiste HUD-onderdeel.
+// De echte score/joker/hint-wijziging gebeurt pas bij aankomst (in de
+// opAankomst-callback van vliegBeloningNaarDoel), niet meteen hier.
+function verwerkRadBeloning(sx, sy){
   const seg = radUitkomstSegment;
   if(!seg) return;
-  if(seg.type === 'km' || seg.type === 'jackpot'){
-    score = Math.max(0, score - seg.waarde);
-    document.getElementById('score').textContent = score;
-    updateScorebordCijfers();
+  if(seg.type === 'km'){
+    vliegBeloningNaarDoel('−'+seg.waarde+' km', sx, sy, document.getElementById('scorebord-wrap'), ()=>{
+      score = Math.max(0, score - seg.waarde);
+      document.getElementById('score').textContent = score;
+      updateScorebordCijfers();
+    });
   } else if(seg.type === 'pijl'){
-    hintenBeschikbaar++;
-    updateRichtingKnoppen();
+    vliegBeloningNaarDoel('+1 pijl', sx, sy, document.getElementById('richting-rij'), ()=>{
+      hintenBeschikbaar++;
+      updateRichtingKnoppen();
+    });
+  } else if(seg.type === 'joker'){
+    vliegBeloningNaarDoel('Joker!', sx, sy, document.getElementById('joker-knop'), ()=>{
+      jokerBeschikbaar = true;
+      updateJokerKnop();
+    });
   }
-  // mispoes: niets doen
+  // mispoes en extra: geen vlucht nodig, niets om bij te werken
 }
 
 function sluitRad(){
   if(!radActief) return;
-  verwerkRadBeloning();
+  // Vertrekpunt van de vlucht-animatie: het midden van het rad zelf
+  const radRect = document.getElementById('rad-container').getBoundingClientRect();
+  const sx = radRect.left + radRect.width/2, sy = radRect.top + radRect.height/2;
+  verwerkRadBeloning(sx, sy);
   document.getElementById('rad-popup').classList.remove('toon');
   document.getElementById('rad-uitslag').style.display = 'none';
   document.getElementById('spelscherm').classList.remove('rad-grayscale');
@@ -6397,21 +6416,20 @@ function sluitRad(){
   radUitkomstSegment = null;
 }
 
-// toonMuntjeBeloning(): laat een groot "−X km"-getal vanaf de vangstplek
-// naar het scorebord vliegen, kleiner wordend. De score wordt pas op het
-// moment van "aankomen" echt aangepast (kan nooit onder 0 km komen).
-// Twee fases: eerst even goed leesbaar stilstaan op volle grootte
-// (MUNTJE_LEESPAUZE_MS), dan pas de vlucht naar het scorebord (MUNTJE_VLUCHT_DUUR).
+// vliegBeloningNaarDoel(): generieke vlucht-animatie - een tekst vliegt vanaf
+// een startpunt (sx,sy) naar een doel-element toe, kleiner wordend. Pas op
+// het moment van "aankomen" wordt opAankomst() aangeroepen (dat de echte
+// score/joker/hint-status bijwerkt) - zodat het effect zichtbaar samenvalt
+// met de daadwerkelijke wijziging.
 const MUNTJE_LEESPAUZE_MS = 700; // ms - tijd om het bedrag rustig te kunnen lezen
 const MUNTJE_VLUCHT_DUUR = 1400; // ms - duur van de vlucht zelf
-function toonMuntjeBeloning(bedrag, sx, sy){
+function vliegBeloningNaarDoel(tekst, sx, sy, doelEl, opAankomst){
   const el = document.getElementById('muntje-feedback');
-  const doelRect = document.getElementById('scorebord-wrap').getBoundingClientRect();
-  const doelX = doelRect.left + doelRect.width * 0.51;  // ongeveer midden van de km-cijferrij
-  const doelY = doelRect.top + doelRect.height * 0.47;
+  const doelRect = doelEl.getBoundingClientRect();
+  const doelX = doelRect.left + doelRect.width * 0.5;
+  const doelY = doelRect.top + doelRect.height * 0.5;
 
-  el.textContent = '−'+bedrag+' km';
-  // Startstand direct (zonder transitie) neerzetten
+  el.textContent = tekst;
   el.style.transition = 'none';
   el.style.left = sx+'px';
   el.style.top = sy+'px';
@@ -6419,9 +6437,7 @@ function toonMuntjeBeloning(bedrag, sx, sy){
   el.style.opacity = '1';
   void el.offsetWidth; // forceert reflow, zodat de browser de startstand echt toepast
 
-  // Fase 1: gewoon even blijven staan, groot en goed leesbaar
   setTimeout(()=>{
-    // Fase 2: nu pas de vlucht naar het scorebord animeren
     el.style.transition = 'left '+MUNTJE_VLUCHT_DUUR+'ms cubic-bezier(.4,.0,.6,1), '
       +'top '+MUNTJE_VLUCHT_DUUR+'ms cubic-bezier(.4,.0,.6,1), '
       +'font-size '+MUNTJE_VLUCHT_DUUR+'ms ease-in, opacity '+MUNTJE_VLUCHT_DUUR+'ms ease-in';
@@ -6431,13 +6447,21 @@ function toonMuntjeBeloning(bedrag, sx, sy){
     el.style.opacity = '0.2';
 
     setTimeout(()=>{
-      // Het getal "landt": nu pas de score echt aftrekken (nooit onder 0 km)
-      score = Math.max(0, score - bedrag);
-      document.getElementById('score').textContent = score;
-      updateScorebordCijfers();
+      opAankomst();
       el.style.opacity = '0';
     }, MUNTJE_VLUCHT_DUUR);
   }, MUNTJE_LEESPAUZE_MS);
+}
+
+// toonMuntjeBeloning(): laat een groot "−X km"-getal vanaf de vangstplek
+// naar het scorebord vliegen. De score wordt pas op het moment van
+// "aankomen" echt aangepast (kan nooit onder 0 km komen).
+function toonMuntjeBeloning(bedrag, sx, sy){
+  vliegBeloningNaarDoel('−'+bedrag+' km', sx, sy, document.getElementById('scorebord-wrap'), ()=>{
+    score = Math.max(0, score - bedrag);
+    document.getElementById('score').textContent = score;
+    updateScorebordCijfers();
+  });
 }
 
 function updateSpel(){
