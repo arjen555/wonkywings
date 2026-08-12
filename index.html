@@ -258,17 +258,23 @@
       position:absolute; inset:0; width:100%; height:100%;
     }
     /* Elk segment krijgt een volwaardige, even grote laag als het rad zelf,
-       die als geheel gedraaid wordt naar de hoek van dat segment. Zo kan de
-       tekst daarbinnen gepositioneerd worden met percentages die kloppen
-       t.o.v. het RAD (top:14% = dicht bij de buitenrand), i.p.v. t.o.v. het
-       tekstelementje zelf (de vorige, foute aanpak). */
+       die als geheel gedraaid wordt naar het MIDDEN van dat segment (net als
+       een spaak). Daarbinnen zit een ankerpunt op een vaste afstand van het
+       middelpunt (top:%, dus correct t.o.v. het RAD zelf), en pas daarbinnen
+       de tekst, die 90° gedraaid is zodat hij RADIAAL loopt - van dichtbij
+       het midden naar de rand - net als in het voorbeeld dat Arjen aanleverde,
+       in plaats van plat/horizontaal (wat bij zo'n smalle taartpunt al snel
+       over de rand van het segment heen loopt). */
     .rad-segment-wrap {
       position:absolute; inset:0;
     }
+    .rad-segment-anker {
+      position:absolute; left:50%; top:29%;
+    }
     .rad-segment-tekst {
-      position:absolute; left:50%; top:14%;
-      transform:translate(-50%,-50%);
-      font-family:'Baloo 2',sans-serif; font-weight:900; font-size:clamp(0.85rem,2.6vw,1.3rem);
+      position:absolute; left:0; top:0;
+      transform:translate(-50%,-50%) rotate(90deg);
+      font-family:'Baloo 2',sans-serif; font-weight:900; font-size:clamp(0.95rem,2.9vw,1.35rem);
       color:#fff; text-shadow:
         -1.5px -1.5px 0 #000, 1.5px -1.5px 0 #000,
         -1.5px 1.5px 0 #000, 1.5px 1.5px 0 #000,
@@ -884,7 +890,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.15</div>
+  <div id="versie-label">v0.3.16</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -6253,15 +6259,18 @@ function bouwRadTeksten(){
   const laag = document.getElementById('rad-tekst-laag');
   laag.innerHTML = '';
   for(let i=0; i<12; i++){
-    // Tekst op de scheidingslijn: i*30 graden (niet +15 = midden van segment)
-    const hoek = i * 30;
+    // Midden van het segment: i*30 + 15 graden (0° = boven, met de klok mee)
+    const hoek = i * 30 + 15;
     const wrap = document.createElement('div');
     wrap.className = 'rad-segment-wrap';
     wrap.style.transform = 'rotate('+hoek+'deg)';
+    const anker = document.createElement('div');
+    anker.className = 'rad-segment-anker';
     const tekst = document.createElement('div');
     tekst.className = 'rad-segment-tekst';
     tekst.textContent = RAD_SEGMENTEN[i].tekst;
-    wrap.appendChild(tekst);
+    anker.appendChild(tekst);
+    wrap.appendChild(anker);
     laag.appendChild(wrap);
   }
 }
