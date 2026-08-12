@@ -778,7 +778,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.00</div>
+  <div id="versie-label">v0.3.02</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2210,6 +2210,26 @@ let plekLaatsteKm=0, plekLaatsteJuisteLand=false, plekLaatsteSec=0, plekLaatsteP
 let plekkenScore=0, plekkenResultaten=[];
 let hoofdstedenRevealLand=null; // welk land z'n hoofdstad moet gloeien (na het droppen van het vlaggetje)
 let correctieLabelDubbel=null; // {hoofdstad, land} - zet het correctie-label in dual-tekst-modus
+
+// ── Muntjes (Landen-modus, niet Hoofdsteden/Raadspel/Plekken) ──────────
+// Per ronde van 10 landen: 3× muntje2 (gewoon, km-korting) + 1× muntje1
+// (bijzonder, leidt tot kennisvraag → rad van fortuin). Elk muntje verschijnt
+// op een willekeurig moment (bij een willekeurig land-nummer), beweegt
+// langzaam over de bol in een willekeurige richting, en verdwijnt na 8 seconden.
+const MUNTJE_ZICHTBAAR_MS = 8000;           // hoe lang een muntje in beeld blijft
+const MUNTJE_BOL_SNELHEID = Math.PI / 20;   // radialen per seconde (~20s om het zichtbare halfrond over te steken)
+const MUNTJE_VANG_AFSTAND = 55;             // pixels (ruim/kindvriendelijk)
+let actieveMuntjes = [];     // array van {type, lon, lat, richtingLon, richtingLat, startTijd, img}
+let muntjesPlanning = [];    // welke land-nummers (0-indexed) deze ronde een muntje krijgen, per item: {landIdx, type}
+let muntjeImgGewoon = null;  // preloaded Image voor muntje2.png
+let muntjeImgBijzonder = null; // preloaded Image voor muntje.png
+const MUNTJE_SCHERM_PX = 42; // hoe groot het muntje op het scherm wordt getekend
+
+// Preload muntje-afbeeldingen
+(function(){
+  muntjeImgGewoon = new Image(); muntjeImgGewoon.src = 'images/muntje2.png';
+  muntjeImgBijzonder = new Image(); muntjeImgBijzonder.src = 'images/muntje.png';
+})();
 let vluchtStartVec=null, vluchtEindVec=null, vluchtEindLon=0, vluchtEindLat=0;
 let vluchtScoreVoor=0, vluchtScoreNa=0, vluchtAfwijkingKm=0, vluchtDoelLand=null;
 let correctieLand=null, correctieLandStartTijd=0;
@@ -2782,15 +2802,16 @@ function startSpel(levelId, modus) {
   document.getElementById('plek-uitslag-overlay').style.display = 'none';
   if(plekUitslagTimer){ clearTimeout(plekUitslagTimer); plekUitslagTimer=null; }
   // Plekken-modus: het onthullingsvenster neemt de rol van de landillustratie
-  // over, dus dat vervangt niet de landillustraties op de bol - die mogen
-  // gewoon (net als anders) verschijnen zodra je dichtbij genoeg inzoomt.
+  // over. De landillustraties op de bol tonen bij het inzoomen bleek geen
+  // goed idee: de iconische plek zelf staat vaak niet exact op de juiste
+  // plek binnen die illustratie, dus wie op basis daarvan preciezer probeert
+  // te droppen, wordt juist op het verkeerde been gezet. Daarom weer uit.
   verbergPlekVenster();
   stopPlekKalibratie();
-  // Hoofdsteden-modus: landenafbeeldingen altijd uit (de hoofdstad-stip is nu het
-  // enige visuele aanknopingspunt). Dit raakt alleen deze speelsessie, niet de
-  // opgeslagen voorkeur - bij een gewoon landen-level (én bij Plekken) geldt
-  // weer gewoon de schakelaar zoals die in het menu staat.
-  illustratiesAan = isHoofdsteden ? false : (localStorage.getItem('wonkywings_illustraties_aan') !== '0');
+  // Hoofdsteden- én Plekken-modus: landenafbeeldingen altijd uit. Dit raakt
+  // alleen deze speelsessie, niet de opgeslagen voorkeur - bij een gewoon
+  // landen-level geldt weer gewoon de schakelaar zoals die in het menu staat.
+  illustratiesAan = (isHoofdsteden || isPlekken) ? false : (localStorage.getItem('wonkywings_illustraties_aan') !== '0');
   wonkyLon=lv.start.lon; wonkyLat=lv.start.lat;
   lonSnelheid=0; latSnelheid=0;
   rotM=maakRotMatrix(wonkyLon,wonkyLat);
@@ -2876,9 +2897,12 @@ function startSpel(levelId, modus) {
     zetOpdrachtTekst();
   }
   updateVoortgang();
+  planMuntjesVoorRonde();
   spelActief=true;
   W=window.innerWidth; H=window.innerHeight;
   canvas.width=W; canvas.height=H;
+  // Eerste muntje-check pas ná spelActief=true, anders is de bol nog niet zichtbaar
+  checkMuntjeSpawn();
 
   if(!globeGestart){
     globeGestart=true;
@@ -2900,6 +2924,8 @@ function naarStart(){
   document.getElementById('richting-pijl').style.display='none';
   document.getElementById('zoek-balk').style.display='none';
   if(misserAutoTimer){ clearTimeout(misserAutoTimer); misserAutoTimer=null; }
+  actieveMuntjes = [];
+  muntjesPlanning = [];
   vlagGrond.style.display='none'; vlagValt.style.display='none';
   bouwScoreTickers();
 }
@@ -3275,6 +3301,7 @@ function nieuwLand(){
   }
   zetOpdrachtTekst();
   updateVoortgang(); wachten=false;
+  checkMuntjeSpawn();
 }
 
 // ── Canvas & variabelen ───────────────────────────────
@@ -5232,6 +5259,8 @@ function drawGlobe(){
     }
   }
 
+  tekenMuntjes();
+
   const correctieLabelEl=document.getElementById('correctie-land-naam');
   if(correctieLandScherm){
     if(correctieLabelDubbel){
@@ -5656,9 +5685,143 @@ let dropAnimatieActief = false;
 let dropAnimatieTimer = 0;
 const DROP_ANIMATIE_DUUR = 600;
 
+// ── Muntjes-logica ────────────────────────────────────
+// planMuntjesVoorRonde(): wordt aangeroepen bij de start van een Landen-level.
+// Kiest 4 willekeurige, unieke land-nummers (0-9) en wijst ze een type toe:
+// 1× muntje1 (bijzonder) en 3× muntje2 (gewoon).
+function planMuntjesVoorRonde(){
+  muntjesPlanning = [];
+  actieveMuntjes = [];
+  const lv = LEVELS[huidigLevel];
+  // Alleen in Landen-modus (niet Hoofdsteden, niet Plekken)
+  if(!lv || lv.hoofdsteden || lv.plekken) return;
+  if(huidigModus !== 'spelen') return;
+  const aantalLanden = spelLanden.length;
+  if(aantalLanden < 4) return; // te weinig landen voor 4 muntjes
+  // 4 willekeurige unieke indices (0 t/m aantalLanden-1)
+  const indices = [];
+  while(indices.length < 4){
+    const r = Math.floor(Math.random() * aantalLanden);
+    if(!indices.includes(r)) indices.push(r);
+  }
+  // Shuffle zodat de positie van muntje1 willekeurig is
+  for(let i=indices.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [indices[i],indices[j]]=[indices[j],indices[i]]; }
+  muntjesPlanning = [
+    { landIdx: indices[0], type: 'bijzonder' },
+    { landIdx: indices[1], type: 'gewoon' },
+    { landIdx: indices[2], type: 'gewoon' },
+    { landIdx: indices[3], type: 'gewoon' },
+  ];
+}
+
+// spawnMuntje(): plaatst een muntje op een willekeurig punt op het ZICHTBARE
+// halfrond en geeft het een willekeurige bewegingsrichting in lon/lat-graden per seconde.
+function spawnMuntje(type){
+  // Willekeurig punt op het zichtbare halfrond: we kiezen een punt in 3D dat
+  // op de voorkant van de bol ligt (z > 0 na rotatie), en rekenen dat terug
+  // naar lon/lat. Simpele aanpak: willekeurige richting vanuit het centrum
+  // van het zichtbare halfrond (= wonkyLon/wonkyLat ± een offset).
+  // Makkelijker: willekeurig punt op de halve bol, dan de inverse rotatie toepassen.
+  // Maar het simpelst: kies een lon/lat in de buurt van het midden van het scherm
+  // en check of het zichtbaar is.
+  let spawnLon, spawnLat;
+  for(let poging=0; poging<50; poging++){
+    // Willekeurige offset van Wonky's huidige positie, binnen ~80° zodat het
+    // punt stevig in beeld ligt (niet aan de rand waar het direct wegdraait)
+    spawnLon = wonkyLon + (Math.random()-0.5) * 120;
+    spawnLat = wonkyLat + (Math.random()-0.5) * 80;
+    spawnLat = Math.max(-85, Math.min(85, spawnLat));
+    if(spawnLon > 180) spawnLon -= 360;
+    if(spawnLon < -180) spawnLon += 360;
+    // Check of het punt op de zichtbare kant van de bol ligt
+    const p3 = roteerPunt(lonLatTo3D(spawnLon, spawnLat), rotM);
+    if(p3[2] > 0.15) break; // 0.15 = niet te dicht bij de rand
+  }
+  // Willekeurige bewegingsrichting (hoek in radialen)
+  const hoek = Math.random() * Math.PI * 2;
+  // Snelheid in graden per seconde (afgeleid van de bol-snelheid constante)
+  const snelheidGraden = (MUNTJE_BOL_SNELHEID * 180 / Math.PI);
+  const richtingLon = Math.cos(hoek) * snelheidGraden;
+  const richtingLat = Math.sin(hoek) * snelheidGraden;
+
+  actieveMuntjes.push({
+    type: type,
+    lon: spawnLon,
+    lat: spawnLat,
+    richtingLon: richtingLon,
+    richtingLat: richtingLat,
+    startTijd: performance.now(),
+    img: type === 'bijzonder' ? muntjeImgBijzonder : muntjeImgGewoon
+  });
+}
+
+// checkMuntjeSpawn(): wordt elke keer aangeroepen als een nieuw land begint
+// (in nieuwLand() en bij de eerste land van een ronde). Kijkt of er voor dit
+// land-nummer een muntje gepland staat en spawnt het als dat zo is.
+function checkMuntjeSpawn(){
+  for(const plan of muntjesPlanning){
+    if(plan.landIdx === huidigLandIdx && !plan.gespawnd){
+      plan.gespawnd = true;
+      spawnMuntje(plan.type);
+    }
+  }
+}
+
+// updateMuntjes(): verplaatst alle actieve muntjes en verwijdert verlopen exemplaren.
+// Wordt elke frame aangeroepen vanuit updateSpel().
+function updateMuntjes(){
+  if(actieveMuntjes.length === 0) return;
+  const nu = performance.now();
+  for(let i = actieveMuntjes.length - 1; i >= 0; i--){
+    const m = actieveMuntjes[i];
+    // Verlopen?
+    if(nu - m.startTijd >= MUNTJE_ZICHTBAAR_MS){
+      actieveMuntjes.splice(i, 1);
+      continue;
+    }
+    // Verplaatsen (dt in seconden sinds vorige frame — benadering via 16ms/frame)
+    const dt = 1/60; // vast, voorkomt rare sprongen bij lag
+    m.lon += m.richtingLon * dt;
+    m.lat += m.richtingLat * dt;
+    // Lon wrap-around
+    if(m.lon > 180) m.lon -= 360;
+    if(m.lon < -180) m.lon += 360;
+    // Lat begrenzen (geen poolwrap)
+    m.lat = Math.max(-85, Math.min(85, m.lat));
+  }
+}
+
+// tekenMuntjes(): tekent alle actieve muntjes op de bol, net als de bestaande
+// hoofdsteden-stippen maar dan met een plaatje. Alleen als het punt op de
+// zichtbare kant van de bol staat.
+function tekenMuntjes(){
+  if(actieveMuntjes.length === 0) return;
+  const nu = performance.now();
+  const halfPx = MUNTJE_SCHERM_PX / 2;
+  for(const m of actieveMuntjes){
+    const p3 = roteerPunt(lonLatTo3D(m.lon, m.lat), rotM);
+    if(p3[2] <= 0) continue; // achterkant van de bol
+    const sx = CX + p3[0] * R;
+    const sy = CY - p3[1] * R;
+    if(!m.img || !m.img.complete) continue;
+    // Licht pulseren (schaal 0.9–1.1) voor visuele aantrekkingskracht
+    const puls = 1 + 0.1 * Math.sin((nu - m.startTijd) * 0.005);
+    const grootte = MUNTJE_SCHERM_PX * puls;
+    const half = grootte / 2;
+    // Lichte glow eromheen
+    ctx.save();
+    ctx.shadowColor = m.type === 'bijzonder' ? '#ffd700' : '#ffcc00';
+    ctx.shadowBlur = 18;
+    ctx.globalAlpha = 0.95;
+    ctx.drawImage(m.img, sx - half, sy - half, grootte, grootte);
+    ctx.restore();
+  }
+}
+
 function updateSpel(){
   if(!spelActief || hulpActief) return;
 
+  updateMuntjes();
   updateJokerKnop();
 
   if(huidigModus==='spelen' && levelStartTijd){
