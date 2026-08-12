@@ -5819,11 +5819,12 @@ function tekenMuntjes(){
   }
 }
 
-// checkMuntjeVangst(): checkt elke frame of Wonky dicht genoeg bij een actief
-// muntje zit om het te "vangen". Bij vangst: muntje verwijderen en verwerken.
-function checkMuntjeVangst(){
+// checkMuntjeVangst(wx,wy): checkt elke frame of het zichtbare vliegtuigje
+// (op wx,wy - dus inclusief de 90px hoogte-offset en de bocht-drift, niet het
+// kale schaduwpunt op de bol) dicht genoeg bij een actief muntje zit om het
+// te "vangen". Bij vangst: muntje verwijderen en verwerken.
+function checkMuntjeVangst(wx, wy){
   if(actieveMuntjes.length === 0) return;
-  const wx = focusSx, wy = focusSy; // Wonky's huidige schermpositie op de bol
   for(let i = actieveMuntjes.length - 1; i >= 0; i--){
     const m = actieveMuntjes[i];
     const p3 = roteerPunt(lonLatTo3D(m.lon, m.lat), rotM);
@@ -5865,7 +5866,6 @@ function updateSpel(){
   if(!spelActief || hulpActief) return;
 
   updateMuntjes();
-  checkMuntjeVangst();
   updateJokerKnop();
 
   if(huidigModus==='spelen' && levelStartTijd){
@@ -6079,6 +6079,7 @@ function updateSpel(){
   wonkySchermX+=(driftDoel-wonkySchermX)*DRIFT_S;
   // Wonky's positie is relatief aan de focusstip zelf, niet aan het scherm-midden
   const wx=focusSx + wonkySchermX*W, wy=focusSy-90;
+  checkMuntjeVangst(wx, wy);
 
   const wonkyFrontaal = document.getElementById('wonky-frontaal');
   const wonkyNaarFrontaal = document.getElementById('wonky-naar-frontaal');
