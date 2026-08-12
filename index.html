@@ -234,10 +234,6 @@
     }
     #rad-popup.toon { display:flex; }
     .rad-grayscale { filter:grayscale(1) brightness(0.7) !important; }
-    #rad-pauze-label {
-      font-family:'Baloo 2',sans-serif; font-size:1rem; font-weight:700;
-      color:rgba(255,255,255,0.6); letter-spacing:1px; margin-bottom:12px;
-    }
     #rad-container {
       position:relative; width:min(82vw,82vh); height:min(82vw,82vh);
     }
@@ -273,13 +269,17 @@
     }
     .rad-segment-tekst {
       position:absolute; left:0; top:0;
-      transform:translate(-50%,-50%) rotate(90deg);
+      /* rotate(...) wordt per segment via JS toegevoegd - zie bouwRadTeksten() -
+         zodat de onderste helft van het rad niet ondersteboven leest. */
       font-family:'Baloo 2',sans-serif; font-weight:900; font-size:clamp(0.95rem,2.9vw,1.35rem);
       color:#fff; text-shadow:
         -1.5px -1.5px 0 #000, 1.5px -1.5px 0 #000,
         -1.5px 1.5px 0 #000, 1.5px 1.5px 0 #000,
         0 2px 6px rgba(0,0,0,0.6);
       white-space:nowrap; pointer-events:none;
+    }
+    .rad-segment-tekst-lang {
+      font-size:clamp(0.7rem,2.1vw,1rem);
     }
     #rad-instructie {
       font-family:'Baloo 2',sans-serif; font-size:1.1rem; font-weight:700;
@@ -890,7 +890,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.16</div>
+  <div id="versie-label">v0.3.17</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -924,7 +924,6 @@
 
 <!-- HELP POPUP -->
 <div id="rad-popup">
-  <div id="rad-pauze-label">⏸ TIJD STAAT STIL</div>
   <div id="rad-container">
     <div id="rad-draai-wrap">
       <img id="rad-draai-img" src="images/rad.png" alt=""/>
@@ -6268,7 +6267,14 @@ function bouwRadTeksten(){
     anker.className = 'rad-segment-anker';
     const tekst = document.createElement('div');
     tekst.className = 'rad-segment-tekst';
+    if(RAD_SEGMENTEN[i].tekst.length > 9) tekst.classList.add('rad-segment-tekst-lang');
     tekst.textContent = RAD_SEGMENTEN[i].tekst;
+    // Op de onderste helft van het rad (segmenten met hoek tussen 90° en 270°)
+    // draait de tekst 180° extra, zodat de bovenkant van de letters altijd
+    // naar de buitenrand wijst - anders leest de onderste helft ondersteboven
+    // t.o.v. de bovenste helft.
+    const flip = (hoek > 90 && hoek < 270) ? 180 : 0;
+    tekst.style.transform = 'translate(-50%,-50%) rotate('+(90+flip)+'deg)';
     anker.appendChild(tekst);
     wrap.appendChild(anker);
     laag.appendChild(wrap);
