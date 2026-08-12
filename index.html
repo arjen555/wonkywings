@@ -619,6 +619,7 @@
     #correctie-land-naam { position:fixed; background:rgba(120,90,0,0.85); color:#fff9d6; font-size:1rem; font-weight:800; padding:5px 16px; border-radius:10px; pointer-events:none; white-space:nowrap; opacity:0; transition:opacity 0.2s; z-index:8; transform:translate(-50%,-100%); box-shadow:0 0 14px rgba(255,224,102,0.6); }
     #feedback { position:fixed; top:42%; left:50%; transform:translate(-50%,-50%); font-size:3rem; font-weight:900; pointer-events:none; opacity:0; text-shadow:0 4px 20px rgba(0,0,0,0.8); z-index:30; transition:opacity 0.3s; text-align:center; max-width:85vw; text-wrap:balance; }
     #punten-feedback { position:fixed; top:36%; left:50%; transform:translate(-50%,-50%); font-size:1.6rem; font-weight:900; pointer-events:none; opacity:0; color:#ffd700; text-shadow:0 4px 20px rgba(0,0,0,0.8); z-index:30; transition:opacity 0.3s; }
+    #muntje-feedback { position:absolute; left:50%; top:-6px; transform:translate(-50%,-100%); font-size:1.25rem; font-weight:900; pointer-events:none; opacity:0; color:#ffcc00; text-shadow:0 3px 14px rgba(0,0,0,0.85); z-index:35; transition:opacity 0.35s; white-space:nowrap; }
     #ronde-display { font-size:1.2rem; font-weight:700; color:rgba(255,255,255,0.8); }
     #voortgang-bord {
       position:fixed; left:clamp(10px,2vmin,22px); bottom:clamp(10px,2vmin,22px); z-index:19;
@@ -778,7 +779,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.02</div>
+  <div id="versie-label">v0.3.03</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1034,7 +1035,7 @@
       <button id="zoek-knop" onclick="zoekEnVlieg()" aria-label="Zoeken">🔍</button>
     </div>
     <div id="score-box">
-      <div id="scorebord-wrap">
+      <div id="muntje-feedback"></div>      <div id="scorebord-wrap">
         <img id="scorebord-img" src="images/scorebord.png" alt="Scorebord"/>
         <span class="scorebord-cijfer scorebord-km-cijfer" style="left:31.84%;top:46.68%;"></span>
         <span class="scorebord-cijfer scorebord-km-cijfer" style="left:41.60%;top:46.68%;"></span>
@@ -2223,7 +2224,7 @@ let actieveMuntjes = [];     // array van {type, lon, lat, richtingLon, richting
 let muntjesPlanning = [];    // welke land-nummers (0-indexed) deze ronde een muntje krijgen, per item: {landIdx, type}
 let muntjeImgGewoon = null;  // preloaded Image voor muntje2.png
 let muntjeImgBijzonder = null; // preloaded Image voor muntje.png
-const MUNTJE_SCHERM_PX = 42; // hoe groot het muntje op het scherm wordt getekend
+const MUNTJE_SCHERM_PX = 30; // hoe groot het muntje op het scherm wordt getekend
 
 // Preload muntje-afbeeldingen
 (function(){
@@ -5818,10 +5819,53 @@ function tekenMuntjes(){
   }
 }
 
+// checkMuntjeVangst(): checkt elke frame of Wonky dicht genoeg bij een actief
+// muntje zit om het te "vangen". Bij vangst: muntje verwijderen en verwerken.
+function checkMuntjeVangst(){
+  if(actieveMuntjes.length === 0) return;
+  const wx = focusSx, wy = focusSy; // Wonky's huidige schermpositie op de bol
+  for(let i = actieveMuntjes.length - 1; i >= 0; i--){
+    const m = actieveMuntjes[i];
+    const p3 = roteerPunt(lonLatTo3D(m.lon, m.lat), rotM);
+    if(p3[2] <= 0) continue; // muntje aan de onzichtbare kant: kan niet gevangen worden
+    const sx = CX + p3[0]*R, sy = CY - p3[1]*R;
+    const afstand = Math.hypot(sx - wx, sy - wy);
+    if(afstand <= MUNTJE_VANG_AFSTAND){
+      actieveMuntjes.splice(i, 1);
+      verwerkMuntje(m);
+    }
+  }
+}
+
+// verwerkMuntje(): wat er gebeurt zodra een muntje gevangen is.
+// - 'gewoon' (muntje2): direct −50/−100/−200 km van de score af, met feedback.
+// - 'bijzonder' (muntje1): komt in stap 3 (kennisvraag → rad van fortuin).
+//   Voorlopig verdwijnt hij bij vangst zonder verder gevolg.
+const MUNTJE_GEWOON_BEDRAGEN = [50, 100, 200];
+function verwerkMuntje(m){
+  if(m.type === 'gewoon'){
+    const bedrag = MUNTJE_GEWOON_BEDRAGEN[Math.floor(Math.random()*MUNTJE_GEWOON_BEDRAGEN.length)];
+    score = Math.max(0, score - bedrag);
+    document.getElementById('score').textContent = score;
+    updateScorebordCijfers();
+    toonMuntjeBeloning(bedrag);
+  } else {
+    // Bijzonder muntje: kennisvraag-pop-up en rad van fortuin volgen in stap 3.
+  }
+}
+
+function toonMuntjeBeloning(bedrag){
+  const el = document.getElementById('muntje-feedback');
+  el.textContent = '−'+bedrag+' km';
+  el.style.opacity = '1';
+  setTimeout(()=>{ el.style.opacity = '0'; }, 1600);
+}
+
 function updateSpel(){
   if(!spelActief || hulpActief) return;
 
   updateMuntjes();
+  checkMuntjeVangst();
   updateJokerKnop();
 
   if(huidigModus==='spelen' && levelStartTijd){
