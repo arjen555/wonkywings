@@ -619,14 +619,7 @@
     #correctie-land-naam { position:fixed; background:rgba(120,90,0,0.85); color:#fff9d6; font-size:1rem; font-weight:800; padding:5px 16px; border-radius:10px; pointer-events:none; white-space:nowrap; opacity:0; transition:opacity 0.2s; z-index:8; transform:translate(-50%,-100%); box-shadow:0 0 14px rgba(255,224,102,0.6); }
     #feedback { position:fixed; top:42%; left:50%; transform:translate(-50%,-50%); font-size:3rem; font-weight:900; pointer-events:none; opacity:0; text-shadow:0 4px 20px rgba(0,0,0,0.8); z-index:30; transition:opacity 0.3s; text-align:center; max-width:85vw; text-wrap:balance; }
     #punten-feedback { position:fixed; top:36%; left:50%; transform:translate(-50%,-50%); font-size:1.6rem; font-weight:900; pointer-events:none; opacity:0; color:#ffd700; text-shadow:0 4px 20px rgba(0,0,0,0.8); z-index:30; transition:opacity 0.3s; }
-    #muntje-feedback { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); font-size:2.1rem; font-weight:900; pointer-events:none; opacity:0; color:#ffe066; text-shadow:0 3px 4px rgba(0,0,0,0.6), 0 0 22px rgba(255,200,0,0.9); z-index:35; transition:opacity 0.4s; white-space:nowrap; }
-    #muntje-feedback.knal { animation:muntjeKnal 1.6s cubic-bezier(.2,.9,.4,1) forwards; }
-    @keyframes muntjeKnal {
-      0%   { transform:translate(-50%,-50%) scale(2.1); opacity:1; }
-      15%  { transform:translate(-50%,-50%) scale(1.0);  opacity:1; }
-      70%  { transform:translate(-50%,-50%) scale(1.0);  opacity:1; }
-      100% { transform:translate(-50%,-80%) scale(0.85); opacity:0; }
-    }
+    #muntje-feedback { position:fixed; left:0; top:0; transform:translate(-50%,-50%); font-weight:900; pointer-events:none; opacity:0; color:#ffe066; text-shadow:0 3px 4px rgba(0,0,0,0.6), 0 0 22px rgba(255,200,0,0.9); z-index:120; white-space:nowrap; }
     #ronde-display { font-size:1.2rem; font-weight:700; color:rgba(255,255,255,0.8); }
     #voortgang-bord {
       position:fixed; left:clamp(10px,2vmin,22px); bottom:clamp(10px,2vmin,22px); z-index:19;
@@ -786,7 +779,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.05</div>
+  <div id="versie-label">v0.3.06</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1042,7 +1035,8 @@
       <button id="zoek-knop" onclick="zoekEnVlieg()" aria-label="Zoeken">🔍</button>
     </div>
     <div id="score-box">
-      <div id="muntje-feedback"></div>      <div id="scorebord-wrap">
+      <div id="muntje-feedback"></div>
+      <div id="scorebord-wrap">
         <img id="scorebord-img" src="images/scorebord.png" alt="Scorebord"/>
         <span class="scorebord-cijfer scorebord-km-cijfer" style="left:31.84%;top:46.68%;"></span>
         <span class="scorebord-cijfer scorebord-km-cijfer" style="left:41.60%;top:46.68%;"></span>
@@ -5840,37 +5834,62 @@ function checkMuntjeVangst(wx, wy){
     const afstand = Math.hypot(sx - wx, sy - wy);
     if(afstand <= MUNTJE_VANG_AFSTAND){
       actieveMuntjes.splice(i, 1);
-      verwerkMuntje(m);
+      verwerkMuntje(m, sx, sy);
     }
   }
 }
 
-// verwerkMuntje(): wat er gebeurt zodra een muntje gevangen is.
-// - 'gewoon' (muntje2): direct −50/−100/−200 km van de score af, met feedback.
+// verwerkMuntje(m, sx, sy): wat er gebeurt zodra een muntje gevangen is.
+// sx,sy = de schermpositie waar het muntje gevangen werd (startpunt van de vlucht-animatie).
+// - 'gewoon' (muntje2): een vliegend getal (−50/−100/−200 km) vliegt naar het
+//   scorebord; pas op het moment dat het "aankomt" wordt de score echt bijgewerkt.
 // - 'bijzonder' (muntje1): komt in stap 3 (kennisvraag → rad van fortuin).
 //   Voorlopig verdwijnt hij bij vangst zonder verder gevolg.
 const MUNTJE_GEWOON_BEDRAGEN = [50, 100, 200];
-function verwerkMuntje(m){
+function verwerkMuntje(m, sx, sy){
   if(m.type === 'gewoon'){
     const bedrag = MUNTJE_GEWOON_BEDRAGEN[Math.floor(Math.random()*MUNTJE_GEWOON_BEDRAGEN.length)];
-    score = Math.max(0, score - bedrag);
-    document.getElementById('score').textContent = score;
-    updateScorebordCijfers();
-    toonMuntjeBeloning(bedrag);
+    toonMuntjeBeloning(bedrag, sx, sy);
   } else {
     // Bijzonder muntje: kennisvraag-pop-up en rad van fortuin volgen in stap 3.
   }
 }
 
-function toonMuntjeBeloning(bedrag){
+// toonMuntjeBeloning(): laat een groot "−X km"-getal vanaf de vangstplek
+// naar het scorebord vliegen, kleiner wordend. De score wordt pas op het
+// moment van "aankomen" echt aangepast (kan nooit onder 0 km komen).
+const MUNTJE_VLUCHT_DUUR = 850; // ms
+function toonMuntjeBeloning(bedrag, sx, sy){
   const el = document.getElementById('muntje-feedback');
-  el.textContent = '−'+bedrag+' km!';
-  // Animatie geforceerd laten herstarten (ook als er kort na elkaar twee
-  // muntjes gevangen worden): eerst de klasse weghalen, browser laten
-  // "vergeten" via een reflow, dan opnieuw toevoegen.
-  el.classList.remove('knal');
-  void el.offsetWidth; // forceert reflow
-  el.classList.add('knal');
+  const doelRect = document.getElementById('scorebord-wrap').getBoundingClientRect();
+  const doelX = doelRect.left + doelRect.width * 0.51;  // ongeveer midden van de km-cijferrij
+  const doelY = doelRect.top + doelRect.height * 0.47;
+
+  el.textContent = '−'+bedrag+' km';
+  // Startstand direct (zonder transitie) neerzetten
+  el.style.transition = 'none';
+  el.style.left = sx+'px';
+  el.style.top = sy+'px';
+  el.style.fontSize = '2.6rem';
+  el.style.opacity = '1';
+  void el.offsetWidth; // forceert reflow, zodat de browser de startstand echt toepast
+
+  // Vervolgens de vlucht naar het scorebord animeren
+  el.style.transition = 'left '+MUNTJE_VLUCHT_DUUR+'ms cubic-bezier(.25,.05,.35,1), '
+    +'top '+MUNTJE_VLUCHT_DUUR+'ms cubic-bezier(.25,.05,.35,1), '
+    +'font-size '+MUNTJE_VLUCHT_DUUR+'ms ease-in, opacity '+MUNTJE_VLUCHT_DUUR+'ms ease-in';
+  el.style.left = doelX+'px';
+  el.style.top = doelY+'px';
+  el.style.fontSize = '1rem';
+  el.style.opacity = '0.2';
+
+  setTimeout(()=>{
+    // Het getal "landt": nu pas de score echt aftrekken (nooit onder 0 km)
+    score = Math.max(0, score - bedrag);
+    document.getElementById('score').textContent = score;
+    updateScorebordCijfers();
+    el.style.opacity = '0';
+  }, MUNTJE_VLUCHT_DUUR);
 }
 
 function updateSpel(){
