@@ -246,21 +246,34 @@
     }
     #rad-draai-wrap {
       position:absolute;
-      /* Positie en grootte van het rad t.o.v. het frame: het gat in radcompleet.png
-         is ~53% van de framebreedte, middelpunt op ~50% horizontaal en ~43% verticaal. */
-      width:56%; height:56%;
-      left:22%; top:15.5%;
+      /* Precies gemeten op radcompleet.png (1254×1254): middelpunt van het gat op
+         49.88% / 43.06%, straal 26.62% — met een kleine marge (×0.96) zodat het
+         rad net binnen de gouden ring blijft i.p.v. eroverheen te steken. */
+      width:51.1%; height:51.1%;
+      left:24.3%; top:17.5%;
       z-index:2;
     }
     #rad-draai-img { width:100%; height:100%; }
     #rad-tekst-laag {
       position:absolute; inset:0; width:100%; height:100%;
     }
+    /* Elk segment krijgt een volwaardige, even grote laag als het rad zelf,
+       die als geheel gedraaid wordt naar de hoek van dat segment. Zo kan de
+       tekst daarbinnen gepositioneerd worden met percentages die kloppen
+       t.o.v. het RAD (top:14% = dicht bij de buitenrand), i.p.v. t.o.v. het
+       tekstelementje zelf (de vorige, foute aanpak). */
+    .rad-segment-wrap {
+      position:absolute; inset:0;
+    }
     .rad-segment-tekst {
-      position:absolute; left:50%; top:50%;
-      font-family:'Baloo 2',sans-serif; font-weight:900; font-size:clamp(0.6rem,1.8vw,1rem);
-      color:#fff; text-shadow:0 1px 4px rgba(0,0,0,0.7);
-      transform-origin:0 0; white-space:nowrap; pointer-events:none;
+      position:absolute; left:50%; top:14%;
+      transform:translate(-50%,-50%);
+      font-family:'Baloo 2',sans-serif; font-weight:900; font-size:clamp(0.85rem,2.6vw,1.3rem);
+      color:#fff; text-shadow:
+        -1.5px -1.5px 0 #000, 1.5px -1.5px 0 #000,
+        -1.5px 1.5px 0 #000, 1.5px 1.5px 0 #000,
+        0 2px 6px rgba(0,0,0,0.6);
+      white-space:nowrap; pointer-events:none;
     }
     #rad-instructie {
       font-family:'Baloo 2',sans-serif; font-size:1.1rem; font-weight:700;
@@ -268,9 +281,16 @@
     }
     #rad-uitslag {
       display:none; position:fixed; left:50%; top:42%; transform:translate(-50%,-50%);
-      font-family:'Baloo 2',sans-serif; font-weight:900; font-size:clamp(2rem,6vw,3.6rem);
-      color:#ffe066; text-shadow:0 4px 20px rgba(0,0,0,0.8), 0 0 40px rgba(255,200,0,0.5);
+      font-family:'Baloo 2',sans-serif; font-weight:900; font-size:clamp(2.2rem,6.5vw,4rem);
+      text-shadow:
+        -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000,
+        0 6px 26px rgba(0,0,0,0.85), 0 0 46px rgba(255,200,0,0.6);
       z-index:1000; text-align:center; pointer-events:none;
+    }
+    @keyframes radUitslagKnal {
+      0%   { transform:translate(-50%,-50%) scale(0.4); opacity:0; }
+      60%  { transform:translate(-50%,-50%) scale(1.15); opacity:1; }
+      100% { transform:translate(-50%,-50%) scale(1); opacity:1; }
     }
     #help-kaart {
       background:linear-gradient(145deg,#0b2540,#0e3060);
@@ -864,7 +884,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.11</div>
+  <div id="versie-label">v0.3.12</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -6236,16 +6256,16 @@ let radUitkomstSegment = null; // het segment waarop het rad is gevallen
 function bouwRadTeksten(){
   const laag = document.getElementById('rad-tekst-laag');
   laag.innerHTML = '';
-  const straal = 42; // % vanaf het midden — positioneert de tekst in het midden van het segment
   for(let i=0; i<12; i++){
-    const hoek = i*30 + 15; // middenpunt van segment i (30° breed)
-    const rad = (hoek - 90) * Math.PI/180; // -90 zodat 0° = boven
-    const el = document.createElement('div');
-    el.className = 'rad-segment-tekst';
-    el.textContent = RAD_SEGMENTEN[i].tekst;
-    // Positioneer vanuit het midden van de laag
-    el.style.transform = 'rotate('+hoek+'deg) translate('+straal+'%, 0) translate(-50%,-50%)';
-    laag.appendChild(el);
+    const hoek = i*30 + 15; // middenpunt van segment i (30° breed), 0° = boven
+    const wrap = document.createElement('div');
+    wrap.className = 'rad-segment-wrap';
+    wrap.style.transform = 'rotate('+hoek+'deg)';
+    const tekst = document.createElement('div');
+    tekst.className = 'rad-segment-tekst';
+    tekst.textContent = RAD_SEGMENTEN[i].tekst;
+    wrap.appendChild(tekst);
+    laag.appendChild(wrap);
   }
 }
 
@@ -6330,16 +6350,21 @@ function toonRadUitslag(){
     el.textContent = 'Helaas, niks!';
     el.style.color = '#e05353';
   } else if(seg.type === 'jackpot'){
-    el.textContent = '🎉 JACKPOT! −300 km! 🎉';
+    el.textContent = 'JACKPOT! −300 km!';
     el.style.color = '#ffe066';
   } else if(seg.type === 'pijl'){
-    el.textContent = '🧭 Extra richtingpijl!';
+    el.textContent = 'Extra richtingpijl!';
     el.style.color = '#7ec8e3';
   } else {
     el.textContent = '−'+seg.waarde+' km!';
     el.style.color = '#ffe066';
   }
   el.style.display = 'block';
+  // Kort "knal"-effect: even groter inkomen dan terugveren, zodat de uitslag
+  // extra opvalt (net als bij de muntjes-beloning).
+  el.style.animation = 'none';
+  void el.offsetWidth; // forceert reflow, zodat de animatie altijd opnieuw start
+  el.style.animation = 'radUitslagKnal 0.5s cubic-bezier(.22,1.4,.36,1)';
   radKlaarVoorDoorgaan = true;
   document.getElementById('rad-instructie').textContent = 'Klik, tik of druk op een knop om verder te gaan';
 }
