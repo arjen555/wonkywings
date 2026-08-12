@@ -226,6 +226,52 @@
       display:none; font-family:'Baloo 2',sans-serif; font-size:1rem; font-weight:700;
       color:rgba(255,255,255,0.55); text-align:center; letter-spacing:0.3px;
     }
+    /* ── Rad van fortuin ── */
+    #rad-popup {
+      display:none; position:fixed; inset:0; z-index:997;
+      background:rgba(0,0,0,0.78);
+      align-items:center; justify-content:center; flex-direction:column;
+    }
+    #rad-popup.toon { display:flex; }
+    .rad-grayscale { filter:grayscale(1) brightness(0.7) !important; }
+    #rad-pauze-label {
+      font-family:'Baloo 2',sans-serif; font-size:1rem; font-weight:700;
+      color:rgba(255,255,255,0.6); letter-spacing:1px; margin-bottom:12px;
+    }
+    #rad-container {
+      position:relative; width:min(82vw,82vh); height:min(82vw,82vh);
+    }
+    #rad-frame-img {
+      position:absolute; inset:0; width:100%; height:100%; z-index:3; pointer-events:none;
+    }
+    #rad-draai-wrap {
+      position:absolute;
+      /* Positie en grootte van het rad t.o.v. het frame: het gat in radcompleet.png
+         is ~53% van de framebreedte, middelpunt op ~50% horizontaal en ~43% verticaal. */
+      width:56%; height:56%;
+      left:22%; top:15.5%;
+      z-index:2;
+    }
+    #rad-draai-img { width:100%; height:100%; }
+    #rad-tekst-laag {
+      position:absolute; inset:0; width:100%; height:100%;
+    }
+    .rad-segment-tekst {
+      position:absolute; left:50%; top:50%;
+      font-family:'Baloo 2',sans-serif; font-weight:900; font-size:clamp(0.6rem,1.8vw,1rem);
+      color:#fff; text-shadow:0 1px 4px rgba(0,0,0,0.7);
+      transform-origin:0 0; white-space:nowrap; pointer-events:none;
+    }
+    #rad-instructie {
+      font-family:'Baloo 2',sans-serif; font-size:1.1rem; font-weight:700;
+      color:rgba(255,255,255,0.7); margin-top:18px; text-align:center;
+    }
+    #rad-uitslag {
+      display:none; position:fixed; left:50%; top:42%; transform:translate(-50%,-50%);
+      font-family:'Baloo 2',sans-serif; font-weight:900; font-size:clamp(2rem,6vw,3.6rem);
+      color:#ffe066; text-shadow:0 4px 20px rgba(0,0,0,0.8), 0 0 40px rgba(255,200,0,0.5);
+      z-index:1000; text-align:center; pointer-events:none;
+    }
     #help-kaart {
       background:linear-gradient(145deg,#0b2540,#0e3060);
       border:1.5px solid rgba(255,255,255,0.15);
@@ -818,7 +864,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.10</div>
+  <div id="versie-label">v0.3.11</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -851,6 +897,19 @@
 </div>
 
 <!-- HELP POPUP -->
+<div id="rad-popup">
+  <div id="rad-pauze-label">⏸ TIJD STAAT STIL</div>
+  <div id="rad-container">
+    <div id="rad-draai-wrap">
+      <img id="rad-draai-img" src="images/rad.png" alt=""/>
+      <div id="rad-tekst-laag"></div>
+    </div>
+    <img id="rad-frame-img" src="images/radcompleet.png" alt=""/>
+  </div>
+  <div id="rad-instructie">Klik, tik of druk op een knop om te draaien!</div>
+</div>
+<div id="rad-uitslag"></div>
+
 <div id="kennisvraag-popup" onclick="kennisvraagDoorgaan()">
   <div id="kennisvraag-kaart">
     <img id="kennisvraag-icoon" src="images/muntje.png" alt=""/>
@@ -3126,6 +3185,12 @@ function naarStart(){
   huidigeKennisvraag = null;
   document.getElementById('kennisvraag-popup').style.display = 'none';
   radActief = false;
+  radDraait = false;
+  radKlaarVoorDoorgaan = false;
+  document.getElementById('rad-popup').classList.remove('toon');
+  document.getElementById('rad-uitslag').style.display = 'none';
+  document.getElementById('spelscherm').classList.remove('rad-grayscale');
+  document.getElementById('hud-top').classList.remove('rad-grayscale');
   vlagGrond.style.display='none'; vlagValt.style.display='none';
   bouwScoreTickers();
 }
@@ -5849,6 +5914,7 @@ function pollGamepad(){
   const xIngedrukt = !!(gp.buttons[2] && gp.buttons[2].pressed);
   if(xIngedrukt && !gamepadXKnopVorigeStand){
     if(kennisvraagActief && kennisvraagWachtOpDoorgaan) kennisvraagDoorgaan();
+    else if(radActief) radKlikHandler();
     else skipDoorgaan();
   }
   gamepadXKnopVorigeStand = xIngedrukt;
@@ -6139,10 +6205,171 @@ function kennisvraagDoorgaan(){
   }
 }
 
-// toonRad(): stub - wordt in stap 4 gebouwd (het eigenlijke rad van fortuin).
-// Voorlopig alleen aanwezig zodat kennisvraagDoorgaan() 'm veilig kan aanroepen.
+// ── Rad van fortuin ──────────────────────────────────────────────────────
+// 12 gelijke segmenten (30° elk), verdeling uit het MD-bestand.
+// Mispoes en jackpot staan tegenover elkaar (6 segmenten apart).
+const RAD_SEGMENTEN = [
+  // Kwadrant 1 (boven-rechts): −10, −25, Mispoes
+  { tekst:'−10 km',  type:'km', waarde:10 },
+  { tekst:'−25 km',  type:'km', waarde:25 },
+  { tekst:'Helaas!', type:'mispoes', waarde:0 },
+  // Kwadrant 2 (onder-rechts): −10, −50, −100
+  { tekst:'−10 km',  type:'km', waarde:10 },
+  { tekst:'−50 km',  type:'km', waarde:50 },
+  { tekst:'−100 km', type:'km', waarde:100 },
+  // Kwadrant 3 (onder-links): −10, −25, Jackpot
+  { tekst:'−10 km',  type:'km', waarde:10 },
+  { tekst:'−25 km',  type:'km', waarde:25 },
+  { tekst:'−300 km!',type:'jackpot', waarde:300 },
+  // Kwadrant 4 (boven-links): −50, Pijl, −100
+  { tekst:'−50 km',  type:'km', waarde:50 },
+  { tekst:'Pijl ➜',  type:'pijl', waarde:0 },
+  { tekst:'−100 km', type:'km', waarde:100 },
+];
+
+let radHoek = 0;           // huidige rotatie van het rad (in graden)
+let radDraait = false;      // of het rad momenteel aan het draaien is
+let radKlaarVoorDoorgaan = false; // true zodra de uitslag getoond is en de speler kan doorgaan
+let radOpenTijd = 0;        // voor het "tijd staat stil"-effect
+let radUitkomstSegment = null; // het segment waarop het rad is gevallen
+
+function bouwRadTeksten(){
+  const laag = document.getElementById('rad-tekst-laag');
+  laag.innerHTML = '';
+  const straal = 42; // % vanaf het midden — positioneert de tekst in het midden van het segment
+  for(let i=0; i<12; i++){
+    const hoek = i*30 + 15; // middenpunt van segment i (30° breed)
+    const rad = (hoek - 90) * Math.PI/180; // -90 zodat 0° = boven
+    const el = document.createElement('div');
+    el.className = 'rad-segment-tekst';
+    el.textContent = RAD_SEGMENTEN[i].tekst;
+    // Positioneer vanuit het midden van de laag
+    el.style.transform = 'rotate('+hoek+'deg) translate('+straal+'%, 0) translate(-50%,-50%)';
+    laag.appendChild(el);
+  }
+}
+
 function toonRad(){
-  // Komt in stap 4.
+  radActief = true;
+  radOpenTijd = performance.now();
+  radDraait = false;
+  radKlaarVoorDoorgaan = false;
+  radUitkomstSegment = null;
+
+  // Achtergrond zwart-wit maken
+  document.getElementById('spelscherm').classList.add('rad-grayscale');
+  document.getElementById('hud-top').classList.add('rad-grayscale');
+
+  // Teksten op de segmenten plaatsen
+  bouwRadTeksten();
+
+  // Reset draaihoek visueel
+  const wrap = document.getElementById('rad-draai-wrap');
+  wrap.style.transition = 'none';
+  wrap.style.transform = 'rotate('+radHoek+'deg)';
+
+  document.getElementById('rad-instructie').textContent = 'Klik, tik of druk op een knop om te draaien!';
+  document.getElementById('rad-uitslag').style.display = 'none';
+  document.getElementById('rad-popup').classList.add('toon');
+
+  // Klik/tik op de popup start het draaien
+  document.getElementById('rad-popup').onclick = radKlikHandler;
+}
+
+function radKlikHandler(){
+  if(radDraait) return;
+  if(radKlaarVoorDoorgaan){
+    sluitRad();
+    return;
+  }
+  startRadDraaien();
+}
+
+function startRadDraaien(){
+  if(radDraait) return;
+  radDraait = true;
+  document.getElementById('rad-instructie').textContent = '';
+
+  // Kies een willekeurig doelsegment (0-11)
+  const doelIdx = Math.floor(Math.random()*12);
+  radUitkomstSegment = RAD_SEGMENTEN[doelIdx];
+
+  // Bereken de doelhoek: meerdere volledige rondjes + de hoek voor dit segment.
+  // De wijzer van radcompleet.png zit bovenaan het frame. Segment 0 begint bij
+  // 0° (boven). Om segment doelIdx onder de wijzer te krijgen, moet het rad
+  // zo ver draaien dat het MIDDEN van dat segment precies bovenaan staat.
+  // Midden van segment doelIdx = doelIdx * 30 + 15 graden. Maar het rad draait
+  // en de wijzer staat stil, dus het rad moet 360 - (doelIdx*30+15) graden
+  // voorbij een geheel veelvoud van 360 draaien.
+  const segmentMidden = doelIdx * 30 + 15;
+  const extraRondjes = 4 + Math.floor(Math.random()*3); // 4-6 volle rondjes voor het drama
+  const doelHoek = radHoek + extraRondjes * 360 + (360 - segmentMidden - (radHoek % 360 + 360) % 360 + 360) % 360;
+  // Kleine willekeurige offset binnen het segment (±10°) zodat het niet altijd
+  // keurig in het midden landt
+  const offset = (Math.random()-0.5) * 20;
+
+  const eindHoek = doelHoek + offset;
+
+  const wrap = document.getElementById('rad-draai-wrap');
+  wrap.style.transition = 'transform 5.5s cubic-bezier(.12,.67,.08,1)';
+  wrap.style.transform = 'rotate('+eindHoek+'deg)';
+  radHoek = eindHoek;
+
+  // Wacht tot de animatie klaar is
+  setTimeout(()=>{
+    radDraait = false;
+    toonRadUitslag();
+  }, 5600);
+}
+
+function toonRadUitslag(){
+  const seg = radUitkomstSegment;
+  if(!seg) return;
+  const el = document.getElementById('rad-uitslag');
+  if(seg.type === 'mispoes'){
+    el.textContent = 'Helaas, niks!';
+    el.style.color = '#e05353';
+  } else if(seg.type === 'jackpot'){
+    el.textContent = '🎉 JACKPOT! −300 km! 🎉';
+    el.style.color = '#ffe066';
+  } else if(seg.type === 'pijl'){
+    el.textContent = '🧭 Extra richtingpijl!';
+    el.style.color = '#7ec8e3';
+  } else {
+    el.textContent = '−'+seg.waarde+' km!';
+    el.style.color = '#ffe066';
+  }
+  el.style.display = 'block';
+  radKlaarVoorDoorgaan = true;
+  document.getElementById('rad-instructie').textContent = 'Klik, tik of druk op een knop om verder te gaan';
+}
+
+function verwerkRadBeloning(){
+  const seg = radUitkomstSegment;
+  if(!seg) return;
+  if(seg.type === 'km' || seg.type === 'jackpot'){
+    score = Math.max(0, score - seg.waarde);
+    document.getElementById('score').textContent = score;
+    updateScorebordCijfers();
+  } else if(seg.type === 'pijl'){
+    hintenBeschikbaar++;
+    updateRichtingKnoppen();
+  }
+  // mispoes: niets doen
+}
+
+function sluitRad(){
+  if(!radActief) return;
+  verwerkRadBeloning();
+  document.getElementById('rad-popup').classList.remove('toon');
+  document.getElementById('rad-uitslag').style.display = 'none';
+  document.getElementById('spelscherm').classList.remove('rad-grayscale');
+  document.getElementById('hud-top').classList.remove('rad-grayscale');
+  // Net als bij kennisvraag/hulp: de pop-uptijd telt niet mee
+  if(levelStartTijd){ levelStartTijd += (performance.now() - radOpenTijd); }
+  radActief = false;
+  radKlaarVoorDoorgaan = false;
+  radUitkomstSegment = null;
 }
 
 // toonMuntjeBeloning(): laat een groot "−X km"-getal vanaf de vangstplek
@@ -6768,6 +6995,10 @@ function dropVlaggetje(){
 document.addEventListener('keydown',e=>{
   if(kennisvraagActief && kennisvraagWachtOpDoorgaan && (e.key===' '||e.key==='Enter')){
     kennisvraagDoorgaan();
+    return;
+  }
+  if(radActief && (e.key===' '||e.key==='Enter')){
+    radKlikHandler();
     return;
   }
   if(e.key===' '&&!wachten&&spelActief&&huidigModus==='spelen'){
