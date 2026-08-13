@@ -890,7 +890,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.19</div>
+  <div id="versie-label">v0.3.20</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -6238,7 +6238,6 @@ const RAD_SEGMENTEN = [
   { tekst:'−400 km',       type:'km',      waarde:400 },
   { tekst:'Helaas!',       type:'mispoes',  waarde:0 },
   { tekst:'Joker',         type:'joker',    waarde:0 },
-  { tekst:'−25 km',        type:'km',      waarde:25 },
   { tekst:'−100 km',       type:'km',      waarde:100 },
   { tekst:'−500 km',       type:'km',      waarde:500 },
   { tekst:'−50 km',        type:'km',      waarde:50 },
@@ -6254,21 +6253,26 @@ let radKlaarVoorDoorgaan = false; // true zodra de uitslag getoond is en de spel
 let radOpenTijd = 0;        // voor het "tijd staat stil"-effect
 let radUitkomstSegment = null; // het segment waarop het rad is gevallen
 
-// RAD_HOEK_OFFSET: pixelmeting op rad.png liet zien dat de segmentgrenzen niet
-// precies bij 0°/30°/60°... liggen (waar eerst van uitgegaan werd), maar zo'n
-// 16° verschoven zijn. Deze ene constante verschuift zowel de teksten als de
-// draai-doelberekening in één keer mee - mocht het na visueel testen nog een
-// paar graden moeten schuiven, is dit het enige getal dat aangepast hoeft te worden.
-const RAD_HOEK_OFFSET = 16;
+// RAD_AANTAL_SEGMENTEN / RAD_STAP / RAD_EERSTE_MIDDEN: pixelmeting op rad.png
+// (kleurovergangen langs meerdere cirkels gescand) liet zien dat het rad
+// daadwerkelijk 11 taartpunten heeft, niet 12 - vandaar dat er hierboven ook
+// een tekst ("−25 km") verwijderd is. De grenzen liggen bovendien niet precies
+// bij veelvouden van 360/11 vanaf 0°, maar beginnen met een meetbare
+// verschuiving: het middelpunt van het EERSTE segment (i=0) ligt op zo'n 33°.
+// Deze drie constanten bepalen samen de plek van elk segment; mocht het na
+// visueel testen nog een paar graden moeten schuiven, is RAD_EERSTE_MIDDEN
+// het enige getal dat aangepast hoeft te worden.
+const RAD_AANTAL_SEGMENTEN = RAD_SEGMENTEN.length; // 11
+const RAD_STAP = 360 / RAD_AANTAL_SEGMENTEN;        // ≈32,73° per segment
+const RAD_EERSTE_MIDDEN = 33;                        // gemeten middelpunt van segment 0
 
 function bouwRadTeksten(){
   const laag = document.getElementById('rad-tekst-laag');
   laag.innerHTML = '';
-  for(let i=0; i<12; i++){
-    // Midden van het segment: i*30 + 15 graden (0° = boven, met de klok mee),
-    // plus de kalibratie-offset zodat dit ook echt het midden van de
-    // ECHTE, getekende taartpunt in rad.png is.
-    const hoek = i * 30 + 15 + RAD_HOEK_OFFSET;
+  for(let i=0; i<RAD_AANTAL_SEGMENTEN; i++){
+    // Midden van segment i, gebaseerd op de pixelmeting (zie hierboven) i.p.v.
+    // een aangenomen vaste hoek.
+    const hoek = RAD_EERSTE_MIDDEN + i * RAD_STAP;
     const wrap = document.createElement('div');
     wrap.className = 'rad-segment-wrap';
     wrap.style.transform = 'rotate('+hoek+'deg)';
@@ -6337,16 +6341,16 @@ function startRadDraaien(){
   radDraait = true;
   document.getElementById('rad-instructie').textContent = '';
 
-  // Kies een willekeurig doelsegment (0-11)
-  const doelIdx = Math.floor(Math.random()*12);
+  // Kies een willekeurig doelsegment (0 t/m RAD_AANTAL_SEGMENTEN-1)
+  const doelIdx = Math.floor(Math.random()*RAD_AANTAL_SEGMENTEN);
   radUitkomstSegment = RAD_SEGMENTEN[doelIdx];
 
   // Bereken de doelhoek: meerdere volledige rondjes + de hoek voor dit segment.
-  // De wijzer zit bovenaan het frame. Het MIDDEN van segment doelIdx = doelIdx*30+15°,
-  // plus dezelfde RAD_HOEK_OFFSET als bij de teksten - anders komt de wijzer
-  // op een ANDER punt uit dan waar de bijbehorende tekst staat.
-  // Het rad draait, de wijzer staat stil.
-  const segmentMidden = doelIdx * 30 + 15 + RAD_HOEK_OFFSET;
+  // De wijzer zit bovenaan het frame. Het MIDDEN van segment doelIdx is
+  // dezelfde RAD_EERSTE_MIDDEN + doelIdx*RAD_STAP als bij bouwRadTeksten() -
+  // anders komt de wijzer op een ANDER punt uit dan waar de bijbehorende
+  // tekst staat. Het rad draait, de wijzer staat stil.
+  const segmentMidden = RAD_EERSTE_MIDDEN + doelIdx * RAD_STAP;
   const extraRondjes = 4 + Math.floor(Math.random()*3); // 4-6 volle rondjes voor het drama
   const doelHoek = radHoek + extraRondjes * 360 + (360 - segmentMidden - (radHoek % 360 + 360) % 360 + 360) % 360;
   // Kleine willekeurige offset binnen het segment (±10°) zodat het niet altijd
