@@ -75,17 +75,28 @@
       color:#fff6c8; text-shadow:0 2px 18px rgba(0,0,0,0.65), 0 0 24px rgba(255,215,0,0.5);
       opacity:0; text-align:center; white-space:nowrap;
     }
-    #intro-tip {
-      position:fixed; top:calc(50% + 5.5vmin); left:50%; transform:translate(-50%,0);
-      z-index:15; pointer-events:none; user-select:none;
-      font-family:'Baloo 2',sans-serif; font-size:clamp(0.85rem, 2.1vmin, 1.25rem); font-weight:700;
-      color:#fff; text-shadow:0 2px 10px rgba(0,0,0,0.7);
-      background:rgba(20,30,20,0.55); border-radius:14px; padding:0.5em 1em;
-      opacity:0; text-align:center; max-width:88vw;
+    /* ── Knop-labeltjes bij spelstart: korte tekst naast de echte knop,
+       i.p.v. één lange zin over zoomen ergens los in beeld. Rechts uitgelijnd
+       tekst plus een klein driehoekje dat naar de knop wijst. ── */
+    .knop-label {
+      position:fixed; z-index:22; pointer-events:none; user-select:none;
+      font-family:'Baloo 2',sans-serif; font-weight:800;
+      font-size:clamp(0.8rem, 1.9vmin, 1.15rem);
+      color:#fff6c8; text-shadow:0 2px 8px rgba(0,0,0,0.75), 0 0 14px rgba(255,215,0,0.35);
+      background:rgba(35,26,10,0.72); border:1.5px solid rgba(255,215,0,0.55);
+      border-radius:10px; padding:0.32em 0.75em;
+      opacity:0; text-align:right; white-space:nowrap;
+      transform:translate(-100%,-50%);
     }
-    /* Trekt kort de aandacht naar de bedieningsknop tijdens de intro-tip,
-       zonder het spel te pauzeren - puur een visuele pulse. */
-    #bediening-spiek-knop.tip-attentie {
+    .knop-label::after {
+      content:''; position:absolute; right:-7px; top:50%; transform:translateY(-50%);
+      border-top:6px solid transparent; border-bottom:6px solid transparent;
+      border-left:7px solid rgba(255,215,0,0.55);
+    }
+    /* Trekt kort de aandacht naar de knoppen zelf bij spelstart, zonder het
+       spel te pauzeren - puur een visuele pulse (joker-knop pulseert al
+       permanent op zichzelf, dus die hoeft deze extra pulse niet). */
+    .knop-tip-attentie {
       animation: bedieningPuls 1s ease-in-out infinite;
     }
     @keyframes bedieningPuls {
@@ -907,7 +918,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.21</div>
+  <div id="versie-label">v0.3.22</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1120,7 +1131,9 @@
   <canvas id="globe"></canvas>
   <button id="bediening-spiek-knop" onclick="openHulp()" aria-label="Bediening bekijken"><img src="images/bediening.png" alt="Bediening"/></button>
   <div id="intro-titel"></div>
-  <div id="intro-tip">💡 Tip: je kunt in- en uitzoomen! Zie het bedieningsknopje rechtsonder 👉 voor alle uitleg.</div>
+  <div id="tip-besturing" class="knop-label">besturing</div>
+  <div id="tip-hint" class="knop-label">waar ligt het?</div>
+  <div id="tip-joker" class="knop-label">ruilen voor ander land</div>
   <img id="wonky" src="images/Wonky.png" alt="Wonky"/>
   <img id="wonky-frontaal" src="images/Timbo_frontaal.png" alt="Wonky frontaal" style="position:fixed;width:clamp(83px, 6.77vmin, 148px);pointer-events:none;z-index:11;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));"/>
   <img id="wonky-naar-frontaal" src="images/Timbo_naar_frontaal.png" alt="Wonky naar frontaal" style="position:fixed;width:clamp(86px, 7.03vmin, 154px);pointer-events:none;z-index:11;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
@@ -2352,7 +2365,8 @@ const INTRO_DUUR = 3500; // ms
 // Aparte, iets langere tijdsduur dan de landen-glow hierboven: dit is een
 // zin om te lezen, geen kort visueel effect, dus die verdient wat meer tijd.
 let tipActief=false, tipStartTijd=0;
-const TIP_DUUR = 6000; // ms
+const TIP_DUUR = 4200; // ms - kort, het zijn nu losse woorden/korte labels, geen hele zin
+const KNOP_LABELS = ['tip-besturing','tip-hint','tip-joker'];
 let huidigLandIdx=0, huidigLand='', score=0, spelerNaam='';
 let levelStartTijd=0, laatsteLevelTijd=0;
 // Vlucht-animatie bij een misser: vliegtuigje volgt automatisch een gloeiende lijn naar het juiste land
@@ -3174,17 +3188,6 @@ function startSpel(levelId, modus) {
       introActief = false;
       levelStartTijd = (modus==='spelen') ? performance.now() : 0;
     }, INTRO_DUUR);
-
-    // Bedieningstip: los van de landen-glow hierboven, en drukt NIET op de
-    // pauzeknop - spelActief blijft gewoon aan, Wonky kan gewoon al vliegen
-    // terwijl dit in beeld staat.
-    tipActief = true;
-    tipStartTijd = performance.now();
-    document.getElementById('bediening-spiek-knop').classList.add('tip-attentie');
-    setTimeout(() => {
-      tipActief = false;
-      document.getElementById('bediening-spiek-knop').classList.remove('tip-attentie');
-    }, TIP_DUUR);
   } else {
     levelStartTijd = (modus==='spelen') ? performance.now() : 0;
   }
@@ -3202,6 +3205,11 @@ function startSpel(levelId, modus) {
   updateRichtingKnoppen();
   zetZoomIndicator(zoomNiveau);
   document.getElementById('zoek-balk').style.display = (modus==='verkennen') ? 'flex' : 'none';
+
+  // Knop-labels (besturing/hints/joker): nu pas, want de knoppen waar ze
+  // naast moeten komen (hierboven) staan nu pas echt op het scherm - eerder
+  // zou getBoundingClientRect() nog 0x0 opleveren (display:none).
+  if(doIntro && modus==='spelen') toonKnopLabels();
 
   if(modus==='verkennen'){
     document.getElementById('opdracht-label').textContent='🔍 Verkennen';
@@ -3228,7 +3236,8 @@ function startSpel(levelId, modus) {
 function naarStart(){
   spelActief=false;
   tipActief = false;
-  document.getElementById('bediening-spiek-knop').classList.remove('tip-attentie');
+  document.getElementById('bediening-spiek-knop').classList.remove('knop-tip-attentie');
+  document.querySelectorAll('.richting-knop').forEach(el=>el.classList.remove('knop-tip-attentie'));
   stopPlekKalibratie();
   verbergPlekVenster();
   document.getElementById('spelscherm').style.display='none';
@@ -6563,13 +6572,13 @@ function updateSpel(){
     document.getElementById('intro-titel').style.opacity = 0;
   }
 
-  // Bedieningstip: zelfde soort fade, eigen (langere) tijdsduur
+  // Knop-labels (besturing/hints/joker): zelfde soort fade in/uit, voor alle drie tegelijk
   if(tipActief){
     const t = (performance.now()-tipStartTijd)/TIP_DUUR;
     const intens = Math.sin(Math.min(1,Math.max(0,t)) * Math.PI);
-    document.getElementById('intro-tip').style.opacity = intens;
+    for(const id of KNOP_LABELS) document.getElementById(id).style.opacity = intens;
   } else {
-    document.getElementById('intro-tip').style.opacity = 0;
+    for(const id of KNOP_LABELS) document.getElementById(id).style.opacity = 0;
   }
 
   // Zoom: het dynamische maximum (aangepast aan het land onder Wonky) wordt
@@ -6959,6 +6968,40 @@ function updateSpel(){
 }
 
 // ── Bediening-hulp: spel bevriest zolang de speler spiekt, tijd loopt niet door ──
+// toonKnopLabels(): positioneert de drie korte knop-labels (besturing/hints/
+// joker) precies naast de echte knoppen, gebaseerd op hun WERKELIJKE
+// schermpositie op dit moment (dus correct op elk schermformaat/zoomniveau
+// van de browser). Puur visueel, pauzeert niets - spelActief blijft aan.
+function toonKnopLabels(){
+  const GAP = 16; // pixels tussen de knop en het label ernaast
+
+  function plaats(labelId, targetEl){
+    const label = document.getElementById(labelId);
+    const r = targetEl.getBoundingClientRect();
+    if(r.width===0 && r.height===0) return; // knop (nog) niet zichtbaar, overslaan
+    label.style.left = (r.left - GAP) + 'px';
+    label.style.top = (r.top + r.height/2) + 'px';
+  }
+
+  plaats('tip-besturing', document.getElementById('bediening-spiek-knop'));
+  plaats('tip-hint', document.getElementById('richting-rij'));
+  plaats('tip-joker', document.getElementById('joker-knop'));
+
+  tipActief = true;
+  tipStartTijd = performance.now();
+
+  // Korte pulse-gloed op de knoppen zelf (behalve de joker-knop, die
+  // pulseert toch al permanent op zichzelf zolang er een joker beschikbaar is).
+  document.getElementById('bediening-spiek-knop').classList.add('knop-tip-attentie');
+  document.querySelectorAll('.richting-knop').forEach(el=>el.classList.add('knop-tip-attentie'));
+
+  setTimeout(() => {
+    tipActief = false;
+    document.getElementById('bediening-spiek-knop').classList.remove('knop-tip-attentie');
+    document.querySelectorAll('.richting-knop').forEach(el=>el.classList.remove('knop-tip-attentie'));
+  }, TIP_DUUR);
+}
+
 function openHulp(){
   hulpActief = true;
   hulpOpenTijd = performance.now();
