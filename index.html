@@ -890,7 +890,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.18</div>
+  <div id="versie-label">v0.3.19</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -6254,12 +6254,21 @@ let radKlaarVoorDoorgaan = false; // true zodra de uitslag getoond is en de spel
 let radOpenTijd = 0;        // voor het "tijd staat stil"-effect
 let radUitkomstSegment = null; // het segment waarop het rad is gevallen
 
+// RAD_HOEK_OFFSET: pixelmeting op rad.png liet zien dat de segmentgrenzen niet
+// precies bij 0°/30°/60°... liggen (waar eerst van uitgegaan werd), maar zo'n
+// 16° verschoven zijn. Deze ene constante verschuift zowel de teksten als de
+// draai-doelberekening in één keer mee - mocht het na visueel testen nog een
+// paar graden moeten schuiven, is dit het enige getal dat aangepast hoeft te worden.
+const RAD_HOEK_OFFSET = 16;
+
 function bouwRadTeksten(){
   const laag = document.getElementById('rad-tekst-laag');
   laag.innerHTML = '';
   for(let i=0; i<12; i++){
-    // Midden van het segment: i*30 + 15 graden (0° = boven, met de klok mee)
-    const hoek = i * 30 + 15;
+    // Midden van het segment: i*30 + 15 graden (0° = boven, met de klok mee),
+    // plus de kalibratie-offset zodat dit ook echt het midden van de
+    // ECHTE, getekende taartpunt in rad.png is.
+    const hoek = i * 30 + 15 + RAD_HOEK_OFFSET;
     const wrap = document.createElement('div');
     wrap.className = 'rad-segment-wrap';
     wrap.style.transform = 'rotate('+hoek+'deg)';
@@ -6269,11 +6278,17 @@ function bouwRadTeksten(){
     tekst.className = 'rad-segment-tekst';
     if(RAD_SEGMENTEN[i].tekst.length > 9) tekst.classList.add('rad-segment-tekst-lang');
     tekst.textContent = RAD_SEGMENTEN[i].tekst;
-    // Op de onderste helft van het rad (segmenten met hoek tussen 90° en 270°)
-    // draait de tekst 180° extra, zodat de bovenkant van de letters altijd
-    // naar de buitenrand wijst - anders leest de onderste helft ondersteboven
-    // t.o.v. de bovenste helft.
-    const flip = (hoek > 90 && hoek < 270) ? 180 : 0;
+    // De tekst zelf staat plat (horizontaal) vóór deze rotatie, en wordt door
+    // de rotatie van .rad-segment-wrap (hierboven) + deze eigen rotatie
+    // radiaal georiënteerd. Zonder correctie zou de ONDERSTE helft van het
+    // rad ondersteboven lezen t.o.v. de bovenste helft (want een tekst die
+    // meer dan 90° gedraaid is, wordt onleesbaar) - dus tellen we daar 180°
+    // bij op. Belangrijk: dit checkt de UITEINDELIJKE tekst-rotatie
+    // (hoek+90), niet de segment-hoek zelf, anders klopt de knik niet bij
+    // de juiste segmenten.
+    let ruweEindrotatie = (hoek + 90) % 360;
+    if(ruweEindrotatie > 180) ruweEindrotatie -= 360;
+    const flip = (ruweEindrotatie > 90 || ruweEindrotatie < -90) ? 180 : 0;
     tekst.style.transform = 'translate(-50%,-50%) rotate('+(90+flip)+'deg)';
     anker.appendChild(tekst);
     wrap.appendChild(anker);
@@ -6327,9 +6342,11 @@ function startRadDraaien(){
   radUitkomstSegment = RAD_SEGMENTEN[doelIdx];
 
   // Bereken de doelhoek: meerdere volledige rondjes + de hoek voor dit segment.
-  // De wijzer zit bovenaan het frame. Het MIDDEN van segment doelIdx = doelIdx*30+15°.
+  // De wijzer zit bovenaan het frame. Het MIDDEN van segment doelIdx = doelIdx*30+15°,
+  // plus dezelfde RAD_HOEK_OFFSET als bij de teksten - anders komt de wijzer
+  // op een ANDER punt uit dan waar de bijbehorende tekst staat.
   // Het rad draait, de wijzer staat stil.
-  const segmentMidden = doelIdx * 30 + 15;
+  const segmentMidden = doelIdx * 30 + 15 + RAD_HOEK_OFFSET;
   const extraRondjes = 4 + Math.floor(Math.random()*3); // 4-6 volle rondjes voor het drama
   const doelHoek = radHoek + extraRondjes * 360 + (360 - segmentMidden - (radHoek % 360 + 360) % 360 + 360) % 360;
   // Kleine willekeurige offset binnen het segment (±10°) zodat het niet altijd
