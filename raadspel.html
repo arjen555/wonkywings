@@ -31,7 +31,7 @@
   /* "MENU", "WERELDDEEL:" en "SPELER:" staan al getekend in de achtergrond-
      afbeelding zelf - hier komt dus alleen de WAARDE overheen, netjes op de
      onderstrepingslijn/het vakje eronder, zonder de labeltekst te herhalen. */
-  #werelddeel-waarde { position:absolute; left:22.7%; top:14.5%; width:20%; text-align:left; font-family:'Baloo 2',sans-serif; font-weight:700; color:#3b2a18; font-size:clamp(0.55rem, 1.15vw, 0.9rem); }
+  #werelddeel-waarde { position:absolute; left:22.7%; top:14.5%; width:20%; text-align:left; font-family:'Baloo 2',sans-serif; font-weight:700; color:#3b2a18; font-size:clamp(0.75rem, 1.55vw, 1.25rem); }
   #speler-waarde { position:absolute; left:65.1%; top:14%; width:20%; text-align:left; font-family:'Baloo 2',sans-serif; font-weight:700; color:#3b2a18; font-size:clamp(0.75rem, 1.55vw, 1.2rem); }
   #goed-waarde {
     position:absolute; left:72.5%; top:12.5%; width:14.5%; height:6.5%;
@@ -111,6 +111,14 @@
     cursor:url('images/vergrootglas.png') 32 32, zoom-in;
   }
   #land-illustratie:hover { box-shadow:0 4px 20px rgba(0,0,0,0.5); }
+  #land-illustratie.antwoord-goed {
+    box-shadow:0 0 0 6px #4caf50, 0 4px 20px rgba(0,0,0,0.5);
+    transition:box-shadow 0.2s;
+  }
+  #land-illustratie.antwoord-fout {
+    box-shadow:0 0 0 6px #e05353, 0 4px 20px rgba(0,0,0,0.5);
+    transition:box-shadow 0.2s;
+  }
   /* Uitvergrote illustratie: los van het perkament, over het hele kader,
      de kaderrand én de antwoordbalken heen — vult het scherm van boven naar
      onder. Nogmaals klikken of Escape brengt 'm terug naar normaal. */
@@ -375,7 +383,7 @@ function startCategorie(catId){
   vraagIdx = 0;
   aantalGoed = 0;
   tijdVerstreken = 0;
-  document.getElementById('werelddeel-waarde').textContent = huidigeCategorie.naam;
+  zetWerelddeelLabel(huidigeCategorie.naam);
   document.getElementById('speler-waarde').textContent = huidigeSpelerNaam();
   updateGoedWeergave();
   toonScherm('scherm-spel');
@@ -445,6 +453,18 @@ function bouwAntwoordKnoppen(opties, correct){
     pasKnopTekstAan(btn);
   });
 }
+function zetWerelddeelLabel(tekst){
+  const el = document.getElementById('werelddeel-waarde');
+  el.textContent = tekst;
+  const basis = 1.25, minimum = 0.6; // rem - basis is dezelfde max-waarde als in de CSS clamp()
+  let grootte = basis;
+  el.style.whiteSpace = 'nowrap';
+  el.style.fontSize = grootte + 'rem';
+  while(el.scrollWidth > el.clientWidth && grootte > minimum){
+    grootte -= 0.05;
+    el.style.fontSize = grootte + 'rem';
+  }
+}
 function pasKnopTekstAan(btn){
   const basis = 1.5, minimum = 0.55; // rem - basis is dezelfde max-waarde als in de CSS clamp()
   let grootte = basis;
@@ -501,12 +521,19 @@ function beantwoord(gekozen, correct, btnEl){
     else if(b===btnEl) b.classList.add('fout');
   });
 
+  // Ook een kader om de illustratie zelf, zodat goed/fout ook meteen visueel
+  // gekoppeld is aan de afbeelding, niet alleen aan de antwoordknoppen.
+  const img = document.getElementById('land-illustratie');
+  img.classList.remove('antwoord-goed', 'antwoord-fout');
+  img.classList.add(gekozen===correct ? 'antwoord-goed' : 'antwoord-fout');
+
   if(gekozen===correct){
     aantalGoed++;
     updateGoedWeergave();
   }
 
   setTimeout(()=>{
+    document.getElementById('land-illustratie').classList.remove('antwoord-goed', 'antwoord-fout');
     vraagIdx++;
     if(vraagIdx >= vraagLijst.length){
       rondeKlaar();
@@ -514,7 +541,7 @@ function beantwoord(gekozen, correct, btnEl){
       hervatTimer();
       toonVraag();
     }
-  }, 1300);
+  }, 2400);
 }
 
 // ── Timer ──
@@ -578,7 +605,7 @@ function toonScorebordAlleen(catId){
   const cat = CATEGORIEEN.find(c=>c.id===catId);
   if(!cat) return;
   huidigeCategorie = cat; // zodat 'Nog een keer' vanaf hier ook meteen die categorie start
-  document.getElementById('werelddeel-waarde').textContent = cat.naam;
+  zetWerelddeelLabel(cat.naam);
   document.getElementById('speler-waarde').textContent = huidigeSpelerNaam();
   document.getElementById('klaar-titel').textContent = 'Scores — '+cat.naam;
   document.getElementById('klaar-resultaat').textContent = '';
@@ -613,7 +640,7 @@ function opnieuwSpelen(){
   startCategorie(huidigeCategorie.id);
 }
 function terugNaarKiezen(){
-  document.getElementById('werelddeel-waarde').textContent = '—';
+  zetWerelddeelLabel('—');
   document.getElementById('speler-waarde').textContent = '—';
   document.getElementById('goed-waarde').textContent = '0 van de 10';
   document.getElementById('timer-vak').textContent = '0:00.0';
