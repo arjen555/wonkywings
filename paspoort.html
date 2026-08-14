@@ -71,6 +71,16 @@
   }
   .stempel-kaart:hover img { transform:scale(1.04); }
 
+  /* ── Landnaampje, direct onder elke stempel ── */
+  .stempel-naam {
+    position:absolute; text-align:center;
+    font-family:'Baloo 2',sans-serif; font-weight:800;
+    font-size:clamp(0.5rem, 1.05vw, 0.7rem);
+    color:#5a3a1a; line-height:1.1;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    pointer-events:none;
+  }
+
   /* ── Onzichtbare klikvlakken bovenop de al getekende tabbladen rechts
      in de boek-afbeelding zelf — geen eigen tab-styling nodig, die staat
      al in de illustratie. ── */
@@ -93,23 +103,28 @@
      mogelijk, tekst eronder links uitgelijnd. Zelfde klik-om-te-sluiten-
      patroon als bij het raadspel, met het vergrootglas als cursor. ── */
   #uitvergroot-achtergrond {
-    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.78);
-    z-index:500; flex-direction:column; align-items:center;
-    padding:3vh 4vw 3vh; cursor:url('images/vergrootglas.png') 32 32, zoom-out;
-  }
-  #uitvergroot-achtergrond.actief { display:flex; }
-  #uitvergroot-img-wrap {
-    flex:1; min-height:0; width:100%;
-    display:flex; align-items:center; justify-content:center;
-  }
-  #uitvergroot-img {
-    max-width:96%; max-height:100%; object-fit:contain; border-radius:10px;
-    box-shadow:0 10px 50px rgba(0,0,0,0.7);
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.82);
+    z-index:500; align-items:center; justify-content:center;
+    gap:min(4vw, 46px); padding:4vh min(16vw, 220px);
     cursor:url('images/vergrootglas.png') 32 32, zoom-out;
   }
+  #uitvergroot-achtergrond.actief { display:flex; }
+
+  /* ── Grote ronde illustratie, zo groot mogelijk in beeld ── */
+  #uitvergroot-cirkel-wrap {
+    flex:none; height:min(86vh, 46vw); aspect-ratio:1/1;
+    border-radius:50%; overflow:hidden;
+    box-shadow:0 0 0 6px rgba(255,246,200,0.92), 0 20px 60px rgba(0,0,0,0.7);
+    cursor:url('images/vergrootglas.png') 32 32, zoom-out;
+  }
+  #uitvergroot-img {
+    width:100%; height:100%; object-fit:cover; display:block;
+  }
+
+  /* ── Tekstkader ernaast, niet eronder ── */
   #uitvergroot-tekstblok {
-    flex:none; width:min(760px, 92vw); max-height:30vh; overflow-y:auto;
-    margin-top:2vh; text-align:left;
+    flex:none; width:min(320px, 22vw); max-height:84vh; overflow-y:auto;
+    text-align:left;
   }
   #uitvergroot-naam {
     font-family:'Baloo 2',sans-serif; font-weight:800; font-size:1.3rem;
@@ -117,8 +132,22 @@
   }
   #uitvergroot-feit {
     font-family:'Baloo 2',sans-serif; font-weight:700; font-size:0.85rem; line-height:1.55;
-    color:#fff6e0; text-align:left; margin-top:8px;
+    color:#fff6e0; text-align:left; margin-top:10px;
   }
+
+  /* ── Vorige/volgende, als grote pijlen in de hoeken van het scherm —
+     zo kun je binnen de uitvergroting door de landen heen bladeren. ── */
+  .uitvergroot-pijl-knop {
+    position:fixed; bottom:4vh; z-index:520;
+    width:clamp(64px, 10vw, 160px); background:none; border:none; padding:0; cursor:pointer;
+    opacity:0.92; transition:opacity 0.15s, transform 0.15s;
+    filter:drop-shadow(0 6px 18px rgba(0,0,0,0.6));
+  }
+  .uitvergroot-pijl-knop:hover:not(:disabled) { opacity:1; transform:scale(1.06); }
+  .uitvergroot-pijl-knop:disabled { opacity:0.15; cursor:default; }
+  .uitvergroot-pijl-knop img { width:100%; display:block; }
+  #uitvergroot-vorige { left:3vw; }
+  #uitvergroot-volgende { right:3vw; }
 
   ::-webkit-scrollbar { width:10px; }
   ::-webkit-scrollbar-thumb { background:rgba(255,215,0,0.3); border-radius:6px; }
@@ -147,11 +176,17 @@
 <div id="pagina-label">pagina 1 van 1</div>
 
 <div id="uitvergroot-achtergrond">
-  <div id="uitvergroot-img-wrap"><img id="uitvergroot-img" src="" alt=""/></div>
+  <button id="uitvergroot-vorige" class="uitvergroot-pijl-knop" onclick="naarStempelIndex(huidigeIndex-1)">
+    <img src="images/paspoort-terug.png" alt="Vorig land"/>
+  </button>
+  <div id="uitvergroot-cirkel-wrap"><img id="uitvergroot-img" src="" alt=""/></div>
   <div id="uitvergroot-tekstblok">
     <div id="uitvergroot-naam"></div>
     <div id="uitvergroot-feit"></div>
   </div>
+  <button id="uitvergroot-volgende" class="uitvergroot-pijl-knop" onclick="naarStempelIndex(huidigeIndex+1)">
+    <img src="images/paspoort-verder.png" alt="Volgend land"/>
+  </button>
 </div>
 
 <script>
@@ -250,9 +285,20 @@ function bouwStempels(){
     kaart.style.width  = (kolInfo.rechts - kolInfo.links - 2*STEMPEL_INZET) + '%';
     kaart.style.height = (rijInfo.onder - rijInfo.boven - 2*STEMPEL_INZET) + '%';
     kaart.title = land.naam;
-    kaart.onclick = () => toonUitvergroting(land);
+    kaart.onclick = () => toonUitvergroting(land, landen, start + i);
     kaart.innerHTML = `<img src="images/landenstempels/${land.bestand}.png" alt="${land.naam}"/>`;
     laag.appendChild(kaart);
+
+    // Naampje direct onder de stempel, in de smalle strook tussen dit vakje
+    // en het volgende (of de onderrand van het boek bij de laatste rij).
+    const naamEl = document.createElement('div');
+    naamEl.className = 'stempel-naam';
+    naamEl.textContent = land.naam;
+    naamEl.style.left = kolInfo.links + '%';
+    naamEl.style.width = (kolInfo.rechts - kolInfo.links) + '%';
+    naamEl.style.top = (rijInfo.onder + 0.3) + '%';
+    naamEl.style.height = '3.6%';
+    laag.appendChild(naamEl);
   }
 
   document.getElementById('pagina-label').textContent = `pagina ${huidigePagina+1} van ${totaalPaginas}`;
@@ -266,25 +312,54 @@ function ganNaarPagina(nieuw){
 }
 
 // ── Uitvergroten: klik erop, klik nogmaals/Escape/klik op de achtergrond
-// om terug te klein te maken — zelfde soort patroon als bij het raadspel. ──
+// om terug te klein te maken — zelfde soort patroon als bij het raadspel.
+// Binnen de uitvergroting kan met de pijlen (of de pijltjestoetsen) door
+// alle landen van het huidige werelddeel gebladerd worden, ook over
+// paginagrenzen heen — de onderliggende boekpagina schuift dan gewoon mee. ──
 const ACHTERGROND_EL = document.getElementById('uitvergroot-achtergrond');
 const UITVERGROOT_IMG_EL = document.getElementById('uitvergroot-img');
-function toonUitvergroting(land){
+const UITVERGROOT_VORIGE_EL = document.getElementById('uitvergroot-vorige');
+const UITVERGROOT_VOLGENDE_EL = document.getElementById('uitvergroot-volgende');
+
+let huidigeLijst = [];
+let huidigeIndex = -1;
+
+function toonUitvergroting(land, lijst, index){
+  huidigeLijst = lijst;
+  huidigeIndex = index;
+  vulUitvergroting(land);
+  ACHTERGROND_EL.classList.add('actief');
+}
+function vulUitvergroting(land){
   UITVERGROOT_IMG_EL.src = `images/landenstempels/${land.bestand}.png`;
   UITVERGROOT_IMG_EL.alt = land.naam;
   document.getElementById('uitvergroot-naam').textContent = land.naam;
   document.getElementById('uitvergroot-feit').textContent = land.tekst || '';
-  ACHTERGROND_EL.classList.add('actief');
+  UITVERGROOT_VORIGE_EL.disabled = huidigeIndex <= 0;
+  UITVERGROOT_VOLGENDE_EL.disabled = huidigeIndex >= huidigeLijst.length - 1;
+}
+function naarStempelIndex(nieuweIndex){
+  if(nieuweIndex < 0 || nieuweIndex >= huidigeLijst.length) return;
+  huidigeIndex = nieuweIndex;
+  vulUitvergroting(huidigeLijst[huidigeIndex]);
+  const nieuwePagina = Math.floor(huidigeIndex / PER_PAGINA);
+  if(nieuwePagina !== huidigePagina){
+    huidigePagina = nieuwePagina;
+    bouwStempels();
+  }
 }
 function sluitUitvergroting(){
   ACHTERGROND_EL.classList.remove('actief');
 }
 ACHTERGROND_EL.addEventListener('click', (e)=>{
-  if(e.target === ACHTERGROND_EL || e.target === document.getElementById('uitvergroot-img-wrap')) sluitUitvergroting();
+  if(e.target === ACHTERGROND_EL) sluitUitvergroting();
 });
 UITVERGROOT_IMG_EL.addEventListener('click', sluitUitvergroting);
 document.addEventListener('keydown', e => {
+  if(!ACHTERGROND_EL.classList.contains('actief')) return;
   if(e.key === 'Escape') sluitUitvergroting();
+  else if(e.key === 'ArrowLeft') naarStempelIndex(huidigeIndex-1);
+  else if(e.key === 'ArrowRight') naarStempelIndex(huidigeIndex+1);
 });
 
 // ── Init ──
