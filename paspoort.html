@@ -29,14 +29,14 @@
   /* ── De rij met: pijl-terug, het boek zelf, pijl-verder ── */
   #boek-rij {
     display:flex; align-items:center; justify-content:center;
-    gap:min(2.2vw, 22px);
+    gap:min(2.8vw, 30px);
     flex:1; min-height:0; width:100%;
     padding:8px 2vw 0;
   }
 
   .pagina-pijl-knop {
     flex:none; background:none; border:none; cursor:pointer; padding:0;
-    width:clamp(26px, 3.6vw, 52px);
+    width:clamp(60px, 8.5vw, 150px);
     display:flex; align-items:center; justify-content:center;
     opacity:0.9; transition:opacity 0.15s, transform 0.15s;
     filter:drop-shadow(0 3px 8px rgba(0,0,0,0.5));
@@ -51,7 +51,7 @@
      staat zonder vervorming. ── */
   #kader {
     position:relative; flex:none;
-    width:min(88vw, 84vh*1.25);
+    width:min(74vw, 80vh*1.25);
     aspect-ratio:640/512;
     background:url('images/paspoort-boek-referentie.png') center/contain no-repeat;
     filter:drop-shadow(0 12px 40px rgba(0,0,0,0.6));
@@ -75,8 +75,9 @@
   .stempel-naam {
     position:absolute; text-align:center;
     font-family:'Baloo 2',sans-serif; font-weight:800;
-    font-size:clamp(0.5rem, 1.05vw, 0.7rem);
-    color:#5a3a1a; line-height:1.1;
+    font-size:clamp(0.64rem, 1.5vw, 0.95rem);
+    letter-spacing:0.2px;
+    color:#4a2e10; line-height:1.1;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     pointer-events:none;
   }
@@ -121,18 +122,28 @@
     width:100%; height:100%; object-fit:cover; display:block;
   }
 
-  /* ── Tekstkader ernaast, niet eronder ── */
+  /* ── Tekstkader ernaast, niet eronder — op een stukje perkament dat
+     Arjen zelf aanlevert (images/perkament.png). De binnenkant staat
+     ingesprongen zodat de tekst binnen het beschreven vlak blijft, met
+     de opgerolde randen en de klauw erbuiten. ── */
   #uitvergroot-tekstblok {
-    flex:none; width:min(320px, 22vw); max-height:84vh; overflow-y:auto;
-    text-align:left;
+    position:relative; flex:none;
+    width:min(30vw, 82vh*(1200/1400));
+    aspect-ratio:1200/1400;
+    background:url('images/perkament.png') center/contain no-repeat;
+    filter:drop-shadow(0 10px 30px rgba(0,0,0,0.55));
+  }
+  #uitvergroot-tekstblok-binnen {
+    position:absolute; left:22%; right:21%; top:21%; bottom:25%;
+    overflow-y:auto; text-align:left;
   }
   #uitvergroot-naam {
-    font-family:'Baloo 2',sans-serif; font-weight:800; font-size:1.3rem;
-    color:#ffd700; text-shadow:0 2px 8px rgba(0,0,0,0.5); text-align:left;
+    font-family:'Baloo 2',sans-serif; font-weight:800; font-size:1.6rem;
+    color:#7a3d10; text-shadow:0 1px 2px rgba(255,255,255,0.4); text-align:left;
   }
   #uitvergroot-feit {
-    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:0.85rem; line-height:1.55;
-    color:#fff6e0; text-align:left; margin-top:10px;
+    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:1.05rem; line-height:1.5;
+    color:#3a2a12; text-align:left; margin-top:12px;
   }
 
   /* ── Vorige/volgende, als grote pijlen in de hoeken van het scherm —
@@ -181,8 +192,10 @@
   </button>
   <div id="uitvergroot-cirkel-wrap"><img id="uitvergroot-img" src="" alt=""/></div>
   <div id="uitvergroot-tekstblok">
-    <div id="uitvergroot-naam"></div>
-    <div id="uitvergroot-feit"></div>
+    <div id="uitvergroot-tekstblok-binnen">
+      <div id="uitvergroot-naam"></div>
+      <div id="uitvergroot-feit"></div>
+    </div>
   </div>
   <button id="uitvergroot-volgende" class="uitvergroot-pijl-knop" onclick="naarStempelIndex(huidigeIndex+1)">
     <img src="images/paspoort-verder.png" alt="Volgend land"/>
@@ -296,8 +309,8 @@ function bouwStempels(){
     naamEl.textContent = land.naam;
     naamEl.style.left = kolInfo.links + '%';
     naamEl.style.width = (kolInfo.rechts - kolInfo.links) + '%';
-    naamEl.style.top = (rijInfo.onder + 0.3) + '%';
-    naamEl.style.height = '3.6%';
+    naamEl.style.top = (rijInfo.onder + 0.2) + '%';
+    naamEl.style.height = '4.4%';
     laag.appendChild(naamEl);
   }
 
