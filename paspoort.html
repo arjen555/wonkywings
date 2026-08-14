@@ -63,13 +63,24 @@
     display:flex; align-items:center; justify-content:center;
     cursor:url('images/vergrootglas.png') 32 32, zoom-in;
   }
-  .stempel-kaart img {
+  .stempel-kaart img.stempel-foto {
     width:100%; height:100%; object-fit:contain;
     filter:drop-shadow(0 2px 6px rgba(0,0,0,0.35));
     transition:transform 0.12s;
     border-radius:4%;
   }
-  .stempel-kaart:hover img { transform:scale(1.04); }
+  .stempel-kaart:hover img.stempel-foto { transform:scale(1.04); }
+
+  /* ── "Weet ik te vinden!"-stempel: legt zich schuin over een hoek van
+     iedere landenillustratie, met het grootste deel erbuiten. Positie en
+     kanteling verschillen per land (zie berekening in bouwStempels()),
+     zodat het niet bij ieder land precies hetzelfde staat. ── */
+  .stempel-verificatie {
+    position:absolute; left:100%; top:50%;
+    width:78%; aspect-ratio:1/1;
+    pointer-events:none; opacity:0.82;
+    filter:drop-shadow(0 2px 5px rgba(0,0,0,0.4));
+  }
 
   /* ── Landnaampje, direct onder elke stempel ── */
   .stempel-naam {
@@ -166,7 +177,7 @@
 </head>
 <body>
 
-<button id="terug-knop" onclick="window.location.href='index.html'">◀ Terug naar start</button>
+<button id="terug-knop" onclick="ganNaarStart()">◀ Terug naar start</button>
 
 <div id="boek-rij">
   <button id="pijl-terug" class="pagina-pijl-knop" onclick="ganNaarPagina(huidigePagina-1)">
@@ -226,6 +237,26 @@ const STEMPEL_RIJEN = [
   {boven:70.5, onder:88.0},
 ];
 const STEMPEL_INZET = 1.2; // marge binnen elk vakje, zodat de gestempelde rand zichtbaar blijft
+
+// Zelfde sessionStorage-sleutel als index.html gebruikt: laat weten dat we
+// via een menu-knop (hier: het stempelboek) terugkomen, zodat daar niet
+// opnieuw het verplichte naamscherm wordt getoond - de naam is al bekend.
+const VAN_MENU_NAVIGATIE_SLEUTEL = 'wonkywings_van_menu_navigatie';
+function ganNaarStart(){
+  sessionStorage.setItem(VAN_MENU_NAVIGATIE_SLEUTEL, '1');
+  window.location.href = 'index.html';
+}
+
+// Simpele, stabiele tekst-hash: zelfde land geeft altijd hetzelfde getal,
+// gebruikt om de verificatiestempel per land een eigen (vaste) kanteling
+// en positie te geven zonder dat die bij elke herlaad verandert.
+function tekstHash(str){
+  let h = 0;
+  for(let i=0; i<str.length; i++){
+    h = (h*31 + str.charCodeAt(i)) >>> 0;
+  }
+  return h;
+}
 
 const TAB_LEFT = 90, TAB_WIDTH = 7.7;
 const WERELDDELEN = [
@@ -299,7 +330,21 @@ function bouwStempels(){
     kaart.style.height = (rijInfo.onder - rijInfo.boven - 2*STEMPEL_INZET) + '%';
     kaart.title = land.naam;
     kaart.onclick = () => toonUitvergroting(land, landen, start + i);
-    kaart.innerHTML = `<img src="images/landenstempels/${land.bestand}.png" alt="${land.naam}"/>`;
+
+    // Kanteling en kleine positie-jitter voor de verificatiestempel, per land
+    // vast (dezelfde afbeelding geeft altijd dezelfde stand), zodat het niet
+    // bij ieder land precies hetzelfde staat: soms naar rechts hellend, soms
+    // naar links, soms recht. De stempel hangt over de rechterrand, verticaal
+    // gecentreerd op de kaart, zodat hij nooit het landnaampje eronder of
+    // erboven raakt.
+    const h = tekstHash(land.bestand);
+    const rotatie = (h % 41) - 20;         // -20 tot +20 graden
+    const verschX = -32 + ((h >>> 5) % 13) - 6;  // -38% tot -26%
+    const verschY = -50 + ((h >>> 9) % 5) - 2;   // -52% tot -48%
+
+    kaart.innerHTML = `<img class="stempel-foto" src="images/landenstempels/${land.bestand}.png" alt="${land.naam}"/>`
+      + `<img class="stempel-verificatie" src="images/weet-ik-te-vinden-stempel.png" alt=""`
+      + ` style="transform:translate(${verschX}%, ${verschY}%) rotate(${rotatie}deg);">`;
     laag.appendChild(kaart);
 
     // Naampje direct onder de stempel, in de smalle strook tussen dit vakje
