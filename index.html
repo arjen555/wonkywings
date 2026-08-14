@@ -72,10 +72,15 @@
     #opties-sub-lijst.open { max-height:200px; opacity:1; }
     .opties-sub-knop { font-size:0.72rem; padding:6px 16px; opacity:0.92; }
 
-    /* ── Landenpaspoort-knop: altijd zichtbaar, onderaan het rijtje. ── */
-    #paspoort-knop { justify-content:center; gap:8px; }
-    .paspoort-knop-icoon { width:20px; height:20px; flex:none; display:flex; align-items:center; justify-content:center; }
-    .paspoort-knop-icoon img { width:100%; height:100%; object-fit:contain; display:block; }
+    /* ── Landenpaspoort-icoon: altijd zichtbaar, onderaan het rijtje, en
+       even groot als het "Wereld van Wonderen"-logo bovenaan. ── */
+    #paspoort-icoon-knop {
+      width:min(220px, 62%); max-width:100%; display:block;
+      margin:2px auto 0; cursor:pointer;
+      filter:drop-shadow(0 4px 16px rgba(0,0,0,0.5));
+      transition:transform 0.15s;
+    }
+    #paspoort-icoon-knop:hover { transform:scale(1.04); }
     #startscherm {
       position:fixed; inset:0; z-index:100;
       display:flex; flex-direction:row;
@@ -936,7 +941,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.23</div>
+  <div id="versie-label">v0.3.24</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -960,10 +965,7 @@
     <button id="help-knop" class="startscherm-knop" onclick="openHulp()">
       Zo werkt de besturing
     </button>
-    <button id="paspoort-knop" class="startscherm-knop" onclick="window.location.href='paspoort.html'">
-      <span class="paspoort-knop-icoon"><img src="images/paspoort-icoon.png" alt=""/></span>
-      <span>Landenpaspoort</span>
-    </button>
+    <img id="paspoort-icoon-knop" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="window.location.href='paspoort.html'"/>
   </div>
 </div>
 
