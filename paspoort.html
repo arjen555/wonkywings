@@ -76,8 +76,8 @@
      kanteling verschillen per land (zie berekening in bouwStempels()),
      zodat het niet bij ieder land precies hetzelfde staat. ── */
   .stempel-verificatie {
-    position:absolute; left:100%; top:50%;
-    width:78%; aspect-ratio:1/1;
+    position:absolute; left:100%; top:20%;
+    width:19.5%; aspect-ratio:1/1;
     pointer-events:none; opacity:0.82;
     filter:drop-shadow(0 2px 5px rgba(0,0,0,0.4));
   }
@@ -334,17 +334,14 @@ function bouwStempels(){
     // Kanteling en kleine positie-jitter voor de verificatiestempel, per land
     // vast (dezelfde afbeelding geeft altijd dezelfde stand), zodat het niet
     // bij ieder land precies hetzelfde staat: soms naar rechts hellend, soms
-    // naar links, soms recht. De stempel hangt over de rechterrand, verticaal
-    // gecentreerd op de kaart, zodat hij nooit het landnaampje eronder of
-    // erboven raakt.
+    // naar links, soms recht. De positie zelf is bij ieder land hetzelfde
+    // (rechtsboven op de stempelfoto), alleen de kanteling varieert.
     const h = tekstHash(land.bestand);
-    const rotatie = (h % 41) - 20;         // -20 tot +20 graden
-    const verschX = -32 + ((h >>> 5) % 13) - 6;  // -38% tot -26%
-    const verschY = -50 + ((h >>> 9) % 5) - 2;   // -52% tot -48%
+    const rotatie = (h % 51) - 25;  // -25 tot +25 graden
 
     kaart.innerHTML = `<img class="stempel-foto" src="images/landenstempels/${land.bestand}.png" alt="${land.naam}"/>`
       + `<img class="stempel-verificatie" src="images/weet-ik-te-vinden-stempel.png" alt=""`
-      + ` style="transform:translate(${verschX}%, ${verschY}%) rotate(${rotatie}deg);">`;
+      + ` style="transform:translate(-50%, -50%) rotate(${rotatie}deg);">`;
     laag.appendChild(kaart);
 
     // Naampje direct onder de stempel, in de smalle strook tussen dit vakje
