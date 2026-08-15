@@ -284,9 +284,17 @@ const PASPOORT_LANDEN = [{"naam": "Albanië", "bestand": "Albanie", "continent":
 // prioriteitspool voor verrassingsstempels bij Hoofdsteden/Plekken/Raadspel.
 const KLEIN_MAAR_FIJN_BESTANDEN = ["Tonga", "Samoa", "Salomonseilanden", "Tuvalu", "Nauru", "Micronesia", "Palau", "Vanuatu", "Nieuw-Caledonie", "Frans-Polynesie", "Trinidad_en_Tobago", "Grenada", "Barbados", "Saint_Lucia", "Dominica", "Antigua_en_Barbuda", "Saint_Kitts_en_Nevis", "Seychellen", "Comoren", "Sao_Tome_en_Principe", "Kaapverdie", "Mauritius", "Maldiven", "San_Marino", "Vaticaanstad", "Monaco", "Andorra", "Liechtenstein", "Malta", "Faroer", "Brunei", "Falklandeilanden"];
 
-const STEMPELS_SLEUTEL = 'wonkywings_verdiende_stempels';
+// Stempels horen bij de speler die nu is ingelogd (de naam uit het
+// naamscherm) - anders deelt iedereen die op dit apparaat speelt hetzelfde
+// paspoort, ongeacht welke naam er is ingevuld. De opslag-sleutel wordt
+// daarom per naam opgebouwd, met dezelfde sleutel als het naamscherm zelf
+// gebruikt (NAAM_SLEUTEL, verderop in dit bestand).
+function stempelsSleutelVoorSpeler(){
+  const naam = localStorage.getItem(NAAM_SLEUTEL) || 'Speler';
+  return 'wonkywings_verdiende_stempels::' + naam;
+}
 function geefVerdiendeStempels(){
-  try{ return JSON.parse(localStorage.getItem(STEMPELS_SLEUTEL)||'[]'); }catch(e){ return []; }
+  try{ return JSON.parse(localStorage.getItem(stempelsSleutelVoorSpeler())||'[]'); }catch(e){ return []; }
 }
 // Zoekt de paspoort-ingang bij een landnaam zoals die in het spel gebruikt
 // wordt. Eerst op exacte naam (dekt verreweg de meeste landen), dan op
@@ -309,7 +317,7 @@ function verdienStempelVoorLand(naam){
   const lijst = geefVerdiendeStempels();
   if(lijst.includes(entry.bestand)) return null;
   lijst.push(entry.bestand);
-  localStorage.setItem(STEMPELS_SLEUTEL, JSON.stringify(lijst));
+  localStorage.setItem(stempelsSleutelVoorSpeler(), JSON.stringify(lijst));
   return entry;
 }
 // Kiest 'aantal' nieuwe verrassingslanden (nog niet verdiend) als beloning
@@ -325,7 +333,7 @@ function kiesBonusLanden(aantal){
   const volgorde = [...nogNiet(KLEIN_MAAR_FIJN_BESTANDEN), ...nogNiet(overigeBestanden)];
   const gekozenBestanden = volgorde.slice(0, aantal);
   gekozenBestanden.forEach(b=>lijst.push(b));
-  if(gekozenBestanden.length) localStorage.setItem(STEMPELS_SLEUTEL, JSON.stringify(lijst));
+  if(gekozenBestanden.length) localStorage.setItem(stempelsSleutelVoorSpeler(), JSON.stringify(lijst));
   return gekozenBestanden.map(b=>PASPOORT_LANDEN.find(p=>p.bestand===b));
 }
 // Bouwt de tekst voor een eindscherm op basis van de daadwerkelijk gekozen

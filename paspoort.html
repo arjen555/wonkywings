@@ -355,11 +355,19 @@ const WERELDDELEN = [
 const PER_PAGINA = 9;
 
 // ── Landenpaspoort: welke stempels zijn er al verdiend? ──
-// Zelfde localStorage-sleutel als index.html en raadspel.html: daar komen
+// Zelfde localStorage-sleutels als index.html en raadspel.html: daar komen
 // de stempels bij ("bestand" van het land), hier lezen we ze alleen uit.
-const STEMPELS_SLEUTEL = 'wonkywings_verdiende_stempels';
+// De stempels horen bij de speler die nu is ingelogd (de naam uit het
+// naamscherm) - elk kind dat op dit apparaat een andere naam invult, krijgt
+// zo zijn eigen paspoort in plaats van dat iedereen dezelfde verzameling
+// ziet. De opslag-sleutel wordt daarom per naam opgebouwd.
+const SPELERNAAM_SLEUTEL = 'wonkywings_spelernaam';
+function stempelsSleutelVoorSpeler(){
+  const naam = localStorage.getItem(SPELERNAAM_SLEUTEL) || 'Speler';
+  return 'wonkywings_verdiende_stempels::' + naam;
+}
 function geefVerdiendeStempels(){
-  try{ return JSON.parse(localStorage.getItem(STEMPELS_SLEUTEL)||'[]'); }catch(e){ return []; }
+  try{ return JSON.parse(localStorage.getItem(stempelsSleutelVoorSpeler())||'[]'); }catch(e){ return []; }
 }
 function isVerzameld(land){
   return geefVerdiendeStempels().includes(land.bestand);
