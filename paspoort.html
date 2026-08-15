@@ -467,12 +467,17 @@ function bouwStempels(){
     // daarom de oude vaste maat aan).
     const volgendeRij = STEMPEL_RIJEN[rij+1];
     const naamHoogte = volgendeRij ? (volgendeRij.boven - rijInfo.onder) - 0.35 : 4.4;
+    // Kleine handmatige correctie, per rij-index: de middelste rij (index 1)
+    // stond volgens Arjen nog een tikje te laag t.o.v. de zegel erboven -
+    // de andere rijen zaten al goed. Alleen de top schuift mee omhoog, de
+    // hoogte blijft zoals berekend.
+    const NAAM_OMHOOG_PER_RIJ = [0, 0.7, 0];
     const naamEl = document.createElement('div');
     naamEl.className = 'stempel-naam' + (verzameld ? '' : ' nog-niet-verzameld');
     naamEl.textContent = land.naam;
     naamEl.style.left = kolInfo.links + '%';
     naamEl.style.width = (kolInfo.rechts - kolInfo.links) + '%';
-    naamEl.style.top = (rijInfo.onder + 0.15) + '%';
+    naamEl.style.top = (rijInfo.onder + 0.15 - (NAAM_OMHOOG_PER_RIJ[rij]||0)) + '%';
     naamEl.style.height = naamHoogte + '%';
     laag.appendChild(naamEl);
   }
