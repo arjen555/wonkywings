@@ -14,23 +14,30 @@
     background:radial-gradient(ellipse at center, #0a2338 0%, #020d1a 75%);
   }
 
-  /* ── Klein, onopvallend terug-knopje in de hoek: de rest van het scherm
-     is voor het boek zelf, zo groot mogelijk. ── */
+  /* ── Terug-naar-start-knop in de hoek, als illustratie i.p.v. tekstknopje —
+     mag opvallender/groter zijn dan het oude tekstknopje. ── */
   #terug-knop {
     position:fixed; left:14px; top:14px; z-index:50;
-    display:flex; align-items:center; gap:5px;
-    background:rgba(255,255,255,0.08); border:1.5px solid rgba(255,255,255,0.18);
-    color:rgba(255,255,255,0.75); font-family:'Baloo 2',sans-serif; font-weight:700;
-    font-size:0.8rem; border-radius:16px; padding:6px 14px; cursor:pointer;
-    transition:background 0.2s, border-color 0.2s;
+    width:clamp(150px, 15vw, 260px); border:none; background:none; padding:0;
+    cursor:pointer; opacity:0.92; transition:opacity 0.15s, transform 0.15s;
+    filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5));
   }
-  #terug-knop:hover { background:rgba(255,255,255,0.16); border-color:rgba(255,215,0,0.4); color:#fff; }
+  #terug-knop img { width:100%; display:block; }
+  #terug-knop:hover { opacity:1; transform:scale(1.03); }
+
+  /* ── Groep van boek + pagina-label samen, verticaal gecentreerd in het
+     beschikbare scherm. Het label hangt hierdoor vlak onder het boek, in
+     plaats van los onderaan het scherm te zweven. ── */
+  #boek-groep {
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    flex:1; min-height:0; width:100%;
+  }
 
   /* ── De rij met: pijl-terug, het boek zelf, pijl-verder ── */
   #boek-rij {
     display:flex; align-items:center; justify-content:center;
     gap:min(2.8vw, 30px);
-    flex:1; min-height:0; width:100%;
+    width:100%;
     padding:8px 2vw 0;
   }
 
@@ -106,9 +113,9 @@
   }
 
   #pagina-label {
-    flex:none; padding:8px 0 10px;
-    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:0.85rem;
-    color:rgba(255,255,255,0.65); text-align:center;
+    flex:none; padding:4px 0 0;
+    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:1.05rem;
+    color:rgba(255,255,255,0.7); text-align:center;
   }
 
   /* ── Uitvergroting: volledige schermhoogte benut, illustratie zo groot
@@ -177,25 +184,29 @@
 </head>
 <body>
 
-<button id="terug-knop" onclick="ganNaarStart()">◀ Terug naar start</button>
+<button id="terug-knop" onclick="ganNaarStart()">
+  <img src="images/terug-naar-start-knop.png" alt="Terug naar start"/>
+</button>
 
-<div id="boek-rij">
-  <button id="pijl-terug" class="pagina-pijl-knop" onclick="ganNaarPagina(huidigePagina-1)">
-    <img src="images/paspoort-terug.png" alt="Vorige pagina"/>
-  </button>
+<div id="boek-groep">
+  <div id="boek-rij">
+    <button id="pijl-terug" class="pagina-pijl-knop" onclick="ganNaarPagina(huidigePagina-1)">
+      <img src="images/paspoort-terug.png" alt="Vorige pagina"/>
+    </button>
 
-  <div id="kader">
-    <div id="tab-highlight"></div>
-    <div id="tabs-laag"></div>
-    <div id="stempel-laag"></div>
+    <div id="kader">
+      <div id="tab-highlight"></div>
+      <div id="tabs-laag"></div>
+      <div id="stempel-laag"></div>
+    </div>
+
+    <button id="pijl-verder" class="pagina-pijl-knop" onclick="ganNaarPagina(huidigePagina+1)">
+      <img src="images/paspoort-verder.png" alt="Volgende pagina"/>
+    </button>
   </div>
 
-  <button id="pijl-verder" class="pagina-pijl-knop" onclick="ganNaarPagina(huidigePagina+1)">
-    <img src="images/paspoort-verder.png" alt="Volgende pagina"/>
-  </button>
+  <div id="pagina-label">pagina 1 van 1</div>
 </div>
-
-<div id="pagina-label">pagina 1 van 1</div>
 
 <div id="uitvergroot-achtergrond">
   <button id="uitvergroot-vorige" class="uitvergroot-pijl-knop" onclick="naarStempelIndex(huidigeIndex-1)">
@@ -366,13 +377,40 @@ function bouwStempels(){
     laag.appendChild(naamEl);
   }
 
-  document.getElementById('pagina-label').textContent = `pagina ${huidigePagina+1} van ${totaalPaginas}`;
-  document.getElementById('pijl-terug').disabled = huidigePagina<=0;
-  document.getElementById('pijl-verder').disabled = huidigePagina>=totaalPaginas-1;
+  const actiefWd = WERELDDELEN.find(wd => wd.code === huidigWerelddeel);
+  const wdIndex = WERELDDELEN.indexOf(actiefWd);
+  document.getElementById('pagina-label').textContent = `${actiefWd.label}: pagina ${huidigePagina+1} van ${totaalPaginas}`;
+  // De pijlen blijven maar echt uitgeschakeld aan het begin van Europa en
+  // het eind van Overig — daartussenin bladert "verder" op de laatste
+  // pagina gewoon door naar het volgende werelddeel (en "terug" andersom).
+  document.getElementById('pijl-terug').disabled = (huidigePagina<=0 && wdIndex<=0);
+  document.getElementById('pijl-verder').disabled = (huidigePagina>=totaalPaginas-1 && wdIndex>=WERELDDELEN.length-1);
 }
 
 function ganNaarPagina(nieuw){
-  huidigePagina = nieuw;
+  const landen = landenVoorWerelddeel(huidigWerelddeel);
+  const totaalPaginas = Math.max(1, Math.ceil(landen.length / PER_PAGINA));
+  const wdIndex = WERELDDELEN.indexOf(WERELDDELEN.find(wd => wd.code === huidigWerelddeel));
+
+  if(nieuw >= totaalPaginas){
+    // Laatste pagina van dit werelddeel + nog een keer "verder": ga door
+    // naar het eerstvolgende werelddeel, pagina 1. Bij Overig (het laatste)
+    // kan dit niet — de knop staat dan al uit, dus hier gebeurt dan niets.
+    if(wdIndex >= WERELDDELEN.length-1) return;
+    huidigWerelddeel = WERELDDELEN[wdIndex+1].code;
+    huidigePagina = 0;
+    bouwTabs();
+  } else if(nieuw < 0){
+    // Eerste pagina + "terug": naar het vorige werelddeel, laatste pagina.
+    // Bij Europa (het eerste) gebeurt er niets, de knop staat dan al uit.
+    if(wdIndex <= 0) return;
+    huidigWerelddeel = WERELDDELEN[wdIndex-1].code;
+    const vorigeLanden = landenVoorWerelddeel(huidigWerelddeel);
+    huidigePagina = Math.max(0, Math.ceil(vorigeLanden.length / PER_PAGINA) - 1);
+    bouwTabs();
+  } else {
+    huidigePagina = nieuw;
+  }
   bouwStempels();
 }
 
