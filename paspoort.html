@@ -101,13 +101,27 @@
   }
 
   /* ── Nog niet verdiend: illustratie blijft zichtbaar (leuk vooruitzicht),
-     maar gedimd en zonder verificatiestempel - die stempel bewijst juist
-     dat het land verdiend is. ── */
+     maar vaag/vervaagd (licht, weinig contrast) in plaats van donker, en
+     zonder verificatiestempel - die stempel bewijst juist dat het land
+     verdiend is. Niet meer aanklikbaar (zie ook cursor hieronder): de
+     uitvergroting met het weetje erbij mag pas te zien zijn als het écht
+     verdiend is. Een slotje-badge maakt dat extra duidelijk, terwijl de
+     landnaam gewoon zichtbaar blijft. ── */
+  .stempel-kaart.nog-niet-verzameld { cursor:default; }
   .stempel-kaart.nog-niet-verzameld img.stempel-foto {
-    filter:grayscale(1) brightness(0.5) drop-shadow(0 2px 6px rgba(0,0,0,0.35));
+    filter:grayscale(1) brightness(1.55) contrast(0.45) opacity(0.55);
+  }
+  .stempel-slotje {
+    position:absolute; right:3%; top:3%;
+    width:24%; aspect-ratio:1/1;
+    display:flex; align-items:center; justify-content:center;
+    font-size:clamp(0.75rem, 1.8vw, 1.2rem);
+    background:rgba(30,20,8,0.5); border-radius:50%;
+    box-shadow:0 2px 5px rgba(0,0,0,0.35);
+    pointer-events:none;
   }
   .stempel-naam.nog-niet-verzameld {
-    color:#8a7658; font-style:italic; font-weight:700;
+    color:#a4937a; font-style:italic; font-weight:700;
   }
 
   /* ── Onzichtbare klikvlakken bovenop de al getekende tabbladen rechts
@@ -123,8 +137,8 @@
   }
 
   #pagina-label {
-    flex:none; padding:4px 0 0;
-    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:1.05rem;
+    flex:none; padding:14px 0 0;
+    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:1.35rem;
     color:rgba(255,255,255,0.7); text-align:center;
   }
 
@@ -404,14 +418,15 @@ function bouwStempels(){
     kaart.style.width  = (kolInfo.rechts - kolInfo.links - 2*STEMPEL_INZET) + '%';
     kaart.style.height = (rijInfo.onder - rijInfo.boven - 2*STEMPEL_INZET) + '%';
     kaart.title = land.naam;
-    kaart.onclick = () => toonUitvergroting(land, landen, start + i);
 
     // Nog niet verdiend: de illustratie blijft zichtbaar (leuk om vast te
-    // zien wat er te winnen valt), maar dan gedimd/grijs en zonder
+    // zien wat er te winnen valt), maar dan vervaagd en zonder
     // verificatiestempel erop - die stempel is nu juist het bewijs dát je
-    // 'm verdiend hebt.
+    // 'm verdiend hebt. En niet aanklikbaar: de uitvergroting met het
+    // weetje erbij zou anders stiekem al te zien zijn vóór het verdiend is.
     const verzameld = isVerzameld(land);
     if(!verzameld) kaart.classList.add('nog-niet-verzameld');
+    if(verzameld) kaart.onclick = () => toonUitvergroting(land, landen, start + i);
 
     // Welke van de drie stempels, en de kanteling ervan, ligt per land vast
     // (dezelfde afbeelding geeft altijd dezelfde stempel + stand), zodat het
@@ -427,14 +442,17 @@ function bouwStempels(){
       + (verzameld
           ? `<img class="stempel-verificatie" src="images/${STEMPEL_AFBEELDINGEN[afbeeldingIndex]}" alt=""`
             + ` style="transform:translate(-50%, -50%) rotate(${rotatie}deg);">`
-          : '');
+          : `<div class="stempel-slotje">🔒</div>`);
     laag.appendChild(kaart);
 
     // Naampje direct onder de stempel, in de smalle strook tussen dit vakje
     // en het volgende (of de onderrand van het boek bij de laatste rij).
+    // De naam blijft altijd zichtbaar (ook nog-niet-verdiend) - het slotje
+    // en de vervaagde illustratie maken al genoeg duidelijk dat 'm nog
+    // verdiend moet worden.
     const naamEl = document.createElement('div');
     naamEl.className = 'stempel-naam' + (verzameld ? '' : ' nog-niet-verzameld');
-    naamEl.textContent = verzameld ? land.naam : 'nog te verdienen';
+    naamEl.textContent = land.naam;
     naamEl.style.left = kolInfo.links + '%';
     naamEl.style.width = (kolInfo.rechts - kolInfo.links) + '%';
     naamEl.style.top = (rijInfo.onder + 0.2) + '%';
