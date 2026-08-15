@@ -984,7 +984,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.39</div>
+  <div id="versie-label">v0.3.40</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1037,6 +1037,11 @@
   <div id="rad-instructie">Klik, tik of druk op een knop om te draaien!</div>
 </div>
 <div id="rad-uitslag"></div>
+<!-- Verschijnt alleen tijdens de rad-van-fortuin-popup, en alleen op het
+     moment dat de speler een landenstempel wint op het rad (zie
+     toonRadUitslag()) - buiten de rest van het spel onzichtbaar. Zelfde
+     positie/grootte/stijl als het paspoort-icoontje op de eindschermen. -->
+<img id="rad-paspoort-icoon" class="eindscherm-paspoort-icoon" style="display:none;" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="window.location.href='paspoort.html'"/>
 
 <div id="kennisvraag-popup" onclick="kennisvraagDoorgaan()">
   <div id="kennisvraag-kaart">
@@ -2210,8 +2215,8 @@ function bouwStartscherm() {
   const raadspelEl = document.createElement('div');
   raadspelEl.className = 'menu-groep';
   raadspelEl.innerHTML = `<div class="menu-groep-kop">
-    <span class="menu-groep-icoon"><img src="images/raadspel-icoon.png" alt="Raad het land bij het plaatje"/></span>
-    <span class="menu-groep-label">Raad het land bij het plaatje</span>
+    <span class="menu-groep-icoon"><img src="images/raadspel-icoon.png" alt="Raad je plaatje"/></span>
+    <span class="menu-groep-label">Raad je plaatje</span>
     <span class="menu-groep-pijl">↗</span>
   </div>`;
   raadspelEl.querySelector('.menu-groep-kop').onclick = () => { window.location.href = 'raadspel.html'; };
@@ -3160,7 +3165,7 @@ function stempelMeldingTekstVoorRonde(gekozenLanden){
 // daarna (na STEMPEL_VLIEG_PAUZE_MS) één voor één naar het paspoort-icoontje
 // van het huidige eindscherm vliegen, als teken dat ze daar terechtkomen.
 // Doet niets als er niks te vieren valt of het scherm (nog) geen icoon heeft.
-const STEMPEL_VLIEG_PAUZE_MS = 2000;
+const STEMPEL_VLIEG_PAUZE_MS = 3000;
 const STEMPEL_VLIEG_DUUR_MS = 850;
 function toonVliegendeStempels(gekozenLanden, paspoortIconEl){
   if(!gekozenLanden || !gekozenLanden.length || !paspoortIconEl) return;
@@ -6572,11 +6577,11 @@ function kennisvraagDoorgaan(){
 // 12 gelijke segmenten (30° elk), verdeling uit het MD-bestand.
 // Mispoes en jackpot staan tegenover elkaar (6 segmenten apart).
 const RAD_SEGMENTEN = [
-  { tekst:'−200 km',       type:'km',      waarde:200 },
+  { tekst:'land erbij!',   type:'land',    waarde:0 },
   { tekst:'−400 km',       type:'km',      waarde:400 },
   { tekst:'Helaas!',       type:'mispoes',  waarde:0 },
   { tekst:'Joker',         type:'joker',    waarde:0 },
-  { tekst:'−100 km',       type:'km',      waarde:100 },
+  { tekst:'land erbij!',   type:'land',    waarde:0 },
   { tekst:'−500 km',       type:'km',      waarde:500 },
   { tekst:'−50 km',        type:'km',      waarde:50 },
   { tekst:'Extra draaien', type:'extra',    waarde:0 },
@@ -6725,6 +6730,16 @@ function toonRadUitslag(){
   } else if(seg.type === 'pijl'){
     el.textContent = 'Extra richtingpijl!';
     el.style.color = '#7ec8e3';
+  } else if(seg.type === 'land'){
+    const gekozenLanden = kiesBonusLanden(1);
+    if(gekozenLanden.length){
+      el.textContent = 'Land erbij! 🎉';
+      el.style.color = '#ffe066';
+      toonRadPaspoortStempel(gekozenLanden);
+    } else {
+      el.textContent = 'Je paspoort zit al helemaal vol! 🏆';
+      el.style.color = '#ffe066';
+    }
   } else if(seg.waarde >= 500){
     el.textContent = 'JACKPOT! −'+seg.waarde+' km!';
     el.style.color = '#ffe066';
@@ -6745,6 +6760,18 @@ function toonRadUitslag(){
     radKlaarVoorDoorgaan = true;
     document.getElementById('rad-instructie').textContent = 'Klik, tik of druk op een knop om verder te gaan';
   }
+}
+
+// toonRadPaspoortStempel(): toont het paspoort-icoontje rechtsonder (anders
+// nergens te zien tijdens het spelen) en laat de gewonnen stempel er - net
+// als bij de eindschermen - naartoe vliegen. Het icoontje verdwijnt weer
+// vanzelf zodra de vlieg-animatie helemaal klaar is.
+function toonRadPaspoortStempel(gekozenLanden){
+  const icoon = document.getElementById('rad-paspoort-icoon');
+  icoon.style.display = 'block';
+  toonVliegendeStempels(gekozenLanden, icoon);
+  const totaleDuur = STEMPEL_VLIEG_PAUZE_MS + gekozenLanden.length*220 + STEMPEL_VLIEG_DUUR_MS + 300;
+  setTimeout(()=>{ icoon.style.display = 'none'; }, totaleDuur);
 }
 
 // verwerkRadBeloning(): start de vlucht-animatie naar het juiste HUD-onderdeel.
