@@ -163,7 +163,7 @@
   /* — Resultaatscherm — */
   #klaar-titel { font-family:'Baloo 2',sans-serif; font-weight:800; color:#3b2a18; font-size:clamp(1rem,2vw,1.5rem); margin:0 0 1%; text-align:center; }
   #klaar-resultaat { font-family:'Baloo 2',sans-serif; font-weight:700; color:#5a3a1a; font-size:clamp(0.75rem,1.5vw,1.15rem); margin-bottom:2%; text-align:center; }
-  #klaar-stempel { font-family:'Baloo 2',sans-serif; font-weight:800; color:#8a4a10; font-size:clamp(0.72rem,1.4vw,1.05rem); margin-bottom:2%; text-align:center; line-height:1.35; min-height:1.3em; }
+  #klaar-stempel { font-family:'Baloo 2',sans-serif; font-weight:800; color:#8a4a10; font-size:clamp(0.72rem,1.4vw,1.05rem); margin-bottom:2%; text-align:center; line-height:1.35; min-height:1.3em; white-space:pre-line; }
   #scorebord-lijst { width:100%; max-height:55%; overflow-y:auto; margin-bottom:2%; }
   .score-rij { display:flex; align-items:center; gap:8px; padding:2px 6px; font-family:'Baloo 2',sans-serif; font-weight:700; font-size:clamp(0.65rem,1.25vw,0.95rem); color:#3b2a18; }
   .score-rij.eigen { background:rgba(255,215,0,0.25); border-radius:6px; }
@@ -181,10 +181,13 @@
   .actie-btn:hover { filter:brightness(1.15); }
   .actie-btn.secundair { background:linear-gradient(180deg,#5a4a30,#3a2e1a); }
 
-  /* ── Landenpaspoort-icoontje onderaan het "Klaar!"-scherm ── */
+  /* ── Landenpaspoort-icoontje bij het "Klaar!"-scherm: los van het kader
+     gepositioneerd (position:fixed, rechtsonder in het hele scherm), zelfde
+     opzet en grootte als in index.html, zodat het overal consistent is. ── */
   #klaar-paspoort-icoon {
-    width:min(56px, 14%); display:block; margin:2px auto 0; cursor:pointer;
-    filter:drop-shadow(0 3px 8px rgba(0,0,0,0.4));
+    display:none; position:fixed; right:clamp(16px, 3vw, 40px); bottom:clamp(16px, 3vw, 40px);
+    width:min(252px, 24vw); cursor:pointer; z-index:150;
+    filter:drop-shadow(0 6px 20px rgba(0,0,0,0.55));
     transition:transform 0.15s;
   }
   #klaar-paspoort-icoon:hover { transform:scale(1.06); }
@@ -202,7 +205,7 @@
   .stempel-vlieg-rij.zichtbaar { opacity:1; }
   .stempel-vlieg-plaatje {
     width:min(15vw, 96px); aspect-ratio:1/1; object-fit:cover;
-    border-radius:50%;
+    border-radius:50%; z-index:900;
     box-shadow:0 0 0 4px rgba(255,246,200,0.92), 0 8px 22px rgba(0,0,0,0.55);
   }
 
@@ -242,7 +245,6 @@
         <button class="actie-btn" id="btn-nogeen" onclick="opnieuwSpelen()">🔁 Nog een keer</button>
         <button class="actie-btn secundair" onclick="terugNaarKiezen()">◀ Categorieën</button>
       </div>
-      <img id="klaar-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="window.location.href='paspoort.html'"/>
     </div>
 
   </div>
@@ -264,6 +266,12 @@
      worden, maar aan #kader zelf - met een scheefgetrokken/naar-rechts-
      geschoven uitvergroting tot gevolg. Buiten #kader plaatsen lost dat op. -->
 <div id="illustratie-achtergrond"></div>
+
+<!-- Zelfde reden als hierboven: buiten #kader, anders positioneert de
+     fixed rechtsonder-hoek zich t.o.v. #kader in plaats van t.o.v. het
+     scherm. Zichtbaarheid wordt in toonScherm() geregeld (alleen te zien op
+     het "Klaar!"-scherm), in plaats van via de normale .scherm-cascade. -->
+<img id="klaar-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="window.location.href='paspoort.html'"/>
 
 <script>
 // ── Categorieën: exacte kopie van de landenlijsten uit index.html (MENU).
@@ -359,7 +367,7 @@ function kiesBonusLanden(aantal){
 // 'bijnaTekst' is de tekst als de drempel niet gehaald werd.
 function stempelMeldingTekst(drempelBereikt, gekozenLanden, bijnaTekst){
   if(gekozenLanden.length >= 2){
-    return 'Wat een score! Je wint zelfs 2 landenstempels voor '+gekozenLanden[0].naam+' en '+gekozenLanden[1].naam+'!';
+    return 'Wat een score!\nJe wint zelfs 2 landenstempels voor '+gekozenLanden[0].naam+' en '+gekozenLanden[1].naam+'!';
   }
   if(gekozenLanden.length === 1){
     return 'Goed gedaan! Als prijs krijg je een landenstempel voor '+gekozenLanden[0].naam+' - kijk maar in je paspoort!';
@@ -473,6 +481,9 @@ function toonScherm(id){
   document.querySelectorAll('.scherm').forEach(el=>el.classList.remove('actief'));
   document.getElementById(id).classList.add('actief');
   document.getElementById('antwoorden-grid').classList.toggle('actief', id==='scherm-spel');
+  // #klaar-paspoort-icoon staat buiten #kader (zie de notitie bij zijn HTML)
+  // en volgt dus niet vanzelf de .scherm-cascade - hier expliciet meesturen.
+  document.getElementById('klaar-paspoort-icoon').style.display = (id==='scherm-klaar') ? 'block' : 'none';
   sluitUitvergroting();
 }
 

@@ -491,15 +491,21 @@
     #hoofdsteden-resultaat-score { color:#fff6c8; font-size:2rem; font-weight:800; text-align:center; }
     /* ── Landenpaspoort: melding bij verdiende verrassingsstempels, en het
        icoontje dat doorlinkt naar het paspoort - gedeeld tussen de
-       Hoofdsteden- en Plekken-eindschermen. ── */
+       Hoofdsteden- en Plekken-eindschermen. white-space:pre-line zodat een
+       losse '\n' in de tekst (zie stempelMeldingTekst()) als regeleinde
+       wordt getoond. ── */
     .stempel-melding {
       color:#ffe9a8; font-size:1.05rem; font-weight:800; text-align:center;
       text-shadow:0 1px 4px rgba(0,0,0,0.5); line-height:1.35; min-height:1.4em;
-      margin-top:14px;
+      margin-top:14px; white-space:pre-line;
     }
+    /* Los van de eindscherm-kaart zelf gepositioneerd (position:fixed,
+       rechtsonder in het hele scherm) zodat het icoon nooit achter de kaart
+       verdwijnt en op elk eindscherm hetzelfde staat, ongeacht kaartgrootte. */
     .eindscherm-paspoort-icoon {
-      width:min(84px, 20%); display:block; margin:10px auto 0; cursor:pointer;
-      filter:drop-shadow(0 3px 10px rgba(0,0,0,0.5));
+      position:fixed; right:clamp(16px, 3vw, 40px); bottom:clamp(16px, 3vw, 40px);
+      width:min(252px, 24vw); cursor:pointer; z-index:150;
+      filter:drop-shadow(0 6px 20px rgba(0,0,0,0.55));
       transition:transform 0.15s;
     }
     .eindscherm-paspoort-icoon:hover { transform:scale(1.06); }
@@ -507,7 +513,10 @@
        scherm, dat na een korte pauze naar het paspoort-icoontje toe vliegt
        (zie toonVliegendeStempels()). Los van de eindscherm-kaarten zelf
        gepositioneerd (position:fixed), zodat het op elk van de
-       eindschermen hetzelfde werkt. ── */
+       eindschermen hetzelfde werkt. z-index ruim boven alle schermen/kaarten
+       (max 110) EN los op de losse plaatjes zelf gezet (niet alleen op deze
+       rij): zodra een plaatje tijdens het vliegen uit deze rij wordt gehaald
+       en los aan <body> hangt, telt de z-index van de rij niet meer mee. ── */
     .stempel-vlieg-rij {
       position:fixed; top:4vh; left:50%; transform:translateX(-50%);
       z-index:900; display:flex; flex-wrap:wrap; justify-content:center;
@@ -518,7 +527,7 @@
     .stempel-vlieg-rij.zichtbaar { opacity:1; }
     .stempel-vlieg-plaatje {
       width:min(15vw, 96px); aspect-ratio:1/1; object-fit:cover;
-      border-radius:50%;
+      border-radius:50%; z-index:900;
       box-shadow:0 0 0 4px rgba(255,246,200,0.92), 0 8px 22px rgba(0,0,0,0.55);
     }
     #hoofdsteden-resultaat-terug-btn, #scorebord-terug-btn, #plekken-eind-verder {
@@ -975,7 +984,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.37</div>
+  <div id="versie-label">v0.3.38</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -3117,7 +3126,7 @@ function kiesBonusLanden(aantal){
 // 'bijnaTekst' is de tekst als de drempel niet gehaald werd.
 function stempelMeldingTekst(drempelBereikt, gekozenLanden, bijnaTekst){
   if(gekozenLanden.length >= 2){
-    return 'Wat een score! Je wint zelfs 2 landenstempels voor '+gekozenLanden[0].naam+' en '+gekozenLanden[1].naam+'!';
+    return 'Wat een score!\nJe wint zelfs 2 landenstempels voor '+gekozenLanden[0].naam+' en '+gekozenLanden[1].naam+'!';
   }
   if(gekozenLanden.length === 1){
     return 'Goed gedaan! Als prijs krijg je een landenstempel voor '+gekozenLanden[0].naam+' - kijk maar in je paspoort!';
@@ -3139,11 +3148,11 @@ function stempelMeldingTekstVoorRonde(gekozenLanden){
     return 'Goed gedaan! Als prijs krijg je een landenstempel voor '+gekozenLanden[0].naam+' - kijk maar in je paspoort!';
   }
   if(gekozenLanden.length === 2){
-    return 'Wat een score! Je wint zelfs 2 landenstempels voor '+gekozenLanden[0].naam+' en '+gekozenLanden[1].naam+'!';
+    return 'Wat een score!\nJe wint zelfs 2 landenstempels voor '+gekozenLanden[0].naam+' en '+gekozenLanden[1].naam+'!';
   }
   const namen = gekozenLanden.map(l=>l.naam);
   const laatste = namen.pop();
-  return 'Wat een score! Je wint maar liefst '+gekozenLanden.length+' landenstempels: '+namen.join(', ')+' en '+laatste+'!';
+  return 'Wat een score!\nJe wint maar liefst '+gekozenLanden.length+' landenstempels: '+namen.join(', ')+' en '+laatste+'!';
 }
 // ── Landenpaspoort: verdiende stempels laten "vliegen" naar het paspoort-
 // icoon ── Toont de zojuist verdiende stempelplaatjes bovenaan het scherm,
