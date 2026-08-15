@@ -503,6 +503,24 @@
       transition:transform 0.15s;
     }
     .eindscherm-paspoort-icoon:hover { transform:scale(1.06); }
+    /* ── Landenpaspoort: rijtje met net verdiende stempels, bovenaan het
+       scherm, dat na een korte pauze naar het paspoort-icoontje toe vliegt
+       (zie toonVliegendeStempels()). Los van de eindscherm-kaarten zelf
+       gepositioneerd (position:fixed), zodat het op elk van de
+       eindschermen hetzelfde werkt. ── */
+    .stempel-vlieg-rij {
+      position:fixed; top:4vh; left:50%; transform:translateX(-50%);
+      z-index:900; display:flex; flex-wrap:wrap; justify-content:center;
+      gap:14px; max-width:80vw;
+      opacity:0; transition:opacity 0.35s ease;
+      pointer-events:none;
+    }
+    .stempel-vlieg-rij.zichtbaar { opacity:1; }
+    .stempel-vlieg-plaatje {
+      width:min(15vw, 96px); aspect-ratio:1/1; object-fit:cover;
+      border-radius:50%;
+      box-shadow:0 0 0 4px rgba(255,246,200,0.92), 0 8px 22px rgba(0,0,0,0.55);
+    }
     #hoofdsteden-resultaat-terug-btn, #scorebord-terug-btn, #plekken-eind-verder {
       width:clamp(130px, 13vw, 210px); border:none; background:none; padding:0;
       cursor:pointer; opacity:0.92; transition:opacity 0.15s, transform 0.15s;
@@ -957,7 +975,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.36</div>
+  <div id="versie-label">v0.3.37</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1161,7 +1179,9 @@
         <div id="scorebord-lijst-vandaag" class="scorebord-kolom-lijst"></div>
       </div>
     </div>
+    <div id="scorebord-stempel" class="stempel-melding"></div>
     <button id="scorebord-terug-btn" onclick="naarStart()"><img src="images/terug-naar-start-knop.png" alt="Terug naar menu"/></button>
+    <img id="scorebord-paspoort-icoon" class="eindscherm-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="window.location.href='paspoort.html'"/>
   </div>
 </div>
 
@@ -1172,7 +1192,7 @@
     <div id="hoofdsteden-resultaat-score"></div>
     <div id="hoofdsteden-resultaat-stempel" class="stempel-melding"></div>
     <button id="hoofdsteden-resultaat-terug-btn" onclick="naarStart()"><img src="images/terug-naar-start-knop.png" alt="Terug naar menu"/></button>
-    <img class="eindscherm-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="window.location.href='paspoort.html'"/>
+    <img id="hoofdsteden-resultaat-paspoort-icoon" class="eindscherm-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="window.location.href='paspoort.html'"/>
   </div>
 </div>
 
@@ -1322,7 +1342,7 @@
       <div id="plekken-eind-totaal"></div>
       <div id="plekken-eind-stempel" class="stempel-melding"></div>
       <button id="plekken-eind-verder" onclick="naarStart()"><img src="images/terug-naar-start-knop.png" alt="Terug naar het menu"/></button>
-      <img class="eindscherm-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="window.location.href='paspoort.html'"/>
+      <img id="plekken-eind-paspoort-icoon" class="eindscherm-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="window.location.href='paspoort.html'"/>
     </div>
   </div>
 </div>
@@ -2436,6 +2456,11 @@ let levelStartTijd=0, laatsteLevelTijd=0;
 let vluchtActief=false, vluchtStartTijd=0, vluchtDuur=0;
 // ── Hoofdsteden-modus: geen km-score/highscore, wel een goed/totaal-teller ──
 let hoofdstedenGoed=0, hoofdstedenTotaal=0;
+// Landenpaspoort: welke stempels zijn er in dít potje Europa/Wereld bij
+// gekomen (voor de vliegende-stempels-animatie op het scorebord) - wordt
+// bij elk nieuw level geleegd in startSpel(), en gevuld via de
+// verdienStempelVoorLand()-aanroep bij een goed gedropt vlaggetje.
+let dezeRondeVerdiendeLanden = [];
 let vluchtIsHoofdstad=false, vluchtIsGoed=false, vluchtHoofdstadNaam='', vluchtGevallenLandNaam='';
 let vluchtIsPlek=false; // true tijdens de correctievlucht na een Plekken-antwoord (zie dropVlaggetje)
 // Tussentijdse opslag van de uitkomst van dropVlaggetje() voor de puntentelling,
@@ -2786,6 +2811,7 @@ function toonPlekkenEindoverzicht(){
   document.getElementById('plekken-eind-stempel').textContent =
     stempelMeldingTekst(drempelBereikt, gekozenLanden, 'Bijna! Vanaf 5 landen goed krijg je een landenstempel.');
   document.getElementById('plekken-eind-overlay').style.display = 'flex';
+  toonVliegendeStempels(gekozenLanden, document.getElementById('plekken-eind-paspoort-icoon'));
 }
 
 // Afstand tot een plek: bij meerdere punten telt het dichtstbijzijnde punt,
@@ -3101,6 +3127,78 @@ function stempelMeldingTekst(drempelBereikt, gekozenLanden, bijnaTekst){
   }
   return bijnaTekst;
 }
+// Zelfde soort melding als stempelMeldingTekst(), maar dan voor Europa/
+// Wereld: daar wordt niet één keer aan het eind een vast aantal (max 2)
+// stempels uitgedeeld, maar per goed gedropt vlaggetje meteen een stempel
+// verdiend - in één potje kunnen dus (in theorie) meer dan 2 nieuwe landen
+// bij komen. Geen "bijna"-tekst nodig: als er niets nieuws bij is (alles
+// stond al in het paspoort, of er is niets goed gedaan), blijft de regel leeg.
+function stempelMeldingTekstVoorRonde(gekozenLanden){
+  if(gekozenLanden.length === 0) return '';
+  if(gekozenLanden.length === 1){
+    return 'Goed gedaan! Als prijs krijg je een landenstempel voor '+gekozenLanden[0].naam+' - kijk maar in je paspoort!';
+  }
+  if(gekozenLanden.length === 2){
+    return 'Wat een score! Je wint zelfs 2 landenstempels voor '+gekozenLanden[0].naam+' en '+gekozenLanden[1].naam+'!';
+  }
+  const namen = gekozenLanden.map(l=>l.naam);
+  const laatste = namen.pop();
+  return 'Wat een score! Je wint maar liefst '+gekozenLanden.length+' landenstempels: '+namen.join(', ')+' en '+laatste+'!';
+}
+// ── Landenpaspoort: verdiende stempels laten "vliegen" naar het paspoort-
+// icoon ── Toont de zojuist verdiende stempelplaatjes bovenaan het scherm,
+// naast elkaar, zodat je ze eerst even rustig kunt bekijken - en laat ze
+// daarna (na STEMPEL_VLIEG_PAUZE_MS) één voor één naar het paspoort-icoontje
+// van het huidige eindscherm vliegen, als teken dat ze daar terechtkomen.
+// Doet niets als er niks te vieren valt of het scherm (nog) geen icoon heeft.
+const STEMPEL_VLIEG_PAUZE_MS = 2000;
+const STEMPEL_VLIEG_DUUR_MS = 850;
+function toonVliegendeStempels(gekozenLanden, paspoortIconEl){
+  if(!gekozenLanden || !gekozenLanden.length || !paspoortIconEl) return;
+  const rij = document.createElement('div');
+  rij.className = 'stempel-vlieg-rij';
+  gekozenLanden.forEach(land=>{
+    const img = document.createElement('img');
+    img.className = 'stempel-vlieg-plaatje';
+    img.src = 'images/landenstempels/'+land.bestand+'.png';
+    img.alt = land.naam;
+    rij.appendChild(img);
+  });
+  document.body.appendChild(rij);
+  void rij.offsetWidth; // forceert reflow, zodat de intro-transitie echt start vanaf onzichtbaar
+  rij.classList.add('zichtbaar');
+
+  setTimeout(()=>{
+    if(!document.body.contains(paspoortIconEl)) return; // scherm inmiddels weg (bijv. snel terug naar menu)
+    const doelRect = paspoortIconEl.getBoundingClientRect();
+    const doelX = doelRect.left + doelRect.width*0.5;
+    const doelY = doelRect.top + doelRect.height*0.5;
+    const plaatjes = Array.from(rij.children);
+    plaatjes.forEach((img, i)=>{
+      setTimeout(()=>{
+        const startRect = img.getBoundingClientRect();
+        // Loskoppelen van de rij en zelf 'fixed' verder laten vliegen, zodat
+        // elk plaatje onafhankelijk van de andere zijn eigen pad aflegt.
+        document.body.appendChild(img);
+        img.style.position = 'fixed';
+        img.style.margin = '0';
+        img.style.left = startRect.left+'px';
+        img.style.top = startRect.top+'px';
+        img.style.width = startRect.width+'px';
+        void img.offsetWidth;
+        img.style.transition = 'left '+STEMPEL_VLIEG_DUUR_MS+'ms cubic-bezier(.4,0,.6,1), '
+          +'top '+STEMPEL_VLIEG_DUUR_MS+'ms cubic-bezier(.4,0,.6,1), '
+          +'width '+STEMPEL_VLIEG_DUUR_MS+'ms ease-in, opacity '+STEMPEL_VLIEG_DUUR_MS+'ms ease-in';
+        img.style.left = (doelX-9)+'px';
+        img.style.top = (doelY-9)+'px';
+        img.style.width = '18px';
+        img.style.opacity = '0.15';
+        setTimeout(()=>{ img.remove(); }, STEMPEL_VLIEG_DUUR_MS+60);
+      }, i*220); // kleine vertraging tussen de plaatjes, zodat ze na elkaar vliegen i.p.v. als één klomp
+    });
+    setTimeout(()=>{ rij.remove(); }, plaatjes.length*220 + STEMPEL_VLIEG_DUUR_MS + 150);
+  }, STEMPEL_VLIEG_PAUZE_MS);
+}
 // Vult transparante randen/hoekjes van een illustratie automatisch op door
 // de kleur van het dichtstbijzijnde getekende pixel naar buiten te laten
 // "uitlopen". Zo verdwijnen gaten/gele plekken vanzelf, zonder dat iemand
@@ -3265,6 +3363,7 @@ function startSpel(levelId, modus) {
   const lv = LEVELS[levelId];
   if(!lv || !lv.beschikbaar) return;
   hoofdstedenGoed=0; hoofdstedenTotaal=0;
+  dezeRondeVerdiendeLanden=[];
   const isHoofdsteden = !!lv.hoofdsteden;
   const isPlekken = !!lv.plekken;
   document.getElementById('scorebord-wrap').style.display = (isHoofdsteden||isPlekken) ? 'none' : '';
@@ -3567,6 +3666,7 @@ function toonHoofdstedenResultaat(goed, totaal){
     stempelMeldingTekst(drempelBereikt, gekozenLanden, 'Bijna! Vanaf 8 landen goed krijg je een landenstempel.');
   document.getElementById('spelscherm').style.display='none';
   document.getElementById('hoofdsteden-resultaat-scherm').style.display='flex';
+  toonVliegendeStempels(gekozenLanden, document.getElementById('hoofdsteden-resultaat-paspoort-icoon'));
 }
 function toonScorebord(levelId, nieuweRun){
   const lv=LEVELS[levelId];
@@ -3585,8 +3685,15 @@ function toonScorebord(levelId, nieuweRun){
   bouwScorebordKolom('scorebord-lijst-alltime', alltime, nieuweRun);
   bouwScorebordKolom('scorebord-lijst-vandaag', vandaag, nieuweRun);
 
+  // ── Landenpaspoort: alleen tonen/laten vliegen als dit scorebord het
+  // resultaat van een zojuist gespeeld potje toont (nieuweRun) - niet als
+  // iemand het scorebord vanuit het menu bekijkt zonder te spelen.
+  const gekozenLanden = nieuweRun ? dezeRondeVerdiendeLanden : [];
+  document.getElementById('scorebord-stempel').textContent = nieuweRun ? stempelMeldingTekstVoorRonde(gekozenLanden) : '';
+
   document.getElementById('spelscherm').style.display='none';
   document.getElementById('scorebord-scherm').style.display='flex';
+  toonVliegendeStempels(gekozenLanden, document.getElementById('scorebord-paspoort-icoon'));
 }
 
 // Vanaf het startmenu: scorebord bekijken zonder het level te spelen
@@ -7314,7 +7421,8 @@ function dropVlaggetje(){
       score+=afwijkingKm;
       document.getElementById('score').textContent=score;
       zetKmCijfers(score);
-      verdienStempelVoorLand(huidigLand);
+      const nieuweStempel = verdienStempelVoorLand(huidigLand);
+      if(nieuweStempel) dezeRondeVerdiendeLanden.push(nieuweStempel);
       toonFeedback('🎉 Goed zo!','#ffd700');
       toonPunten(afwijkingKm);
       toonReactie('blij');

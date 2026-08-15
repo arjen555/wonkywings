@@ -189,6 +189,23 @@
   }
   #klaar-paspoort-icoon:hover { transform:scale(1.06); }
 
+  /* ── Landenpaspoort: rijtje met net verdiende stempels, bovenaan het
+     scherm, dat na een korte pauze naar het paspoort-icoontje toe vliegt
+     (zie toonVliegendeStempels()). Zelfde opzet als in index.html. ── */
+  .stempel-vlieg-rij {
+    position:fixed; top:4vh; left:50%; transform:translateX(-50%);
+    z-index:900; display:flex; flex-wrap:wrap; justify-content:center;
+    gap:14px; max-width:80vw;
+    opacity:0; transition:opacity 0.35s ease;
+    pointer-events:none;
+  }
+  .stempel-vlieg-rij.zichtbaar { opacity:1; }
+  .stempel-vlieg-plaatje {
+    width:min(15vw, 96px); aspect-ratio:1/1; object-fit:cover;
+    border-radius:50%;
+    box-shadow:0 0 0 4px rgba(255,246,200,0.92), 0 8px 22px rgba(0,0,0,0.55);
+  }
+
   ::-webkit-scrollbar { width:12px; }
   ::-webkit-scrollbar-thumb { background:rgba(90,58,26,0.55); border-radius:6px; }
 </style>
@@ -351,6 +368,54 @@ function stempelMeldingTekst(drempelBereikt, gekozenLanden, bijnaTekst){
     return 'Je paspoort zit al helemaal vol - knap hoor! 🏆';
   }
   return bijnaTekst;
+}
+// ── Landenpaspoort: verdiende stempels laten "vliegen" naar het paspoort-
+// icoon ── zelfde functie als in index.html, zie de toelichting daar.
+const STEMPEL_VLIEG_PAUZE_MS = 2000;
+const STEMPEL_VLIEG_DUUR_MS = 850;
+function toonVliegendeStempels(gekozenLanden, paspoortIconEl){
+  if(!gekozenLanden || !gekozenLanden.length || !paspoortIconEl) return;
+  const rij = document.createElement('div');
+  rij.className = 'stempel-vlieg-rij';
+  gekozenLanden.forEach(land=>{
+    const img = document.createElement('img');
+    img.className = 'stempel-vlieg-plaatje';
+    img.src = 'images/landenstempels/'+land.bestand+'.png';
+    img.alt = land.naam;
+    rij.appendChild(img);
+  });
+  document.body.appendChild(rij);
+  void rij.offsetWidth; // forceert reflow, zodat de intro-transitie echt start vanaf onzichtbaar
+  rij.classList.add('zichtbaar');
+
+  setTimeout(()=>{
+    if(!document.body.contains(paspoortIconEl)) return; // scherm inmiddels weg
+    const doelRect = paspoortIconEl.getBoundingClientRect();
+    const doelX = doelRect.left + doelRect.width*0.5;
+    const doelY = doelRect.top + doelRect.height*0.5;
+    const plaatjes = Array.from(rij.children);
+    plaatjes.forEach((img, i)=>{
+      setTimeout(()=>{
+        const startRect = img.getBoundingClientRect();
+        document.body.appendChild(img);
+        img.style.position = 'fixed';
+        img.style.margin = '0';
+        img.style.left = startRect.left+'px';
+        img.style.top = startRect.top+'px';
+        img.style.width = startRect.width+'px';
+        void img.offsetWidth;
+        img.style.transition = 'left '+STEMPEL_VLIEG_DUUR_MS+'ms cubic-bezier(.4,0,.6,1), '
+          +'top '+STEMPEL_VLIEG_DUUR_MS+'ms cubic-bezier(.4,0,.6,1), '
+          +'width '+STEMPEL_VLIEG_DUUR_MS+'ms ease-in, opacity '+STEMPEL_VLIEG_DUUR_MS+'ms ease-in';
+        img.style.left = (doelX-9)+'px';
+        img.style.top = (doelY-9)+'px';
+        img.style.width = '18px';
+        img.style.opacity = '0.15';
+        setTimeout(()=>{ img.remove(); }, STEMPEL_VLIEG_DUUR_MS+60);
+      }, i*220);
+    });
+    setTimeout(()=>{ rij.remove(); }, plaatjes.length*220 + STEMPEL_VLIEG_DUUR_MS + 150);
+  }, STEMPEL_VLIEG_PAUZE_MS);
 }
 
 const AANTAL_VRAGEN_MAX = 10;
@@ -700,6 +765,7 @@ function rondeKlaar(){
   document.getElementById('btn-nogeen').style.display = 'inline-block';
   bouwScorebordLijst(lijst, nieuweRun);
   toonScherm('scherm-klaar');
+  toonVliegendeStempels(gekozenLanden, document.getElementById('klaar-paspoort-icoon'));
 }
 
 // Scores bekijken vanuit het kies-scherm, zonder een ronde te spelen
