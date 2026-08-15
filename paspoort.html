@@ -100,6 +100,16 @@
     pointer-events:none;
   }
 
+  /* ── Nog niet verdiend: illustratie blijft zichtbaar (leuk vooruitzicht),
+     maar gedimd en zonder verificatiestempel - die stempel bewijst juist
+     dat het land verdiend is. ── */
+  .stempel-kaart.nog-niet-verzameld img.stempel-foto {
+    filter:grayscale(1) brightness(0.5) drop-shadow(0 2px 6px rgba(0,0,0,0.35));
+  }
+  .stempel-naam.nog-niet-verzameld {
+    color:#8a7658; font-style:italic; font-weight:700;
+  }
+
   /* ── Onzichtbare klikvlakken bovenop de al getekende tabbladen rechts
      in de boek-afbeelding zelf — geen eigen tab-styling nodig, die staat
      al in de illustratie. ── */
@@ -180,6 +190,40 @@
 
   ::-webkit-scrollbar { width:10px; }
   ::-webkit-scrollbar-thumb { background:rgba(255,215,0,0.3); border-radius:6px; }
+
+  /* ── Welkomstmelding bij een leeg paspoort (0 stempels): geen kader,
+     gewoon gloeiende gele letters overheen het (verduisterde) boek,
+     wegtikbaar. De donkere achtergrond blijft, alleen om het boek zelf te
+     dimmen en de tekst goed leesbaar te maken - geen apart tekstkader. ── */
+  #leeg-paspoort-overlay {
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.72);
+    z-index:400; align-items:center; justify-content:center;
+    padding:6vh 10vw; cursor:pointer;
+  }
+  #leeg-paspoort-overlay.actief { display:flex; }
+  @keyframes leegPaspoortGloed {
+    0%, 100% {
+      text-shadow:
+        0 0 10px rgba(255,230,120,0.9),
+        0 0 22px rgba(255,208,60,0.75),
+        0 0 42px rgba(255,185,20,0.5),
+        0 2px 5px rgba(0,0,0,0.7);
+    }
+    50% {
+      text-shadow:
+        0 0 16px rgba(255,238,150,1),
+        0 0 32px rgba(255,215,80,0.95),
+        0 0 60px rgba(255,195,40,0.75),
+        0 2px 5px rgba(0,0,0,0.7);
+    }
+  }
+  #leeg-paspoort-tekst {
+    max-width:min(660px, 88vw);
+    font-family:'Baloo 2',sans-serif; font-weight:800;
+    font-size:clamp(1.2rem, 2.9vw, 2rem);
+    color:#fff9d6; text-align:center; line-height:1.5;
+    animation:leegPaspoortGloed 2.4s ease-in-out infinite;
+  }
 </style>
 </head>
 <body>
@@ -222,6 +266,13 @@
   <button id="uitvergroot-volgende" class="uitvergroot-pijl-knop" onclick="naarStempelIndex(huidigeIndex+1)">
     <img src="images/paspoort-verder.png" alt="Volgend land"/>
   </button>
+</div>
+
+<!-- Welkomstmelding voor een paspoort dat nog helemaal leeg is (0 stempels
+     verdiend) - verschijnt bovenop het boek, weg te tikken, en komt terug
+     zolang er nog niks verdiend is. -->
+<div id="leeg-paspoort-overlay">
+  <div id="leeg-paspoort-tekst">Als je het spel speelt en landen goed hebt, kun je hier voor alle landen van de wereld een mooie landenstempel winnen!</div>
 </div>
 
 <script>
@@ -289,11 +340,16 @@ const WERELDDELEN = [
 ];
 const PER_PAGINA = 9;
 
-// Tijdelijk gedrag (in overleg akkoord): het verdienmodel/de spelmechaniek
-// om stempels te "verdienen" bestaat nog niet, dus tonen we voorlopig alles
-// als al verzameld. Zodra er een echt verdiensysteem is, wordt dit hier
-// aangepast.
-function isVerzameld(land){ return true; }
+// ── Landenpaspoort: welke stempels zijn er al verdiend? ──
+// Zelfde localStorage-sleutel als index.html en raadspel.html: daar komen
+// de stempels bij ("bestand" van het land), hier lezen we ze alleen uit.
+const STEMPELS_SLEUTEL = 'wonkywings_verdiende_stempels';
+function geefVerdiendeStempels(){
+  try{ return JSON.parse(localStorage.getItem(STEMPELS_SLEUTEL)||'[]'); }catch(e){ return []; }
+}
+function isVerzameld(land){
+  return geefVerdiendeStempels().includes(land.bestand);
+}
 
 let huidigWerelddeel = WERELDDELEN[0].code;
 let huidigePagina = 0; // 0-based
@@ -350,6 +406,13 @@ function bouwStempels(){
     kaart.title = land.naam;
     kaart.onclick = () => toonUitvergroting(land, landen, start + i);
 
+    // Nog niet verdiend: de illustratie blijft zichtbaar (leuk om vast te
+    // zien wat er te winnen valt), maar dan gedimd/grijs en zonder
+    // verificatiestempel erop - die stempel is nu juist het bewijs dát je
+    // 'm verdiend hebt.
+    const verzameld = isVerzameld(land);
+    if(!verzameld) kaart.classList.add('nog-niet-verzameld');
+
     // Welke van de drie stempels, en de kanteling ervan, ligt per land vast
     // (dezelfde afbeelding geeft altijd dezelfde stempel + stand), zodat het
     // niet bij elke herlaad verspringt, maar wel per land verschilt: soms
@@ -361,15 +424,17 @@ function bouwStempels(){
     const rotatie = ((h >>> 3) % 71) - 35;  // -35 tot +35 graden
 
     kaart.innerHTML = `<img class="stempel-foto" src="images/landenstempels/${land.bestand}.png" alt="${land.naam}"/>`
-      + `<img class="stempel-verificatie" src="images/${STEMPEL_AFBEELDINGEN[afbeeldingIndex]}" alt=""`
-      + ` style="transform:translate(-50%, -50%) rotate(${rotatie}deg);">`;
+      + (verzameld
+          ? `<img class="stempel-verificatie" src="images/${STEMPEL_AFBEELDINGEN[afbeeldingIndex]}" alt=""`
+            + ` style="transform:translate(-50%, -50%) rotate(${rotatie}deg);">`
+          : '');
     laag.appendChild(kaart);
 
     // Naampje direct onder de stempel, in de smalle strook tussen dit vakje
     // en het volgende (of de onderrand van het boek bij de laatste rij).
     const naamEl = document.createElement('div');
-    naamEl.className = 'stempel-naam';
-    naamEl.textContent = land.naam;
+    naamEl.className = 'stempel-naam' + (verzameld ? '' : ' nog-niet-verzameld');
+    naamEl.textContent = verzameld ? land.naam : 'nog te verdienen';
     naamEl.style.left = kolInfo.links + '%';
     naamEl.style.width = (kolInfo.rechts - kolInfo.links) + '%';
     naamEl.style.top = (rijInfo.onder + 0.2) + '%';
@@ -465,9 +530,17 @@ document.addEventListener('keydown', e => {
   else if(e.key === 'ArrowRight') naarStempelIndex(huidigeIndex+1);
 });
 
+// ── Welkomstmelding bij een leeg paspoort ──
+const LEEG_PASPOORT_EL = document.getElementById('leeg-paspoort-overlay');
+function toonLeegPaspoortMeldingAlsNodig(){
+  if(geefVerdiendeStempels().length === 0) LEEG_PASPOORT_EL.classList.add('actief');
+}
+LEEG_PASPOORT_EL.addEventListener('click', ()=> LEEG_PASPOORT_EL.classList.remove('actief'));
+
 // ── Init ──
 bouwTabs();
 bouwStempels();
+toonLeegPaspoortMeldingAlsNodig();
 </script>
 
 </body>

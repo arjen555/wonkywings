@@ -489,12 +489,31 @@
     }
     #hoofdsteden-resultaat-titel { color:#ffd700; font-size:1.5rem; font-weight:900; text-align:center; }
     #hoofdsteden-resultaat-score { color:#fff6c8; font-size:2rem; font-weight:800; text-align:center; }
-    #hoofdsteden-resultaat-terug-btn {
-      background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.25);
-      color:#fff; font-size:0.95rem; font-weight:700; padding:12px 22px; border-radius:12px;
-      cursor:pointer;
+    /* ── Landenpaspoort: melding bij verdiende verrassingsstempels, en het
+       icoontje dat doorlinkt naar het paspoort - gedeeld tussen de
+       Hoofdsteden- en Plekken-eindschermen. ── */
+    .stempel-melding {
+      color:#ffe9a8; font-size:1.05rem; font-weight:800; text-align:center;
+      text-shadow:0 1px 4px rgba(0,0,0,0.5); line-height:1.35; min-height:1.4em;
+      margin-top:14px;
     }
-    #hoofdsteden-resultaat-terug-btn:hover { background:rgba(255,255,255,0.22); }
+    .eindscherm-paspoort-icoon {
+      width:min(84px, 20%); display:block; margin:10px auto 0; cursor:pointer;
+      filter:drop-shadow(0 3px 10px rgba(0,0,0,0.5));
+      transition:transform 0.15s;
+    }
+    .eindscherm-paspoort-icoon:hover { transform:scale(1.06); }
+    #hoofdsteden-resultaat-terug-btn, #scorebord-terug-btn, #plekken-eind-verder {
+      width:clamp(130px, 13vw, 210px); border:none; background:none; padding:0;
+      cursor:pointer; opacity:0.92; transition:opacity 0.15s, transform 0.15s;
+      display:block; margin:14px auto 0;
+    }
+    #hoofdsteden-resultaat-terug-btn img, #scorebord-terug-btn img, #plekken-eind-verder img {
+      width:100%; display:block;
+    }
+    #hoofdsteden-resultaat-terug-btn:hover, #scorebord-terug-btn:hover, #plekken-eind-verder:hover {
+      opacity:1; transform:scale(1.03);
+    }
     #scorebord-kaart {
       background:linear-gradient(135deg, #0a2a4a 0%, #051e30 100%);
       border:1px solid rgba(255,215,0,0.25);
@@ -527,13 +546,6 @@
     @media (max-width:640px) {
       #scorebord-kolommen { flex-direction:column; overflow-y:auto; }
     }
-    #scorebord-terug-btn {
-      background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.25);
-      color:#fff; font-size:0.85rem; font-weight:700; padding:10px; border-radius:12px;
-      cursor:pointer;
-    }
-    #scorebord-terug-btn:hover { background:rgba(255,255,255,0.22); }
-
     /* ── RICHTINGAANWIJZERS ── */
     #richting-rij {
       position:fixed; right:22px; bottom:calc(22px + clamp(75px,10.9vmin,135px)/0.7424 + 14px);
@@ -933,12 +945,6 @@
       margin-top:16px; text-align:center; font-size:1.35rem; font-weight:800;
       color:#ffd700; text-shadow:0 2px 6px rgba(0,0,0,0.6);
     }
-    #plekken-eind-verder {
-      display:block; margin:18px auto 0; padding:10px 22px;
-      font-family:'Baloo 2',sans-serif; font-weight:800; font-size:1rem;
-      color:#2a1508; background:linear-gradient(#ffe9a8,#e0b455);
-      border:2px solid rgba(120,80,20,0.6); border-radius:10px; cursor:pointer;
-    }
   </style>
 </head>
 <body>
@@ -951,7 +957,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.32</div>
+  <div id="versie-label">v0.3.33</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1155,7 +1161,7 @@
         <div id="scorebord-lijst-vandaag" class="scorebord-kolom-lijst"></div>
       </div>
     </div>
-    <button id="scorebord-terug-btn" onclick="naarStart()">← Terug naar menu</button>
+    <button id="scorebord-terug-btn" onclick="naarStart()"><img src="images/terug-naar-start-knop.png" alt="Terug naar menu"/></button>
   </div>
 </div>
 
@@ -1164,7 +1170,9 @@
   <div id="hoofdsteden-resultaat-kaart">
     <div id="hoofdsteden-resultaat-titel">🏆 Klaar!</div>
     <div id="hoofdsteden-resultaat-score"></div>
-    <button id="hoofdsteden-resultaat-terug-btn" onclick="naarStart()">← Terug naar menu</button>
+    <div id="hoofdsteden-resultaat-stempel" class="stempel-melding"></div>
+    <button id="hoofdsteden-resultaat-terug-btn" onclick="naarStart()"><img src="images/terug-naar-start-knop.png" alt="Terug naar menu"/></button>
+    <img class="eindscherm-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="window.location.href='paspoort.html'"/>
   </div>
 </div>
 
@@ -1312,7 +1320,9 @@
       <div id="plekken-eind-titel">Iconische plekken - eindresultaat</div>
       <div id="plekken-eind-tabel"></div>
       <div id="plekken-eind-totaal"></div>
-      <button id="plekken-eind-verder" onclick="naarStart()">Terug naar het menu ▶</button>
+      <div id="plekken-eind-stempel" class="stempel-melding"></div>
+      <button id="plekken-eind-verder" onclick="naarStart()"><img src="images/terug-naar-start-knop.png" alt="Terug naar het menu"/></button>
+      <img class="eindscherm-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="window.location.href='paspoort.html'"/>
     </div>
   </div>
 </div>
@@ -2764,6 +2774,17 @@ function toonPlekkenEindoverzicht(){
       + '</div>' + rijenHtml;
   document.getElementById('plekken-eind-totaal').textContent =
       'Eindscore: ' + plekkenScore + ' / ' + (plekkenResultaten.length * 1000);
+  // ── Landenpaspoort: 5 t/m 8 goed = 1 verrassingsstempel, 9 of 10 goed = 2 ──
+  // "Goed" = het juiste land gevonden (r.land > 0), ongeacht de afstands-/
+  // snelheidsbonus - dezelfde maatstaf als bij Hoofdsteden.
+  const goedAantal = plekkenResultaten.filter(r=>r.land>0).length;
+  let aantalStempels = 0;
+  if(goedAantal >= 9) aantalStempels = 2;
+  else if(goedAantal >= 5) aantalStempels = 1;
+  const drempelBereikt = aantalStempels > 0;
+  const gekozenLanden = drempelBereikt ? kiesBonusLanden(aantalStempels) : [];
+  document.getElementById('plekken-eind-stempel').textContent =
+    stempelMeldingTekst(drempelBereikt, gekozenLanden, 'Bijna! Vanaf 5 landen goed krijg je een landenstempel.');
   document.getElementById('plekken-eind-overlay').style.display = 'flex';
 }
 
@@ -2989,6 +3010,88 @@ function landNaarBestand(naam) {
     .replace(/ï/g,'i').replace(/í/g,'i').replace(/ö/g,'o').replace(/ü/g,'u')
     .replace(/á/g,'a').replace(/à/g,'a').replace(/â/g,'a').replace(/ä/g,'a')
     .replace(/ñ/g,'n').replace(/ç/g,'c').replace(/[''']/g,'').replace(/\s+/g,'_');
+}
+
+// Fisher-Yates shuffle, in place - gebruikt voor de willekeurige volgorde
+// bij het kiezen van verrassings-landenstempels (zie kiesBonusLanden).
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+  return arr;
+}
+
+// ── Landenpaspoort: stempels verdienen ─────────────────────────────────
+// Lichte kopie van PASPOORT_DATA uit paspoort.html (alleen naam/bestand/
+// continent - de fun-facts zijn hier niet nodig). Dit is de complete lijst
+// van alle landen die een eigen paspoortpagina hebben; bij nieuwe landen in
+// paspoort.html moet deze lijst hier (en in raadspel.html) worden bijgewerkt.
+const PASPOORT_LANDEN = [{"naam": "Albanië", "bestand": "Albanie", "continent": "EU"}, {"naam": "België", "bestand": "Belgie", "continent": "EU"}, {"naam": "Bosnië en Herzegovina", "bestand": "Bosnie-Herzegovina", "continent": "EU"}, {"naam": "Bulgarije", "bestand": "Bulgarije", "continent": "EU"}, {"naam": "Denemarken", "bestand": "Denemarken", "continent": "EU"}, {"naam": "Duitsland", "bestand": "Duitsland", "continent": "EU"}, {"naam": "Estland", "bestand": "Estland", "continent": "EU"}, {"naam": "Finland", "bestand": "Finland", "continent": "EU"}, {"naam": "Frankrijk", "bestand": "Frankrijk", "continent": "EU"}, {"naam": "Griekenland", "bestand": "Griekenland", "continent": "EU"}, {"naam": "Hongarije", "bestand": "Hongarije", "continent": "EU"}, {"naam": "Ierland", "bestand": "Ierland", "continent": "EU"}, {"naam": "IJsland", "bestand": "IJsland", "continent": "EU"}, {"naam": "Italië", "bestand": "Italie", "continent": "EU"}, {"naam": "Kroatië", "bestand": "Kroatie", "continent": "EU"}, {"naam": "Litouwen", "bestand": "Litouwen", "continent": "EU"}, {"naam": "Luxemburg", "bestand": "Luxemburg", "continent": "EU"}, {"naam": "Montenegro", "bestand": "Montenegro", "continent": "EU"}, {"naam": "Nederland", "bestand": "Nederland", "continent": "EU"}, {"naam": "Noord-Macedonië", "bestand": "Noord-Macedonie", "continent": "EU"}, {"naam": "Noorwegen", "bestand": "Noorwegen", "continent": "EU"}, {"naam": "Oekraïne", "bestand": "Oekraine", "continent": "EU"}, {"naam": "Oostenrijk", "bestand": "Oostenrijk", "continent": "EU"}, {"naam": "Polen", "bestand": "Polen", "continent": "EU"}, {"naam": "Portugal", "bestand": "Portugal", "continent": "EU"}, {"naam": "Roemenië", "bestand": "Roemenie", "continent": "EU"}, {"naam": "Rusland", "bestand": "Rusland", "continent": "EU"}, {"naam": "Servië", "bestand": "Servie", "continent": "EU"}, {"naam": "Slovenië", "bestand": "Slovenie", "continent": "EU"}, {"naam": "Slowakije", "bestand": "Slowakije", "continent": "EU"}, {"naam": "Spanje", "bestand": "Spanje", "continent": "EU"}, {"naam": "Tsjechië", "bestand": "Tsjechie", "continent": "EU"}, {"naam": "Verenigd Koninkrijk", "bestand": "Verenigd_Koninkrijk", "continent": "EU"}, {"naam": "Wit-Rusland", "bestand": "Wit-Rusland", "continent": "EU"}, {"naam": "Zweden", "bestand": "Zweden", "continent": "EU"}, {"naam": "Zwitserland", "bestand": "Zwitserland", "continent": "EU"}, {"naam": "Andorra", "bestand": "Andorra", "continent": "EU"}, {"naam": "Cyprus", "bestand": "Cyprus", "continent": "EU"}, {"naam": "Faeröer", "bestand": "Faroer", "continent": "EU"}, {"naam": "Gibraltar", "bestand": "Gibraltar", "continent": "EU"}, {"naam": "Kosovo", "bestand": "Kosovo", "continent": "EU"}, {"naam": "Letland", "bestand": "Letland", "continent": "EU"}, {"naam": "Liechtenstein", "bestand": "Liechtenstein", "continent": "EU"}, {"naam": "Malta", "bestand": "Malta", "continent": "EU"}, {"naam": "Moldavië", "bestand": "Moldavie", "continent": "EU"}, {"naam": "Monaco", "bestand": "Monaco", "continent": "EU"}, {"naam": "San Marino", "bestand": "San_Marino", "continent": "EU"}, {"naam": "Vaticaanstad", "bestand": "Vaticaanstad", "continent": "EU"}, {"naam": "Algerije", "bestand": "Algerije", "continent": "AF"}, {"naam": "Angola", "bestand": "Angola", "continent": "AF"}, {"naam": "Benin", "bestand": "Benin", "continent": "AF"}, {"naam": "Botswana", "bestand": "Botswana", "continent": "AF"}, {"naam": "Burkina Faso", "bestand": "Burkina_Faso", "continent": "AF"}, {"naam": "Centraal-Afrikaanse Republiek", "bestand": "Centraal-Afrikaanse_Republiek", "continent": "AF"}, {"naam": "Congo-Brazzaville", "bestand": "Congo-Brazzaville", "continent": "AF"}, {"naam": "Congo-Kinshasa", "bestand": "Congo-Kinshasa", "continent": "AF"}, {"naam": "Egypte", "bestand": "Egypte", "continent": "AF"}, {"naam": "Ethiopië", "bestand": "Ethiopie", "continent": "AF"}, {"naam": "Gabon", "bestand": "Gabon", "continent": "AF"}, {"naam": "Ghana", "bestand": "Ghana", "continent": "AF"}, {"naam": "Guinee", "bestand": "Guinee", "continent": "AF"}, {"naam": "Ivoorkust", "bestand": "Ivoorkust", "continent": "AF"}, {"naam": "Kameroen", "bestand": "Kameroen", "continent": "AF"}, {"naam": "Kenia", "bestand": "Kenia", "continent": "AF"}, {"naam": "Liberia", "bestand": "Liberia", "continent": "AF"}, {"naam": "Libië", "bestand": "Libie", "continent": "AF"}, {"naam": "Madagaskar", "bestand": "Madagaskar", "continent": "AF"}, {"naam": "Malawi", "bestand": "Malawi", "continent": "AF"}, {"naam": "Mali", "bestand": "Mali", "continent": "AF"}, {"naam": "Marokko", "bestand": "Marokko", "continent": "AF"}, {"naam": "Mauritanië", "bestand": "Mauritanie", "continent": "AF"}, {"naam": "Mozambique", "bestand": "Mozambique", "continent": "AF"}, {"naam": "Namibië", "bestand": "Namibie", "continent": "AF"}, {"naam": "Niger", "bestand": "Niger", "continent": "AF"}, {"naam": "Nigeria", "bestand": "Nigeria", "continent": "AF"}, {"naam": "Oeganda", "bestand": "Oeganda", "continent": "AF"}, {"naam": "Senegal", "bestand": "Senegal", "continent": "AF"}, {"naam": "Sierra Leone", "bestand": "Sierra_Leone", "continent": "AF"}, {"naam": "Soedan", "bestand": "Soedan", "continent": "AF"}, {"naam": "Somalië", "bestand": "Somalie", "continent": "AF"}, {"naam": "Tanzania", "bestand": "Tanzania", "continent": "AF"}, {"naam": "Tsjaad", "bestand": "Tsjaad", "continent": "AF"}, {"naam": "Tunesië", "bestand": "Tunesie", "continent": "AF"}, {"naam": "Zambia", "bestand": "Zambia", "continent": "AF"}, {"naam": "Zimbabwe", "bestand": "Zimbabwe", "continent": "AF"}, {"naam": "Zuid-Afrika", "bestand": "Zuid-Afrika", "continent": "AF"}, {"naam": "Burundi", "bestand": "Burundi", "continent": "AF"}, {"naam": "Comoren", "bestand": "Comoren", "continent": "AF"}, {"naam": "Djibouti", "bestand": "Djibouti", "continent": "AF"}, {"naam": "Equatoriaal-Guinea", "bestand": "Equatoriaal-Guinee", "continent": "AF"}, {"naam": "Eritrea", "bestand": "Eritrea", "continent": "AF"}, {"naam": "Eswatini", "bestand": "Eswatini", "continent": "AF"}, {"naam": "Gambia", "bestand": "Gambia", "continent": "AF"}, {"naam": "Guinee-Bissau", "bestand": "Guinee-Bissau", "continent": "AF"}, {"naam": "Kaapverdië", "bestand": "Kaapverdie", "continent": "AF"}, {"naam": "Lesotho", "bestand": "Lesotho", "continent": "AF"}, {"naam": "Mauritius", "bestand": "Mauritius", "continent": "AF"}, {"naam": "Rwanda", "bestand": "Rwanda", "continent": "AF"}, {"naam": "São Tomé en Príncipe", "bestand": "Sao_Tome_en_Principe", "continent": "AF"}, {"naam": "Seychellen", "bestand": "Seychellen", "continent": "AF"}, {"naam": "Togo", "bestand": "Togo", "continent": "AF"}, {"naam": "Westelijke Sahara", "bestand": "Westelijke_Sahara", "continent": "AF"}, {"naam": "Zuid-Soedan", "bestand": "Zuid-Soedan", "continent": "AF"}, {"naam": "Afghanistan", "bestand": "Afghanistan", "continent": "AS"}, {"naam": "Armenië", "bestand": "Armenie", "continent": "AS"}, {"naam": "Azerbeidzjan", "bestand": "Azerbeidzjan", "continent": "AS"}, {"naam": "Bangladesh", "bestand": "Bangladesh", "continent": "AS"}, {"naam": "Cambodja", "bestand": "Cambodja", "continent": "AS"}, {"naam": "China", "bestand": "China", "continent": "AS"}, {"naam": "Filipijnen", "bestand": "Filipijnen", "continent": "AS"}, {"naam": "Georgië", "bestand": "Georgie", "continent": "AS"}, {"naam": "India", "bestand": "India", "continent": "AS"}, {"naam": "Indonesië", "bestand": "Indonesie", "continent": "AS"}, {"naam": "Irak", "bestand": "Irak", "continent": "AS"}, {"naam": "Iran", "bestand": "Iran", "continent": "AS"}, {"naam": "Japan", "bestand": "Japan", "continent": "AS"}, {"naam": "Jemen", "bestand": "Jemen", "continent": "AS"}, {"naam": "Jordanië", "bestand": "Jordanie", "continent": "AS"}, {"naam": "Kazachstan", "bestand": "Kazachstan", "continent": "AS"}, {"naam": "Laos", "bestand": "Laos", "continent": "AS"}, {"naam": "Maleisië", "bestand": "Maleisie", "continent": "AS"}, {"naam": "Mongolië", "bestand": "Mongolie", "continent": "AS"}, {"naam": "Myanmar", "bestand": "Myanmar", "continent": "AS"}, {"naam": "Nepal", "bestand": "Nepal", "continent": "AS"}, {"naam": "Noord-Korea", "bestand": "Noord-Korea", "continent": "AS"}, {"naam": "Oezbekistan", "bestand": "Oezbekistan", "continent": "AS"}, {"naam": "Oman", "bestand": "Oman", "continent": "AS"}, {"naam": "Pakistan", "bestand": "Pakistan", "continent": "AS"}, {"naam": "Saoedi-Arabië", "bestand": "Saoedi-Arabie", "continent": "AS"}, {"naam": "Sri Lanka", "bestand": "Sri_Lanka", "continent": "AS"}, {"naam": "Syrië", "bestand": "Syrie", "continent": "AS"}, {"naam": "Taiwan", "bestand": "Taiwan", "continent": "AS"}, {"naam": "Thailand", "bestand": "Thailand", "continent": "AS"}, {"naam": "Turkije", "bestand": "Turkije", "continent": "AS"}, {"naam": "Turkmenistan", "bestand": "Turkmenistan", "continent": "AS"}, {"naam": "Verenigde Arabische Emiraten", "bestand": "Verenigde_Arabische_Emiraten", "continent": "AS"}, {"naam": "Vietnam", "bestand": "Vietnam", "continent": "AS"}, {"naam": "Zuid-Korea", "bestand": "Zuid-Korea", "continent": "AS"}, {"naam": "Bahrein", "bestand": "Bahrein", "continent": "AS"}, {"naam": "Bhutan", "bestand": "Bhutan", "continent": "AS"}, {"naam": "Brunei", "bestand": "Brunei", "continent": "AS"}, {"naam": "Kirgistan", "bestand": "Kirgistan", "continent": "AS"}, {"naam": "Koeweit", "bestand": "Koeweit", "continent": "AS"}, {"naam": "Libanon", "bestand": "Libanon", "continent": "AS"}, {"naam": "Maldiven", "bestand": "Maldiven", "continent": "AS"}, {"naam": "Oost-Timor", "bestand": "Oost-Timor", "continent": "AS"}, {"naam": "Palestina", "bestand": "Palestina", "continent": "AS"}, {"naam": "Qatar", "bestand": "Qatar", "continent": "AS"}, {"naam": "Singapore", "bestand": "Singapore", "continent": "AS"}, {"naam": "Tadzjikistan", "bestand": "Tadzjikistan", "continent": "AS"}, {"naam": "Canada", "bestand": "Canada", "continent": "NA"}, {"naam": "Costa Rica", "bestand": "Costa_Rica", "continent": "NA"}, {"naam": "Cuba", "bestand": "Cuba", "continent": "NA"}, {"naam": "Dominicaanse Republiek", "bestand": "Dominicaanse_Republiek", "continent": "NA"}, {"naam": "Groenland", "bestand": "Groenland", "continent": "NA"}, {"naam": "Guatemala", "bestand": "Guatemala", "continent": "NA"}, {"naam": "Haïti", "bestand": "Haiti", "continent": "NA"}, {"naam": "Honduras", "bestand": "Honduras", "continent": "NA"}, {"naam": "Mexico", "bestand": "Mexico", "continent": "NA"}, {"naam": "Nicaragua", "bestand": "Nicaragua", "continent": "NA"}, {"naam": "Panama", "bestand": "Panama", "continent": "NA"}, {"naam": "Verenigde Staten", "bestand": "Verenigde_Staten", "continent": "NA"}, {"naam": "Antigua en Barbuda", "bestand": "Antigua_en_Barbuda", "continent": "NA"}, {"naam": "Bahama's", "bestand": "Bahamas", "continent": "NA"}, {"naam": "Barbados", "bestand": "Barbados", "continent": "NA"}, {"naam": "Belize", "bestand": "Belize", "continent": "NA"}, {"naam": "Dominica", "bestand": "Dominica", "continent": "NA"}, {"naam": "El Salvador", "bestand": "El_Salvador", "continent": "NA"}, {"naam": "Grenada", "bestand": "Grenada", "continent": "NA"}, {"naam": "Jamaica", "bestand": "Jamaica", "continent": "NA"}, {"naam": "Saint Kitts en Nevis", "bestand": "Saint_Kitts_en_Nevis", "continent": "NA"}, {"naam": "Saint Lucia", "bestand": "Saint_Lucia", "continent": "NA"}, {"naam": "Saint Vincent en de Grenadines", "bestand": "Saint_Vincent_en_de_Grenadines", "continent": "NA"}, {"naam": "Trinidad en Tobago", "bestand": "Trinidad_en_Tobago", "continent": "NA"}, {"naam": "Argentinië", "bestand": "Argentinie", "continent": "ZA"}, {"naam": "Bolivia", "bestand": "Bolivia", "continent": "ZA"}, {"naam": "Brazilië", "bestand": "Brazilie", "continent": "ZA"}, {"naam": "Chili", "bestand": "Chili", "continent": "ZA"}, {"naam": "Colombia", "bestand": "Colombia", "continent": "ZA"}, {"naam": "Ecuador", "bestand": "Ecuador", "continent": "ZA"}, {"naam": "Frans-Guyana", "bestand": "Frans_Guyana", "continent": "ZA"}, {"naam": "Guyana", "bestand": "Guyana", "continent": "ZA"}, {"naam": "Paraguay", "bestand": "Paraguay", "continent": "ZA"}, {"naam": "Peru", "bestand": "Peru", "continent": "ZA"}, {"naam": "Suriname", "bestand": "Suriname", "continent": "ZA"}, {"naam": "Uruguay", "bestand": "Uruguay", "continent": "ZA"}, {"naam": "Venezuela", "bestand": "Venezuela", "continent": "ZA"}, {"naam": "Falklandeilanden", "bestand": "Falklandeilanden", "continent": "ZA"}, {"naam": "Australië", "bestand": "Australie", "continent": "OC"}, {"naam": "Nieuw-Zeeland", "bestand": "Nieuw-Zeeland", "continent": "OC"}, {"naam": "Papoea-Nieuw-Guinea", "bestand": "Papoea-Nieuw-Guinea", "continent": "OC"}, {"naam": "Fiji", "bestand": "Fiji", "continent": "OC"}, {"naam": "Frans-Polynesië", "bestand": "Frans-Polynesie", "continent": "OC"}, {"naam": "Micronesia", "bestand": "Micronesia", "continent": "OC"}, {"naam": "Nauru", "bestand": "Nauru", "continent": "OC"}, {"naam": "Nieuw-Caledonië", "bestand": "Nieuw-Caledonie", "continent": "OC"}, {"naam": "Palau", "bestand": "Palau", "continent": "OC"}, {"naam": "Salomonseilanden", "bestand": "Salomonseilanden", "continent": "OC"}, {"naam": "Samoa", "bestand": "Samoa", "continent": "OC"}, {"naam": "Tonga", "bestand": "Tonga", "continent": "OC"}, {"naam": "Tuvalu", "bestand": "Tuvalu", "continent": "OC"}, {"naam": "Vanuatu", "bestand": "Vanuatu", "continent": "OC"}, {"naam": "Antarctica", "bestand": "Antarctica", "continent": "OV"}, {"naam": "Noordpool", "bestand": "Noordpool", "continent": "OV"}];
+// De "klein maar fijn"-landen (unie van de Europa- en Wereld-lijst - de
+// Wereld-lijst bevat toevallig al alle 7 Europese) als bestandsnamen, de
+// prioriteitspool voor verrassingsstempels bij Hoofdsteden/Plekken/Raadspel.
+const KLEIN_MAAR_FIJN_BESTANDEN = ["Tonga", "Samoa", "Salomonseilanden", "Tuvalu", "Nauru", "Micronesia", "Palau", "Vanuatu", "Nieuw-Caledonie", "Frans-Polynesie", "Trinidad_en_Tobago", "Grenada", "Barbados", "Saint_Lucia", "Dominica", "Antigua_en_Barbuda", "Saint_Kitts_en_Nevis", "Seychellen", "Comoren", "Sao_Tome_en_Principe", "Kaapverdie", "Mauritius", "Maldiven", "San_Marino", "Vaticaanstad", "Monaco", "Andorra", "Liechtenstein", "Malta", "Faroer", "Brunei", "Falklandeilanden"];
+
+const STEMPELS_SLEUTEL = 'wonkywings_verdiende_stempels';
+function geefVerdiendeStempels(){
+  try{ return JSON.parse(localStorage.getItem(STEMPELS_SLEUTEL)||'[]'); }catch(e){ return []; }
+}
+// Zoekt de paspoort-ingang bij een landnaam zoals die in het spel gebruikt
+// wordt. Eerst op exacte naam (dekt verreweg de meeste landen), dan op
+// bestandsnaam via landNaarBestand (dekt een handjevol landen waar de
+// spelnaam net anders gespeld is dan de paspoort-naam, zoals
+// "Bosnië-Herzegovina" hier tegenover "Bosnië en Herzegovina" in het
+// paspoort). Geeft null als het land nog geen eigen paspoortpagina heeft.
+function paspoortEntryVoorLand(naam){
+  let entry = PASPOORT_LANDEN.find(p=>p.naam===naam);
+  if(entry) return entry;
+  const b = landNaarBestand(naam);
+  return PASPOORT_LANDEN.find(p=>p.bestand===b) || null;
+}
+// Registreert een stempel voor het land met deze spelnaam (Europa/Wereld:
+// direct bij een juiste vlaggetje-drop). Bestaat het land niet in het
+// paspoort, of was de stempel al verdiend: geen actie, geeft dan null terug.
+function verdienStempelVoorLand(naam){
+  const entry = paspoortEntryVoorLand(naam);
+  if(!entry) return null;
+  const lijst = geefVerdiendeStempels();
+  if(lijst.includes(entry.bestand)) return null;
+  lijst.push(entry.bestand);
+  localStorage.setItem(STEMPELS_SLEUTEL, JSON.stringify(lijst));
+  return entry;
+}
+// Kiest 'aantal' nieuwe verrassingslanden (nog niet verdiend) als beloning
+// bij Hoofdsteden/Plekken/Raadspel: eerst uit de klein-maar-fijn-pool,
+// pas als die leeg is uit de rest van het paspoort, willekeurig binnen elke
+// pool. Voegt ze meteen toe aan de verdiende stempels en geeft de gekozen
+// paspoort-entries terug (minder dan 'aantal', of leeg, als het paspoort al
+// (bijna) helemaal vol zit).
+function kiesBonusLanden(aantal){
+  const lijst = geefVerdiendeStempels();
+  const nogNiet = (bestanden) => shuffle(bestanden.filter(b=>!lijst.includes(b)));
+  const overigeBestanden = PASPOORT_LANDEN.map(p=>p.bestand).filter(b=>!KLEIN_MAAR_FIJN_BESTANDEN.includes(b));
+  const volgorde = [...nogNiet(KLEIN_MAAR_FIJN_BESTANDEN), ...nogNiet(overigeBestanden)];
+  const gekozenBestanden = volgorde.slice(0, aantal);
+  gekozenBestanden.forEach(b=>lijst.push(b));
+  if(gekozenBestanden.length) localStorage.setItem(STEMPELS_SLEUTEL, JSON.stringify(lijst));
+  return gekozenBestanden.map(b=>PASPOORT_LANDEN.find(p=>p.bestand===b));
+}
+// Bouwt de tekst voor een eindscherm op basis van de daadwerkelijk gekozen
+// bonuslanden (kan minder zijn dan bedoeld, als het paspoort bijna vol is).
+// 'drempelBereikt' = de speler haalde genoeg goed voor minstens 1 stempel;
+// 'bijnaTekst' is de tekst als de drempel niet gehaald werd.
+function stempelMeldingTekst(drempelBereikt, gekozenLanden, bijnaTekst){
+  if(gekozenLanden.length >= 2){
+    return 'Wat een score! Je wint zelfs 2 landenstempels voor '+gekozenLanden[0].naam+' en '+gekozenLanden[1].naam+'!';
+  }
+  if(gekozenLanden.length === 1){
+    return 'Goed gedaan! Als prijs krijg je een landenstempel voor '+gekozenLanden[0].naam+' - kijk maar in je paspoort!';
+  }
+  if(drempelBereikt){
+    return 'Je paspoort zit al helemaal vol - knap hoor! 🏆';
+  }
+  return bijnaTekst;
 }
 // Vult transparante randen/hoekjes van een illustratie automatisch op door
 // de kleur van het dichtstbijzijnde getekende pixel naar buiten te laten
@@ -3446,6 +3549,14 @@ function bouwScorebordKolom(elId, runs, nieuweRun){
 // terugkeer naar het menu, de speler bepaalt zelf wanneer via de knop.
 function toonHoofdstedenResultaat(goed, totaal){
   document.getElementById('hoofdsteden-resultaat-score').textContent = goed+' van de '+totaal+' hoofdsteden goed!';
+  // ── Landenpaspoort: 8 of 9 goed = 1 verrassingsstempel, alles goed = 2 ──
+  let aantalStempels = 0;
+  if(goed === totaal) aantalStempels = 2;
+  else if(goed >= 8) aantalStempels = 1;
+  const drempelBereikt = aantalStempels > 0;
+  const gekozenLanden = drempelBereikt ? kiesBonusLanden(aantalStempels) : [];
+  document.getElementById('hoofdsteden-resultaat-stempel').textContent =
+    stempelMeldingTekst(drempelBereikt, gekozenLanden, 'Bijna! Vanaf 8 landen goed krijg je een landenstempel.');
   document.getElementById('spelscherm').style.display='none';
   document.getElementById('hoofdsteden-resultaat-scherm').style.display='flex';
 }
@@ -7195,6 +7306,7 @@ function dropVlaggetje(){
       score+=afwijkingKm;
       document.getElementById('score').textContent=score;
       zetKmCijfers(score);
+      verdienStempelVoorLand(huidigLand);
       toonFeedback('🎉 Goed zo!','#ffd700');
       toonPunten(afwijkingKm);
       toonReactie('blij');
