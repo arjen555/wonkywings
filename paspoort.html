@@ -109,7 +109,7 @@
      landnaam gewoon zichtbaar blijft. ── */
   .stempel-kaart.nog-niet-verzameld { cursor:default; }
   .stempel-kaart.nog-niet-verzameld img.stempel-foto {
-    filter:grayscale(1) brightness(1.55) contrast(0.45) opacity(0.55);
+    filter:grayscale(1) brightness(1.9) contrast(0.28) opacity(0.35);
   }
   .stempel-slotje {
     position:absolute; right:3%; top:3%;
@@ -267,7 +267,7 @@
 </div>
 
 <div id="uitvergroot-achtergrond">
-  <button id="uitvergroot-vorige" class="uitvergroot-pijl-knop" onclick="naarStempelIndex(huidigeIndex-1)">
+  <button id="uitvergroot-vorige" class="uitvergroot-pijl-knop" onclick="naarVerzameldeStempel(-1)">
     <img src="images/paspoort-terug.png" alt="Vorig land"/>
   </button>
   <div id="uitvergroot-cirkel-wrap"><img id="uitvergroot-img" src="" alt=""/></div>
@@ -277,7 +277,7 @@
       <div id="uitvergroot-feit"></div>
     </div>
   </div>
-  <button id="uitvergroot-volgende" class="uitvergroot-pijl-knop" onclick="naarStempelIndex(huidigeIndex+1)">
+  <button id="uitvergroot-volgende" class="uitvergroot-pijl-knop" onclick="naarVerzameldeStempel(1)">
     <img src="images/paspoort-verder.png" alt="Volgend land"/>
   </button>
 </div>
@@ -450,13 +450,22 @@ function bouwStempels(){
     // De naam blijft altijd zichtbaar (ook nog-niet-verdiend) - het slotje
     // en de vervaagde illustratie maken al genoeg duidelijk dat 'm nog
     // verdiend moet worden.
+    // De ruimte tussen deze rij en de volgende is niet bij elke rij precies
+    // even groot (de tekening zelf wijkt daar iets in af) - vaste 4.4%
+    // hoogte voor het naamlabel paste daardoor bij de ene rij wel netjes
+    // onder de zegel, maar kroop bij een andere rij een klein stukje over
+    // de volgende rij stempels heen. Nu wordt de beschikbare ruimte per rij
+    // opnieuw berekend (de laatste rij heeft geen volgende rij, en houdt
+    // daarom de oude vaste maat aan).
+    const volgendeRij = STEMPEL_RIJEN[rij+1];
+    const naamHoogte = volgendeRij ? (volgendeRij.boven - rijInfo.onder) - 0.35 : 4.4;
     const naamEl = document.createElement('div');
     naamEl.className = 'stempel-naam' + (verzameld ? '' : ' nog-niet-verzameld');
     naamEl.textContent = land.naam;
     naamEl.style.left = kolInfo.links + '%';
     naamEl.style.width = (kolInfo.rechts - kolInfo.links) + '%';
-    naamEl.style.top = (rijInfo.onder + 0.2) + '%';
-    naamEl.style.height = '4.4%';
+    naamEl.style.top = (rijInfo.onder + 0.15) + '%';
+    naamEl.style.height = naamHoogte + '%';
     laag.appendChild(naamEl);
   }
 
@@ -516,16 +525,30 @@ function toonUitvergroting(land, lijst, index){
   vulUitvergroting(land);
   ACHTERGROND_EL.classList.add('actief');
 }
+// Zoekt vanaf 'vanaf' het eerstvolgende (richting +1) of vorige (richting -1)
+// land in huidigeLijst dat al verdiend is - niet-verdiende landen worden
+// overgeslagen, want de uitvergroting met het weetje mag alleen bij
+// verdiende landen te zien zijn. Geeft -1 als er in die richting geen
+// verdiend land meer is.
+function vindVerzameldeIndex(vanaf, richting){
+  let i = vanaf + richting;
+  while(i >= 0 && i < huidigeLijst.length){
+    if(isVerzameld(huidigeLijst[i])) return i;
+    i += richting;
+  }
+  return -1;
+}
 function vulUitvergroting(land){
   UITVERGROOT_IMG_EL.src = `images/landenstempels/${land.bestand}.png`;
   UITVERGROOT_IMG_EL.alt = land.naam;
   document.getElementById('uitvergroot-naam').textContent = land.naam;
   document.getElementById('uitvergroot-feit').textContent = land.tekst || '';
-  UITVERGROOT_VORIGE_EL.disabled = huidigeIndex <= 0;
-  UITVERGROOT_VOLGENDE_EL.disabled = huidigeIndex >= huidigeLijst.length - 1;
+  UITVERGROOT_VORIGE_EL.disabled = vindVerzameldeIndex(huidigeIndex, -1) === -1;
+  UITVERGROOT_VOLGENDE_EL.disabled = vindVerzameldeIndex(huidigeIndex, 1) === -1;
 }
-function naarStempelIndex(nieuweIndex){
-  if(nieuweIndex < 0 || nieuweIndex >= huidigeLijst.length) return;
+function naarVerzameldeStempel(richting){
+  const nieuweIndex = vindVerzameldeIndex(huidigeIndex, richting);
+  if(nieuweIndex === -1) return;
   huidigeIndex = nieuweIndex;
   vulUitvergroting(huidigeLijst[huidigeIndex]);
   const nieuwePagina = Math.floor(huidigeIndex / PER_PAGINA);
@@ -544,8 +567,8 @@ UITVERGROOT_IMG_EL.addEventListener('click', sluitUitvergroting);
 document.addEventListener('keydown', e => {
   if(!ACHTERGROND_EL.classList.contains('actief')) return;
   if(e.key === 'Escape') sluitUitvergroting();
-  else if(e.key === 'ArrowLeft') naarStempelIndex(huidigeIndex-1);
-  else if(e.key === 'ArrowRight') naarStempelIndex(huidigeIndex+1);
+  else if(e.key === 'ArrowLeft') naarVerzameldeStempel(-1);
+  else if(e.key === 'ArrowRight') naarVerzameldeStempel(1);
 });
 
 // ── Welkomstmelding bij een leeg paspoort ──
