@@ -469,14 +469,23 @@
     .menu-sub-btns { display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end; }
 
     /* ── SCOREBORD ── */
+    /* justify-content:flex-start i.p.v. center, met wat lucht bovenaan via
+       padding: bij center schuift alles wat niet past (trofee + kaart samen)
+       gelijk over de boven- én onderrand heen, en dat bovenstukje is dan met
+       geen mogelijkheid meer te bereiken - ook niet door te scrollen. Met
+       flex-start + overflow-y:auto begint het gewoon bovenaan (net onder de
+       rand) en kun je bij een laag venster altijd naar beneden scrollen om
+       de rest te zien. */
     #scorebord-scherm {
       position:fixed; inset:0; z-index:110; display:none;
-      flex-direction:column; align-items:center; justify-content:center; gap:14px;
+      flex-direction:column; align-items:center; justify-content:flex-start; gap:14px;
+      overflow-y:auto; padding:4vh 0 24px;
       background:rgba(2,13,26,0.92);
     }
     #hoofdsteden-resultaat-scherm {
       position:fixed; inset:0; z-index:110; display:none;
-      flex-direction:column; align-items:center; justify-content:center; gap:14px;
+      flex-direction:column; align-items:center; justify-content:flex-start; gap:14px;
+      overflow-y:auto; padding:4vh 0 24px;
       background:rgba(2,13,26,0.92);
     }
     /* ── Trofee-plaatje bij de evaluatieschermen (Europa/Wereld, Hoofdsteden,
@@ -976,7 +985,8 @@
     /* ── Eindoverzicht na de 10de plek ── */
     #plekken-eind-overlay {
       position:fixed; inset:0; z-index:71; display:none;
-      flex-direction:column; align-items:center; justify-content:center; gap:14px;
+      flex-direction:column; align-items:center; justify-content:flex-start; gap:14px;
+      overflow-y:auto; padding:4vh 0 24px;
       background:rgba(5,10,16,0.82);
     }
     #plekken-eind-kaart {
@@ -1017,7 +1027,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.45</div>
+  <div id="versie-label">v0.3.46</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
