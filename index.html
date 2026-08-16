@@ -491,7 +491,11 @@
     .trofee-blok { position:relative; display:none; }
     .trofee-blok.zichtbaar { display:block; }
     .trofee-img {
-      display:block; width:min(200px, 24vw); aspect-ratio:1/1;
+      /* Groter dan eerst: maakt gebruik van de lege ruimte die anders boven
+         de score-kaart overblijft. Begrensd door zowel de breedte (vw) als
+         de hoogte (vh) van het scherm, zodat de trofee op een laag/breed
+         scherm niet groter wordt dan er verticaal ruimte voor is. */
+      display:block; width:min(360px, 32vw, 46vh); aspect-ratio:1/1;
       filter:drop-shadow(0 10px 26px rgba(0,0,0,0.5));
     }
     .trofee-tekst {
@@ -1013,7 +1017,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.44</div>
+  <div id="versie-label">v0.3.45</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
