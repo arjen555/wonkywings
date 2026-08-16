@@ -504,7 +504,7 @@
          de score-kaart overblijft. Begrensd door zowel de breedte (vw) als
          de hoogte (vh) van het scherm, zodat de trofee op een laag/breed
          scherm niet groter wordt dan er verticaal ruimte voor is. */
-      display:block; width:min(360px, 32vw, 46vh); aspect-ratio:1/1;
+      display:block; width:min(440px, 38vw, 50vh); aspect-ratio:1/1;
       filter:drop-shadow(0 10px 26px rgba(0,0,0,0.5));
     }
     .trofee-tekst {
@@ -1027,7 +1027,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.46</div>
+  <div id="versie-label">v0.3.47</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -3239,6 +3239,12 @@ function stempelMeldingTekstVoorRonde(gekozenLanden){
 const STEMPEL_VLIEG_PAUZE_MS = 3000;
 const STEMPEL_VLIEG_DUUR_MS = 850;
 function toonVliegendeStempels(gekozenLanden, paspoortIconEl, ankerEl){
+  // De stempelrij staat los van de normale pagina-opmaak (position:fixed, zie
+  // CSS), dus die claimt normaal gesproken géén ruimte - de kaart eronder
+  // schuift er niet automatisch voor opzij. Daarom eerst altijd de eventueel
+  // van een vórige ronde nog openstaande reservering opheffen; hieronder
+  // wordt 'm opnieuw gezet als dat nu weer nodig is.
+  if(ankerEl) ankerEl.style.marginBottom = '';
   if(!gekozenLanden || !gekozenLanden.length || !paspoortIconEl) return;
   const rij = document.createElement('div');
   rij.className = 'stempel-vlieg-rij';
@@ -3257,7 +3263,13 @@ function toonVliegendeStempels(gekozenLanden, paspoortIconEl, ankerEl){
   // vormen in plaats van twee losse dingen die om dezelfde plek strijden.
   if(ankerEl){
     const ankerRect = ankerEl.getBoundingClientRect();
-    rij.style.top = (ankerRect.bottom + 10) + 'px';
+    rij.style.top = (ankerRect.bottom + 14) + 'px';
+    // De rij zelf claimt geen ruimte in de normale opmaak (position:fixed),
+    // dus zonder dit zou de kaart eronder gewoon vlak achter de trofee
+    // beginnen en half achter de stempelrij verdwijnen. Door de trofee
+    // tijdelijk een marge te geven zo groot als de rij zelf, schuift de
+    // kaart netjes mee naar beneden zo lang de stempels er staan.
+    ankerEl.style.marginBottom = (rij.offsetHeight + 22) + 'px';
   }
   void rij.offsetWidth; // forceert reflow, zodat de intro-transitie echt start vanaf onzichtbaar
   rij.classList.add('zichtbaar');
@@ -3290,7 +3302,13 @@ function toonVliegendeStempels(gekozenLanden, paspoortIconEl, ankerEl){
         setTimeout(()=>{ img.remove(); }, STEMPEL_VLIEG_DUUR_MS+60);
       }, i*220); // kleine vertraging tussen de plaatjes, zodat ze na elkaar vliegen i.p.v. als één klomp
     });
-    setTimeout(()=>{ rij.remove(); }, plaatjes.length*220 + STEMPEL_VLIEG_DUUR_MS + 150);
+    setTimeout(()=>{
+      rij.remove();
+      // Nu de stempels weg zijn, hoeft de trofee de ruimte niet langer vrij
+      // te houden - de kaart schuift (zonder animatie, maar dat valt na dit
+      // hele moment niet meer op) weer gewoon terug omhoog.
+      if(ankerEl) ankerEl.style.marginBottom = '';
+    }, plaatjes.length*220 + STEMPEL_VLIEG_DUUR_MS + 150);
   }, STEMPEL_VLIEG_PAUZE_MS);
 }
 // Vult transparante randen/hoekjes van een illustratie automatisch op door
