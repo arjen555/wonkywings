@@ -22,18 +22,22 @@
     filter:drop-shadow(0 10px 40px rgba(0,0,0,0.6));
   }
 
-  /* ── Terug-naar-startmenu-knop, alleen zichtbaar op het "Klaar!"-scherm:
-     zelfde afbeelding/positie/grootte als #terug-knop in paspoort.html.
-     Staat buiten #kader (zie de notitie bij #klaar-paspoort-icoon hieronder
-     voor waarom - #kader's drop-shadow-filter breekt position:fixed erbinnen). ── */
-  #klaar-terug-knop {
+  /* ── Linksboven-groep op het "Klaar!"-scherm: de terug-naar-startmenu-knop
+     (zelfde afbeelding/grootte als #terug-knop in paspoort.html) met daaronder
+     de "nog een ronde"-knop, netjes gestapeld. Staat buiten #kader (zie de
+     notitie bij #klaar-paspoort-icoon hieronder voor waarom - #kader's
+     drop-shadow-filter breekt position:fixed erbinnen). ── */
+  #klaar-linksboven-knoppen {
     display:none; position:fixed; left:14px; top:14px; z-index:150;
+    flex-direction:column; align-items:flex-start; gap:10px;
+  }
+  #klaar-terug-knop, #klaar-nogeenronde-knop {
     width:clamp(150px, 15vw, 260px); border:none; background:none; padding:0;
     cursor:pointer; opacity:0.92; transition:opacity 0.15s, transform 0.15s;
     filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5));
   }
-  #klaar-terug-knop img { width:100%; display:block; }
-  #klaar-terug-knop:hover { opacity:1; transform:scale(1.03); }
+  #klaar-terug-knop img, #klaar-nogeenronde-knop img { width:100%; display:block; }
+  #klaar-terug-knop:hover, #klaar-nogeenronde-knop:hover { opacity:1; transform:scale(1.03); }
 
   /* ── Vaste labels/knoppen bovenin het kader ── */
   #menu-knop {
@@ -195,7 +199,6 @@
   .score-goed { width:3.2em; text-align:right; }
   .score-tijd { width:3.6em; text-align:right; }
   .score-leeg { font-family:'Baloo 2',sans-serif; font-weight:700; color:#7a5a30; font-size:clamp(0.9rem,1.7vw,1.3rem); font-style:italic; }
-  #klaar-knoppen { display:flex; gap:8px; align-items:center; justify-content:center; }
   .actie-btn {
     font-family:'Baloo 2',sans-serif; font-weight:800; font-size:clamp(0.55rem,1.1vw,0.9rem);
     color:#fff6d8; background:linear-gradient(180deg,#3a6a4a,#1e4a2e);
@@ -273,9 +276,6 @@
       <div id="klaar-stempel"></div>
       <div id="klaar-stempel-rij"></div>
       <div id="scorebord-lijst"></div>
-      <div id="klaar-knoppen">
-        <button class="actie-btn" onclick="terugNaarKiezen()">nog een ronde Raad je plaatje</button>
-      </div>
     </div>
 
   </div>
@@ -305,10 +305,17 @@
 <img id="klaar-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="window.location.href='paspoort.html'"/>
 
 <!-- Zelfde reden als #klaar-paspoort-icoon: buiten #kader, en zichtbaarheid
-     via toonScherm() geregeld (alleen op het "Klaar!"-scherm). -->
-<button id="klaar-terug-knop" onclick="ganNaarMenu()">
-  <img src="images/terug-naar-start-knop.png" alt="Terug naar start"/>
-</button>
+     via toonScherm() geregeld (alleen op het "Klaar!"-scherm). De knop "nog
+     een ronde Raad je plaatje" stond eerst als tekstknop onderin de kaart -
+     nu als afbeelding hier, direct onder de terug-knop gestapeld. -->
+<div id="klaar-linksboven-knoppen">
+  <button id="klaar-terug-knop" onclick="ganNaarMenu()">
+    <img src="images/terug-naar-start-knop.png" alt="Terug naar start"/>
+  </button>
+  <button id="klaar-nogeenronde-knop" onclick="terugNaarKiezen()">
+    <img src="images/nog_een_ronde_raad_je_plaatje.png" alt="Nog een ronde Raad je plaatje"/>
+  </button>
+</div>
 
 <script>
 // ── Categorieën: exacte kopie van de landenlijsten uit index.html (MENU).
@@ -521,11 +528,11 @@ function toonScherm(id){
   document.querySelectorAll('.scherm').forEach(el=>el.classList.remove('actief'));
   document.getElementById(id).classList.add('actief');
   document.getElementById('antwoorden-grid').classList.toggle('actief', id==='scherm-spel');
-  // #klaar-paspoort-icoon en #klaar-terug-knop staan buiten #kader (zie de
-  // notitie bij hun HTML) en volgen dus niet vanzelf de .scherm-cascade -
-  // hier expliciet meesturen.
+  // #klaar-paspoort-icoon en #klaar-linksboven-knoppen staan buiten #kader
+  // (zie de notitie bij hun HTML) en volgen dus niet vanzelf de
+  // .scherm-cascade - hier expliciet meesturen.
   document.getElementById('klaar-paspoort-icoon').style.display = (id==='scherm-klaar') ? 'block' : 'none';
-  document.getElementById('klaar-terug-knop').style.display = (id==='scherm-klaar') ? 'block' : 'none';
+  document.getElementById('klaar-linksboven-knoppen').style.display = (id==='scherm-klaar') ? 'flex' : 'none';
   sluitUitvergroting();
 }
 
