@@ -504,7 +504,12 @@
        verdwijnt en op elk eindscherm hetzelfde staat, ongeacht kaartgrootte. */
     .eindscherm-paspoort-icoon {
       position:fixed; right:clamp(16px, 3vw, 40px); bottom:clamp(16px, 3vw, 40px);
-      width:min(252px, 24vw); cursor:pointer; z-index:150;
+      width:min(252px, 24vw); cursor:pointer;
+      /* Hoger dan alle pop-ups (help/kennisvraag/rad zitten op 997-999) -
+         anders staat dit icoontje (bijv. bij het rad van fortuin) onzichtbaar
+         ACHTER de donkere overlay van die pop-up verstopt. Pop-ups sluiten
+         elkaar altijd uit, dus dit kan nooit iets anders per ongeluk bedekken. */
+      z-index:1001;
       filter:drop-shadow(0 6px 20px rgba(0,0,0,0.55));
       transition:transform 0.15s;
     }
@@ -519,7 +524,10 @@
        en los aan <body> hangt, telt de z-index van de rij niet meer mee. ── */
     .stempel-vlieg-rij {
       position:fixed; top:4vh; left:50%; transform:translateX(-50%);
-      z-index:900; display:flex; flex-wrap:wrap; justify-content:center;
+      /* Zelfde reden als .eindscherm-paspoort-icoon hierboven: boven alle
+         pop-ups (997-999) uit, anders is dit bij het rad van fortuin
+         onzichtbaar achter de donkere overlay. */
+      z-index:1001; display:flex; flex-wrap:wrap; justify-content:center;
       gap:14px; max-width:80vw;
       opacity:0; transition:opacity 0.35s ease;
       pointer-events:none;
@@ -527,7 +535,7 @@
     .stempel-vlieg-rij.zichtbaar { opacity:1; }
     .stempel-vlieg-plaatje {
       width:min(15vw, 96px); aspect-ratio:1/1; object-fit:cover;
-      border-radius:50%; z-index:900;
+      border-radius:50%; z-index:1001;
       box-shadow:0 0 0 4px rgba(255,246,200,0.92), 0 8px 22px rgba(0,0,0,0.55);
     }
     #hoofdsteden-resultaat-terug-btn, #scorebord-terug-btn, #plekken-eind-verder {
@@ -984,7 +992,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.42</div>
+  <div id="versie-label">v0.3.43</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
