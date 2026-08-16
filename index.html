@@ -471,13 +471,34 @@
     /* ── SCOREBORD ── */
     #scorebord-scherm {
       position:fixed; inset:0; z-index:110; display:none;
-      align-items:center; justify-content:center;
+      flex-direction:column; align-items:center; justify-content:center; gap:14px;
       background:rgba(2,13,26,0.92);
     }
     #hoofdsteden-resultaat-scherm {
       position:fixed; inset:0; z-index:110; display:none;
-      align-items:center; justify-content:center;
+      flex-direction:column; align-items:center; justify-content:center; gap:14px;
       background:rgba(2,13,26,0.92);
+    }
+    /* ── Trofee-plaatje bij de evaluatieschermen (Europa/Wereld, Hoofdsteden,
+       Iconische plekken): welk plaatje van de 11 (0van10.png t/m 10van10.png,
+       in images/trofee/) getoond wordt hangt af van het percentage goed - zie
+       toonTrofee(). Staat los boven de score-kaart, niet erin: zo hoeft de
+       kaart zelf (met de ranglijst) niet anders te worden opgemaakt, en werkt
+       het vanzelf ook goed op een smal scherm (dan staat het gewoon boven de
+       kaart, net als op een breed scherm). Standaard verborgen: alleen tonen
+       na een net gespeeld potje, niet als iemand de scores bekijkt vanuit
+       het menu zonder te spelen. ── */
+    .trofee-blok { position:relative; display:none; }
+    .trofee-blok.zichtbaar { display:block; }
+    .trofee-img {
+      display:block; width:min(200px, 24vw); aspect-ratio:1/1;
+      filter:drop-shadow(0 10px 26px rgba(0,0,0,0.5));
+    }
+    .trofee-tekst {
+      position:absolute; transform:translate(-50%,-50%);
+      font-family:'Baloo 2',sans-serif; font-weight:800;
+      color:#3b2411; text-align:center; white-space:nowrap;
+      font-size:clamp(0.5rem, 1.3vw, 0.72rem);
     }
     #hoofdsteden-resultaat-kaart {
       background:linear-gradient(135deg, #0a2a4a 0%, #051e30 100%);
@@ -951,7 +972,7 @@
     /* ── Eindoverzicht na de 10de plek ── */
     #plekken-eind-overlay {
       position:fixed; inset:0; z-index:71; display:none;
-      align-items:center; justify-content:center;
+      flex-direction:column; align-items:center; justify-content:center; gap:14px;
       background:rgba(5,10,16,0.82);
     }
     #plekken-eind-kaart {
@@ -992,7 +1013,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.43</div>
+  <div id="versie-label">v0.3.44</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1188,6 +1209,11 @@
 
 <!-- SCOREBORD -->
 <div id="scorebord-scherm">
+  <div id="scorebord-trofee" class="trofee-blok">
+    <img id="scorebord-trofee-img" class="trofee-img" src="" alt=""/>
+    <span id="scorebord-trofee-tijd" class="trofee-tekst"></span>
+    <span id="scorebord-trofee-km" class="trofee-tekst"></span>
+  </div>
   <div id="scorebord-kaart">
     <div id="scorebord-titel"></div>
     <div id="scorebord-nieuwe-run"></div>
@@ -1209,6 +1235,11 @@
 
 <!-- HOOFDSTEDEN-RESULTAAT -->
 <div id="hoofdsteden-resultaat-scherm">
+  <div id="hoofdsteden-resultaat-trofee" class="trofee-blok">
+    <img id="hoofdsteden-resultaat-trofee-img" class="trofee-img" src="" alt=""/>
+    <span id="hoofdsteden-resultaat-trofee-tijd" class="trofee-tekst"></span>
+    <span id="hoofdsteden-resultaat-trofee-km" class="trofee-tekst"></span>
+  </div>
   <div id="hoofdsteden-resultaat-kaart">
     <div id="hoofdsteden-resultaat-titel">🏆 Klaar!</div>
     <div id="hoofdsteden-resultaat-score"></div>
@@ -1358,6 +1389,11 @@
 
   <!-- Eindoverzicht na de 10de plek: alle puntenopbouw bij elkaar. -->
   <div id="plekken-eind-overlay">
+    <div id="plekken-eind-trofee" class="trofee-blok">
+      <img id="plekken-eind-trofee-img" class="trofee-img" src="" alt=""/>
+      <span id="plekken-eind-trofee-tijd" class="trofee-tekst"></span>
+      <span id="plekken-eind-trofee-km" class="trofee-tekst"></span>
+    </div>
     <div id="plekken-eind-kaart">
       <div id="plekken-eind-titel">Iconische plekken - eindresultaat</div>
       <div id="plekken-eind-tabel"></div>
@@ -1609,7 +1645,7 @@ const MENU = [
         landen:["Nederland","België","Duitsland","Frankrijk","Verenigd Koninkrijk","Ierland","Luxemburg","Oostenrijk","Zwitserland","Spanje","Portugal","Italië","Griekenland","Zweden","Noorwegen","Denemarken","Finland","IJsland","Estland","Letland","Litouwen","Rusland","Polen","Oekraïne","Tsjechië","Slowakije","Hongarije","Roemenië","Bulgarije","Wit-Rusland","Moldavië","Servië","Kroatië","Bosnië-Herzegovina","Slovenië","Albanië","Noord-Macedonië","Montenegro","Kosovo"],
         altijd_alle:false, beschikbaar:true },
       { id:'eu-noord', naam:'Noord-Europa', start:{lon:15, lat:65},
-        landen:["Zweden","Noorwegen","Denemarken","Finland","IJsland","Estland","Letland","Litouwen","Groenland"],
+        landen:["Zweden","Noorwegen","Denemarken","Faeröer","Finland","IJsland","Estland","Letland","Litouwen","Groenland"],
         altijd_alle:false, beschikbaar:true },
       { id:'eu-west', naam:'West-Europa', start:{lon:5, lat:50},
         landen:["Nederland","België","Duitsland","Frankrijk","Verenigd Koninkrijk","Ierland","Luxemburg","Oostenrijk","Zwitserland","Denemarken"],
@@ -2478,11 +2514,18 @@ let levelStartTijd=0, laatsteLevelTijd=0;
 let vluchtActief=false, vluchtStartTijd=0, vluchtDuur=0;
 // ── Hoofdsteden-modus: geen km-score/highscore, wel een goed/totaal-teller ──
 let hoofdstedenGoed=0, hoofdstedenTotaal=0;
+// Som van alle afwijkingen (in km) deze ronde Hoofdsteden - alleen voor het
+// "KM UIT DE RICHTING"-veld op het trofee-plaatje van het evaluatiescherm,
+// telt zelf niet mee als score.
+let hoofdstedenKmTotaal=0;
 // Landenpaspoort: welke stempels zijn er in dít potje Europa/Wereld bij
 // gekomen (voor de vliegende-stempels-animatie op het scorebord) - wordt
 // bij elk nieuw level geleegd in startSpel(), en gevuld via de
 // verdienStempelVoorLand()-aanroep bij een goed gedropt vlaggetje.
 let dezeRondeVerdiendeLanden = [];
+// Hoeveel landen deze ronde Europa/Wereld in één keer goed waren (voor het
+// trofee-plaatje van het evaluatiescherm - zie toonTrofee()).
+let dezeRondeGoedAantal = 0;
 let vluchtIsHoofdstad=false, vluchtIsGoed=false, vluchtHoofdstadNaam='', vluchtGevallenLandNaam='';
 let vluchtIsPlek=false; // true tijdens de correctievlucht na een Plekken-antwoord (zie dropVlaggetje)
 // Tussentijdse opslag van de uitkomst van dropVlaggetje() voor de puntentelling,
@@ -2490,6 +2533,9 @@ let vluchtIsPlek=false; // true tijdens de correctievlucht na een Plekken-antwoo
 let plekLaatsteKm=0, plekLaatsteJuisteLand=false, plekLaatsteSec=0, plekLaatstePunten=null;
 // Lopende score en puntenopbouw-tabel voor het huidige Plekken-onderdeel.
 let plekkenScore=0, plekkenResultaten=[];
+// Som van alle afwijkingen (in km) deze ronde Plekken - zelfde doel als
+// hoofdstedenKmTotaal hierboven, alleen voor het trofee-plaatje.
+let plekkenKmTotaal=0;
 let hoofdstedenRevealLand=null; // welk land z'n hoofdstad moet gloeien (na het droppen van het vlaggetje)
 let correctieLabelDubbel=null; // {hoofdstad, land} - zet het correctie-label in dual-tekst-modus
 
@@ -2833,7 +2879,10 @@ function toonPlekkenEindoverzicht(){
   document.getElementById('plekken-eind-stempel').textContent =
     stempelMeldingTekst(drempelBereikt, gekozenLanden, 'Bijna! Vanaf 5 landen goed krijg je een landenstempel.');
   document.getElementById('plekken-eind-overlay').style.display = 'flex';
-  toonVliegendeStempels(gekozenLanden, document.getElementById('plekken-eind-paspoort-icoon'));
+  const trofeeBlok = toonTrofee('plekken-eind-trofee','plekken-eind-trofee-img',
+    'plekken-eind-trofee-tijd','plekken-eind-trofee-km',
+    goedAantal, plekkenResultaten.length, laatsteLevelTijd, plekkenKmTotaal);
+  toonVliegendeStempels(gekozenLanden, document.getElementById('plekken-eind-paspoort-icoon'), trofeeBlok);
 }
 
 // Afstand tot een plek: bij meerdere punten telt het dichtstbijzijnde punt,
@@ -3175,7 +3224,7 @@ function stempelMeldingTekstVoorRonde(gekozenLanden){
 // Doet niets als er niks te vieren valt of het scherm (nog) geen icoon heeft.
 const STEMPEL_VLIEG_PAUZE_MS = 3000;
 const STEMPEL_VLIEG_DUUR_MS = 850;
-function toonVliegendeStempels(gekozenLanden, paspoortIconEl){
+function toonVliegendeStempels(gekozenLanden, paspoortIconEl, ankerEl){
   if(!gekozenLanden || !gekozenLanden.length || !paspoortIconEl) return;
   const rij = document.createElement('div');
   rij.className = 'stempel-vlieg-rij';
@@ -3187,6 +3236,15 @@ function toonVliegendeStempels(gekozenLanden, paspoortIconEl){
     rij.appendChild(img);
   });
   document.body.appendChild(rij);
+  // Standaard verschijnt de rij op een vaste plek bovenaan het hele scherm
+  // (zie .stempel-vlieg-rij in de CSS). Op de evaluatieschermen met een
+  // trofee-plaatje (zie toonTrofee()) hoort de rij daar net onder te
+  // verschijnen, zodat trofee + verdiende stempels één samenhangend moment
+  // vormen in plaats van twee losse dingen die om dezelfde plek strijden.
+  if(ankerEl){
+    const ankerRect = ankerEl.getBoundingClientRect();
+    rij.style.top = (ankerRect.bottom + 10) + 'px';
+  }
   void rij.offsetWidth; // forceert reflow, zodat de intro-transitie echt start vanaf onzichtbaar
   rij.classList.add('zichtbaar');
 
@@ -3384,8 +3442,8 @@ function startSpel(levelId, modus) {
                     // nieuw level nooit blokkeren - zie ook de fix in nieuwLand().
   const lv = LEVELS[levelId];
   if(!lv || !lv.beschikbaar) return;
-  hoofdstedenGoed=0; hoofdstedenTotaal=0;
-  dezeRondeVerdiendeLanden=[];
+  hoofdstedenGoed=0; hoofdstedenTotaal=0; hoofdstedenKmTotaal=0;
+  dezeRondeVerdiendeLanden=[]; dezeRondeGoedAantal=0;
   const isHoofdsteden = !!lv.hoofdsteden;
   const isPlekken = !!lv.plekken;
   document.getElementById('scorebord-wrap').style.display = (isHoofdsteden||isPlekken) ? 'none' : '';
@@ -3396,6 +3454,7 @@ function startSpel(levelId, modus) {
     // Eigen puntentelling voor dit onderdeel: bij elke nieuwe start weer bij 0.
     plekkenScore = 0;
     plekkenResultaten = [];
+    plekkenKmTotaal = 0;
     zetPlekScorebordCijfer();
   }
   // Vorige-ronde-schermen altijd verbergen bij een nieuwe start - anders
@@ -3653,6 +3712,60 @@ function opslaanScore(levelNr, naam, km, tijdSec){
   return {lijst, nieuweRun};
 }
 function formatTijd(sec){ const m=Math.floor(sec/60), s=sec%60; return m+':'+String(s).padStart(2,'0'); }
+
+// ── Trofee-plaatjes op de evaluatieschermen (Europa/Wereld, Hoofdsteden,
+// Iconische plekken) ─────────────────────────────────────────────────────
+// Elf plaatjes, images/trofee/0van10.png t/m 10van10.png, elk met een eigen
+// personage en een "X VAN DE 10 LANDEN GOED"-tekst die al in de tekening
+// staat. Welk plaatje getoond wordt, hangt af van het PERCENTAGE goed
+// (afgerond naar een getal 0-10) en niet van het kale aantal - zo klopt het
+// ook bij een potje dat niet uit precies 10 landen bestaat.
+//
+// Elk plaatje is apart getekend, dus het "TIJD"- en "KM UIT DE
+// RICHTING"-bordje staat niet overal even hoog of breed - vandaar deze
+// losse positietabel (in % van de afbeelding, gemeten op de vierkante
+// bronbestanden). Plaatje 10 (het feestende leeuwtje) is een ander soort
+// tekening dan de rest en is met het oog geschat; mocht die tekst daar niet
+// mooi op het bordje vallen, geef de juiste %-waardes door dan stel ik ze bij.
+const TROFEE_TEKST_POSITIE = {
+  0:  { tijd:[30.5,79.4], km:[66.3,81.6] },
+  1:  { tijd:[31.2,79.4], km:[70.1,80.2] },
+  2:  { tijd:[32.3,79.4], km:[68.3,82.7] },
+  3:  { tijd:[33.9,80.8], km:[70.1,81.9] },
+  4:  { tijd:[32.3,81.7], km:[68.0,79.4] },
+  5:  { tijd:[33.5,81.3], km:[70.0,82.1] },
+  6:  { tijd:[34.6,79.9], km:[70.1,80.9] },
+  7:  { tijd:[34.8,81.0], km:[69.5,82.2] },
+  8:  { tijd:[35.2,83.2], km:[69.5,82.9] },
+  9:  { tijd:[35.5,84.1], km:[67.7,85.1] },
+  10: { tijd:[24,  90  ], km:[78,  90  ] },
+};
+function kiesTrofeeIndex(goed, totaal){
+  if(!totaal || totaal<=0) return 0;
+  return Math.max(0, Math.min(10, Math.round((goed/totaal)*10)));
+}
+// Vult een trofee-blok (drie elementen: het blok zelf, de <img>, en de twee
+// tekst-<span>'s voor tijd/km) en toont het. Geeft het trofee-blok-element
+// terug, zodat de aanroeper het weer kan doorgeven aan toonVliegendeStempels()
+// als ankerpunt voor de net-verdiende-stempels-rij.
+function toonTrofee(blokId, imgId, tijdId, kmId, goed, totaal, tijdSec, km){
+  const idx = kiesTrofeeIndex(goed, totaal);
+  const pos = TROFEE_TEKST_POSITIE[idx];
+  const img = document.getElementById(imgId);
+  img.src = 'images/trofee/'+idx+'van10.png';
+  img.alt = idx+' van de 10 landen goed';
+  const tijdEl = document.getElementById(tijdId);
+  tijdEl.textContent = formatTijd(tijdSec);
+  tijdEl.style.left = pos.tijd[0]+'%';
+  tijdEl.style.top = pos.tijd[1]+'%';
+  const kmEl = document.getElementById(kmId);
+  kmEl.textContent = Math.round(km)+' km';
+  kmEl.style.left = pos.km[0]+'%';
+  kmEl.style.top = pos.km[1]+'%';
+  const blok = document.getElementById(blokId);
+  blok.classList.add('zichtbaar');
+  return blok;
+}
 // Vergelijkt alleen de kalenderdag (niet het exacte tijdstip), zodat "vandaag"
 // klopt ongeacht hoe laat een run precies gespeeld is.
 function isVandaag(timestampMs){
@@ -3688,7 +3801,10 @@ function toonHoofdstedenResultaat(goed, totaal){
     stempelMeldingTekst(drempelBereikt, gekozenLanden, 'Bijna! Vanaf 8 landen goed krijg je een landenstempel.');
   document.getElementById('spelscherm').style.display='none';
   document.getElementById('hoofdsteden-resultaat-scherm').style.display='flex';
-  toonVliegendeStempels(gekozenLanden, document.getElementById('hoofdsteden-resultaat-paspoort-icoon'));
+  const trofeeBlok = toonTrofee('hoofdsteden-resultaat-trofee','hoofdsteden-resultaat-trofee-img',
+    'hoofdsteden-resultaat-trofee-tijd','hoofdsteden-resultaat-trofee-km',
+    goed, totaal, laatsteLevelTijd, hoofdstedenKmTotaal);
+  toonVliegendeStempels(gekozenLanden, document.getElementById('hoofdsteden-resultaat-paspoort-icoon'), trofeeBlok);
 }
 function toonScorebord(levelId, nieuweRun){
   const lv=LEVELS[levelId];
@@ -3696,9 +3812,9 @@ function toonScorebord(levelId, nieuweRun){
   try{ lijst=JSON.parse(localStorage.getItem(scorebordSleutel(levelId))||'[]'); }catch(e){ lijst=[]; }
 
   document.getElementById('scorebord-titel').textContent='🏆 Scorebord — '+lv.naam;
-  document.getElementById('scorebord-nieuwe-run').textContent = nieuweRun
-    ? 'Jouw resultaat: '+nieuweRun.km+' km in '+formatTijd(nieuweRun.tijd)
-    : '';
+  // De losse "Jouw resultaat: ..."-regel is vervallen: die informatie staat
+  // nu op het trofee-plaatje hierboven (zie toonTrofee() verderop).
+  document.getElementById('scorebord-nieuwe-run').textContent = '';
 
   // lijst is al gesorteerd op km (laagste/beste eerst) - dus gewoon de eerste
   // 20 pakken voor all-time, en voor "vandaag" eerst filteren en dan top 20.
@@ -3713,9 +3829,19 @@ function toonScorebord(levelId, nieuweRun){
   const gekozenLanden = nieuweRun ? dezeRondeVerdiendeLanden : [];
   document.getElementById('scorebord-stempel').textContent = nieuweRun ? stempelMeldingTekstVoorRonde(gekozenLanden) : '';
 
+  // ── Trofee-plaatje: zelfde uitzondering als hierboven - alleen tonen bij
+  // een zojuist gespeelde ronde, niet bij het scorebord vanuit het menu.
+  let trofeeBlok = null;
+  if(nieuweRun){
+    trofeeBlok = toonTrofee('scorebord-trofee','scorebord-trofee-img','scorebord-trofee-tijd','scorebord-trofee-km',
+      dezeRondeGoedAantal, spelLanden.length, nieuweRun.tijd, nieuweRun.km);
+  } else {
+    document.getElementById('scorebord-trofee').classList.remove('zichtbaar');
+  }
+
   document.getElementById('spelscherm').style.display='none';
   document.getElementById('scorebord-scherm').style.display='flex';
-  toonVliegendeStempels(gekozenLanden, document.getElementById('scorebord-paspoort-icoon'));
+  toonVliegendeStempels(gekozenLanden, document.getElementById('scorebord-paspoort-icoon'), trofeeBlok);
 }
 
 // Vanaf het startmenu: scorebord bekijken zonder het level te spelen
@@ -7399,6 +7525,7 @@ function dropVlaggetje(){
       // Bewaren voor de puntenopbouw, die pas ná de correctievlucht wordt
       // getoond (zie de vluchtIsPlek-tak hieronder in de animatielus).
       plekLaatsteKm = km;
+      plekkenKmTotaal += km;
       plekLaatsteJuisteLand = juisteLand;
       plekLaatsteSec = Math.max(0, (dropTijdstip - plekOnthullingStart) / 1000);
       toonFeedback(kiesPlekBericht(km, juisteLand), juisteLand ? '#ffd700' : '#ffe9a8');
@@ -7434,6 +7561,7 @@ function dropVlaggetje(){
     if(LEVELS[huidigLevel].hoofdsteden){
       // ── Hoofdsteden-modus: altijd naar de hoofdstad-stip vliegen, geen km-score ──
       hoofdstedenTotaal++;
+      hoofdstedenKmTotaal += afwijkingKm;
       if(isGoed) hoofdstedenGoed++;
       updateHoofdstedenTeller();
       hoofdstedenRevealLand = huidigLand; // vanaf nu mag deze hoofdstad gloeien
@@ -7463,6 +7591,7 @@ function dropVlaggetje(){
 
     if(isGoed){
       score+=afwijkingKm;
+      dezeRondeGoedAantal++;
       document.getElementById('score').textContent=score;
       zetKmCijfers(score);
       const nieuweStempel = verdienStempelVoorLand(huidigLand);
