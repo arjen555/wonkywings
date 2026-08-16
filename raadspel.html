@@ -174,9 +174,19 @@
   .antwoord-btn.fout { background:rgba(217,105,92,0.55); color:#4a0f08; box-shadow:inset 0 0 0 1.5px rgba(74,15,8,0.5); }
 
   /* — Resultaatscherm — */
+  /* Dit scherm laat de inhoud (i.p.v. de standaard verticale centrering van
+     .scherm) bovenaan beginnen, zodat "Klaar!" en de score meteen zichtbaar
+     zijn - en er onderin ruimte overblijft voor de gewonnen stempels en de
+     scorelijst, zonder dat alles in het midden van de kaart samenklontert. */
+  #scherm-klaar { justify-content:flex-start; padding-top:1.5%; }
   #klaar-titel { font-family:'Baloo 2',sans-serif; font-weight:800; color:#3b2a18; font-size:clamp(1.3rem,2.6vw,2rem); margin:0 0 1%; text-align:center; }
   #klaar-resultaat { font-family:'Baloo 2',sans-serif; font-weight:700; color:#5a3a1a; font-size:clamp(1rem,2vw,1.5rem); margin-bottom:2%; text-align:center; }
-  #klaar-stempel { font-family:'Baloo 2',sans-serif; font-weight:800; color:#8a4a10; font-size:clamp(0.95rem,1.9vw,1.4rem); margin-bottom:2%; text-align:center; line-height:1.35; min-height:1.3em; white-space:pre-line; }
+  #klaar-stempel { font-family:'Baloo 2',sans-serif; font-weight:800; color:#8a4a10; font-size:clamp(0.95rem,1.9vw,1.4rem); margin-bottom:1%; text-align:center; line-height:1.35; min-height:1.3em; white-space:pre-line; }
+  /* Rij met net-gewonnen stempels: staat nu IN de kaart zelf (i.p.v. los
+     bovenaan het hele scherm), zodat je 'm meteen ziet voordat hij na
+     STEMPEL_VLIEG_PAUZE_MS naar het paspoort-icoontje wegvliegt. */
+  #klaar-stempel-rij { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; min-height:0; }
+  #klaar-stempel-rij:not(:empty) { margin-bottom:2%; }
   #scorebord-lijst { width:100%; max-height:55%; overflow-y:auto; margin-bottom:2%; }
   .score-rij { display:flex; align-items:center; gap:8px; padding:2px 6px; font-family:'Baloo 2',sans-serif; font-weight:700; font-size:clamp(0.85rem,1.7vw,1.25rem); color:#3b2a18; }
   .score-rij.eigen { background:rgba(255,215,0,0.25); border-radius:6px; }
@@ -215,6 +225,14 @@
     opacity:0; transition:opacity 0.35s ease;
     pointer-events:none;
   }
+  /* Op het Klaar-scherm van Raad je plaatje staat de rij IN de kaart zelf
+     (zie #klaar-stempel-rij hierboven) i.p.v. los boven het hele scherm -
+     de positionering hierboven wordt dan ongedaan gemaakt. De losse
+     plaatjes worden ook wat kleiner, passend bij de kleinere kaart. */
+  .stempel-vlieg-rij.inline {
+    position:static; top:auto; left:auto; transform:none; max-width:100%;
+  }
+  .stempel-vlieg-rij.inline .stempel-vlieg-plaatje { width:min(9vw, 60px); }
   .stempel-vlieg-rij.zichtbaar { opacity:1; }
   .stempel-vlieg-plaatje {
     width:min(15vw, 96px); aspect-ratio:1/1; object-fit:cover;
@@ -253,6 +271,7 @@
       <div id="klaar-titel">Klaar!</div>
       <div id="klaar-resultaat"></div>
       <div id="klaar-stempel"></div>
+      <div id="klaar-stempel-rij"></div>
       <div id="scorebord-lijst"></div>
       <div id="klaar-knoppen">
         <button class="actie-btn" onclick="terugNaarKiezen()">nog een ronde Raad je plaatje</button>
@@ -388,7 +407,7 @@ function stempelMeldingTekst(drempelBereikt, gekozenLanden, bijnaTekst){
     return 'Wat een score!\nJe wint zelfs 2 landenstempels voor '+gekozenLanden[0].naam+' en '+gekozenLanden[1].naam+'!';
   }
   if(gekozenLanden.length === 1){
-    return 'Goed gedaan! Als prijs krijg je een landenstempel voor '+gekozenLanden[0].naam+' - kijk maar in je paspoort!';
+    return 'Goed gedaan! Als prijs krijg je een landenstempel voor '+gekozenLanden[0].naam+'!';
   }
   if(drempelBereikt){
     return 'Je paspoort zit al helemaal vol - knap hoor! 🏆';
@@ -399,10 +418,13 @@ function stempelMeldingTekst(drempelBereikt, gekozenLanden, bijnaTekst){
 // icoon ── zelfde functie als in index.html, zie de toelichting daar.
 const STEMPEL_VLIEG_PAUZE_MS = 3000;
 const STEMPEL_VLIEG_DUUR_MS = 850;
-function toonVliegendeStempels(gekozenLanden, paspoortIconEl){
+// containerEl (optioneel): als gegeven, verschijnt de rij daarin (in de
+// normale tekstflow, bijv. midden in de Klaar-kaart) i.p.v. los boven het
+// hele scherm - alleen het Klaar-scherm van Raad je plaatje gebruikt dit.
+function toonVliegendeStempels(gekozenLanden, paspoortIconEl, containerEl){
   if(!gekozenLanden || !gekozenLanden.length || !paspoortIconEl) return;
   const rij = document.createElement('div');
-  rij.className = 'stempel-vlieg-rij';
+  rij.className = 'stempel-vlieg-rij' + (containerEl ? ' inline' : '');
   gekozenLanden.forEach(land=>{
     const img = document.createElement('img');
     img.className = 'stempel-vlieg-plaatje';
@@ -410,7 +432,7 @@ function toonVliegendeStempels(gekozenLanden, paspoortIconEl){
     img.alt = land.naam;
     rij.appendChild(img);
   });
-  document.body.appendChild(rij);
+  (containerEl || document.body).appendChild(rij);
   void rij.offsetWidth; // forceert reflow, zodat de intro-transitie echt start vanaf onzichtbaar
   rij.classList.add('zichtbaar');
 
@@ -792,10 +814,11 @@ function rondeKlaar(){
   const gekozenLanden = drempelBereikt ? kiesBonusLanden(aantalStempels) : [];
   document.getElementById('klaar-stempel').textContent =
     stempelMeldingTekst(drempelBereikt, gekozenLanden, 'Bijna! Vanaf 6 landen goed krijg je een landenstempel.');
+  document.getElementById('klaar-stempel-rij').innerHTML = '';
 
   bouwScorebordLijst(lijst, nieuweRun);
   toonScherm('scherm-klaar');
-  toonVliegendeStempels(gekozenLanden, document.getElementById('klaar-paspoort-icoon'));
+  toonVliegendeStempels(gekozenLanden, document.getElementById('klaar-paspoort-icoon'), document.getElementById('klaar-stempel-rij'));
 }
 
 // Scores bekijken vanuit het kies-scherm, zonder een ronde te spelen
@@ -808,6 +831,7 @@ function toonScorebordAlleen(catId){
   document.getElementById('klaar-titel').textContent = 'Scores — '+cat.naam;
   document.getElementById('klaar-resultaat').textContent = '';
   document.getElementById('klaar-stempel').textContent = '';
+  document.getElementById('klaar-stempel-rij').innerHTML = '';
   bouwScorebordLijst(ladenRaadspelScores(catId), null);
   toonScherm('scherm-klaar');
 }
