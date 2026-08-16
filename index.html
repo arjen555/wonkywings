@@ -1027,7 +1027,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.47</div>
+  <div id="versie-label">v0.3.48</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1242,7 +1242,7 @@
       </div>
     </div>
     <div id="scorebord-stempel" class="stempel-melding"></div>
-    <button id="scorebord-terug-btn" onclick="naarStart()"><img src="images/terug-naar-start-knop.png" alt="Terug naar menu"/></button>
+    <button id="scorebord-terug-btn" onclick="terugNaarStartMetStempels()"><img src="images/terug-naar-start-knop.png" alt="Terug naar menu"/></button>
     <img id="scorebord-paspoort-icoon" class="eindscherm-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="window.location.href='paspoort.html'"/>
   </div>
 </div>
@@ -1258,7 +1258,7 @@
     <div id="hoofdsteden-resultaat-titel">🏆 Klaar!</div>
     <div id="hoofdsteden-resultaat-score"></div>
     <div id="hoofdsteden-resultaat-stempel" class="stempel-melding"></div>
-    <button id="hoofdsteden-resultaat-terug-btn" onclick="naarStart()"><img src="images/terug-naar-start-knop.png" alt="Terug naar menu"/></button>
+    <button id="hoofdsteden-resultaat-terug-btn" onclick="terugNaarStartMetStempels()"><img src="images/terug-naar-start-knop.png" alt="Terug naar menu"/></button>
     <img id="hoofdsteden-resultaat-paspoort-icoon" class="eindscherm-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="window.location.href='paspoort.html'"/>
   </div>
 </div>
@@ -1413,7 +1413,7 @@
       <div id="plekken-eind-tabel"></div>
       <div id="plekken-eind-totaal"></div>
       <div id="plekken-eind-stempel" class="stempel-melding"></div>
-      <button id="plekken-eind-verder" onclick="naarStart()"><img src="images/terug-naar-start-knop.png" alt="Terug naar het menu"/></button>
+      <button id="plekken-eind-verder" onclick="terugNaarStartMetStempels()"><img src="images/terug-naar-start-knop.png" alt="Terug naar het menu"/></button>
       <img id="plekken-eind-paspoort-icoon" class="eindscherm-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="window.location.href='paspoort.html'"/>
     </div>
   </div>
@@ -3232,19 +3232,72 @@ function stempelMeldingTekstVoorRonde(gekozenLanden){
 }
 // ── Landenpaspoort: verdiende stempels laten "vliegen" naar het paspoort-
 // icoon ── Toont de zojuist verdiende stempelplaatjes bovenaan het scherm,
-// naast elkaar, zodat je ze eerst even rustig kunt bekijken - en laat ze
-// daarna (na STEMPEL_VLIEG_PAUZE_MS) één voor één naar het paspoort-icoontje
-// van het huidige eindscherm vliegen, als teken dat ze daar terechtkomen.
-// Doet niets als er niks te vieren valt of het scherm (nog) geen icoon heeft.
+// naast elkaar, zodat je ze eerst rustig kunt bekijken. Op de evaluatie-
+// schermen (Europa/Wereld, Hoofdsteden, Iconische plekken - te herkennen
+// aan de meegegeven ankerEl, het trofee-blok) blijven ze gewoon staan tot
+// de speler zelf op "terug naar start" drukt: pas dan vliegen ze weg, zie
+// terugNaarStartMetStempels(). Elders (bijv. het rad van fortuin, midden in
+// het spel, geen ankerEl) vliegen ze zoals altijd vanzelf weg na een korte
+// pauze. Doet niets als er niks te vieren valt of het scherm (nog) geen
+// icoon heeft.
 const STEMPEL_VLIEG_PAUZE_MS = 3000;
 const STEMPEL_VLIEG_DUUR_MS = 850;
+// Welke stempelrij er (op een evaluatiescherm) klaarstaat om weg te vliegen
+// zodra de speler op "terug naar start" drukt. Er is er nooit meer dan één
+// tegelijk, want er is maar één eindscherm tegelijk in beeld.
+let wachtendeStempels = null;
+
+// De eigenlijke vlucht-animatie: laat elk stempeltje in de rij na elkaar
+// naar het paspoort-icoontje vliegen, en ruimt de rij daarna op. 'klaar'
+// (optioneel) wordt aangeroepen zodra alles - ook het laatste plaatje - is
+// aangekomen en opgeruimd.
+function startStempelVlucht(rij, paspoortIconEl, klaar){
+  if(!document.body.contains(paspoortIconEl) || !document.body.contains(rij)){
+    // Scherm is inmiddels al weg (bijv. heel snel twee keer geklikt) - niets
+    // meer te vliegen, meteen door naar wat daarna moest gebeuren.
+    if(klaar) klaar();
+    return;
+  }
+  const doelRect = paspoortIconEl.getBoundingClientRect();
+  const doelX = doelRect.left + doelRect.width*0.5;
+  const doelY = doelRect.top + doelRect.height*0.5;
+  const plaatjes = Array.from(rij.children);
+  plaatjes.forEach((img, i)=>{
+    setTimeout(()=>{
+      const startRect = img.getBoundingClientRect();
+      // Loskoppelen van de rij en zelf 'fixed' verder laten vliegen, zodat
+      // elk plaatje onafhankelijk van de andere zijn eigen pad aflegt.
+      document.body.appendChild(img);
+      img.style.position = 'fixed';
+      img.style.margin = '0';
+      img.style.left = startRect.left+'px';
+      img.style.top = startRect.top+'px';
+      img.style.width = startRect.width+'px';
+      void img.offsetWidth;
+      img.style.transition = 'left '+STEMPEL_VLIEG_DUUR_MS+'ms cubic-bezier(.4,0,.6,1), '
+        +'top '+STEMPEL_VLIEG_DUUR_MS+'ms cubic-bezier(.4,0,.6,1), '
+        +'width '+STEMPEL_VLIEG_DUUR_MS+'ms ease-in, opacity '+STEMPEL_VLIEG_DUUR_MS+'ms ease-in';
+      img.style.left = (doelX-9)+'px';
+      img.style.top = (doelY-9)+'px';
+      img.style.width = '18px';
+      img.style.opacity = '0.15';
+      setTimeout(()=>{ img.remove(); }, STEMPEL_VLIEG_DUUR_MS+60);
+    }, i*220); // kleine vertraging tussen de plaatjes, zodat ze na elkaar vliegen i.p.v. als één klomp
+  });
+  setTimeout(()=>{
+    rij.remove();
+    if(klaar) klaar();
+  }, plaatjes.length*220 + STEMPEL_VLIEG_DUUR_MS + 150);
+}
+
 function toonVliegendeStempels(gekozenLanden, paspoortIconEl, ankerEl){
   // De stempelrij staat los van de normale pagina-opmaak (position:fixed, zie
   // CSS), dus die claimt normaal gesproken géén ruimte - de kaart eronder
   // schuift er niet automatisch voor opzij. Daarom eerst altijd de eventueel
-  // van een vórige ronde nog openstaande reservering opheffen; hieronder
-  // wordt 'm opnieuw gezet als dat nu weer nodig is.
+  // van een vórige ronde nog openstaande reservering (en wachtende vlucht)
+  // opheffen; hieronder wordt alles opnieuw gezet als dat nu weer nodig is.
   if(ankerEl) ankerEl.style.marginBottom = '';
+  wachtendeStempels = null;
   if(!gekozenLanden || !gekozenLanden.length || !paspoortIconEl) return;
   const rij = document.createElement('div');
   rij.className = 'stempel-vlieg-rij';
@@ -3274,42 +3327,31 @@ function toonVliegendeStempels(gekozenLanden, paspoortIconEl, ankerEl){
   void rij.offsetWidth; // forceert reflow, zodat de intro-transitie echt start vanaf onzichtbaar
   rij.classList.add('zichtbaar');
 
-  setTimeout(()=>{
-    if(!document.body.contains(paspoortIconEl)) return; // scherm inmiddels weg (bijv. snel terug naar menu)
-    const doelRect = paspoortIconEl.getBoundingClientRect();
-    const doelX = doelRect.left + doelRect.width*0.5;
-    const doelY = doelRect.top + doelRect.height*0.5;
-    const plaatjes = Array.from(rij.children);
-    plaatjes.forEach((img, i)=>{
-      setTimeout(()=>{
-        const startRect = img.getBoundingClientRect();
-        // Loskoppelen van de rij en zelf 'fixed' verder laten vliegen, zodat
-        // elk plaatje onafhankelijk van de andere zijn eigen pad aflegt.
-        document.body.appendChild(img);
-        img.style.position = 'fixed';
-        img.style.margin = '0';
-        img.style.left = startRect.left+'px';
-        img.style.top = startRect.top+'px';
-        img.style.width = startRect.width+'px';
-        void img.offsetWidth;
-        img.style.transition = 'left '+STEMPEL_VLIEG_DUUR_MS+'ms cubic-bezier(.4,0,.6,1), '
-          +'top '+STEMPEL_VLIEG_DUUR_MS+'ms cubic-bezier(.4,0,.6,1), '
-          +'width '+STEMPEL_VLIEG_DUUR_MS+'ms ease-in, opacity '+STEMPEL_VLIEG_DUUR_MS+'ms ease-in';
-        img.style.left = (doelX-9)+'px';
-        img.style.top = (doelY-9)+'px';
-        img.style.width = '18px';
-        img.style.opacity = '0.15';
-        setTimeout(()=>{ img.remove(); }, STEMPEL_VLIEG_DUUR_MS+60);
-      }, i*220); // kleine vertraging tussen de plaatjes, zodat ze na elkaar vliegen i.p.v. als één klomp
-    });
-    setTimeout(()=>{
-      rij.remove();
-      // Nu de stempels weg zijn, hoeft de trofee de ruimte niet langer vrij
-      // te houden - de kaart schuift (zonder animatie, maar dat valt na dit
-      // hele moment niet meer op) weer gewoon terug omhoog.
-      if(ankerEl) ankerEl.style.marginBottom = '';
-    }, plaatjes.length*220 + STEMPEL_VLIEG_DUUR_MS + 150);
-  }, STEMPEL_VLIEG_PAUZE_MS);
+  if(ankerEl){
+    // Evaluatiescherm: wachten met vliegen tot de speler zelf op "terug naar
+    // start" drukt (of Enter/X drukt, bij Plekken) - zie
+    // terugNaarStartMetStempels().
+    wachtendeStempels = { rij, paspoortIconEl, ankerEl };
+  } else {
+    // Geen evaluatiescherm (bijv. het rad van fortuin): het oude gedrag,
+    // vanzelf wegvliegen na een vaste pauze.
+    setTimeout(()=>{ startStempelVlucht(rij, paspoortIconEl, null); }, STEMPEL_VLIEG_PAUZE_MS);
+  }
+}
+
+// Aan de "terug naar start"-knoppen van de evaluatieschermen gekoppeld (i.p.v.
+// rechtstreeks naarStart()): staat er nog een stempelrij te wachten, dan
+// vliegt die eerst naar het paspoort-icoontje, en pas een half secondje ná
+// die vlucht gaat het scherm echt naar het startmenu. Stond er niets te
+// wachten (geen nieuwe stempels dit potje), dan gaat het gewoon meteen terug.
+function terugNaarStartMetStempels(){
+  const wachtend = wachtendeStempels;
+  wachtendeStempels = null;
+  if(!wachtend){ naarStart(); return; }
+  startStempelVlucht(wachtend.rij, wachtend.paspoortIconEl, ()=>{
+    if(wachtend.ankerEl) wachtend.ankerEl.style.marginBottom = '';
+    setTimeout(naarStart, 500);
+  });
 }
 // Vult transparante randen/hoekjes van een illustratie automatisch op door
 // de kleur van het dichtstbijzijnde getekende pixel naar buiten te laten
@@ -7674,10 +7716,11 @@ document.addEventListener('keydown',e=>{
   if((e.key==='j'||e.key==='J')&&spelActief&&huidigModus==='spelen'){
     gebruikJoker();
   }
-  // Vanaf het Plekken-eindoverzicht gaat Enter direct terug naar het menu,
-  // net als de knop 'Terug naar het menu' zelf.
+  // Vanaf het Plekken-eindoverzicht gaat Enter terug naar het menu, net als
+  // de knop 'Terug naar het menu' zelf (inclusief de stempel-vlucht, zie
+  // terugNaarStartMetStempels()).
   if(e.key==='Enter' && document.getElementById('plekken-eind-overlay').style.display==='flex'){
-    naarStart();
+    terugNaarStartMetStempels();
     return;
   }
   if(e.key==='Enter'&&spelActief&&huidigModus==='spelen'){
