@@ -1027,7 +1027,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.50</div>
+  <div id="versie-label">v0.3.52</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1675,30 +1675,27 @@ const MENU = [
   {
     id: 'wereld', label: 'Wereld', icoon: '<img src="images/wereld-icoon.png" alt="Wereld"/>', kleur: '#1a7a4a',
     levels: [
-      { id:'w-alles', naam:'Alle landen wereld', kort:'Alle landen', start:{lon:0, lat:20},
-        landen:["Indonesië","Maleisië","Chili","Bolivia","Peru","Argentinië","Cyprus","India","China","Israël","Palestina","Libanon","Ethiopië","Zuid-Soedan","Somalië","Kenia","Malawi","Tanzania","Syrië","Frankrijk","Suriname","Guyana","Zuid-Korea","Noord-Korea","Marokko","Westelijke Sahara","Costa Rica","Nicaragua","Congo-Brazzaville","Congo-Kinshasa","Bhutan","Oekraïne","Wit-Rusland","Namibië","Zuid-Afrika","Oman","Oezbekistan","Kazachstan","Tadzjikistan","Litouwen","Brazilië","Uruguay","Mongolië","Rusland","Tsjechië","Duitsland","Estland","Letland","Noorwegen","Zweden","Finland","Vietnam","Cambodja","Luxemburg","Verenigde Arabische Emiraten","België","Georgië","Noord-Macedonië","Albanië","Azerbeidzjan","Kosovo","Turkije","Spanje","Laos","Kirgizië","Armenië","Denemarken","Libië","Tunesië","Roemenië","Hongarije","Slowakije","Polen","Ierland","Verenigd Koninkrijk","Griekenland","Zambia","Sierra Leone","Guinee","Liberia","Centraal-Afrikaanse Republiek","Soedan","Djibouti","Eritrea","Oostenrijk","Irak","Italië","Zwitserland","Iran","Nederland","Ivoorkust","Servië","Mali","Senegal","Nigeria","Benin","Angola","Kroatië","Slovenië","Qatar","Saoedi-Arabië","Botswana","Zimbabwe","Pakistan","Bulgarije","Thailand","Haïti","Dominicaanse Republiek","Tsjaad","Koeweit","El Salvador","Guatemala","Oost-Timor","Algerije","Mozambique","Burundi","Rwanda","Myanmar","Bangladesh","Afghanistan","Montenegro","Bosnië-Herzegovina","Oeganda","Cuba","Honduras","Ecuador","Colombia","Paraguay","Portugal","Moldavië","Jordanië","Nepal","Lesotho","Kameroen","Gabon","Niger","Burkina Faso","Togo","Ghana","Guinee-Bissau","Gibraltar","Verenigde Staten","Canada","Mexico","Belize","Panama","Venezuela","Papoea-Nieuw-Guinea","Egypte","Jemen","Mauritanië","Equatoriaal-Guinea","Gambia","Antarctica","Australië","Groenland","Fiji","Nieuw-Zeeland","Madagaskar","Filipijnen","Sri Lanka","Taiwan","Japan","IJsland","Jamaica","Singapore","Bahrein"],
-        altijd_alle:false, beschikbaar:true },
-      { id:'w-makkelijk', naam:'Makkelijke landen', kort:'Makk. landen', start:{lon:0, lat:20},
-        landen:["Frankrijk","Spanje","Nederland","Italië","Duitsland","Verenigd Koninkrijk","Turkije","Verenigde Staten","Canada","Mexico","Brazilië","China","India","Japan","Indonesië","Australië","Zuid-Afrika","Rusland"],
-        altijd_alle:false, beschikbaar:true },
       { id:'w-amerika', naam:'Noord-Amerika', start:{lon:-80, lat:15},
         landen:["Canada","Verenigde Staten","Mexico","Guatemala","Belize","Honduras","El Salvador","Nicaragua","Costa Rica","Panama","Cuba","Haïti","Dominicaanse Republiek","Jamaica"],
         altijd_alle:false, beschikbaar:true },
       { id:'w-zuid-amerika', naam:'Zuid-Amerika', start:{lon:-60, lat:-15},
         landen:["Colombia","Venezuela","Guyana","Suriname","Frans Guyana","Brazilië","Ecuador","Peru","Bolivia","Chili","Argentinië","Uruguay","Paraguay"],
         altijd_alle:false, beschikbaar:true },
-      { id:'w-azie', naam:'Azië & Oceanië', kort:'Azië & Oc.', start:{lon:100, lat:20},
-        landen:["Rusland","China","India","Japan","Zuid-Korea","Noord-Korea","Mongolië","Kazachstan","Oezbekistan","Turkmenistan","Kirgizië","Tadzjikistan","Afghanistan","Pakistan","Iran","Irak","Saoedi-Arabië","Jemen","Oman","Verenigde Arabische Emiraten","Qatar","Koeweit","Jordanië","Israël","Libanon","Syrië","Turkije","Azerbeidzjan","Georgië","Armenië","Nepal","Bhutan","Bangladesh","Myanmar","Thailand","Vietnam","Cambodja","Laos","Maleisië","Indonesië","Filipijnen","Taiwan","Singapore","Sri Lanka","Australië","Nieuw-Zeeland","Papoea-Nieuw-Guinea"],
-        altijd_alle:false, beschikbaar:true },
       { id:'w-afrika', naam:'Afrika', start:{lon:20, lat:5},
         landen:["Marokko","Algerije","Tunesië","Libië","Egypte","Mauritanië","Mali","Niger","Tsjaad","Soedan","Ethiopië","Eritrea","Djibouti","Somalië","Kenia","Tanzania","Mozambique","Zimbabwe","Zuid-Afrika","Namibië","Botswana","Angola","Zambia","Malawi","Madagaskar","Congo-Kinshasa","Congo-Brazzaville","Gabon","Kameroen","Nigeria","Centraal-Afrikaanse Republiek","Zuid-Soedan","Oeganda","Rwanda","Burundi","Ghana","Ivoorkust","Senegal","Gambia","Guinee","Sierra Leone","Liberia","Burkina Faso","Benin","Togo","Equatoriaal-Guinea"],
         altijd_alle:false, beschikbaar:true },
-      { id:'w-water', naam:'Water Wonder', start:{lon:10, lat:50},
-        landen:[], altijd_alle:false, beschikbaar:false },
-      { id:'w-kleinmaarfijn', naam:'Klein maar fijn', start:{lon:0, lat:10},
-        landen:["Tonga","Samoa","Salomonseilanden","Tuvalu","Nauru","Micronesia","Palau","Vanuatu","Nieuw-Caledonië","Frans-Polynesië","Trinidad en Tobago","Grenada","Barbados","Saint Lucia","Dominica","Antigua en Barbuda","Saint Kitts en Nevis","Seychellen","Comoren","Sao Tomé en Principe","Kaapverdië","Mauritius","Maldiven","San Marino","Vaticaanstad","Monaco","Andorra","Liechtenstein","Malta","Faeröer","Brunei","Falklandeilanden"],
+      { id:'w-azie', naam:'Azië', start:{lon:100, lat:20},
+        landen:["Rusland","China","India","Japan","Zuid-Korea","Noord-Korea","Mongolië","Kazachstan","Oezbekistan","Turkmenistan","Kirgizië","Tadzjikistan","Afghanistan","Pakistan","Iran","Irak","Saoedi-Arabië","Jemen","Oman","Verenigde Arabische Emiraten","Qatar","Koeweit","Jordanië","Israël","Libanon","Syrië","Turkije","Azerbeidzjan","Georgië","Armenië","Nepal","Bhutan","Bangladesh","Myanmar","Thailand","Vietnam","Cambodja","Laos","Maleisië","Indonesië","Filipijnen","Taiwan","Singapore","Sri Lanka"],
         altijd_alle:false, beschikbaar:true },
-    
+      { id:'w-oceanie', naam:'Oceanië', start:{lon:165, lat:-15},
+        landen:["Australië","Nieuw-Zeeland","Papoea-Nieuw-Guinea","Fiji","Vanuatu","Nieuw-Caledonië","Salomonseilanden","Samoa","Tonga","Tuvalu","Nauru","Micronesia","Palau","Frans-Polynesië"],
+        altijd_alle:false, beschikbaar:true },
+      { id:'w-kleinmaarfijn', naam:'Klein maar fijn', start:{lon:0, lat:10},
+        landen:["Trinidad en Tobago","Grenada","Barbados","Saint Lucia","Dominica","Antigua en Barbuda","Saint Kitts en Nevis","Seychellen","Comoren","Sao Tomé en Principe","Kaapverdië","Mauritius","Maldiven","San Marino","Vaticaanstad","Monaco","Andorra","Liechtenstein","Malta","Faeröer","Brunei","Falklandeilanden"],
+        altijd_alle:false, beschikbaar:true },
+      { id:'w-alles', naam:'Alle landen wereld', kort:'Alle landen', start:{lon:0, lat:20},
+        landen:["Indonesië","Maleisië","Chili","Bolivia","Peru","Argentinië","Cyprus","India","China","Israël","Palestina","Libanon","Ethiopië","Zuid-Soedan","Somalië","Kenia","Malawi","Tanzania","Syrië","Frankrijk","Suriname","Guyana","Zuid-Korea","Noord-Korea","Marokko","Westelijke Sahara","Costa Rica","Nicaragua","Congo-Brazzaville","Congo-Kinshasa","Bhutan","Oekraïne","Wit-Rusland","Namibië","Zuid-Afrika","Oman","Oezbekistan","Kazachstan","Tadzjikistan","Litouwen","Brazilië","Uruguay","Mongolië","Rusland","Tsjechië","Duitsland","Estland","Letland","Noorwegen","Zweden","Finland","Vietnam","Cambodja","Luxemburg","Verenigde Arabische Emiraten","België","Georgië","Noord-Macedonië","Albanië","Azerbeidzjan","Kosovo","Turkije","Spanje","Laos","Kirgizië","Armenië","Denemarken","Libië","Tunesië","Roemenië","Hongarije","Slowakije","Polen","Ierland","Verenigd Koninkrijk","Griekenland","Zambia","Sierra Leone","Guinee","Liberia","Centraal-Afrikaanse Republiek","Soedan","Djibouti","Eritrea","Oostenrijk","Irak","Italië","Zwitserland","Iran","Nederland","Ivoorkust","Servië","Mali","Senegal","Nigeria","Benin","Angola","Kroatië","Slovenië","Qatar","Saoedi-Arabië","Botswana","Zimbabwe","Pakistan","Bulgarije","Thailand","Haïti","Dominicaanse Republiek","Tsjaad","Koeweit","El Salvador","Guatemala","Oost-Timor","Algerije","Mozambique","Burundi","Rwanda","Myanmar","Bangladesh","Afghanistan","Montenegro","Bosnië-Herzegovina","Oeganda","Cuba","Honduras","Ecuador","Colombia","Paraguay","Portugal","Moldavië","Jordanië","Nepal","Lesotho","Kameroen","Gabon","Niger","Burkina Faso","Togo","Ghana","Guinee-Bissau","Gibraltar","Verenigde Staten","Canada","Mexico","Belize","Panama","Venezuela","Papoea-Nieuw-Guinea","Egypte","Jemen","Mauritanië","Equatoriaal-Guinea","Gambia","Antarctica","Australië","Groenland","Fiji","Nieuw-Zeeland","Madagaskar","Filipijnen","Sri Lanka","Taiwan","Japan","IJsland","Jamaica","Singapore","Bahrein"],
+        altijd_alle:false, beschikbaar:true },
     ]
   },
   {
@@ -3595,7 +3592,7 @@ function startSpel(levelId, modus) {
     positioneerPlekScorebord();
   }
 
-  // Intro-glow: alleen voor geografische levels (niet Water Wonder)
+  // Intro-glow: alleen voor geografische levels met landen om te raden
   const doIntro = spelLanden.length > 0 && modus !== 'verkennen';
   if(doIntro){
     introActief = true;
