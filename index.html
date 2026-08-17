@@ -287,6 +287,38 @@
       display:none; font-family:'Baloo 2',sans-serif; font-size:1rem; font-weight:700;
       color:rgba(255,255,255,0.55); text-align:center; letter-spacing:0.3px;
     }
+    /* ── Melding bij een verdiend werelddeel-embleem: verschijnt zodra het
+       laatste land van een werelddeel (of alle 6 werelddelen, voor het
+       Topografie-embleem) in het paspoort is beland. Sluit vanzelf na een
+       paar seconden, of eerder op een klik. ── */
+    #embleem-melding-overlay {
+      display:none; position:fixed; inset:0; z-index:1002;
+      background:rgba(0,0,0,0.72); backdrop-filter:blur(4px);
+      align-items:center; justify-content:center; cursor:pointer;
+    }
+    #embleem-melding-overlay.toon { display:flex; }
+    #embleem-melding-kaart {
+      background:linear-gradient(145deg,#3a2408,#1c1204);
+      border:2px solid rgba(255,215,0,0.55);
+      border-radius:24px; padding:40px 46px; width:min(420px,88vw);
+      box-shadow:0 20px 70px rgba(0,0,0,0.8), inset 0 0 30px rgba(255,215,0,0.06);
+      display:flex; flex-direction:column; gap:20px; align-items:center;
+      animation:embleemPulse 0.5s ease;
+    }
+    #embleem-melding-img {
+      width:min(220px,50vw); aspect-ratio:1/1; display:block;
+      filter:drop-shadow(0 10px 26px rgba(0,0,0,0.5));
+    }
+    #embleem-melding-tekst {
+      font-family:'Baloo 2',sans-serif; font-size:1.3rem; font-weight:800;
+      color:#ffe9a8; text-align:center; line-height:1.35;
+      text-shadow:0 2px 8px rgba(0,0,0,0.5);
+    }
+    @keyframes embleemPulse {
+      0% { transform:scale(0.7); opacity:0; }
+      60% { transform:scale(1.06); opacity:1; }
+      100% { transform:scale(1); opacity:1; }
+    }
     /* ── Rad van fortuin ── */
     #rad-popup {
       display:none; position:fixed; inset:0; z-index:997;
@@ -951,6 +983,29 @@
       font-size:clamp(1.1rem,2.6vmin,1.9rem);
     }
 
+    /* ── Verdiende werelddeel-emblemen: onder elkaar, links onder het
+       werelddeel/speler-bord (of onder het Plekken-scorebord, als dat er
+       ook staat) - zie positioneerEmblemenStapel(). Zo groot als de twee
+       gemarkeerde plekjes in het ontwerp. ── */
+    #embleem-stapel {
+      position:fixed; left:clamp(10px,2vmin,24px); top:120px; z-index:21;
+      display:none; flex-direction:column; gap:10px;
+      pointer-events:none;
+    }
+    .embleem-icoon {
+      position:relative;
+      width:clamp(46px, 4.2vw, 78px); aspect-ratio:1/1; display:block;
+      border-radius:50%; cursor:pointer; pointer-events:all;
+      filter:drop-shadow(0 3px 10px rgba(0,0,0,0.55));
+      transition:transform 0.25s ease;
+      transform-origin:top left;
+    }
+    /* Klik: tijdelijk 4x uitvergroot (3 sec, zie toonEmbleemUitvergroot()).
+       transform-origin op de linkerbovenhoek, zodat het embleem naar rechts
+       en beneden uitdijt in plaats van (deels) van het scherm af te vallen
+       aan de linkerrand waar de stapel al staat. */
+    .embleem-icoon.uitvergroot { transform:scale(4); z-index:5; }
+
     /* ── Opbouwschermpje per plek ── */
     #plek-uitslag-overlay {
       position:fixed; inset:0; z-index:70; display:none;
@@ -1027,7 +1082,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.52</div>
+  <div id="versie-label">v0.3.53</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1092,6 +1147,15 @@
     <div id="kennisvraag-tekst"></div>
     <div id="kennisvraag-opties"></div>
     <div id="kennisvraag-verdergaan">Klik, tik of druk op een knop om verder te gaan</div>
+  </div>
+</div>
+
+<!-- Melding bij een zojuist verdiend werelddeel-embleem (of het
+     Topografie-embleem) - zie meldNieuweEmblemen()/volgendeEmbleemMelding(). -->
+<div id="embleem-melding-overlay" onclick="sluitEmbleemMelding()">
+  <div id="embleem-melding-kaart">
+    <img id="embleem-melding-img" src="" alt=""/>
+    <div id="embleem-melding-tekst"></div>
   </div>
 </div>
 
@@ -1386,6 +1450,12 @@
     <img id="plek-scorebord-img" src="images/score.png" alt="Score"/>
     <span id="plek-scorebord-cijfer">0</span>
   </div>
+
+  <!-- Verzamelde werelddeel-emblemen: verschijnt links, onder het
+       werelddeel/speler-bord (bij Plekken onder het Score-bordje) - zie
+       bouwEmblemenStapel()/positioneerEmblemenStapel(). In alle spelmodi
+       (Raad je plaatje leeft in een apart bestand en heeft dit niet). -->
+  <div id="embleem-stapel"></div>
 
   <!-- Opbouwschermpje na elke correctievlucht: laat zien hoe de punten voor
        déze ene plek tot stand kwamen (land / afstand / snelheid). -->
@@ -3175,6 +3245,8 @@ function verdienStempelVoorLand(naam){
   if(lijst.includes(entry.bestand)) return null;
   lijst.push(entry.bestand);
   localStorage.setItem(stempelsSleutelVoorSpeler(), JSON.stringify(lijst));
+  bouwEmblemenStapel();
+  meldNieuweEmblemen(nieuwVerdiendeEmblemen());
   return entry;
 }
 // Kiest 'aantal' nieuwe verrassingslanden (nog niet verdiend) als beloning
@@ -3190,7 +3262,11 @@ function kiesBonusLanden(aantal){
   const volgorde = [...nogNiet(KLEIN_MAAR_FIJN_BESTANDEN), ...nogNiet(overigeBestanden)];
   const gekozenBestanden = volgorde.slice(0, aantal);
   gekozenBestanden.forEach(b=>lijst.push(b));
-  if(gekozenBestanden.length) localStorage.setItem(stempelsSleutelVoorSpeler(), JSON.stringify(lijst));
+  if(gekozenBestanden.length){
+    localStorage.setItem(stempelsSleutelVoorSpeler(), JSON.stringify(lijst));
+    bouwEmblemenStapel();
+    meldNieuweEmblemen(nieuwVerdiendeEmblemen());
+  }
   return gekozenBestanden.map(b=>PASPOORT_LANDEN.find(p=>p.bestand===b));
 }
 // Bouwt de tekst voor een eindscherm op basis van de daadwerkelijk gekozen
@@ -3227,6 +3303,141 @@ function stempelMeldingTekstVoorRonde(gekozenLanden){
   const laatste = namen.pop();
   return 'Wat een score!\nJe wint maar liefst '+gekozenLanden.length+' landenstempels: '+namen.join(', ')+' en '+laatste+'!';
 }
+
+// ── Landenpaspoort: werelddeel-emblemen ────────────────────────────────
+// Vaste volgorde waarin verdiende emblemen onder elkaar in de stapel
+// verschijnen. Compleet = alle landen van die continent-code (uit
+// PASPOORT_LANDEN) staan als stempel in het paspoort. "Overig"
+// (Antarctica/Noordpool) heeft geen eigen embleem en telt dus ook niet mee.
+const WERELDDEEL_EMBLEMEN = [
+  {code:'EU', naam:'Europa',        bestand:'Europa_Master'},
+  {code:'AF', naam:'Afrika',        bestand:'Afrika_Master'},
+  {code:'AS', naam:'Azië',          bestand:'Azie_Master'},
+  {code:'OC', naam:'Oceanië',       bestand:'Oceanie_Master'},
+  {code:'NA', naam:'Noord-Amerika', bestand:'Noord-Amerika_Master'},
+  {code:'ZA', naam:'Zuid-Amerika',  bestand:'Zuid-Amerika_Master'},
+];
+// Het topografie-embleem: pas verdiend zodra alle 6 werelddeel-emblemen
+// hierboven binnen zijn.
+const TOPOGRAFIE_EMBLEEM = {code:'TOPO', naam:'Topografie', bestand:'Topografie_Master'};
+
+// Is elk land van dit werelddeel (continent-code) als stempel verdiend?
+function werelddeelCompleet(code){
+  const landen = PASPOORT_LANDEN.filter(p=>p.continent===code);
+  if(!landen.length) return false;
+  const lijst = geefVerdiendeStempels();
+  return landen.every(p=>lijst.includes(p.bestand));
+}
+// Alle emblemen die deze speler nu heeft verdiend, in vaste volgorde - met
+// het topografie-embleem als laatste, zodra alle 6 werelddelen compleet zijn.
+function verdiendeEmblemen(){
+  const emblemen = WERELDDEEL_EMBLEMEN.filter(e=>werelddeelCompleet(e.code));
+  if(emblemen.length === WERELDDEEL_EMBLEMEN.length) emblemen.push(TOPOGRAFIE_EMBLEEM);
+  return emblemen;
+}
+// Welke emblemen deze speler al eerder als melding te zien heeft gekregen -
+// per speler opgeslagen (net als de stempels zelf), zodat de "verdiend!"-
+// melding maar één keer per embleem verschijnt.
+function getoondeEmblemenSleutel(){
+  const naam = localStorage.getItem(SPELERNAAM_SLEUTEL) || 'Speler';
+  return 'wonkywings_getoonde_emblemen::' + naam;
+}
+function geefGetoondeEmblemen(){
+  try{ return JSON.parse(localStorage.getItem(getoondeEmblemenSleutel())||'[]'); }catch(e){ return []; }
+}
+// Vergelijkt de op dit moment verdiende emblemen met wat al eerder getoond
+// is, markeert de nieuwe meteen als getoond en geeft alleen de nieuwe terug.
+function nieuwVerdiendeEmblemen(){
+  const nu = verdiendeEmblemen();
+  const getoond = geefGetoondeEmblemen();
+  const nieuw = nu.filter(e=>!getoond.includes(e.bestand));
+  if(nieuw.length){
+    const bijgewerkt = getoond.concat(nieuw.map(e=>e.bestand));
+    localStorage.setItem(getoondeEmblemenSleutel(), JSON.stringify(bijgewerkt));
+  }
+  return nieuw;
+}
+// Bouwt de rij verdiende emblemen opnieuw op (bij het starten van een
+// ronde, en telkens als er onderweg een stempel bijkomt), links onder het
+// werelddeel/speler-bord.
+function bouwEmblemenStapel(){
+  const stapel = document.getElementById('embleem-stapel');
+  if(!stapel) return;
+  const emblemen = verdiendeEmblemen();
+  stapel.innerHTML = '';
+  emblemen.forEach(e=>{
+    const img = document.createElement('img');
+    img.className = 'embleem-icoon';
+    img.src = 'images/emblemen/' + e.bestand + '.png';
+    img.alt = e.naam + ' Master';
+    img.title = e.naam + ' Master';
+    img.onclick = () => toonEmbleemUitvergroot(img);
+    stapel.appendChild(img);
+  });
+  positioneerEmblemenStapel();
+}
+// Vergroot een embleem tijdelijk 4x (3 seconden) zodat je het beter kunt
+// bekijken - daarna vanzelf weer terug naar normaal.
+function toonEmbleemUitvergroot(img){
+  document.querySelectorAll('.embleem-icoon.uitvergroot').forEach(el=>{
+    if(el!==img){ el.classList.remove('uitvergroot'); clearTimeout(el._embleemTimer); }
+  });
+  img.classList.add('uitvergroot');
+  clearTimeout(img._embleemTimer);
+  img._embleemTimer = setTimeout(()=>img.classList.remove('uitvergroot'), 3000);
+}
+// Plakt de embleem-stapel altijd onder het werelddeel/speler-bord - of, als
+// het Plekken-scorebord er ook staat, daar weer onder (anders overlappen
+// ze). Zelfde methode als positioneerPlekScorebord() hierboven.
+function positioneerEmblemenStapel(){
+  const stapel = document.getElementById('embleem-stapel');
+  const badge = document.getElementById('werelddeel-badge');
+  if(!stapel || !badge) return;
+  const plekBord = document.getElementById('plek-scorebord');
+  const anker = (plekBord && plekBord.style.display === 'block') ? plekBord : badge;
+  const r = anker.getBoundingClientRect();
+  const marge = 6;
+  stapel.style.left = Math.round(r.left) + 'px';
+  stapel.style.top = Math.round(r.bottom + marge) + 'px';
+}
+window.addEventListener('resize', positioneerEmblemenStapel);
+// Toont voor elk nieuw verdiend embleem een korte melding (tekst + het
+// embleem zelf) - één voor één als het er meerdere zijn, weg op een klik of
+// vanzelf na een paar seconden.
+let embleemMeldingWachtrij = [];
+let embleemMeldingTimer = null;
+function meldNieuweEmblemen(nieuw){
+  if(!nieuw || !nieuw.length) return;
+  embleemMeldingWachtrij.push(...nieuw);
+  if(embleemMeldingWachtrij.length === nieuw.length) volgendeEmbleemMelding();
+}
+function volgendeEmbleemMelding(){
+  const overlay = document.getElementById('embleem-melding-overlay');
+  if(!overlay) return;
+  clearTimeout(embleemMeldingTimer);
+  if(!embleemMeldingWachtrij.length){
+    overlay.classList.remove('toon');
+    return;
+  }
+  const embleem = embleemMeldingWachtrij.shift();
+  const img = document.getElementById('embleem-melding-img');
+  const tekst = document.getElementById('embleem-melding-tekst');
+  if(img) img.src = 'images/emblemen/' + embleem.bestand + '.png';
+  if(tekst){
+    tekst.textContent = (embleem.code === 'TOPO')
+      ? 'Ongelooflijk! Je hebt alle werelddelen compleet en verdient het Topografie-embleem!'
+      : 'Je hebt heel ' + embleem.naam + ' compleet in je paspoort - je verdient het ' + embleem.naam + ' Master-embleem!';
+  }
+  overlay.classList.add('toon');
+  embleemMeldingTimer = setTimeout(sluitEmbleemMelding, 4000);
+}
+function sluitEmbleemMelding(){
+  const overlay = document.getElementById('embleem-melding-overlay');
+  clearTimeout(embleemMeldingTimer);
+  if(overlay) overlay.classList.remove('toon');
+  setTimeout(volgendeEmbleemMelding, 350);
+}
+
 // ── Landenpaspoort: verdiende stempels laten "vliegen" naar het paspoort-
 // icoon ── Toont de zojuist verdiende stempelplaatjes bovenaan het scherm,
 // naast elkaar, zodat je ze eerst rustig kunt bekijken. Op de evaluatie-
@@ -3592,6 +3803,12 @@ function startSpel(levelId, modus) {
     positioneerPlekScorebord();
   }
 
+  // Verdiende werelddeel-emblemen: in elke spelmodus zichtbaar (Raad je
+  // plaatje leeft in een apart bestand en heeft dit niet). Pas nú het
+  // scherm zichtbaar is, anders levert de positionering weer 0x0 op.
+  document.getElementById('embleem-stapel').style.display = 'flex';
+  bouwEmblemenStapel();
+
   // Intro-glow: alleen voor geografische levels met landen om te raden
   const doIntro = spelLanden.length > 0 && modus !== 'verkennen';
   if(doIntro){
@@ -3656,6 +3873,7 @@ function naarStart(){
   stopPlekKalibratie();
   verbergPlekVenster();
   document.getElementById('spelscherm').style.display='none';
+  document.getElementById('embleem-stapel').style.display='none';
   document.getElementById('scorebord-scherm').style.display='none';
   document.getElementById('hoofdsteden-resultaat-scherm').style.display='none';
   document.getElementById('startscherm').style.display='flex';
