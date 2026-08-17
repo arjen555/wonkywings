@@ -1089,7 +1089,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.55</div>
+  <div id="versie-label">v0.3.56</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -3168,10 +3168,11 @@ const ZOOM_REFERENTIE_MAX = 4.5; // 'typisch' maximum voor het grootste (stabiel
 // doel toe. effectiefMaxGedempt vangt dat op: het schuift zelf ook geleidelijk
 // mee naar het nieuwe maximum, zodat er twee zachte overgangen na elkaar
 // optreden in plaats van één harde sprong gevolgd door één zachte. Bewust
-// even traag als ZOOM_SNELHEID, zodat de twee dempingen goed in verhouding
-// blijven met elkaar.
+// duidelijk trager dan ZOOM_SNELHEID: ook bij een gematigd contrast (zoals
+// India -> Nepal) moet de overgang merkbaar geleidelijk aanvoelen, niet alleen
+// bij extreme voorbeelden zoals een eilandje -> Rusland.
 let effectiefMaxGedempt = ZOOM_REFERENTIE_MAX;
-const EFFECTIEF_MAX_DEMPING = 0.07;
+const EFFECTIEF_MAX_DEMPING = 0.025;
 // Beide polen krijgen bewust exact dezelfde vaste waarde (in plaats van de
 // normale, per-land berekende zoom-afstand): zo staan ze bij 100% gegarandeerd
 // even ver van het ijs, ongeacht van welke kant je aankomt. Eén getal om aan
