@@ -511,7 +511,7 @@
       position:absolute; transform:translate(-50%,-50%);
       font-family:'Baloo 2',sans-serif; font-weight:800;
       color:#3b2411; text-align:center; white-space:nowrap;
-      font-size:clamp(0.5rem, 1.3vw, 0.72rem);
+      font-size:clamp(0.75rem, 2.1vw, 1.1rem);
     }
     #hoofdsteden-resultaat-kaart {
       background:linear-gradient(135deg, #0a2a4a 0%, #051e30 100%);
@@ -1027,7 +1027,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.48</div>
+  <div id="versie-label">v0.3.50</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1681,8 +1681,8 @@ const MENU = [
       { id:'w-makkelijk', naam:'Makkelijke landen', kort:'Makk. landen', start:{lon:0, lat:20},
         landen:["Frankrijk","Spanje","Nederland","Italië","Duitsland","Verenigd Koninkrijk","Turkije","Verenigde Staten","Canada","Mexico","Brazilië","China","India","Japan","Indonesië","Australië","Zuid-Afrika","Rusland"],
         altijd_alle:false, beschikbaar:true },
-      { id:'w-amerika', naam:'Amerika', start:{lon:-80, lat:15},
-        landen:["Canada","Verenigde Staten","Mexico","Guatemala","Belize","Honduras","El Salvador","Nicaragua","Costa Rica","Panama","Cuba","Haïti","Dominicaanse Republiek","Jamaica","Colombia","Venezuela","Guyana","Suriname","Frans Guyana","Brazilië","Ecuador","Peru","Bolivia","Chili","Argentinië","Uruguay","Paraguay"],
+      { id:'w-amerika', naam:'Noord-Amerika', start:{lon:-80, lat:15},
+        landen:["Canada","Verenigde Staten","Mexico","Guatemala","Belize","Honduras","El Salvador","Nicaragua","Costa Rica","Panama","Cuba","Haïti","Dominicaanse Republiek","Jamaica"],
         altijd_alle:false, beschikbaar:true },
       { id:'w-zuid-amerika', naam:'Zuid-Amerika', start:{lon:-60, lat:-15},
         landen:["Colombia","Venezuela","Guyana","Suriname","Frans Guyana","Brazilië","Ecuador","Peru","Bolivia","Chili","Argentinië","Uruguay","Paraguay"],
@@ -1710,8 +1710,8 @@ const MENU = [
       { id:'hs-west-europa', naam:'West-Europa', start:{lon:5, lat:50},
         landen:["Nederland","België","Duitsland","Frankrijk","Verenigd Koninkrijk","Ierland","Luxemburg","Oostenrijk","Zwitserland","Denemarken"],
         altijd_alle:false, beschikbaar:true, hoofdsteden:true },
-      { id:'hs-amerika', naam:'Amerika', start:{lon:-80, lat:15},
-        landen:["Canada","Verenigde Staten","Mexico","Guatemala","Belize","Honduras","El Salvador","Nicaragua","Costa Rica","Panama","Cuba","Haïti","Dominicaanse Republiek","Colombia","Venezuela","Guyana","Suriname","Frans Guyana","Brazilië","Ecuador","Peru","Bolivia","Chili","Argentinië","Uruguay","Paraguay"],
+      { id:'hs-amerika', naam:'Noord-Amerika', start:{lon:-80, lat:15},
+        landen:["Canada","Verenigde Staten","Mexico","Guatemala","Belize","Honduras","El Salvador","Nicaragua","Costa Rica","Panama","Cuba","Haïti","Dominicaanse Republiek"],
         altijd_alle:false, beschikbaar:true, hoofdsteden:true },
       { id:'hs-zuid-amerika', naam:'Zuid-Amerika', start:{lon:-60, lat:-15},
         landen:["Colombia","Venezuela","Guyana","Suriname","Frans Guyana","Brazilië","Ecuador","Peru","Bolivia","Chili","Argentinië","Uruguay","Paraguay"],
@@ -3341,16 +3341,16 @@ function toonVliegendeStempels(gekozenLanden, paspoortIconEl, ankerEl){
 
 // Aan de "terug naar start"-knoppen van de evaluatieschermen gekoppeld (i.p.v.
 // rechtstreeks naarStart()): staat er nog een stempelrij te wachten, dan
-// vliegt die eerst naar het paspoort-icoontje, en pas een half secondje ná
-// die vlucht gaat het scherm echt naar het startmenu. Stond er niets te
-// wachten (geen nieuwe stempels dit potje), dan gaat het gewoon meteen terug.
+// vliegt die eerst naar het paspoort-icoontje, en zodra die vlucht klaar is
+// gaat het scherm meteen naar het startmenu. Stond er niets te wachten (geen
+// nieuwe stempels dit potje), dan gaat het gewoon meteen terug.
 function terugNaarStartMetStempels(){
   const wachtend = wachtendeStempels;
   wachtendeStempels = null;
   if(!wachtend){ naarStart(); return; }
   startStempelVlucht(wachtend.rij, wachtend.paspoortIconEl, ()=>{
     if(wachtend.ankerEl) wachtend.ankerEl.style.marginBottom = '';
-    setTimeout(naarStart, 500);
+    naarStart();
   });
 }
 // Vult transparante randen/hoekjes van een illustratie automatisch op door
@@ -3885,7 +3885,7 @@ function toonScorebord(levelId, nieuweRun){
   let lijst=[];
   try{ lijst=JSON.parse(localStorage.getItem(scorebordSleutel(levelId))||'[]'); }catch(e){ lijst=[]; }
 
-  document.getElementById('scorebord-titel').textContent='🏆 Scorebord — '+lv.naam;
+  document.getElementById('scorebord-titel').textContent='Scorebord — '+lv.naam;
   // De losse "Jouw resultaat: ..."-regel is vervallen: die informatie staat
   // nu op het trofee-plaatje hierboven (zie toonTrofee() verderop).
   document.getElementById('scorebord-nieuwe-run').textContent = '';
