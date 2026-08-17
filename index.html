@@ -1005,6 +1005,13 @@
        en beneden uitdijt in plaats van (deels) van het scherm af te vallen
        aan de linkerrand waar de stapel al staat. */
     .embleem-icoon.uitvergroot { transform:scale(4); z-index:5; }
+    /* Topografie Master: 50% groter dan de andere emblemen in de stapel
+       (dat is het bijzonderste embleem, alle 6 werelddelen compleet). Bij
+       een klik moet de vergroting even groot uitkomen als bij de andere
+       emblemen - omdat dit embleem al 1.5x zo groot begint, is de eigen
+       schaalfactor dus 4 / 1.5 in plaats van 4. */
+    .embleem-icoon.embleem-icoon-topo { width:clamp(69px, 6.3vw, 117px); }
+    .embleem-icoon.embleem-icoon-topo.uitvergroot { transform:scale(2.6667); }
 
     /* ── Opbouwschermpje per plek ── */
     #plek-uitslag-overlay {
@@ -1082,7 +1089,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.53</div>
+  <div id="versie-label">v0.3.54</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -3367,7 +3374,7 @@ function bouwEmblemenStapel(){
   stapel.innerHTML = '';
   emblemen.forEach(e=>{
     const img = document.createElement('img');
-    img.className = 'embleem-icoon';
+    img.className = 'embleem-icoon' + (e.code === 'TOPO' ? ' embleem-icoon-topo' : '');
     img.src = 'images/emblemen/' + e.bestand + '.png';
     img.alt = e.naam + ' Master';
     img.title = e.naam + ' Master';
