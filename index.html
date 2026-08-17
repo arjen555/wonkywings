@@ -1089,7 +1089,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.54</div>
+  <div id="versie-label">v0.3.55</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -3160,6 +3160,18 @@ let zHoudSinds = 0, xHoudSinds = 0;
 const DOEL_LAND_HOOGTE_FRACTIE = 0.65; // land moet 65% schermhoogte vullen bij volledig ingezoomd (niveau 1)
 const DOEL_LAND_BREEDTE_FRACTIE = 0.75; // land mag max. 75% schermbreedte vullen bij volledig ingezoomd
 const ZOOM_REFERENTIE_MAX = 4.5; // 'typisch' maximum voor het grootste (stabiele) deel van de zoomrange
+// Het land-afhankelijke zoom-maximum (effectiefMax, hieronder in updateSpel())
+// verspringt in één klap zodra je een grens oversteekt naar een land van heel
+// andere grootte - bijvoorbeeld van een piepklein eilandje naar Rusland. Zonder
+// demping voelt de camera dat bij 100% zoom als een snelle "ruk" in plaats van
+// een natuurlijke overgang, ook al veert de camera zelf al soepel naar zijn
+// doel toe. effectiefMaxGedempt vangt dat op: het schuift zelf ook geleidelijk
+// mee naar het nieuwe maximum, zodat er twee zachte overgangen na elkaar
+// optreden in plaats van één harde sprong gevolgd door één zachte. Bewust
+// even traag als ZOOM_SNELHEID, zodat de twee dempingen goed in verhouding
+// blijven met elkaar.
+let effectiefMaxGedempt = ZOOM_REFERENTIE_MAX;
+const EFFECTIEF_MAX_DEMPING = 0.07;
 // Beide polen krijgen bewust exact dezelfde vaste waarde (in plaats van de
 // normale, per-land berekende zoom-afstand): zo staan ze bij 100% gegarandeerd
 // even ver van het ijs, ongeacht van welke kant je aankomt. Eén getal om aan
@@ -3789,6 +3801,7 @@ function startSpel(levelId, modus) {
   // Europa-subregio's starten iets ingezoomd, wereld volledig uitgezoomd
   zoomNiveau = levelId.startsWith('eu-') ? 0.35 : 0;
   zoomFactor = ZOOM_MIN;
+  effectiefMaxGedempt = ZOOM_REFERENTIE_MAX; // vers begin per ronde, geen restant van een vorig land
   if(!isPlekken){
     for(const naam of spelLanden) laadIllustratie(naam, true);
     // Overige levellanden (niet in de speelronde, bijv. bij een willekeurige subset van 10):
@@ -7339,6 +7352,11 @@ function updateSpel(){
   // gewoon lekker in beeld past — ook al betekent dat een klein
   // zoom-terugveertje in de allerlaatste stap.
   const effectiefMax = dynamischMax;
+  // Laat het land-afhankelijke maximum zelf ook geleidelijk meeschuiven naar
+  // de nieuwe waarde, in plaats van in één klap - zie toelichting bij
+  // effectiefMaxGedempt hierboven. Dit is de eerste van twee opeenvolgende
+  // dempingen; de tweede (zoomFactor hieronder) blijft ongewijzigd.
+  effectiefMaxGedempt += (effectiefMax - effectiefMaxGedempt) * EFFECTIEF_MAX_DEMPING;
 
   const nuTijd = performance.now();
   if(keys['z']||touchZoomInActief||gamepadZoomInActief){
@@ -7368,9 +7386,9 @@ function updateSpel(){
     doelZoom = ZOOM_MIN * Math.pow(ZOOM_REFERENTIE_MAX/ZOOM_MIN, t);
   } else {
     const t = (zoomNiveau-ZOOM_OMSLAGPUNT)/(1-ZOOM_OMSLAGPUNT);
-    if(effectiefMax >= ZOOM_REFERENTIE_MAX){
+    if(effectiefMaxGedempt >= ZOOM_REFERENTIE_MAX){
       // Klein land: groeit exponentieel verder, zoals voorheen.
-      doelZoom = ZOOM_REFERENTIE_MAX * Math.pow(effectiefMax/ZOOM_REFERENTIE_MAX, t);
+      doelZoom = ZOOM_REFERENTIE_MAX * Math.pow(effectiefMaxGedempt/ZOOM_REFERENTIE_MAX, t);
     } else {
       // Groot land: het past al goed bij minder dan de referentie-zoom. De camera
       // stopt hier met verder inzoomen (geen "terugveren" meer); de resterende
