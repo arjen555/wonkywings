@@ -319,6 +319,65 @@
       60% { transform:scale(1.06); opacity:1; }
       100% { transform:scale(1); opacity:1; }
     }
+    /* ── Topografie Master diploma ── Verschijnt eenmalig zodra de speler
+       het Topografie-embleem heeft en op "terug naar start" klikt op een
+       evaluatiescherm - zie toonTopografieDiploma() verderop. Boven de
+       melding-overlay (1002) en alle andere pop-ups uit gezet, want dit is
+       het allerlaatste dat je te zien krijgt in die volgorde. Sluit alleen
+       via het kruisje (niet door ernaast te klikken) - anders raak je per
+       ongeluk de naam kwijt die je aan het intypen was. */
+    #diploma-overlay {
+      display:none; position:fixed; inset:0; z-index:1100;
+      background:rgba(10,6,2,0.86);
+      flex-direction:column; align-items:center; justify-content:center;
+      gap:16px; padding:16px;
+    }
+    #diploma-overlay.toon { display:flex; }
+    #diploma-kader {
+      position:relative;
+      width:min(92vw, calc(84vh * 1.499));
+      aspect-ratio:1535/1024;
+    }
+    #diploma-afbeelding {
+      width:100%; height:100%; display:block; border-radius:10px;
+      box-shadow:0 20px 70px rgba(0,0,0,0.75);
+    }
+    /* Positie exact opgemeten op de lege naamlijn in de afbeelding zelf,
+       als percentage van het kader - blijft daardoor kloppen op elk
+       schermformaat. Verticaal gecentreerd via top+translateY, zodat het
+       ook bij een groter lettertype goed blijft staan. */
+    #diploma-naam-invoer {
+      position:absolute; left:35.5%; width:30.3%; top:41%;
+      transform:translateY(-50%);
+      border:none; background:transparent; outline:none;
+      text-align:center; color:#2a1a0c;
+      font-family:Georgia,'Times New Roman',serif; font-weight:700;
+      font-size:clamp(12px, 2.1vw, 26px); padding:0;
+    }
+    #diploma-print-knop, #diploma-sluit-knop {
+      position:fixed; top:clamp(14px, 3vw, 30px); border:none; cursor:pointer;
+      width:clamp(44px, 5vw, 56px); height:clamp(44px, 5vw, 56px);
+      background:rgba(255,255,255,0.12); color:#ffe9a8; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      transition:background 0.15s, transform 0.15s;
+    }
+    #diploma-print-knop:hover, #diploma-sluit-knop:hover {
+      background:rgba(255,255,255,0.22); transform:scale(1.06);
+    }
+    #diploma-print-knop { right:clamp(70px, 9vw, 96px); }
+    #diploma-sluit-knop { right:clamp(14px, 3vw, 30px); font-size:1.7rem; line-height:1; }
+    /* Print alleen het diploma zelf - de rest van de pagina (canvas, schermen,
+       knoppen) blijft onzichtbaar op de afdruk, ongeacht waar het in de
+       pagina genest zit. */
+    @media print {
+      body * { visibility:hidden !important; }
+      #diploma-overlay, #diploma-overlay * { visibility:visible !important; }
+      #diploma-overlay {
+        position:absolute !important; inset:0 !important;
+        background:#fff !important; display:flex !important; padding:0 !important;
+      }
+      #diploma-print-knop, #diploma-sluit-knop { display:none !important; }
+    }
     /* ── Rad van fortuin ── */
     #rad-popup {
       display:none; position:fixed; inset:0; z-index:997;
@@ -1089,7 +1148,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.56</div>
+  <div id="versie-label">v0.3.57</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1163,6 +1222,19 @@
   <div id="embleem-melding-kaart">
     <img id="embleem-melding-img" src="" alt=""/>
     <div id="embleem-melding-tekst"></div>
+  </div>
+</div>
+
+<!-- Topografie Master diploma - zie toonTopografieDiploma()/
+     sluitTopografieDiploma() en de haak in terugNaarStartMetStempels(). -->
+<div id="diploma-overlay">
+  <button id="diploma-print-knop" onclick="printTopografieDiploma()" aria-label="Diploma printen" title="Diploma printen">
+    <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="8" rx="1.5"/><path d="M6 14h12v7H6z"/></svg>
+  </button>
+  <button id="diploma-sluit-knop" onclick="sluitTopografieDiploma()" aria-label="Diploma sluiten" title="Sluiten">&times;</button>
+  <div id="diploma-kader">
+    <img id="diploma-afbeelding" src="images/topografie-diploma.jpg" alt="Topografie Master diploma"/>
+    <input id="diploma-naam-invoer" type="text" maxlength="40" autocomplete="off" spellcheck="false"/>
   </div>
 </div>
 
@@ -3458,6 +3530,47 @@ function sluitEmbleemMelding(){
   setTimeout(volgendeEmbleemMelding, 350);
 }
 
+// ── Topografie Master diploma ── Los van de korte embleem-melding
+// hierboven (die vaak al middenin het spel verschijnt, zodra het laatste
+// land binnenkomt): het diploma verschijnt pas bij het evaluatiescherm,
+// zodra de speler zelf op "terug naar start" klikt - zie de haak in
+// terugNaarStartMetStempels(). Een eigen "getoond"-vlag per speler zorgt
+// dat dit precies één keer gebeurt, ook al is het Topografie-embleem zelf
+// misschien al eerder als klein plaatje getoond.
+function diplomaGetoondSleutel(){
+  const naam = localStorage.getItem(SPELERNAAM_SLEUTEL) || 'Speler';
+  return 'wonkywings_diploma_getoond::' + naam;
+}
+function diplomaMagGetoondWorden(){
+  const heeftTopo = verdiendeEmblemen().some(e=>e.code==='TOPO');
+  return heeftTopo && !localStorage.getItem(diplomaGetoondSleutel());
+}
+let diplomaVervolgFunctie = null;
+function toonTopografieDiploma(vervolgens){
+  localStorage.setItem(diplomaGetoondSleutel(), '1');
+  diplomaVervolgFunctie = (typeof vervolgens === 'function') ? vervolgens : null;
+  const overlay = document.getElementById('diploma-overlay');
+  const invoer = document.getElementById('diploma-naam-invoer');
+  if(invoer) invoer.value = localStorage.getItem(SPELERNAAM_SLEUTEL) || 'Speler';
+  if(overlay) overlay.classList.add('toon');
+  if(invoer){
+    // Meteen focus + cursor achteraan, zodat de knipperende cursor uit
+    // zichzelf al zichtbaar is - dat is het teken dat de naam aan te
+    // passen is, zonder dat er nog iets uitgelegd hoeft te worden.
+    setTimeout(()=>{ invoer.focus(); invoer.setSelectionRange(invoer.value.length, invoer.value.length); }, 50);
+  }
+}
+function sluitTopografieDiploma(){
+  const overlay = document.getElementById('diploma-overlay');
+  if(overlay) overlay.classList.remove('toon');
+  const vervolg = diplomaVervolgFunctie;
+  diplomaVervolgFunctie = null;
+  if(vervolg) vervolg();
+}
+function printTopografieDiploma(){
+  window.print();
+}
+
 // ── Landenpaspoort: verdiende stempels laten "vliegen" naar het paspoort-
 // icoon ── Toont de zojuist verdiende stempelplaatjes bovenaan het scherm,
 // naast elkaar, zodat je ze eerst rustig kunt bekijken. Op de evaluatie-
@@ -3575,10 +3688,17 @@ function toonVliegendeStempels(gekozenLanden, paspoortIconEl, ankerEl){
 function terugNaarStartMetStempels(){
   const wachtend = wachtendeStempels;
   wachtendeStempels = null;
-  if(!wachtend){ naarStart(); return; }
+  // Vlak voor het teruggaan naar start: is het Topografie-embleem verdiend
+  // en is het diploma nog nooit getoond, dan verschijnt dat eerst - pas
+  // als de speler het zelf wegklikt gaat het spel alsnog naar start.
+  const naarStartOfDiploma = () => {
+    if(diplomaMagGetoondWorden()) toonTopografieDiploma(naarStart);
+    else naarStart();
+  };
+  if(!wachtend){ naarStartOfDiploma(); return; }
   startStempelVlucht(wachtend.rij, wachtend.paspoortIconEl, ()=>{
     if(wachtend.ankerEl) wachtend.ankerEl.style.marginBottom = '';
-    naarStart();
+    naarStartOfDiploma();
   });
 }
 // Vult transparante randen/hoekjes van een illustratie automatisch op door
