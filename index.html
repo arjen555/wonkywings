@@ -1210,7 +1210,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.66</div>
+  <div id="versie-label">v0.3.67</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2741,6 +2741,26 @@ let spelLandenFeatureMap={}; // snelle naam->GeoJSON-feature koppeling voor de l
 let huidigLevelLanden=[]; // volledige landenlijst van het level (los van de willekeurige speelronde-subset)
 let introActief=false, introStartTijd=0;
 const INTRO_DUUR = 3500; // ms
+// ── Vliegtuigje bij levelstart eerst 4x uitvergroot, daarna krimpen ────
+// Eerste seconde vol op 4x (goed te zien terwijl de titel nog in beeld is),
+// daarna in 0,7 sec terug naar normale grootte. Werkt via een schaalfactor
+// die wordt meevermenigvuldigd in dezelfde CSS transform als de rotatie/
+// spiegeling van het vliegtuigje (zie updateWonkyPositie) - dat verandert
+// niets aan de positieberekening, want scale() beïnvloedt de layout-
+// afmeting (offsetWidth) niet, alleen hoe groot het er ÚITZIET.
+const INTRO_VLIEGTUIG_SCHAAL = 4;
+const INTRO_VLIEGTUIG_VOL_MS = 1000;
+const INTRO_VLIEGTUIG_KRIMP_MS = 700;
+function vliegtuigIntroSchaal(){
+  if(!introActief) return 1;
+  const verstreken = performance.now() - introStartTijd;
+  if(verstreken < INTRO_VLIEGTUIG_VOL_MS) return INTRO_VLIEGTUIG_SCHAAL;
+  const krimpVerstreken = verstreken - INTRO_VLIEGTUIG_VOL_MS;
+  if(krimpVerstreken >= INTRO_VLIEGTUIG_KRIMP_MS) return 1;
+  const frac = krimpVerstreken / INTRO_VLIEGTUIG_KRIMP_MS; // 0→1
+  const eased = 1 - Math.pow(1-frac, 2); // vlot begin, zachte landing
+  return INTRO_VLIEGTUIG_SCHAAL - (INTRO_VLIEGTUIG_SCHAAL-1)*eased;
+}
 
 // ── Bedieningstip bij spelstart (niet-blokkerend) ──────────────────────
 // Aparte, iets langere tijdsduur dan de landen-glow hierboven: dit is een
@@ -7130,7 +7150,7 @@ const MAX_DRIFT=0.035, DRIFT_S=0.08;  // Wonky blijft dichter bij de focusstip
 let laatsteDx = 0;          // vorige horizontale richting (-1, 0, 1)
 let inOmbocht = false;      // bezig met richting omkeren?
 let ombochtTimer = 0;
-const OMBOCHT_DUUR = 130;   // ms vertraging bij omkeren - 3 fasen elk goed zichtbaar
+const OMBOCHT_DUUR = 260;   // ms vertraging bij omkeren - 3 fasen elk goed zichtbaar
 
 // ── Vlag-drop animatie timer ──────────────────────────
 let dropAnimatieActief = false;
@@ -7949,19 +7969,20 @@ function updateSpel(){
       wonkyNaarFrontaal.style.display='block';
       { const h=wonkyNaarFrontaal.offsetWidth/2; wonkyNaarFrontaal.style.left=(wx-h)+'px'; wonkyNaarFrontaal.style.top=(wy-h)+'px'; }
       const sc = draaitNaarLinks ? -1 : 1;
-      wonkyNaarFrontaal.style.transform = `scaleX(${sc})`;
+      wonkyNaarFrontaal.style.transform = `scaleX(${sc}) scale(${vliegtuigIntroSchaal()})`;
     } else if(ombochtFractie < 0.72){
       // Fase 2: volledig frontaal (langste fase, het "moment" van de bocht)
       wonkyNaarFrontaal.style.display='none';
       wonkyFrontaal.style.display='block';
       { const h=wonkyFrontaal.offsetWidth/2; wonkyFrontaal.style.left=(wx-h)+'px'; wonkyFrontaal.style.top=(wy-h)+'px'; }
+      wonkyFrontaal.style.transform = `scale(${vliegtuigIntroSchaal()})`;
     } else {
       // Fase 3: naar_frontaal - draait door naar nieuwe richting
       wonkyFrontaal.style.display='none';
       wonkyNaarFrontaal.style.display='block';
       { const h=wonkyNaarFrontaal.offsetWidth/2; wonkyNaarFrontaal.style.left=(wx-h)+'px'; wonkyNaarFrontaal.style.top=(wy-h)+'px'; }
       const sc = draaitNaarLinks ? 1 : -1;
-      wonkyNaarFrontaal.style.transform = `scaleX(${sc})`;
+      wonkyNaarFrontaal.style.transform = `scaleX(${sc}) scale(${vliegtuigIntroSchaal()})`;
     }
   } else if(vluchtActief){
     // Correctie-vlucht na een foute drop: bij een grote afwijking (>=100km) houdt Timbo
@@ -7993,7 +8014,11 @@ function updateSpel(){
     const scaleX=richting<0?1:-1;
     laatsteScaleX = scaleX;
     // dy>0 (omhoog/noord) = neus omhoog, dy<0 (omlaag/zuid) = neus omlaag
-    wonkyTurbo.style.transform=`scaleX(${scaleX}) rotate(${dx*14+dy*12}deg)`;
+    // Het minteken voor scaleX* compenseert dat een gespiegelde (scaleX=-1)
+    // afbeelding de draairichting van rotate() omdraait - zonder die
+    // correctie helde de ballon bij vliegen naar links de verkeerde kant op
+    // (leek dan vóór het mandje te hangen i.p.v. erachter aan te slepen).
+    wonkyTurbo.style.transform=`scaleX(${scaleX}) rotate(${-scaleX*(dx*14+dy*12)}deg) scale(${vliegtuigIntroSchaal()})`;
   } else {
     wonkyFrontaal.style.display='none'; wonkyNaarFrontaal.style.display='none';
     wonkyTurbo.style.display='none'; wonkyDropt.style.display='none';
@@ -8004,7 +8029,9 @@ function updateSpel(){
     const scaleX=richting<0?1:-1;
     laatsteScaleX = scaleX;
     // Gefixed: dy>0 (omhoog) = neus omhoog (+rot), dy<0 (omlaag) = neus omlaag (-rot)
-    wonkyEl.style.transform=`scaleX(${scaleX}) rotate(${dx*14+dy*12}deg)`;
+    // Zelfde minteken-correctie als bij wonkyTurbo hierboven (zie toelichting
+    // daar) voor de spiegeling, plus de tijdelijke intro-uitvergroting.
+    wonkyEl.style.transform=`scaleX(${scaleX}) rotate(${-scaleX*(dx*14+dy*12)}deg) scale(${vliegtuigIntroSchaal()})`;
   }
 
   // Rookwolkjes bijhouden nu positie, kijkrichting en turbo-stand bekend zijn
