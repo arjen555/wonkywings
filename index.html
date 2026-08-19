@@ -1212,7 +1212,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.71</div>
+  <div id="versie-label">v0.3.73</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2629,6 +2629,11 @@ function bevestigSpelerNaam(){
   naamOverlayVerplicht = false; // vanaf nu is er altijd al een geldige naam bekend
   document.getElementById('naam-overlay').classList.remove('tonen');
   document.getElementById('level-lijst').classList.remove('vergrendeld');
+  // Nieuwe/andere speler kan een ander vrijgespeeld personage (of nog geen
+  // enkel extra personage) hebben - kiezer én daadwerkelijk vliegtuigje
+  // meteen bijwerken, in plaats van pas zodra er toevallig doorgebladerd
+  // wordt in de kiezer.
+  initialiseerVliegfiguurVoorSpeler();
 }
 // Sluit de banner zonder wijzigingen - alleen toegestaan als er al eerder
 // een geldige naam is bevestigd (dus nooit bij de allereerste, verplichte
@@ -3799,18 +3804,25 @@ function toonFiguurKiezer(toon){
   document.getElementById('figuur-kiezer-blok').style.display = toon ? 'flex' : 'none';
 }
 
-// Eén keer meteen aanroepen bij het laden van de pagina, met het personage
-// dat deze speler (of, bij een nieuwe speler, Timbo) laatst gekozen had -
-// dit moet ná de VLIEGFIGUREN-lijst hierboven staan, anders bestaat die
-// lijst nog niet op het moment dat deze regel uitgevoerd wordt. Blijkt het
-// opgeslagen personage (bijv. na een latere aanpassing van de drempels)
+// Haalt op/zet welk personage DEZE speler laatst gekozen had (of, bij een
+// nieuwe speler, Timbo) en past dat meteen toe - zowel op de kiezer als op
+// de echte vliegtuigje-afbeeldingen in het spel (via ververfFiguurKeuze()).
+// Blijkt het opgeslagen personage (bijv. na een latere aanpassing van de
+// drempels, of gewoon omdat déze speler het nog niet verdiend heeft)
 // onverhoopt niet meer vrijgespeeld te zijn, dan valt dit terug op Timbo.
-(function initVliegfiguurCarrousel(){
+// Wordt aangeroepen bij het laden van de pagina, én telkens wanneer er van
+// speler gewisseld wordt (bevestigSpelerNaam) - anders bleven de kiezer én
+// het daadwerkelijk vliegende personage nog even op de vorige speler staan.
+function initialiseerVliegfiguurVoorSpeler(){
   let start = VLIEGFIGUREN.findIndex(f=>f.id===geefActiefVliegfiguurId());
   if(start < 0 || !isVliegfiguurVrijgespeeld(VLIEGFIGUREN[start])) start = 0;
   figuurBrowseIndex = start;
   ververfFiguurKeuze();
-})();
+}
+// Eén keer meteen aanroepen bij het laden van de pagina - dit moet ná de
+// VLIEGFIGUREN-lijst hierboven staan, anders bestaat die lijst nog niet op
+// het moment dat deze regel uitgevoerd wordt.
+initialiseerVliegfiguurVoorSpeler();
 
 // ── Topografie Master diploma ── Los van de korte embleem-melding
 // hierboven (die vaak al middenin het spel verschijnt, zodra het laatste
@@ -8107,9 +8119,10 @@ function updateSpel(){
     // blaast diezelfde richting op. scaleX kiest de grove kant (links- of
     // rechts-achtig, nodig omdat spiegelen de enige manier is om Jan
     // overtuigend de andere kant op te laten kijken); de rotate() erbovenop
-    // kantelt 'm vervolgens verder tot de exacte hoek klopt. Het minteken
-    // bij -janScaleX*tiltDeg compenseert dat spiegelen de draairichting van
-    // rotate() omdraait (zelfde principe als bij het vliegtuigje zelf).
+    // kantelt 'm vervolgens verder tot de exacte hoek klopt. tiltDeg is al
+    // voor beide spiegel-kanten wiskundig kloppend afgeleid (dus GEEN extra
+    // minteken nodig zoals bij het vliegtuigje zelf - dat was hier juist de
+    // fout: Jan blies dan bij "naar links" de verkeerde kant op).
     janDeWindEl.style.display='block';
     const vliegtuigBreedte = vluchtAfwijkingKm>=100 ? wonkySadEl.offsetWidth : wonkyEl.offsetWidth;
     const richting = vluchtSchermRichting();
@@ -8123,7 +8136,7 @@ function updateSpel(){
     const janX = wx - richtX*janAfstand, janY = wy - richtY*janAfstand;
     { const h=janDeWindEl.offsetWidth/2; janDeWindEl.style.left=(janX-h)+'px'; janDeWindEl.style.top=(janY-h)+'px'; }
     const tiltDeg = Math.atan2(-richtY, Math.abs(richtX)) * 180/Math.PI;
-    janDeWindEl.style.transform=`scaleX(${janScaleX}) rotate(${-janScaleX*tiltDeg}deg)`;
+    janDeWindEl.style.transform=`scaleX(${janScaleX}) rotate(${tiltDeg}deg)`;
     // Windvlaagjes ontstaan net vóór Jan's mond, in de vliegrichting.
     const mondX = janX + richtX*janDeWindEl.offsetWidth*0.25;
     const mondY = janY + richtY*janDeWindEl.offsetWidth*0.25;
