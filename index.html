@@ -204,12 +204,18 @@
     .figuur-pijl-knop img { width:100%; display:block; }
     .figuur-pijl-knop:hover:not(:disabled) { opacity:1; transform:scale(1.08); }
     .figuur-pijl-knop:disabled { opacity:0.15; cursor:default; }
+    /* Vaste hoogte, ongeacht of de afbeelding van dit personage smal-en-hoog
+       (zoals de vogel) of breed-en-laag is - zonder dat zou de rij bij elk
+       personage een andere hoogte krijgen en de rest van het menu mee
+       verspringen. De afbeelding zelf schaalt (object-fit:contain) tot hij
+       precies binnen die hoogte past, in plaats van andersom. */
     #figuur-kiezer-frame {
       position:relative;
       flex:1 1 auto; min-width:60px; max-width:170px;
+      height:clamp(70px, 8.5vw, 140px);
     }
     #figuur-kiezer-img {
-      width:100%; display:block;
+      width:100%; height:100%; object-fit:contain; display:block;
       filter:drop-shadow(0 4px 16px rgba(0,0,0,0.5));
       transition:filter 0.25s ease;
     }
@@ -218,7 +224,7 @@
        te zien blijft) - je kunt er wel naartoe bladeren, maar er nog niet
        mee spelen. */
     #figuur-kiezer-img.vergrendeld {
-      filter: brightness(0.55) contrast(0.7) saturate(0.6);
+      filter: brightness(0.75) contrast(0.8) saturate(0.7);
     }
     #figuur-vergrendeld-laag {
       position:absolute; inset:0; z-index:2;
@@ -231,16 +237,6 @@
       font-size:clamp(0.5rem, 1.5vw, 0.72rem);
       text-shadow:0 2px 8px rgba(0,0,0,0.8);
       max-width:85%;
-    }
-    /* Ander lettertype dan de rest van de UI (Berkshire Swash, ook al
-       gebruikt bij het invullen van de spelernaam) - dit is bewust een
-       "naambordje", geen standaard interface-tekst. */
-    #figuur-naam-label {
-      position:absolute; left:0; right:0; bottom:4px; z-index:3;
-      text-align:center; pointer-events:none;
-      font-family:'Berkshire Swash',cursive; font-weight:400; color:#fff9d6;
-      font-size:clamp(0.75rem, 2.2vw, 1.1rem);
-      text-shadow:0 2px 8px rgba(0,0,0,0.85);
     }
     #level-lijst { display:flex; flex-direction:column; gap:6px; width:100%; position:relative; }
 
@@ -1213,7 +1209,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.64</div>
+  <div id="versie-label">v0.3.65</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1229,7 +1225,6 @@
         <div id="figuur-vergrendeld-laag">
           <div id="figuur-vergrendeld-tekst"></div>
         </div>
-        <div id="figuur-naam-label"></div>
       </div>
       <button id="figuur-pijl-verder" class="figuur-pijl-knop" onclick="blaaderVliegfiguur(1)" aria-label="Volgend personage"><img src="images/paspoort-verder.png" alt="Volgend personage"/></button>
     </div>
@@ -3639,16 +3634,13 @@ const VLIEGFIGUUR_MAP = 'images/vliegtuigjes/';
 // 'drempel': hoeveel landenstempels (in totaal, over alle werelddelen samen)
 // er nodig zijn om dit personage vrij te spelen. Timbo staat op 0 - die kan
 // iedereen vanaf het begin gewoon spelen.
-// 'naam' is uitsluitend de weergavenaam bij de vliegfiguur-kiezer (dit ene
-// label) - nergens anders in de code gebruikt, dus los te wijzigen zonder
-// dat het bestandsnamen, id's of iets anders raakt.
 const VLIEGFIGUREN = [
-  { id:'timbo',  naam:'Wonky',        prefix:'Timbo',  heroBestand:'Timbo',  heroMap:'images/', basisBestand:'Wonky',  heeftBocht:true,  drempel:0   },
-  { id:'meisje', naam:'Bellala',      prefix:'meisje', heroBestand:'meisje', basisBestand:'meisje', heeftBocht:true,  drempel:10  },
-  { id:'vogel',  naam:'Woelie',       prefix:'vogel',  heroBestand:'vogel',  basisBestand:'vogel',  heeftBocht:true,  drempel:25  },
-  { id:'alien',  naam:'Aliennetje',   prefix:'alien',  heroBestand:'alien',  basisBestand:'alien',  heeftBocht:false, drempel:50  },
-  { id:'allen',  naam:'Vliegfeessie', prefix:'allen',  heroBestand:'allen',  basisBestand:'allen',  heeftBocht:true,  drempel:90  },
-  { id:'kip',    naam:'Koetje Tok',   prefix:'kip',    heroBestand:'kip',    basisBestand:'kip',    heeftBocht:true,  drempel:150 },
+  { id:'timbo',  prefix:'Timbo',  heroBestand:'Timbo',  heroMap:'images/', basisBestand:'Wonky',  heeftBocht:true,  drempel:0   },
+  { id:'meisje', prefix:'meisje', heroBestand:'meisje', basisBestand:'meisje', heeftBocht:true,  drempel:10  },
+  { id:'vogel',  prefix:'vogel',  heroBestand:'vogel',  basisBestand:'vogel',  heeftBocht:true,  drempel:25  },
+  { id:'alien',  prefix:'alien',  heroBestand:'alien',  basisBestand:'alien',  heeftBocht:false, drempel:50  },
+  { id:'allen',  prefix:'allen',  heroBestand:'allen',  basisBestand:'allen',  heeftBocht:true,  drempel:90  },
+  { id:'kip',    prefix:'kip',    heroBestand:'kip',    basisBestand:'kip',    heeftBocht:true,  drempel:150 },
 ];
 
 // Is dit personage al vrijgespeeld? Gebaseerd op het totaal aantal
@@ -3753,7 +3745,6 @@ function ververfFiguurKeuze(){
     const nogNodig = fig.drempel - totaalAantalStempels();
     tekst.textContent = nogNodig + ' paspoort-stempels';
   }
-  document.getElementById('figuur-naam-label').textContent = fig.naam;
   document.getElementById('figuur-pijl-terug').disabled = (figuurBrowseIndex === 0);
   document.getElementById('figuur-pijl-verder').disabled = (figuurBrowseIndex === VLIEGFIGUREN.length-1);
 }
