@@ -219,12 +219,13 @@
       filter:drop-shadow(0 4px 16px rgba(0,0,0,0.5));
       transition:filter 0.25s ease;
     }
-    /* Nog niet vrijgespeeld personage: gedimd en met minder contrast als
-       voorproefje (bewust geen blur, zodat er nog wat van de illustratie
-       te zien blijft) - je kunt er wel naartoe bladeren, maar er nog niet
-       mee spelen. */
+    /* Nog niet vrijgespeeld personage: zelfde soort waas als bij een nog
+       niet verdiende paspoortstempel (zie .stempel-kaart.nog-niet-verzameld
+       in paspoort.html) - vervaagd naar wit, weinig contrast, in plaats van
+       donkerder. Iets minder extreem dan de paspoortstempel, zodat er nog
+       wat meer van de illustratie te onderscheiden is (bewust geen blur). */
     #figuur-kiezer-img.vergrendeld {
-      filter: brightness(0.75) contrast(0.8) saturate(0.7);
+      filter: grayscale(1) brightness(1.6) contrast(0.45) opacity(0.6);
     }
     #figuur-vergrendeld-laag {
       position:absolute; inset:0; z-index:2;
@@ -1209,7 +1210,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.65</div>
+  <div id="versie-label">v0.3.66</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
