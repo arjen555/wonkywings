@@ -1210,7 +1210,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.67</div>
+  <div id="versie-label">v0.3.68</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -7996,8 +7996,9 @@ function updateSpel(){
       wonkyEl.style.display='none'; wonkyTurbo.style.display='none';
       wonkySadEl.style.display='block';
       { const h=wonkySadEl.offsetWidth/2; wonkySadEl.style.left=(wx-h)+'px'; wonkySadEl.style.top=(wy-h)+'px'; }
-      // Timbo_sad.png is gespiegeld getekend t.o.v. de andere sprites, dus omgekeerd t.o.v. scaleX
-      wonkySadEl.style.transform=`scaleX(${-scaleX})`;
+      // Sad-plaatje kijkt dezelfde kant op als de rest van dit personage se
+      // sprites (zelfde scaleX-conventie, geen omdraai meer nodig).
+      wonkySadEl.style.transform=`scaleX(${scaleX})`;
     } else {
       wonkyTurbo.style.display='none'; wonkySadEl.style.display='none';
       wonkyEl.style.display='block';
@@ -8381,10 +8382,9 @@ function toonReactie(type) {
   document.getElementById('wonky-dropt').style.display = 'none';
   if(reactieTimer){ clearTimeout(reactieTimer); reactieTimer = null; }
   const el = type === 'blij' ? blij : sad;
-  // Timbo_sad.png is gespiegeld getekend t.o.v. de andere sprites, dus draaien we
-  // de richting om zodat hij dezelfde kant op kijkt als vlak voor de reactie.
-  const scaleX = type === 'sad' ? -laatsteScaleX : laatsteScaleX;
-  el.style.transform = `scaleX(${scaleX})`;
+  // Blij én sad kijken dezelfde kant op als vlak voor de reactie (zelfde
+  // scaleX-conventie als de rest van dit personage se sprites).
+  el.style.transform = `scaleX(${laatsteScaleX})`;
   el.style.display = 'block';
   // Bij 'blij' verdwijnt de reactie na 3s vanzelf (geen vervolgvlucht).
   // Bij 'sad' blijft hij staan tot de update-loop 'm overneemt zodra vluchtActief start
