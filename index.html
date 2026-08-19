@@ -1148,9 +1148,9 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.57</div>
+  <div id="versie-label">v0.3.59</div>
   <div id="start-links">
-    <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
+    <img id="start-timbo" src="images/vliegtuigjes/Timbo.png" alt="Timbo"/>
   </div>
   <div id="start-rechts">
     <img id="start-titel-logo" src="images/Ohmooiewereld.png" alt="Oh mooie wereld!"/>
@@ -1414,13 +1414,13 @@
   <div id="tip-besturing" class="knop-label">besturing</div>
   <div id="tip-hint" class="knop-label">waar ligt het?</div>
   <div id="tip-joker" class="knop-label">ruilen voor ander land</div>
-  <img id="wonky" src="images/Wonky.png" alt="Wonky"/>
-  <img id="wonky-frontaal" src="images/Timbo_frontaal.png" alt="Wonky frontaal" style="position:fixed;width:clamp(83px, 6.77vmin, 148px);pointer-events:none;z-index:11;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));"/>
-  <img id="wonky-naar-frontaal" src="images/Timbo_naar_frontaal.png" alt="Wonky naar frontaal" style="position:fixed;width:clamp(86px, 7.03vmin, 154px);pointer-events:none;z-index:11;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
-  <img id="wonky-turbo" src="images/Timbo_turbo.png" alt="Wonky turbo" style="position:fixed;width:clamp(90px, 7.3vmin, 160px);pointer-events:none;z-index:10;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
-  <img id="wonky-dropt" src="images/Timbo_dropt.png" alt="Wonky dropt" style="position:fixed;width:clamp(90px, 7.3vmin, 160px);pointer-events:none;z-index:10;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
-  <img id="wonky-blij" src="images/Timbo_blij.png" alt="Wonky blij" style="position:fixed;width:clamp(90px, 7.3vmin, 160px);pointer-events:none;z-index:10;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
-  <img id="wonky-sad"  src="images/Timbo_sad.png"  alt="Wonky sad"  style="position:fixed;width:clamp(90px, 7.3vmin, 160px);pointer-events:none;z-index:10;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
+  <img id="wonky" src="images/vliegtuigjes/Wonky.png" alt="Wonky"/>
+  <img id="wonky-frontaal" src="images/vliegtuigjes/Timbo_frontaal.png" alt="Wonky frontaal" style="position:fixed;width:clamp(83px, 6.77vmin, 148px);pointer-events:none;z-index:11;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));"/>
+  <img id="wonky-naar-frontaal" src="images/vliegtuigjes/Timbo_naar_frontaal.png" alt="Wonky naar frontaal" style="position:fixed;width:clamp(86px, 7.03vmin, 154px);pointer-events:none;z-index:11;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
+  <img id="wonky-turbo" src="images/vliegtuigjes/Timbo_turbo.png" alt="Wonky turbo" style="position:fixed;width:clamp(90px, 7.3vmin, 160px);pointer-events:none;z-index:10;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
+  <img id="wonky-dropt" src="images/vliegtuigjes/Timbo_dropt.png" alt="Wonky dropt" style="position:fixed;width:clamp(90px, 7.3vmin, 160px);pointer-events:none;z-index:10;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
+  <img id="wonky-blij" src="images/vliegtuigjes/Timbo_blij.png" alt="Wonky blij" style="position:fixed;width:clamp(90px, 7.3vmin, 160px);pointer-events:none;z-index:10;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
+  <img id="wonky-sad"  src="images/vliegtuigjes/Timbo_sad.png"  alt="Wonky sad"  style="position:fixed;width:clamp(90px, 7.3vmin, 160px);pointer-events:none;z-index:10;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
   <img id="vlag-valt" src="images/vlag_valt.png" alt="vlag"/>
   <img id="vlag-grond" src="images/vlag_grond.png" alt="vlag"/>
 
@@ -3529,6 +3529,71 @@ function sluitEmbleemMelding(){
   if(overlay) overlay.classList.remove('toon');
   setTimeout(volgendeEmbleemMelding, 350);
 }
+
+// ── Vliegfiguren: kiesbare personages, later vrij te spelen ─────────────
+// Fase 1 (fundering): alleen de personagelijst en de wissel-functie. Nog
+// geen vrijspeel-logica of keuzescherm op het startscherm - dat komt in een
+// latere stap. Voor nu blijft Timbo/Wonky gewoon het enige personage
+// waarmee gespeeld wordt; deze functie wordt hieronder één keer aangeroepen
+// met 'timbo' en verandert dus (nog) niets aan wat de speler te zien krijgt.
+//
+// Per personage: 'prefix' is de bestandsnaam-basis voor turbo/dropt/blij/
+// sad (en bij de meeste ook frontaal/naar_frontaal). 'heroBestand' is de
+// grote afbeelding op het startscherm (#start-timbo), 'basisBestand' de
+// kleine "gewoon rechtdoor vliegen"-afbeelding in het spel zelf (#wonky).
+// Bij Timbo zijn dat toevallig twee verschillende bestanden (Timbo.png resp.
+// Wonky.png, een historisch verschil van vóór dit personage-systeem); bij de
+// nieuwe personages is dat steeds hetzelfde ene bestand.
+// 'heeftBocht': heeft dit personage eigen frontaal/naar_frontaal-tekeningen
+// voor de bocht-animatie? Zo niet (de ronde alien draait niet zichtbaar),
+// dan valt de bocht terug op de basisafbeelding - nooit een gele vlek.
+const VLIEGFIGUUR_MAP = 'images/vliegtuigjes/';
+const VLIEGFIGUREN = [
+  { id:'timbo',  naam:'Timbo',  prefix:'Timbo',  heroBestand:'Timbo',  basisBestand:'Wonky',  heeftBocht:true  },
+  { id:'meisje', naam:'Meisje', prefix:'meisje', heroBestand:'meisje', basisBestand:'meisje', heeftBocht:true  },
+  { id:'vogel',  naam:'Vogel',  prefix:'vogel',  heroBestand:'vogel',  basisBestand:'vogel',  heeftBocht:true  },
+  { id:'alien',  naam:'Alien',  prefix:'alien',  heroBestand:'alien',  basisBestand:'alien',  heeftBocht:false },
+  { id:'allen',  naam:'Allen',  prefix:'allen',  heroBestand:'allen',  basisBestand:'allen',  heeftBocht:true  },
+  { id:'kip',    naam:'Kip',    prefix:'kip',    heroBestand:'kip',    basisBestand:'kip',    heeftBocht:true  },
+];
+
+// Welk personage deze speler momenteel gekozen heeft - per speler
+// opgeslagen (zelfde patroon als de stempels en de emblemen hierboven).
+// Staat er nog niets, dan is Timbo de standaard: iedereen kan meteen spelen.
+function actiefVliegfiguurSleutel(){
+  const naam = localStorage.getItem(SPELERNAAM_SLEUTEL) || 'Speler';
+  return 'wonkywings_actief_vliegfiguur::' + naam;
+}
+function geefActiefVliegfiguurId(){
+  return localStorage.getItem(actiefVliegfiguurSleutel()) || 'timbo';
+}
+
+// Herschrijft de src van alle Timbo/Wonky-afbeeldingen (startscherm +
+// spelscherm) naar het gekozen personage. De rest van de vlieglogica
+// (posities, welke stand wanneer getoond wordt, animaties) blijft
+// ongewijzigd - die werkt met dezelfde vaste element-id's, ongeacht wie
+// erin vliegt.
+function zetActiefVliegfiguur(id){
+  const fig = VLIEGFIGUREN.find(f=>f.id===id) || VLIEGFIGUREN[0];
+  document.getElementById('start-timbo').src = VLIEGFIGUUR_MAP + fig.heroBestand + '.png';
+  document.getElementById('wonky').src       = VLIEGFIGUUR_MAP + fig.basisBestand + '.png';
+  document.getElementById('wonky-turbo').src = VLIEGFIGUUR_MAP + fig.prefix + '_turbo.png';
+  document.getElementById('wonky-dropt').src = VLIEGFIGUUR_MAP + fig.prefix + '_dropt.png';
+  document.getElementById('wonky-blij').src  = VLIEGFIGUUR_MAP + fig.prefix + '_blij.png';
+  document.getElementById('wonky-sad').src   = VLIEGFIGUUR_MAP + fig.prefix + '_sad.png';
+  if(fig.heeftBocht){
+    document.getElementById('wonky-frontaal').src      = VLIEGFIGUUR_MAP + fig.prefix + '_frontaal.png';
+    document.getElementById('wonky-naar-frontaal').src = VLIEGFIGUUR_MAP + fig.prefix + '_naar_frontaal.png';
+  } else {
+    document.getElementById('wonky-frontaal').src      = VLIEGFIGUUR_MAP + fig.basisBestand + '.png';
+    document.getElementById('wonky-naar-frontaal').src = VLIEGFIGUUR_MAP + fig.basisBestand + '.png';
+  }
+}
+// Eén keer meteen aanroepen bij het laden van de pagina, met het personage
+// dat deze speler (of, bij een nieuwe speler, Timbo) laatst gekozen had -
+// dit moet ná de VLIEGFIGUREN-lijst hierboven staan, anders bestaat die
+// lijst nog niet op het moment dat deze regel uitgevoerd wordt.
+zetActiefVliegfiguur(geefActiefVliegfiguurId());
 
 // ── Topografie Master diploma ── Los van de korte embleem-melding
 // hierboven (die vaak al middenin het spel verschijnt, zodra het laatste
