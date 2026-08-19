@@ -102,7 +102,9 @@
       pointer-events:none; user-select:none;
     }
     #intro-titel {
-      position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+      /* Bewust niet exact op 50% (schermmidden): daar zit ook het personage-
+         groepje bij levelstart, en die twee overlapten elkaar anders. */
+      position:fixed; top:calc(50% + 95px); left:50%; transform:translate(-50%,-50%);
       z-index:15; pointer-events:none; user-select:none;
       font-size:clamp(1.8rem, 5vmin, 3.4rem); font-weight:800;
       color:#fff6c8; text-shadow:0 2px 18px rgba(0,0,0,0.65), 0 0 24px rgba(255,215,0,0.5);
@@ -1210,7 +1212,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.68</div>
+  <div id="versie-label">v0.3.69</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
