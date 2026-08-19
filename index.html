@@ -1212,7 +1212,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.70</div>
+  <div id="versie-label">v0.3.71</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1501,7 +1501,7 @@
        vliegtuigje richting de juiste bestemming (zie de vluchtActief-tak in
        de update-loop). Lagere z-index dan het vliegtuigje zelf, want hij
        hoort er duidelijk achter/onder te zitten. -->
-  <img id="jan-de-wind" src="images/Jan_de_Wind.png" alt="Jan de Wind" style="position:fixed;width:clamp(75px, 6vmin, 130px);pointer-events:none;z-index:9;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.5));transform-origin:center center;"/>
+  <img id="jan-de-wind" src="images/Jan_de_Wind.png" alt="Jan de Wind" style="position:fixed;width:clamp(113px, 9vmin, 195px);pointer-events:none;z-index:9;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.5));transform-origin:center center;"/>
   <img id="vlag-valt" src="images/vlag_valt.png" alt="vlag"/>
   <img id="vlag-grond" src="images/vlag_grond.png" alt="vlag"/>
 
@@ -2971,6 +2971,11 @@ let huidigeKennisvraag = null;          // de op dit moment getoonde vraag (uit 
 let radActief = false;                  // pauzeert het spel zolang het rad open staat (stap 4)
 
 let vluchtStartVec=null, vluchtEindVec=null, vluchtEindLon=0, vluchtEindLat=0;
+// Vorige lon/lat tijdens de correctie-vlucht, bewaard zodat Jan de Wind
+// (verderop in de update-loop) de werkelijke vliegrichting op het scherm
+// kan berekenen - inclusief het schuine/diagonale deel, niet alleen links/
+// rechts. Zie de toelichting bij vluchtSchermRichting() hieronder.
+let vluchtVorigeLon=null, vluchtVorigeLat=null;
 let vluchtScoreVoor=0, vluchtScoreNa=0, vluchtAfwijkingKm=0, vluchtDoelLand=null;
 let correctieLand=null, correctieLandStartTijd=0;
 
@@ -6854,6 +6859,24 @@ function tekenRook(){
   }
 }
 
+// Werkelijke vliegrichting van de correctie-vlucht, geprojecteerd op het
+// scherm (dus mét het schuine/diagonale deel - niet alleen links/rechts).
+// Vergelijkt waar de VORIGE positie nu op het scherm zou vallen (via de
+// zojuist bijgewerkte rotM, die al opnieuw gecentreerd is op de NIEUWE
+// positie) met het scherm-midden zelf. Geeft een los (niet-genormaliseerd)
+// {x,y}-richtingsvectortje terug, of null als er nog geen vorige positie is
+// (allereerste frame van de vlucht) of de twee punten samenvallen.
+function vluchtSchermRichting(){
+  if(vluchtVorigeLon===null) return null;
+  const p3prev = roteerPunt(lonLatTo3D(vluchtVorigeLon, vluchtVorigeLat), rotM);
+  const p3nu = roteerPunt(lonLatTo3D(wonkyLon, wonkyLat), rotM);
+  const psx=CX+p3prev[0]*R, psy=CY-p3prev[1]*R;
+  const nsx=CX+p3nu[0]*R, nsy=CY-p3nu[1]*R;
+  const rx=nsx-psx, ry=nsy-psy;
+  if(Math.abs(rx)<0.01 && Math.abs(ry)<0.01) return null;
+  return {x:rx, y:ry};
+}
+
 // ── Windvlagen: Jan de Wind blaast het vliegtuigje tijdens de correctie-
 // vlucht (na een foute drop) richting de juiste bestemming. Zelfde opzet als
 // de rookwolkjes hierboven, maar dan omgekeerd: geen spoor dat achterblijft,
@@ -6866,21 +6889,28 @@ const windImgs=['images/Windvlaag1.png','images/Windvlaag2.png'].map(pad=>{
 let windVlagen=[];
 let windVolgende=0;
 
-function updateWind(janX,janY,scaleX){
+// richtX,richtY: genormaliseerde (lengte 1) richtingsvector van de
+// werkelijke vliegrichting - mag van elke kant komen, ook schuin, niet
+// alleen links/rechts (zie vluchtSchermRichting()).
+function updateWind(janX,janY,richtX,richtY){
   const nu=performance.now();
   if(nu<windVolgende) return;
   if(windVlagen.length>=10) return; // vangnet, net als bij de rookwolkjes
   windVolgende = nu + 220*(0.6+Math.random()*0.9); // onregelmatig, net als de rook
+  const snelheid = 160+Math.random()*70;
   windVlagen.push({
     img: Math.floor(Math.random()*windImgs.length),
     x: janX + (Math.random()-0.5)*14,
-    y: janY + (Math.random()-0.5)*22,
-    // Vliegt van Jan af, dezelfde kant op als het vliegtuigje onderweg is
-    // (-scaleX: bij scaleX=1 vliegt het vliegtuigje naar links, dus ook de wind).
-    vx: -scaleX*(160+Math.random()*70),
-    vy: (Math.random()-0.5)*14,
+    y: janY + (Math.random()-0.5)*14,
+    // Vliegt vanaf Jan mee de werkelijke (eventueel schuine) vliegrichting op.
+    vx: richtX*snelheid + (Math.random()-0.5)*12,
+    vy: richtY*snelheid + (Math.random()-0.5)*12,
     schaal: (0.35+Math.random()*0.35)/4,
-    rot: (Math.random()-0.5)*0.5,
+    // Basishoek volgt meteen de vliegrichting (geen ingroei-effect zoals bij
+    // de rookwolkjes) - alleen een klein beetje extra draai die tijdens het
+    // vervagen opbouwt, voor wat textuur.
+    hoekBasis: Math.atan2(richtY,richtX),
+    hoekJitter: (Math.random()-0.5)*0.5,
     alpha0: 0.8,
     start: nu,
     duur: 550+Math.random()*250
@@ -6901,7 +6931,7 @@ function tekenWind(){
     ctx.save();
     ctx.globalAlpha=w.alpha0*Math.sin(Math.min(1,f)*Math.PI); // in- én uitvagen
     ctx.translate(w.x+w.vx*t, w.y+w.vy*t);
-    ctx.rotate(w.rot*f);
+    ctx.rotate(w.hoekBasis + w.hoekJitter*f);
     ctx.drawImage(img,-bw/2,-bh/2,bw,bh);
     ctx.restore();
   }
@@ -7881,6 +7911,7 @@ function updateSpel(){
     const tRuw=Math.min(1,(performance.now()-vluchtStartTijd)/vluchtDuur);
     const t = tRuw<0.5 ? 2*tRuw*tRuw : 1-Math.pow(-2*tRuw+2,2)/2; // ease-in-out
     const prevLon=wonkyLon, prevLat=wonkyLat;
+    vluchtVorigeLon=prevLon; vluchtVorigeLat=prevLat;
     const v=slerp3(vluchtStartVec,vluchtEindVec,t);
     const [nLon,nLat]=vec3NaarLonLat(v);
     wonkyLon=nLon; wonkyLat=nLat;
@@ -8070,17 +8101,33 @@ function updateSpel(){
       { const h=wonkyEl.offsetWidth/2; wonkyEl.style.left=(wx-h)+'px'; wonkyEl.style.top=(wy-h)+'px'; }
       wonkyEl.style.transform=`scaleX(${scaleX})`;
     }
-    // Jan de Wind: verschijnt aan de kant waar het vliegtuigje vandaan komt
-    // (zelfde kant als de rooksliert normaal zit) en blaast dezelfde kant op
-    // als er gevlogen wordt - vandaar dezelfde scaleX als het vliegtuigje.
+    // Jan de Wind: staat schuin achter het vliegtuigje, in het verlengde van
+    // de WERKELIJKE vliegrichting (ook als die schuin omhoog/omlaag gaat,
+    // niet alleen recht links/rechts - zie vluchtSchermRichting()), en
+    // blaast diezelfde richting op. scaleX kiest de grove kant (links- of
+    // rechts-achtig, nodig omdat spiegelen de enige manier is om Jan
+    // overtuigend de andere kant op te laten kijken); de rotate() erbovenop
+    // kantelt 'm vervolgens verder tot de exacte hoek klopt. Het minteken
+    // bij -janScaleX*tiltDeg compenseert dat spiegelen de draairichting van
+    // rotate() omdraait (zelfde principe als bij het vliegtuigje zelf).
     janDeWindEl.style.display='block';
     const vliegtuigBreedte = vluchtAfwijkingKm>=100 ? wonkySadEl.offsetWidth : wonkyEl.offsetWidth;
+    const richting = vluchtSchermRichting();
+    let richtX = -scaleX, richtY = 0; // terugval: recht opzij, voor het allereerste frame
+    if(richting){
+      const lengte = Math.hypot(richting.x, richting.y);
+      if(lengte>0){ richtX = richting.x/lengte; richtY = richting.y/lengte; }
+    }
+    const janScaleX = richtX<0 ? 1 : -1;
     const janAfstand = vliegtuigBreedte*0.5 + janDeWindEl.offsetWidth*0.45;
-    const janX = wx + scaleX*janAfstand;
-    { const h=janDeWindEl.offsetWidth/2; janDeWindEl.style.left=(janX-h)+'px'; janDeWindEl.style.top=(wy-h)+'px'; }
-    janDeWindEl.style.transform=`scaleX(${scaleX})`;
+    const janX = wx - richtX*janAfstand, janY = wy - richtY*janAfstand;
+    { const h=janDeWindEl.offsetWidth/2; janDeWindEl.style.left=(janX-h)+'px'; janDeWindEl.style.top=(janY-h)+'px'; }
+    const tiltDeg = Math.atan2(-richtY, Math.abs(richtX)) * 180/Math.PI;
+    janDeWindEl.style.transform=`scaleX(${janScaleX}) rotate(${-janScaleX*tiltDeg}deg)`;
     // Windvlaagjes ontstaan net vóór Jan's mond, in de vliegrichting.
-    updateWind(janX - scaleX*janDeWindEl.offsetWidth*0.25, wy, scaleX);
+    const mondX = janX + richtX*janDeWindEl.offsetWidth*0.25;
+    const mondY = janY + richtY*janDeWindEl.offsetWidth*0.25;
+    updateWind(mondX, mondY, richtX, richtY);
   } else if(turbo){
     wonkyEl.style.display='none'; wonkyFrontaal.style.display='none';
     wonkyNaarFrontaal.style.display='none'; wonkyDropt.style.display='none';
