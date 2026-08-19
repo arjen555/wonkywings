@@ -1148,9 +1148,9 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.59</div>
+  <div id="versie-label">v0.3.60</div>
   <div id="start-links">
-    <img id="start-timbo" src="images/vliegtuigjes/Timbo.png" alt="Timbo"/>
+    <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
   <div id="start-rechts">
     <img id="start-titel-logo" src="images/Ohmooiewereld.png" alt="Oh mooie wereld!"/>
@@ -3538,18 +3538,22 @@ function sluitEmbleemMelding(){
 // met 'timbo' en verandert dus (nog) niets aan wat de speler te zien krijgt.
 //
 // Per personage: 'prefix' is de bestandsnaam-basis voor turbo/dropt/blij/
-// sad (en bij de meeste ook frontaal/naar_frontaal). 'heroBestand' is de
-// grote afbeelding op het startscherm (#start-timbo), 'basisBestand' de
-// kleine "gewoon rechtdoor vliegen"-afbeelding in het spel zelf (#wonky).
+// sad (en bij de meeste ook frontaal/naar_frontaal) - die staan altijd in
+// VLIEGFIGUUR_MAP (images/vliegtuigjes/). 'heroBestand' is de grote
+// afbeelding op het startscherm (#start-timbo), 'basisBestand' de kleine
+// "gewoon rechtdoor vliegen"-afbeelding in het spel zelf (#wonky).
 // Bij Timbo zijn dat toevallig twee verschillende bestanden (Timbo.png resp.
-// Wonky.png, een historisch verschil van vóór dit personage-systeem); bij de
-// nieuwe personages is dat steeds hetzelfde ene bestand.
+// Wonky.png, een historisch verschil van vóór dit personage-systeem) - en
+// Timbo.png is bovendien een titelplaatje, geen speelbaar vliegtuigje, dus
+// die blijft gewoon in de hoofdmap staan (vandaar 'heroMap' hieronder). Bij
+// de nieuwe personages is heroBestand === basisBestand: één en hetzelfde
+// bestand, gewoon in images/vliegtuigjes/.
 // 'heeftBocht': heeft dit personage eigen frontaal/naar_frontaal-tekeningen
 // voor de bocht-animatie? Zo niet (de ronde alien draait niet zichtbaar),
 // dan valt de bocht terug op de basisafbeelding - nooit een gele vlek.
 const VLIEGFIGUUR_MAP = 'images/vliegtuigjes/';
 const VLIEGFIGUREN = [
-  { id:'timbo',  naam:'Timbo',  prefix:'Timbo',  heroBestand:'Timbo',  basisBestand:'Wonky',  heeftBocht:true  },
+  { id:'timbo',  naam:'Timbo',  prefix:'Timbo',  heroBestand:'Timbo',  heroMap:'images/', basisBestand:'Wonky',  heeftBocht:true  },
   { id:'meisje', naam:'Meisje', prefix:'meisje', heroBestand:'meisje', basisBestand:'meisje', heeftBocht:true  },
   { id:'vogel',  naam:'Vogel',  prefix:'vogel',  heroBestand:'vogel',  basisBestand:'vogel',  heeftBocht:true  },
   { id:'alien',  naam:'Alien',  prefix:'alien',  heroBestand:'alien',  basisBestand:'alien',  heeftBocht:false },
@@ -3575,7 +3579,10 @@ function geefActiefVliegfiguurId(){
 // erin vliegt.
 function zetActiefVliegfiguur(id){
   const fig = VLIEGFIGUREN.find(f=>f.id===id) || VLIEGFIGUREN[0];
-  document.getElementById('start-timbo').src = VLIEGFIGUUR_MAP + fig.heroBestand + '.png';
+  // heroMap is alleen bij Timbo gezet (zijn titelplaatje staat in de
+  // hoofdmap); bij de rest ontbreekt het veld en gebruiken we gewoon
+  // dezelfde map als de rest van het personage.
+  document.getElementById('start-timbo').src = (fig.heroMap || VLIEGFIGUUR_MAP) + fig.heroBestand + '.png';
   document.getElementById('wonky').src       = VLIEGFIGUUR_MAP + fig.basisBestand + '.png';
   document.getElementById('wonky-turbo').src = VLIEGFIGUUR_MAP + fig.prefix + '_turbo.png';
   document.getElementById('wonky-dropt').src = VLIEGFIGUUR_MAP + fig.prefix + '_dropt.png';
