@@ -1212,7 +1212,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.69</div>
+  <div id="versie-label">v0.3.70</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1497,6 +1497,11 @@
   <img id="wonky-dropt" src="images/vliegtuigjes/Timbo_dropt.png" alt="Wonky dropt" style="position:fixed;width:clamp(90px, 7.3vmin, 160px);pointer-events:none;z-index:10;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
   <img id="wonky-blij" src="images/vliegtuigjes/Timbo_blij.png" alt="Wonky blij" style="position:fixed;width:clamp(90px, 7.3vmin, 160px);pointer-events:none;z-index:10;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
   <img id="wonky-sad"  src="images/vliegtuigjes/Timbo_sad.png"  alt="Wonky sad"  style="position:fixed;width:clamp(90px, 7.3vmin, 160px);pointer-events:none;z-index:10;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
+  <!-- Jan de Wind: blaast tijdens de correctie-vlucht na een foute drop het
+       vliegtuigje richting de juiste bestemming (zie de vluchtActief-tak in
+       de update-loop). Lagere z-index dan het vliegtuigje zelf, want hij
+       hoort er duidelijk achter/onder te zitten. -->
+  <img id="jan-de-wind" src="images/Jan_de_Wind.png" alt="Jan de Wind" style="position:fixed;width:clamp(75px, 6vmin, 130px);pointer-events:none;z-index:9;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.5));transform-origin:center center;"/>
   <img id="vlag-valt" src="images/vlag_valt.png" alt="vlag"/>
   <img id="vlag-grond" src="images/vlag_grond.png" alt="vlag"/>
 
@@ -6774,6 +6779,7 @@ function drawGlobe(){
   ctx.beginPath(); ctx.arc(CX,CY,R*1.02,0,Math.PI*2); ctx.fillStyle=atm; ctx.fill();
 
   tekenRook(); // rookwolkjes als laatste, zodat ze boven de kaart liggen (Wonky zelf is een los plaatje en blijft er automatisch bovenop)
+  tekenWind(); // windvlagen van Jan de Wind, zelfde laag als de rookwolkjes
 }
 
 // ── Rookwolkjes: Wonky is een ouwe rammelpot ──────────
@@ -6841,6 +6847,59 @@ function tekenRook(){
     const bw=img.naturalWidth*sc, bh=img.naturalHeight*sc;
     ctx.save();
     ctx.globalAlpha=w.alpha0*(1-f);       // steeds transparanter tot hij weg is
+    ctx.translate(w.x+w.vx*t, w.y+w.vy*t);
+    ctx.rotate(w.rot*f);
+    ctx.drawImage(img,-bw/2,-bh/2,bw,bh);
+    ctx.restore();
+  }
+}
+
+// ── Windvlagen: Jan de Wind blaast het vliegtuigje tijdens de correctie-
+// vlucht (na een foute drop) richting de juiste bestemming. Zelfde opzet als
+// de rookwolkjes hierboven, maar dan omgekeerd: geen spoor dat achterblijft,
+// maar vlagen die van bij Jan vandaan komen, langs het vliegtuigje waaien in
+// de vliegrichting, en dan vervagen. Wordt alleen aangeroepen zolang
+// vluchtActief is (zie updateWonkyPositie/de vluchtActief-tak).
+const windImgs=['images/Windvlaag1.png','images/Windvlaag2.png'].map(pad=>{
+  const img=new Image(); img.src=pad; return img;
+});
+let windVlagen=[];
+let windVolgende=0;
+
+function updateWind(janX,janY,scaleX){
+  const nu=performance.now();
+  if(nu<windVolgende) return;
+  if(windVlagen.length>=10) return; // vangnet, net als bij de rookwolkjes
+  windVolgende = nu + 220*(0.6+Math.random()*0.9); // onregelmatig, net als de rook
+  windVlagen.push({
+    img: Math.floor(Math.random()*windImgs.length),
+    x: janX + (Math.random()-0.5)*14,
+    y: janY + (Math.random()-0.5)*22,
+    // Vliegt van Jan af, dezelfde kant op als het vliegtuigje onderweg is
+    // (-scaleX: bij scaleX=1 vliegt het vliegtuigje naar links, dus ook de wind).
+    vx: -scaleX*(160+Math.random()*70),
+    vy: (Math.random()-0.5)*14,
+    schaal: (0.35+Math.random()*0.35)/4,
+    rot: (Math.random()-0.5)*0.5,
+    alpha0: 0.8,
+    start: nu,
+    duur: 550+Math.random()*250
+  });
+}
+
+function tekenWind(){
+  if(!windVlagen.length) return;
+  const nu=performance.now();
+  windVlagen=windVlagen.filter(w=>nu-w.start<w.duur);
+  for(const w of windVlagen){
+    const img=windImgs[w.img];
+    if(!img.complete || !img.naturalWidth) continue;
+    const f=(nu-w.start)/w.duur;
+    const t=(nu-w.start)/1000;
+    const sc=w.schaal*(1+0.25*f);
+    const bw=img.naturalWidth*sc, bh=img.naturalHeight*sc;
+    ctx.save();
+    ctx.globalAlpha=w.alpha0*Math.sin(Math.min(1,f)*Math.PI); // in- én uitvagen
     ctx.translate(w.x+w.vx*t, w.y+w.vy*t);
     ctx.rotate(w.rot*f);
     ctx.drawImage(img,-bw/2,-bh/2,bw,bh);
@@ -7940,6 +7999,10 @@ function updateSpel(){
   const wonkyDropt = document.getElementById('wonky-dropt');
   const wonkyBlijEl = document.getElementById('wonky-blij');
   const wonkySadEl = document.getElementById('wonky-sad');
+  const janDeWindEl = document.getElementById('jan-de-wind');
+  // Jan de Wind is alleen tijdens de correctie-vlucht (vluchtActief) in
+  // beeld - overal elders standaard verborgen, alleen die ene tak zet 'm aan.
+  janDeWindEl.style.display='none';
 
   // Tijdens ombocht: 3 fasen - naar_frontaal -> frontaal -> naar_frontaal (gespiegeld)
   const ombochtVerstreken = performance.now() - ombochtTimer;
@@ -8007,6 +8070,17 @@ function updateSpel(){
       { const h=wonkyEl.offsetWidth/2; wonkyEl.style.left=(wx-h)+'px'; wonkyEl.style.top=(wy-h)+'px'; }
       wonkyEl.style.transform=`scaleX(${scaleX})`;
     }
+    // Jan de Wind: verschijnt aan de kant waar het vliegtuigje vandaan komt
+    // (zelfde kant als de rooksliert normaal zit) en blaast dezelfde kant op
+    // als er gevlogen wordt - vandaar dezelfde scaleX als het vliegtuigje.
+    janDeWindEl.style.display='block';
+    const vliegtuigBreedte = vluchtAfwijkingKm>=100 ? wonkySadEl.offsetWidth : wonkyEl.offsetWidth;
+    const janAfstand = vliegtuigBreedte*0.5 + janDeWindEl.offsetWidth*0.45;
+    const janX = wx + scaleX*janAfstand;
+    { const h=janDeWindEl.offsetWidth/2; janDeWindEl.style.left=(janX-h)+'px'; janDeWindEl.style.top=(wy-h)+'px'; }
+    janDeWindEl.style.transform=`scaleX(${scaleX})`;
+    // Windvlaagjes ontstaan net vóór Jan's mond, in de vliegrichting.
+    updateWind(janX - scaleX*janDeWindEl.offsetWidth*0.25, wy, scaleX);
   } else if(turbo){
     wonkyEl.style.display='none'; wonkyFrontaal.style.display='none';
     wonkyNaarFrontaal.style.display='none'; wonkyDropt.style.display='none';
