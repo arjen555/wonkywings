@@ -177,6 +177,70 @@
       letter-spacing:1.5px; text-transform:uppercase;
       text-align:center; position:relative;
     }
+    /* 'display:contents' laat de twee kinderen (logo + subtitel) gewoon
+       meedoen als losse flex-items van #start-rechts, alsof deze wrapper er
+       niet stond - zo blijft de bestaande 14px-gap-opmaak intact. Wordt via
+       JS naar 'none' gezet zodra een categorie openklapt (zie
+       toonFiguurKiezer hieronder), en dan verschijnt #figuur-kiezer-blok
+       op precies dezelfde plek in de rij. */
+    #start-logo-blok { display:contents; }
+
+    /* ── Vliegfiguur-kiezer: verschijnt op de plek van het logo zodra
+       Europa/Wereld/Hoofdsteden openklapt (Iconische plekken en Raad je
+       plaatje doen dit niet - die hebben geen open/dicht-status). Rij met
+       pijl-terug, het personage-plaatje, pijl-verder. ── */
+    #figuur-kiezer-blok {
+      display:none; /* wordt 'flex' via toonFiguurKiezer() */
+      align-items:center; justify-content:center;
+      gap:clamp(4px, 1.2vw, 12px);
+      width:100%;
+    }
+    .figuur-pijl-knop {
+      flex:none; background:none; border:none; cursor:pointer; padding:0;
+      width:clamp(22px, 4.4vw, 38px);
+      opacity:0.85; transition:opacity 0.15s, transform 0.15s;
+      filter:drop-shadow(0 3px 8px rgba(0,0,0,0.5));
+    }
+    .figuur-pijl-knop img { width:100%; display:block; }
+    .figuur-pijl-knop:hover:not(:disabled) { opacity:1; transform:scale(1.08); }
+    .figuur-pijl-knop:disabled { opacity:0.15; cursor:default; }
+    #figuur-kiezer-frame {
+      position:relative; flex:none;
+      width:min(170px, 50%);
+    }
+    #figuur-kiezer-img {
+      width:100%; display:block;
+      filter:drop-shadow(0 4px 16px rgba(0,0,0,0.5));
+      transition:filter 0.25s ease;
+    }
+    /* Nog niet vrijgespeeld personage: wazig en gedimd als voorproefje - je
+       kunt er wel naartoe bladeren, maar er nog niet mee spelen. */
+    #figuur-kiezer-img.vergrendeld {
+      filter: blur(6px) brightness(0.6) saturate(0.7);
+    }
+    #figuur-vergrendeld-laag {
+      position:absolute; inset:0; z-index:2;
+      display:none; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+      text-align:center; pointer-events:none;
+    }
+    #figuur-vergrendeld-laag.toon { display:flex; }
+    #figuur-slot-emoji {
+      font-size:clamp(1.1rem, 3.4vw, 1.8rem);
+      filter:drop-shadow(0 3px 8px rgba(0,0,0,0.6));
+    }
+    #figuur-vergrendeld-tekst {
+      font-family:'Baloo 2',sans-serif; font-weight:800; color:#fff9d6;
+      font-size:clamp(0.5rem, 1.5vw, 0.72rem);
+      text-shadow:0 2px 8px rgba(0,0,0,0.8);
+      max-width:85%;
+    }
+    #figuur-naam-label {
+      position:absolute; left:0; right:0; bottom:4px; z-index:3;
+      text-align:center; pointer-events:none;
+      font-family:'Baloo 2',sans-serif; font-weight:800; color:#fff9d6;
+      font-size:clamp(0.55rem, 1.7vw, 0.78rem);
+      text-shadow:0 2px 8px rgba(0,0,0,0.85);
+    }
     #level-lijst { display:flex; flex-direction:column; gap:6px; width:100%; position:relative; }
 
     /* ── Naam-overlay: verplicht in te vullen, bovenop de Timbo-afbeelding
@@ -1148,13 +1212,27 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.60</div>
+  <div id="versie-label">v0.3.63</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
   <div id="start-rechts">
-    <img id="start-titel-logo" src="images/Ohmooiewereld.png" alt="Oh mooie wereld!"/>
-    <div id="start-subtitel">✈ Vliegenderwijs topografie leren ✈</div>
+    <div id="start-logo-blok">
+      <img id="start-titel-logo" src="images/Ohmooiewereld.png" alt="Oh mooie wereld!"/>
+      <div id="start-subtitel">✈ Vliegenderwijs topografie leren ✈</div>
+    </div>
+    <div id="figuur-kiezer-blok">
+      <button id="figuur-pijl-terug" class="figuur-pijl-knop" onclick="blaaderVliegfiguur(-1)" aria-label="Vorig personage"><img src="images/paspoort-terug.png" alt="Vorig personage"/></button>
+      <div id="figuur-kiezer-frame">
+        <img id="figuur-kiezer-img" src="images/Timbo.png" alt="Gekozen vliegfiguur"/>
+        <div id="figuur-vergrendeld-laag">
+          <div id="figuur-slot-emoji">🔒</div>
+          <div id="figuur-vergrendeld-tekst"></div>
+        </div>
+        <div id="figuur-naam-label"></div>
+      </div>
+      <button id="figuur-pijl-verder" class="figuur-pijl-knop" onclick="blaaderVliegfiguur(1)" aria-label="Volgend personage"><img src="images/paspoort-verder.png" alt="Volgend personage"/></button>
+    </div>
     <div id="level-lijst"></div>
     <div id="opties-groep">
       <button id="opties-knop" class="startscherm-knop" onclick="zetOptiesOpen(!optiesOpen)">
@@ -2337,6 +2415,12 @@ function zetMenuUitgeklapt(open){
       rechts.style.width=''; rechts.style.zIndex='';
     }, 380);
   }
+  // Zelfde moment als het openklappen: op de plek van het logo verschijnt
+  // de vliegfiguur-kiezer (zie toonFiguurKiezer, verderop bij de rest van
+  // de vliegfiguur-code). Geldt alleen voor Europa/Wereld/Hoofdsteden - dit
+  // zijn de enige groepen die via deze functie open/dicht klappen; Iconische
+  // plekken en Raad je plaatje doen dat niet en blijven dus buiten schot.
+  toonFiguurKiezer(open);
 }
 function bouwStartscherm() {
   const lijst = document.getElementById('level-lijst');
@@ -3552,14 +3636,41 @@ function sluitEmbleemMelding(){
 // voor de bocht-animatie? Zo niet (de ronde alien draait niet zichtbaar),
 // dan valt de bocht terug op de basisafbeelding - nooit een gele vlek.
 const VLIEGFIGUUR_MAP = 'images/vliegtuigjes/';
+// 'drempel': hoeveel landenstempels (in totaal, over alle werelddelen samen)
+// er nodig zijn om dit personage vrij te spelen. Timbo staat op 0 - die kan
+// iedereen vanaf het begin gewoon spelen.
 const VLIEGFIGUREN = [
-  { id:'timbo',  naam:'Timbo',  prefix:'Timbo',  heroBestand:'Timbo',  heroMap:'images/', basisBestand:'Wonky',  heeftBocht:true  },
-  { id:'meisje', naam:'Meisje', prefix:'meisje', heroBestand:'meisje', basisBestand:'meisje', heeftBocht:true  },
-  { id:'vogel',  naam:'Vogel',  prefix:'vogel',  heroBestand:'vogel',  basisBestand:'vogel',  heeftBocht:true  },
-  { id:'alien',  naam:'Alien',  prefix:'alien',  heroBestand:'alien',  basisBestand:'alien',  heeftBocht:false },
-  { id:'allen',  naam:'Allen',  prefix:'allen',  heroBestand:'allen',  basisBestand:'allen',  heeftBocht:true  },
-  { id:'kip',    naam:'Kip',    prefix:'kip',    heroBestand:'kip',    basisBestand:'kip',    heeftBocht:true  },
+  { id:'timbo',  naam:'Timbo',  prefix:'Timbo',  heroBestand:'Timbo',  heroMap:'images/', basisBestand:'Wonky',  heeftBocht:true,  drempel:0   },
+  { id:'meisje', naam:'Meisje', prefix:'meisje', heroBestand:'meisje', basisBestand:'meisje', heeftBocht:true,  drempel:10  },
+  { id:'vogel',  naam:'Vogel',  prefix:'vogel',  heroBestand:'vogel',  basisBestand:'vogel',  heeftBocht:true,  drempel:25  },
+  { id:'alien',  naam:'Alien',  prefix:'alien',  heroBestand:'alien',  basisBestand:'alien',  heeftBocht:false, drempel:50  },
+  { id:'allen',  naam:'Allen',  prefix:'allen',  heroBestand:'allen',  basisBestand:'allen',  heeftBocht:true,  drempel:90  },
+  { id:'kip',    naam:'Kip',    prefix:'kip',    heroBestand:'kip',    basisBestand:'kip',    heeftBocht:true,  drempel:150 },
 ];
+
+// Is dit personage al vrijgespeeld? Gebaseerd op het totaal aantal
+// paspoortstempels van de speler, over alle werelddelen samen (dus niet per
+// continent) - simpel te tellen en werkt voor elke speelmodus die stempels
+// oplevert (Europa/Wereld, Hoofdsteden, Plekken, Raad je plaatje).
+function totaalAantalStempels(){
+  return geefVerdiendeStempels().length;
+}
+function isVliegfiguurVrijgespeeld(fig){
+  return totaalAantalStempels() >= fig.drempel;
+}
+function vrijgespeeldeVliegfiguren(){
+  return VLIEGFIGUREN.filter(isVliegfiguurVrijgespeeld);
+}
+// Het eerstvolgende nog te ontgrendelen personage, met hoeveel stempels de
+// speler daar nog voor nodig heeft - handig voor een latere "nog x landen
+// te gaan"-tekst bij het personage-keuzescherm. Geeft null als alles al
+// vrijgespeeld is.
+function volgendeVliegfiguur(){
+  const nu = totaalAantalStempels();
+  const volgende = VLIEGFIGUREN.find(f=>f.drempel > nu);
+  if(!volgende) return null;
+  return { figuur:volgende, nogNodig: volgende.drempel - nu };
+}
 
 // Welk personage deze speler momenteel gekozen heeft - per speler
 // opgeslagen (zelfde patroon als de stempels en de emblemen hierboven).
@@ -3579,10 +3690,14 @@ function geefActiefVliegfiguurId(){
 // erin vliegt.
 function zetActiefVliegfiguur(id){
   const fig = VLIEGFIGUREN.find(f=>f.id===id) || VLIEGFIGUREN[0];
+  // #start-timbo (de grote foto links) raken we hier expres niet aan - die
+  // blijft altijd gewoon Timbo, ongeacht wie er als personage gekozen is.
+  // #figuur-kiezer-img is het kleine plaatje dat op de plek van het logo
+  // verschijnt zodra een categorie openklapt (zie toonFiguurKiezer).
   // heroMap is alleen bij Timbo gezet (zijn titelplaatje staat in de
   // hoofdmap); bij de rest ontbreekt het veld en gebruiken we gewoon
   // dezelfde map als de rest van het personage.
-  document.getElementById('start-timbo').src = (fig.heroMap || VLIEGFIGUUR_MAP) + fig.heroBestand + '.png';
+  document.getElementById('figuur-kiezer-img').src = (fig.heroMap || VLIEGFIGUUR_MAP) + fig.heroBestand + '.png';
   document.getElementById('wonky').src       = VLIEGFIGUUR_MAP + fig.basisBestand + '.png';
   document.getElementById('wonky-turbo').src = VLIEGFIGUUR_MAP + fig.prefix + '_turbo.png';
   document.getElementById('wonky-dropt').src = VLIEGFIGUUR_MAP + fig.prefix + '_dropt.png';
@@ -3596,11 +3711,78 @@ function zetActiefVliegfiguur(id){
     document.getElementById('wonky-naar-frontaal').src = VLIEGFIGUUR_MAP + fig.basisBestand + '.png';
   }
 }
+// ── Vliegfiguur-carrousel: verschijnt op de plek van het logo zodra Europa/
+// Wereld/Hoofdsteden openklapt (zie toonFiguurKiezer, aangeroepen vanuit
+// zetMenuUitgeklapt hierboven). De grote Timbo-foto links (#start-timbo)
+// verandert hier nooit door mee - die blijft altijd gewoon Timbo.
+//
+// figuurBrowseIndex is waar de speler op dit moment doorheen aan het
+// bladeren is - dat kan verder staan dan wat er al vrijgespeeld is (je mag
+// vooruitkijken naar wat je nog kan winnen, zie de wazige weergave
+// hieronder). Zodra je op een al vrijgespeeld personage uitkomt, wordt dat
+// er ook meteen mee gespeeld - bladeren ís hier dus kiezen.
+let figuurBrowseIndex = 0;
+
+function ververfFiguurKeuze(){
+  const fig = VLIEGFIGUREN[figuurBrowseIndex];
+  const vrij = isVliegfiguurVrijgespeeld(fig);
+  const kiezerImg = document.getElementById('figuur-kiezer-img');
+  const laag = document.getElementById('figuur-vergrendeld-laag');
+  const tekst = document.getElementById('figuur-vergrendeld-tekst');
+
+  if(vrij){
+    // Vrijgespeeld: dit wordt meteen het personage waarmee gespeeld wordt -
+    // zowel hier op het startscherm als straks in het spel zelf (#wonky
+    // etc.), en onthouden voor de volgende keer dat deze speler het spel
+    // opent. zetActiefVliegfiguur() zet ook meteen de juiste src.
+    zetActiefVliegfiguur(fig.id);
+    localStorage.setItem(actiefVliegfiguurSleutel(), fig.id);
+    kiezerImg.classList.remove('vergrendeld');
+    laag.classList.remove('toon');
+  } else {
+    // Nog vergrendeld: alleen dit kiezer-plaatje laten zien als wazig
+    // voorproefje - #wonky en de rest blijven op het laatst gekozen (wél
+    // vrijgespeelde) personage staan, dit wordt niet echt "actief".
+    kiezerImg.src = (fig.heroMap || VLIEGFIGUUR_MAP) + fig.heroBestand + '.png';
+    kiezerImg.classList.add('vergrendeld');
+    laag.classList.add('toon');
+    const nogNodig = fig.drempel - totaalAantalStempels();
+    tekst.textContent = 'Nog ' + nogNodig + ' landenstempel' + (nogNodig===1?'':'s') + ' nodig';
+  }
+  document.getElementById('figuur-naam-label').textContent = fig.naam;
+  document.getElementById('figuur-pijl-terug').disabled = (figuurBrowseIndex === 0);
+  document.getElementById('figuur-pijl-verder').disabled = (figuurBrowseIndex === VLIEGFIGUREN.length-1);
+}
+
+// Aangeroepen door de pijltjes-knoppen (delta -1 of +1). Stopt gewoon aan
+// de uiteinden van de lijst (Timbo respectievelijk Kip) - geen rondje.
+function blaaderVliegfiguur(delta){
+  figuurBrowseIndex = Math.max(0, Math.min(VLIEGFIGUREN.length-1, figuurBrowseIndex+delta));
+  ververfFiguurKeuze();
+}
+
+// Wisselt tussen het logo+ondertitel en de vliegfiguur-kiezer, op de
+// plek in de rij (zie #start-logo-blok, display:contents). Wordt vanuit
+// zetMenuUitgeklapt(open) aangeroepen - dus alleen bij Europa/Wereld/
+// Hoofdsteden, niet bij Iconische plekken of Raad je plaatje (die klappen
+// niet open/dicht, zie de toelichting daar).
+function toonFiguurKiezer(toon){
+  document.getElementById('start-logo-blok').style.display = toon ? 'none' : 'contents';
+  document.getElementById('figuur-kiezer-blok').style.display = toon ? 'flex' : 'none';
+}
+
 // Eén keer meteen aanroepen bij het laden van de pagina, met het personage
 // dat deze speler (of, bij een nieuwe speler, Timbo) laatst gekozen had -
 // dit moet ná de VLIEGFIGUREN-lijst hierboven staan, anders bestaat die
-// lijst nog niet op het moment dat deze regel uitgevoerd wordt.
-zetActiefVliegfiguur(geefActiefVliegfiguurId());
+// lijst nog niet op het moment dat deze regel uitgevoerd wordt. Blijkt het
+// opgeslagen personage (bijv. na een latere aanpassing van de drempels)
+// onverhoopt niet meer vrijgespeeld te zijn, dan valt dit terug op Timbo.
+(function initVliegfiguurCarrousel(){
+  let start = VLIEGFIGUREN.findIndex(f=>f.id===geefActiefVliegfiguurId());
+  if(start < 0 || !isVliegfiguurVrijgespeeld(VLIEGFIGUREN[start])) start = 0;
+  figuurBrowseIndex = start;
+  ververfFiguurKeuze();
+})();
 
 // ── Topografie Master diploma ── Los van de korte embleem-melding
 // hierboven (die vaak al middenin het spel verschijnt, zodra het laatste
