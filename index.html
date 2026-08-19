@@ -192,12 +192,12 @@
     #figuur-kiezer-blok {
       display:none; /* wordt 'flex' via toonFiguurKiezer() */
       align-items:center; justify-content:center;
-      gap:clamp(4px, 1.2vw, 12px);
+      gap:clamp(6px, 2vw, 16px);
       width:100%;
     }
     .figuur-pijl-knop {
       flex:none; background:none; border:none; cursor:pointer; padding:0;
-      width:clamp(22px, 4.4vw, 38px);
+      width:clamp(34px, 8vw, 64px);
       opacity:0.85; transition:opacity 0.15s, transform 0.15s;
       filter:drop-shadow(0 3px 8px rgba(0,0,0,0.5));
     }
@@ -205,40 +205,41 @@
     .figuur-pijl-knop:hover:not(:disabled) { opacity:1; transform:scale(1.08); }
     .figuur-pijl-knop:disabled { opacity:0.15; cursor:default; }
     #figuur-kiezer-frame {
-      position:relative; flex:none;
-      width:min(170px, 50%);
+      position:relative;
+      flex:1 1 auto; min-width:60px; max-width:170px;
     }
     #figuur-kiezer-img {
       width:100%; display:block;
       filter:drop-shadow(0 4px 16px rgba(0,0,0,0.5));
       transition:filter 0.25s ease;
     }
-    /* Nog niet vrijgespeeld personage: wazig en gedimd als voorproefje - je
-       kunt er wel naartoe bladeren, maar er nog niet mee spelen. */
+    /* Nog niet vrijgespeeld personage: gedimd en met minder contrast als
+       voorproefje (bewust geen blur, zodat er nog wat van de illustratie
+       te zien blijft) - je kunt er wel naartoe bladeren, maar er nog niet
+       mee spelen. */
     #figuur-kiezer-img.vergrendeld {
-      filter: blur(6px) brightness(0.6) saturate(0.7);
+      filter: brightness(0.55) contrast(0.7) saturate(0.6);
     }
     #figuur-vergrendeld-laag {
       position:absolute; inset:0; z-index:2;
-      display:none; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+      display:none; align-items:center; justify-content:center;
       text-align:center; pointer-events:none;
     }
     #figuur-vergrendeld-laag.toon { display:flex; }
-    #figuur-slot-emoji {
-      font-size:clamp(1.1rem, 3.4vw, 1.8rem);
-      filter:drop-shadow(0 3px 8px rgba(0,0,0,0.6));
-    }
     #figuur-vergrendeld-tekst {
       font-family:'Baloo 2',sans-serif; font-weight:800; color:#fff9d6;
       font-size:clamp(0.5rem, 1.5vw, 0.72rem);
       text-shadow:0 2px 8px rgba(0,0,0,0.8);
       max-width:85%;
     }
+    /* Ander lettertype dan de rest van de UI (Berkshire Swash, ook al
+       gebruikt bij het invullen van de spelernaam) - dit is bewust een
+       "naambordje", geen standaard interface-tekst. */
     #figuur-naam-label {
       position:absolute; left:0; right:0; bottom:4px; z-index:3;
       text-align:center; pointer-events:none;
-      font-family:'Baloo 2',sans-serif; font-weight:800; color:#fff9d6;
-      font-size:clamp(0.55rem, 1.7vw, 0.78rem);
+      font-family:'Berkshire Swash',cursive; font-weight:400; color:#fff9d6;
+      font-size:clamp(0.75rem, 2.2vw, 1.1rem);
       text-shadow:0 2px 8px rgba(0,0,0,0.85);
     }
     #level-lijst { display:flex; flex-direction:column; gap:6px; width:100%; position:relative; }
@@ -1212,7 +1213,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.63</div>
+  <div id="versie-label">v0.3.64</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1224,9 +1225,8 @@
     <div id="figuur-kiezer-blok">
       <button id="figuur-pijl-terug" class="figuur-pijl-knop" onclick="blaaderVliegfiguur(-1)" aria-label="Vorig personage"><img src="images/paspoort-terug.png" alt="Vorig personage"/></button>
       <div id="figuur-kiezer-frame">
-        <img id="figuur-kiezer-img" src="images/Timbo.png" alt="Gekozen vliegfiguur"/>
+        <img id="figuur-kiezer-img" src="images/vliegtuigjes/Wonky.png" alt="Gekozen vliegfiguur"/>
         <div id="figuur-vergrendeld-laag">
-          <div id="figuur-slot-emoji">🔒</div>
           <div id="figuur-vergrendeld-tekst"></div>
         </div>
         <div id="figuur-naam-label"></div>
@@ -3639,13 +3639,16 @@ const VLIEGFIGUUR_MAP = 'images/vliegtuigjes/';
 // 'drempel': hoeveel landenstempels (in totaal, over alle werelddelen samen)
 // er nodig zijn om dit personage vrij te spelen. Timbo staat op 0 - die kan
 // iedereen vanaf het begin gewoon spelen.
+// 'naam' is uitsluitend de weergavenaam bij de vliegfiguur-kiezer (dit ene
+// label) - nergens anders in de code gebruikt, dus los te wijzigen zonder
+// dat het bestandsnamen, id's of iets anders raakt.
 const VLIEGFIGUREN = [
-  { id:'timbo',  naam:'Timbo',  prefix:'Timbo',  heroBestand:'Timbo',  heroMap:'images/', basisBestand:'Wonky',  heeftBocht:true,  drempel:0   },
-  { id:'meisje', naam:'Meisje', prefix:'meisje', heroBestand:'meisje', basisBestand:'meisje', heeftBocht:true,  drempel:10  },
-  { id:'vogel',  naam:'Vogel',  prefix:'vogel',  heroBestand:'vogel',  basisBestand:'vogel',  heeftBocht:true,  drempel:25  },
-  { id:'alien',  naam:'Alien',  prefix:'alien',  heroBestand:'alien',  basisBestand:'alien',  heeftBocht:false, drempel:50  },
-  { id:'allen',  naam:'Allen',  prefix:'allen',  heroBestand:'allen',  basisBestand:'allen',  heeftBocht:true,  drempel:90  },
-  { id:'kip',    naam:'Kip',    prefix:'kip',    heroBestand:'kip',    basisBestand:'kip',    heeftBocht:true,  drempel:150 },
+  { id:'timbo',  naam:'Wonky',        prefix:'Timbo',  heroBestand:'Timbo',  heroMap:'images/', basisBestand:'Wonky',  heeftBocht:true,  drempel:0   },
+  { id:'meisje', naam:'Bellala',      prefix:'meisje', heroBestand:'meisje', basisBestand:'meisje', heeftBocht:true,  drempel:10  },
+  { id:'vogel',  naam:'Woelie',       prefix:'vogel',  heroBestand:'vogel',  basisBestand:'vogel',  heeftBocht:true,  drempel:25  },
+  { id:'alien',  naam:'Aliennetje',   prefix:'alien',  heroBestand:'alien',  basisBestand:'alien',  heeftBocht:false, drempel:50  },
+  { id:'allen',  naam:'Vliegfeessie', prefix:'allen',  heroBestand:'allen',  basisBestand:'allen',  heeftBocht:true,  drempel:90  },
+  { id:'kip',    naam:'Koetje Tok',   prefix:'kip',    heroBestand:'kip',    basisBestand:'kip',    heeftBocht:true,  drempel:150 },
 ];
 
 // Is dit personage al vrijgespeeld? Gebaseerd op het totaal aantal
@@ -3693,11 +3696,11 @@ function zetActiefVliegfiguur(id){
   // #start-timbo (de grote foto links) raken we hier expres niet aan - die
   // blijft altijd gewoon Timbo, ongeacht wie er als personage gekozen is.
   // #figuur-kiezer-img is het kleine plaatje dat op de plek van het logo
-  // verschijnt zodra een categorie openklapt (zie toonFiguurKiezer).
-  // heroMap is alleen bij Timbo gezet (zijn titelplaatje staat in de
-  // hoofdmap); bij de rest ontbreekt het veld en gebruiken we gewoon
-  // dezelfde map als de rest van het personage.
-  document.getElementById('figuur-kiezer-img').src = (fig.heroMap || VLIEGFIGUUR_MAP) + fig.heroBestand + '.png';
+  // verschijnt zodra een categorie openklapt (zie toonFiguurKiezer) - dat
+  // gebruikt bewust basisBestand (dezelfde afbeelding als #wonky in het
+  // spel zelf), niet heroBestand: dat laatste is specifiek het grote
+  // titelplaatje voor #start-timbo en past hier niet.
+  document.getElementById('figuur-kiezer-img').src = VLIEGFIGUUR_MAP + fig.basisBestand + '.png';
   document.getElementById('wonky').src       = VLIEGFIGUUR_MAP + fig.basisBestand + '.png';
   document.getElementById('wonky-turbo').src = VLIEGFIGUUR_MAP + fig.prefix + '_turbo.png';
   document.getElementById('wonky-dropt').src = VLIEGFIGUUR_MAP + fig.prefix + '_dropt.png';
@@ -3740,14 +3743,15 @@ function ververfFiguurKeuze(){
     kiezerImg.classList.remove('vergrendeld');
     laag.classList.remove('toon');
   } else {
-    // Nog vergrendeld: alleen dit kiezer-plaatje laten zien als wazig
-    // voorproefje - #wonky en de rest blijven op het laatst gekozen (wél
-    // vrijgespeelde) personage staan, dit wordt niet echt "actief".
-    kiezerImg.src = (fig.heroMap || VLIEGFIGUUR_MAP) + fig.heroBestand + '.png';
+    // Nog vergrendeld: alleen dit kiezer-plaatje laten zien als voorproefje
+    // (gedimd, geen blur, zie .vergrendeld) - #wonky en de rest blijven op
+    // het laatst gekozen (wél vrijgespeelde) personage staan, dit wordt
+    // niet echt "actief".
+    kiezerImg.src = VLIEGFIGUUR_MAP + fig.basisBestand + '.png';
     kiezerImg.classList.add('vergrendeld');
     laag.classList.add('toon');
     const nogNodig = fig.drempel - totaalAantalStempels();
-    tekst.textContent = 'Nog ' + nogNodig + ' landenstempel' + (nogNodig===1?'':'s') + ' nodig';
+    tekst.textContent = nogNodig + ' paspoort-stempels';
   }
   document.getElementById('figuur-naam-label').textContent = fig.naam;
   document.getElementById('figuur-pijl-terug').disabled = (figuurBrowseIndex === 0);
