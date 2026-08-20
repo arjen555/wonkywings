@@ -1212,7 +1212,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.74</div>
+  <div id="versie-label">v0.3.75</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -3296,17 +3296,49 @@ let zoekVluchtStartVec=null, zoekVluchtEindVec=null;
 const CORRECTIE_GLOW_DUUR=900; // ms pulsen, daarna blijft het land geel staan
 let jokerBeschikbaar=true, misserAutoTimer=null, goedAutoTimer=null;
 const MISSER_AUTO_MS=4000; // hoe lang de foutcorrectie in beeld blijft voor 'ie vanzelf doorschakelt
-// Verschillende teksten die getoond kunnen worden bij een fout antwoord — steeds
-// willekeurig één van gekozen, zodat het niet elke keer hetzelfde "Oepsie
-// woepsie" is.
-const FOUT_TEKSTEN = [
-  'Oepsie woepsie, hier is het!',
-  'Ho ho, hier moet je zijn, niet daar!',
-  'Kijk, dit is de juiste plek!',
-  'Als je nou hier je vlaggetje had gegooid, was het goed!',
-  'Ik presenteer... het enige goede land!',
-  'De volgende keer, gooi het vlaggetje dan hier!'
+// Verschillende teksten die getoond kunnen worden bij een fout antwoord in de
+// Landen-modus (Wereld/Europa) — welk setje gebruikt wordt hangt af van hoe
+// ver het gegooide vlaggetje van het juiste land af zat (vluchtAfwijkingKm),
+// zodat de reactie een beetje meebeweegt met hoe dichtbij je zat. Binnen een
+// setje wordt steeds willekeurig één tekst gekozen (zie kiesFoutTekst()).
+const FOUT_TEKSTEN_VER = [        // 5000 km of meer
+  'Oei, dat is een eind uit de richting!',
+  'Gelukkig hoef je het verschil niet te lopen!',
+  'Zal ik het land verplaatsen, dan klopt het weer',
+  'Dit is zo ver weg, wel twee keer de helft!'
 ];
+const FOUT_TEKSTEN_VRIJ_VER = [   // meer dan 1000, minder dan 5000 km
+  'Tsja... wat moet ik ervan zeggen',
+  'Dit zijn euh geen maximale punten he',
+  'Ach ja, nooit te oud om te leren',
+  'Kijk maar goed waar het wél ligt'
+];
+const FOUT_TEKSTEN_MIDDEN = [     // meer dan 500, tot en met 1000 km
+  'Je bent in de buurt, maar nog niet helemaal',
+  'Al doende leert men',
+  'Je had een idee, maar het idee deed niet helemaal mee',
+  'Het kón verder natuurlijk'
+];
+const FOUT_TEKSTEN_DICHTBIJ = [   // meer dan 100, tot en met 500 km
+  'Dit komt wel in de buurt',
+  'Je wist waar het lag, maar toch ook weer niet',
+  'Oepsie woepsie'
+];
+const FOUT_TEKSTEN_HEEL_DICHTBIJ = [ // 100 km of minder
+  'Nou, dat is sneu, bij-na!',
+  'Een windje blies je vlaggetje nét verkeerd',
+  'Je wist het, maar kon niet precies gooien',
+  'Nou... zó dichtbij!'
+];
+function kiesFoutTekst(km){
+  let set;
+  if(km >= 5000) set = FOUT_TEKSTEN_VER;
+  else if(km > 1000) set = FOUT_TEKSTEN_VRIJ_VER;
+  else if(km > 500) set = FOUT_TEKSTEN_MIDDEN;
+  else if(km > 100) set = FOUT_TEKSTEN_DICHTBIJ;
+  else set = FOUT_TEKSTEN_HEEL_DICHTBIJ;
+  return set[Math.floor(Math.random()*set.length)];
+}
 // Aparte feedback-teksten voor de hoofdsteden-modus (i.p.v. de teksten hierboven)
 const HOOFDSTEDEN_GOED_TEKSTEN = [
   'Goed zo!',
@@ -7998,7 +8030,7 @@ function updateSpel(){
         updateScorebordCijfers();
         correctieLand=vluchtDoelLand;
         correctieLandStartTijd=performance.now();
-        const foutTekst = FOUT_TEKSTEN[Math.floor(Math.random()*FOUT_TEKSTEN.length)];
+        const foutTekst = kiesFoutTekst(vluchtAfwijkingKm);
         toonFeedback(foutTekst,'#ff9900');
         toonPunten(vluchtAfwijkingKm);
         startMisserCountdown();
