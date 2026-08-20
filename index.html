@@ -1212,7 +1212,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.73</div>
+  <div id="versie-label">v0.3.74</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -3672,14 +3672,39 @@ const VLIEGFIGUUR_MAP = 'images/vliegtuigjes/';
 // 'drempel': hoeveel landenstempels (in totaal, over alle werelddelen samen)
 // er nodig zijn om dit personage vrij te spelen. Timbo staat op 0 - die kan
 // iedereen vanaf het begin gewoon spelen.
+// 'rookBestanden': het setje uitlaat-plaatjes voor dít personage (zie
+// laadRookAfbeeldingen hieronder) - null betekent geen rookspoor (vogel
+// zit in een ballon, alien is een UFO; geen van beide heeft een uitlaat).
 const VLIEGFIGUREN = [
-  { id:'timbo',  prefix:'Timbo',  heroBestand:'Timbo',  heroMap:'images/', basisBestand:'Wonky',  heeftBocht:true,  drempel:0   },
-  { id:'meisje', prefix:'meisje', heroBestand:'meisje', basisBestand:'meisje', heeftBocht:true,  drempel:10  },
-  { id:'vogel',  prefix:'vogel',  heroBestand:'vogel',  basisBestand:'vogel',  heeftBocht:true,  drempel:25  },
-  { id:'alien',  prefix:'alien',  heroBestand:'alien',  basisBestand:'alien',  heeftBocht:false, drempel:50  },
-  { id:'allen',  prefix:'allen',  heroBestand:'allen',  basisBestand:'allen',  heeftBocht:true,  drempel:90  },
-  { id:'kip',    prefix:'kip',    heroBestand:'kip',    basisBestand:'kip',    heeftBocht:true,  drempel:150 },
+  { id:'timbo',  prefix:'Timbo',  heroBestand:'Timbo',  heroMap:'images/', basisBestand:'Wonky',  heeftBocht:true,  drempel:0,
+    rookBestanden:['images/rookwolkje1.png','images/rookwolkje2.png'] },
+  { id:'meisje', prefix:'meisje', heroBestand:'meisje', basisBestand:'meisje', heeftBocht:true,  drempel:10,
+    rookBestanden:['images/rookwolkje_meisje1.png','images/rookwolkje_meisje2.png','images/rookwolkje_meisje_bloem.png','images/rookwolkje_meisje_blaadje.png'] },
+  { id:'vogel',  prefix:'vogel',  heroBestand:'vogel',  basisBestand:'vogel',  heeftBocht:true,  drempel:25,
+    rookBestanden:null },
+  { id:'alien',  prefix:'alien',  heroBestand:'alien',  basisBestand:'alien',  heeftBocht:false, drempel:50,
+    rookBestanden:null },
+  { id:'allen',  prefix:'allen',  heroBestand:'allen',  basisBestand:'allen',  heeftBocht:true,  drempel:90,
+    rookBestanden:['images/rookwolkje_allen1.png','images/rookwolkje_allen2.png','images/rookwolkje_allen3.png'] },
+  { id:'kip',    prefix:'kip',    heroBestand:'kip',    basisBestand:'kip',    heeftBocht:true,  drempel:150,
+    rookBestanden:['images/rookwolkje_kip1.png','images/rookwolkje_kip2.png','images/rookwolkje_kip_poep.png'] },
 ];
+
+// Rookwolkjes-plaatjes van het huidige personage - herladen door
+// laadRookAfbeeldingen() zodra het personage wisselt (aangeroepen vanuit
+// zetActiefVliegfiguur hieronder). Leeg = dit personage laat geen rookspoor
+// achter. Moet hier al staan (vóór initialiseerVliegfiguurVoorSpeler()
+// verderop, die bij het laden van de pagina meteen zetActiefVliegfiguur
+// aanroept) - anders bestaan rookImgs/rookWolkjes nog niet op het moment
+// dat ze voor het eerst gebruikt worden.
+let rookImgs = [];
+let rookWolkjes = [];
+function laadRookAfbeeldingen(fig){
+  rookImgs = (fig.rookBestanden||[]).map(pad=>{
+    const img = new Image(); img.src = pad; return img;
+  });
+  rookWolkjes = []; // laat geen wolkjes van het vorige personage doorlopen
+}
 
 // Is dit personage al vrijgespeeld? Gebaseerd op het totaal aantal
 // paspoortstempels van de speler, over alle werelddelen samen (dus niet per
@@ -3723,6 +3748,7 @@ function geefActiefVliegfiguurId(){
 // erin vliegt.
 function zetActiefVliegfiguur(id){
   const fig = VLIEGFIGUREN.find(f=>f.id===id) || VLIEGFIGUREN[0];
+  laadRookAfbeeldingen(fig);
   // #start-timbo (de grote foto links) raken we hier expres niet aan - die
   // blijft altijd gewoon Timbo, ongeacht wie er als personage gekozen is.
   // #figuur-kiezer-img is het kleine plaatje dat op de plek van het logo
@@ -6799,17 +6825,17 @@ function drawGlobe(){
   tekenWind(); // windvlagen van Jan de Wind, zelfde laag als de rookwolkjes
 }
 
-// ── Rookwolkjes: Wonky is een ouwe rammelpot ──────────
-// Zwarte pruttelwolkjes uit de staart, in wisselende grootte, die groeien,
-// wegdrijven en vervagen. Turbo geeft extra rook; bij stilhangen verschijnt
-// er telkens één wolkje op een vaste plek achter het vliegtuig.
-const rookImgs=['images/rookwolkje1.png','images/rookwolkje2.png'].map(pad=>{
-  const img=new Image(); img.src=pad; return img;
-});
-let rookWolkjes=[];
+// ── Rookwolkjes: elk personage zijn eigen uitlaat ──────────
+// Wolkjes uit de staart, in wisselende grootte, die groeien, wegdrijven en
+// vervagen. Turbo geeft extra rook; bij stilhangen verschijnt er telkens
+// één wolkje op een vaste plek achter het vliegtuig. Welke plaatjes hier
+// gebruikt worden (rookImgs) hangt af van het gekozen personage - zie
+// VLIEGFIGUREN.rookBestanden en laadRookAfbeeldingen() hierboven. Is
+// rookImgs leeg (vogel/alien), dan verschijnt er nooit een wolkje.
 let rookVolgende=0; // tijdstip waarop het volgende wolkje mag verschijnen
 
 function updateRook(wx,wy,scaleX,dx,dy,turbo,wonkyBreedte){
+  if(rookImgs.length===0) return; // dit personage heeft geen uitlaat (vogel/alien)
   const nu=performance.now();
   if(nu<rookVolgende) return;
   // Beweegt Wonky? Input telt, en ook nog-uitrollende snelheid na het loslaten.
