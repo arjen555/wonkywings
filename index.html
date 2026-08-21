@@ -1225,7 +1225,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.79</div>
+  <div id="versie-label">v0.3.80</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -3314,6 +3314,10 @@ let zoekVluchtActief=false, zoekVluchtStartTijd=0, zoekVluchtDuur=0;
 let zoekVluchtStartVec=null, zoekVluchtEindVec=null;
 const CORRECTIE_GLOW_DUUR=900; // ms pulsen, daarna blijft het land geel staan
 let jokerBeschikbaar=true, misserAutoTimer=null, goedAutoTimer=null;
+// Oplopend nummer per misser: voorkomt dat de vertraagde score-optelling
+// (zie toonPunten/vliegBeloningNaarDoel hieronder) alsnog toeslaat nadat de
+// speler de misser met de joker heeft teruggedraaid - zie gebruikJoker().
+let misserVerwerkingId=0;
 const MISSER_AUTO_MS=4000; // hoe lang de foutcorrectie in beeld blijft voor 'ie vanzelf doorschakelt
 // Verschillende teksten die getoond kunnen worden bij een fout antwoord in de
 // Landen-modus (Wereld/Europa) — welk setje gebruikt wordt hangt af van hoe
@@ -4738,6 +4742,7 @@ function gebruikJoker(){
     // Misser corrigeren: km-straf terugdraaien en meteen een nieuw land
     if(misserAutoTimer){ clearTimeout(misserAutoTimer); misserAutoTimer=null; }
     stopMisserCountdown();
+    misserVerwerkingId++; // maakt een eventueel nog vliegende '+X km' hierboven ongeldig
     score=vluchtScoreVoor;
     document.getElementById('score').textContent=score;
     updateScorebordCijfers();
@@ -8040,10 +8045,10 @@ function updateSpel(){
     dx=Math.sign(lonVerschil(prevLon,nLon))||0;
     dy=Math.sign(nLat-prevLat)||0;
     rotM=maakRotMatrix(wonkyLon,wonkyLat);
-
-    const scoreNu=Math.round(vluchtScoreVoor+(vluchtScoreNa-vluchtScoreVoor)*t);
-    document.getElementById('score').textContent=scoreNu;
-    zetKmCijfers(scoreNu);
+    // Het scorebord telt bewust NIET live mee tijdens deze vlucht: de km's
+    // mogen pas op het scorebord verschijnen op het moment dat de "+X km"
+    // vlieg-animatie daar ook echt aankomt (zie toonPunten hieronder) -
+    // anders lijkt het net of er twee keer wordt opgeteld.
 
     if(tRuw>=1){
       vluchtActief=false;
@@ -8077,14 +8082,22 @@ function updateSpel(){
         });
         toonPlekUitslag(huidigePlek ? huidigePlek.naam : huidigLand, punten);
       } else {
-        score=vluchtScoreNa;
-        document.getElementById('score').textContent=score;
-        updateScorebordCijfers();
         correctieLand=vluchtDoelLand;
         correctieLandStartTijd=performance.now();
         const foutTekst = kiesFoutTekst(vluchtAfwijkingKm);
         toonFeedback(foutTekst,'#ff9900');
-        toonPunten(vluchtAfwijkingKm, true);
+        // De km-straf wordt nu pas echt bijgeteld zodra de vliegende "+X km"
+        // hieronder het scorebord bereikt (opAankomst) - niet meteen hier.
+        // misserVerwerkingId voorkomt dat dit alsnog gebeurt als de speler
+        // ondertussen de joker gebruikt om deze misser terug te draaien.
+        misserVerwerkingId++;
+        const dezeMisserId = misserVerwerkingId;
+        toonPunten(vluchtAfwijkingKm, true, ()=>{
+          if(dezeMisserId !== misserVerwerkingId) return;
+          score += vluchtAfwijkingKm;
+          document.getElementById('score').textContent=score;
+          updateScorebordCijfers();
+        });
         startMisserCountdown();
         misserAutoTimer=setTimeout(nieuwLand,MISSER_AUTO_MS);
       }
@@ -8473,10 +8486,10 @@ function toonGoedBanner(){
 // als de muntjes. Puur decoratief: de score zelf loopt tijdens de
 // correctievlucht al op via de vluchtActief-animatie in de update-loop, dus
 // deze vlucht verandert de score niet nogmaals (opAankomst hieronder is leeg).
-function toonPunten(p, vliegNaarScorebord){
+function toonPunten(p, vliegNaarScorebord, opAankomst){
   if(vliegNaarScorebord && p>0){
     const sx = window.innerWidth*0.5, sy = window.innerHeight*0.36;
-    vliegBeloningNaarDoel('+'+p+' km', sx, sy, document.getElementById('scorebord-wrap'), ()=>{});
+    vliegBeloningNaarDoel('+'+p+' km', sx, sy, document.getElementById('scorebord-wrap'), opAankomst || (()=>{}));
     return;
   }
   const el=document.getElementById('punten-feedback');
