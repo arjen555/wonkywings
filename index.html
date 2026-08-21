@@ -1027,6 +1027,13 @@
     #correctie-land-naam { position:fixed; background:rgba(120,90,0,0.85); color:#fff9d6; font-size:1rem; font-weight:800; padding:5px 16px; border-radius:10px; pointer-events:none; white-space:nowrap; opacity:0; transition:opacity 0.2s; z-index:8; transform:translate(-50%,-100%); box-shadow:0 0 14px rgba(255,224,102,0.6); }
     #feedback { position:fixed; top:42%; left:50%; transform:translate(-50%,-50%); font-size:3rem; font-weight:900; pointer-events:none; opacity:0; text-shadow:0 4px 20px rgba(0,0,0,0.8); z-index:30; transition:opacity 0.3s; text-align:center; max-width:85vw; text-wrap:balance; }
     #punten-feedback { position:fixed; top:36%; left:50%; transform:translate(-50%,-50%); font-size:1.6rem; font-weight:900; pointer-events:none; opacity:0; color:#ffd700; text-shadow:0 4px 20px rgba(0,0,0,0.8); z-index:30; transition:opacity 0.3s; }
+    /* Hoera-kader: het plaatje (Hoera.png) plus de erin gecentreerde tekst.
+       54% i.p.v. 50% verticaal, en 64% breed: dat is precies het lege
+       perkament-vlak binnen het plaatje, tussen het kompas bovenin en de
+       tandwielen onderin (opgemeten op het bronbestand). */
+    #goed-banner { position:fixed; top:42%; left:50%; transform:translate(-50%,-50%); width:clamp(260px, 34vw, 460px); pointer-events:none; opacity:0; transition:opacity 0.3s; z-index:30; }
+    #goed-banner img { display:block; width:100%; height:auto; filter:drop-shadow(0 6px 16px rgba(0,0,0,0.45)); }
+    #goed-banner-tekst { position:absolute; left:50%; top:54%; transform:translate(-50%,-50%); width:64%; text-align:center; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:clamp(1.15rem, 3.1vw, 2.15rem); color:#6b3a1a; text-shadow:0 1px 0 rgba(255,255,255,0.35); }
     #muntje-feedback { position:fixed; left:0; top:0; transform:translate(-50%,-50%); font-weight:900; pointer-events:none; opacity:0; color:#ffe066; text-shadow:0 3px 4px rgba(0,0,0,0.6), 0 0 22px rgba(255,200,0,0.9); z-index:120; white-space:nowrap; }
     #ronde-display { font-size:1.2rem; font-weight:700; color:rgba(255,255,255,0.8); }
     #voortgang-bord {
@@ -1212,7 +1219,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.75</div>
+  <div id="versie-label">v0.3.77</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1519,6 +1526,12 @@
   <div id="correctie-land-naam"></div>
   <div id="feedback"></div>
   <div id="punten-feedback"></div>
+  <!-- Hoera-kader: vervangt bij een goede drop in de Landen-modus (Wereld/
+       Europa) de vroegere platte "🎉 Goed zo!"-tekst - zie toonGoedBanner(). -->
+  <div id="goed-banner">
+    <img src="images/Hoera.png" alt=""/>
+    <div id="goed-banner-tekst"></div>
+  </div>
   <div id="richting-rij">
     <div class="richting-knop" onclick="gebruikRichtingwijzer(0)"><img src="images/aanwijzer.png" alt="Richtingaanwijzer"/></div>
     <div class="richting-knop" onclick="gebruikRichtingwijzer(1)"><img src="images/aanwijzer.png" alt="Richtingaanwijzer"/></div>
@@ -3339,6 +3352,23 @@ function kiesFoutTekst(km){
   else set = FOUT_TEKSTEN_HEEL_DICHTBIJ;
   return set[Math.floor(Math.random()*set.length)];
 }
+// Teksten bij een goede drop in de Landen-modus (Wereld/Europa) - getoond in
+// het hoera-kader (zie toonGoedBanner()), steeds willekeurig één van gekozen.
+const GOED_TEKSTEN = [
+  'Goed zo!',
+  'Bingo!',
+  'Nou en of!',
+  'Topper!',
+  'Rrrraak!',
+  'Wauw!',
+  'In de roos!',
+  "That's it!",
+  'Hoppaaa!',
+  'Kwaliteit!',
+  'Slay!',
+  'Kanjer!',
+  'Boelie!'
+];
 // Aparte feedback-teksten voor de hoofdsteden-modus (i.p.v. de teksten hierboven)
 const HOOFDSTEDEN_GOED_TEKSTEN = [
   'Goed zo!',
@@ -6829,8 +6859,24 @@ function drawGlobe(){
   if(vluchtActief){
     ctx.save();
     ctx.lineCap='round'; ctx.lineJoin='round';
-    ctx.shadowColor='#ffe066'; ctx.shadowBlur=14;
-    ctx.strokeStyle='rgba(255,224,102,0.9)'; ctx.lineWidth=3;
+    // Windlint i.p.v. de vroegere effen gele lijn: een lichtblauw-wit lint
+    // waarvan de streepjes voortdurend langs het pad stromen - past bij de
+    // wind die het vliegtuigje tijdens deze correctievlucht voortstuwt. Puur
+    // een stijlwijziging van deze ene lijn; Jan de Wind zelf en zijn
+    // windvlaagjes blijven hier volledig buiten.
+    const p3Start = roteerPunt(vluchtStartVec, rotM);
+    const p3Eind  = roteerPunt(vluchtEindVec, rotM);
+    const windGrad = ctx.createLinearGradient(
+      CX+p3Start[0]*R, CY-p3Start[1]*R,
+      CX+p3Eind[0]*R,  CY-p3Eind[1]*R
+    );
+    windGrad.addColorStop(0, 'rgba(190,225,255,0.95)');
+    windGrad.addColorStop(1, 'rgba(255,255,255,0.95)');
+    ctx.shadowColor='rgba(190,225,255,0.75)'; ctx.shadowBlur=12;
+    ctx.strokeStyle=windGrad; ctx.lineWidth=3;
+    const WINDLINT_STREEP=[12,9];
+    ctx.setLineDash(WINDLINT_STREEP);
+    ctx.lineDashOffset = -(performance.now()/1000*40) % (WINDLINT_STREEP[0]+WINDLINT_STREEP[1]);
     ctx.beginPath();
     let pen=false;
     const STAPPEN=48;
@@ -8120,6 +8166,12 @@ function updateSpel(){
     wonkySadEl.style.display='none';
     wonkyDropt.style.display='block';
     { const h=wonkyDropt.offsetWidth/2; wonkyDropt.style.left=(wx-h)+'px'; wonkyDropt.style.top=(wy-h)+'px'; }
+    // Was hier vergeten: zonder deze regel bleef het dropt-plaatje altijd in
+    // zijn ongespiegelde basisrichting staan, ongeacht welke kant Wonky net
+    // op vloog - dan leek de kijkrichting op het moment van droppen ineens
+    // om te slaan. laatsteScaleX is de laatst bekende vliegrichting (wordt
+    // ook gebruikt voor de blij/sad-reacties), dus die hergebruiken we hier.
+    wonkyDropt.style.transform = `scaleX(${laatsteScaleX})`;
     if(performance.now()-dropAnimatieTimer > DROP_ANIMATIE_DUUR) dropAnimatieActief=false;
   } else if(toontOmbocht){
     wonkyEl.style.display='none'; wonkyTurbo.style.display='none'; wonkyDropt.style.display='none';
@@ -8397,6 +8449,17 @@ function toonFeedback(t,k){
   el.textContent=t; el.style.color=k; el.style.opacity='1';
   setTimeout(()=>{ el.style.opacity='0'; },1800);
 }
+// Hoera-kader bij een goede drop in de Landen-modus (Wereld/Europa) - vervangt
+// de vroegere platte "🎉 Goed zo!"-tekst. Zelfde duur (1800ms) als de andere
+// feedback-teksten, zodat hij precies wegvaagt op het moment dat nieuwLand()
+// het volgende land laat verschijnen (zie de goedAutoTimer bij dropVlaggetje).
+function toonGoedBanner(){
+  const tekst = GOED_TEKSTEN[Math.floor(Math.random()*GOED_TEKSTEN.length)];
+  const el = document.getElementById('goed-banner');
+  document.getElementById('goed-banner-tekst').textContent = tekst;
+  el.style.opacity='1';
+  setTimeout(()=>{ el.style.opacity='0'; },1800);
+}
 function toonPunten(p){
   const el=document.getElementById('punten-feedback');
   el.textContent=(p===0?'Raak! 0 km':'+'+p+' km');
@@ -8503,7 +8566,7 @@ function dropVlaggetje(){
       zetKmCijfers(score);
       const nieuweStempel = verdienStempelVoorLand(huidigLand);
       if(nieuweStempel) dezeRondeVerdiendeLanden.push(nieuweStempel);
-      toonFeedback('🎉 Goed zo!','#ffd700');
+      toonGoedBanner();
       toonPunten(afwijkingKm);
       toonReactie('blij');
       goedAutoTimer=setTimeout(()=>{ goedAutoTimer=null; nieuwLand(); },1800);
