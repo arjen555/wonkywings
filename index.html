@@ -727,10 +727,16 @@
       border-radius:50%; z-index:1001;
       box-shadow:0 0 0 4px rgba(255,246,200,0.92), 0 8px 22px rgba(0,0,0,0.55);
     }
+    /* Vast linksboven i.p.v. onderaan de kaart: bij een lange ranglijst (bijv.
+       Heel Europa) schoof deze knop anders ver naar beneden mee en leek het
+       alsof je niet meer terug kon naar het startmenu. Zelfde plek/stijl als
+       de terug-knop in het Paspoort. z-index 1001: net als het paspoort-
+       icoontje boven alle pop-ups (rad/help/diploma, die op 997-999 zitten). */
     #hoofdsteden-resultaat-terug-btn, #scorebord-terug-btn, #plekken-eind-verder {
+      position:fixed; left:14px; top:14px; z-index:1001;
       width:clamp(130px, 13vw, 210px); border:none; background:none; padding:0;
       cursor:pointer; opacity:0.92; transition:opacity 0.15s, transform 0.15s;
-      display:block; margin:14px auto 0;
+      filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5));
     }
     #hoofdsteden-resultaat-terug-btn img, #scorebord-terug-btn img, #plekken-eind-verder img {
       width:100%; display:block;
@@ -1219,7 +1225,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.77</div>
+  <div id="versie-label">v0.3.79</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -8078,7 +8084,7 @@ function updateSpel(){
         correctieLandStartTijd=performance.now();
         const foutTekst = kiesFoutTekst(vluchtAfwijkingKm);
         toonFeedback(foutTekst,'#ff9900');
-        toonPunten(vluchtAfwijkingKm);
+        toonPunten(vluchtAfwijkingKm, true);
         startMisserCountdown();
         misserAutoTimer=setTimeout(nieuwLand,MISSER_AUTO_MS);
       }
@@ -8460,7 +8466,19 @@ function toonGoedBanner(){
   el.style.opacity='1';
   setTimeout(()=>{ el.style.opacity='0'; },1800);
 }
-function toonPunten(p){
+// vliegNaarScorebord: alleen gebruikt bij een foute drop (zie de aanroep
+// hierboven bij de correctievlucht) - laat de "+X km" net als een gevangen
+// muntje eerst even centraal staan (dezelfde MUNTJE_LEESPAUZE_MS) en dan naar
+// het scorebord rechtsboven wegvliegen, via dezelfde vliegBeloningNaarDoel()
+// als de muntjes. Puur decoratief: de score zelf loopt tijdens de
+// correctievlucht al op via de vluchtActief-animatie in de update-loop, dus
+// deze vlucht verandert de score niet nogmaals (opAankomst hieronder is leeg).
+function toonPunten(p, vliegNaarScorebord){
+  if(vliegNaarScorebord && p>0){
+    const sx = window.innerWidth*0.5, sy = window.innerHeight*0.36;
+    vliegBeloningNaarDoel('+'+p+' km', sx, sy, document.getElementById('scorebord-wrap'), ()=>{});
+    return;
+  }
   const el=document.getElementById('punten-feedback');
   el.textContent=(p===0?'Raak! 0 km':'+'+p+' km');
   el.style.opacity='1';
