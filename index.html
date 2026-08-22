@@ -83,14 +83,15 @@
     .opties-sub-knop { font-size:0.72rem; padding:6px 16px; opacity:0.92; }
 
     /* ── Landenpaspoort- en Boek-der-Groten-icoon: naast elkaar onderaan
-       het startmenu, samen even breed als het logo. ── */
+       het startmenu, even breed als de knoppen erboven. ── */
     #startscherm-icoontjes {
       display:flex; justify-content:center; align-items:flex-end;
-      gap:clamp(8px, 2vw, 16px);
-      width:min(280px, 72%); margin:0 auto;
+      gap:clamp(10px, 2.5vw, 20px);
+      width:100%; margin:0 auto;
     }
     #paspoort-icoon-knop, #boek-icoon-knop {
-      height:clamp(100px, 18vw, 160px); width:auto; max-width:48%;
+      height:clamp(80px, 11vw, 130px); width:auto;
+      object-fit:contain;
       cursor:pointer;
       filter:drop-shadow(0 4px 16px rgba(0,0,0,0.5));
       transition:transform 0.15s;
@@ -1223,7 +1224,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.85</div>
+  <div id="versie-label">v0.3.86</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
