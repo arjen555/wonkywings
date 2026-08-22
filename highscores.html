@@ -32,34 +32,41 @@ body{
 .terug-knop img{ width:100%; display:block; }
 .terug-knop:hover{ opacity:1; transform:scale(1.03); }
 
-/* ── Navigatieknoppen (verticaal onder terugknop) ──── */
-.nav-knoppen{
-  position:fixed; left:14px; top:clamp(70px, 14vw + 20px, 240px);
-  z-index:100; display:flex; flex-direction:column; gap:5px;
+/* ── Tabbladenstrip (menu): rijtje "register"-tabjes bovenaan het boek,
+   gecentreerd tussen de twee bladzijdes. Staat in de rand boven het boek,
+   dus nooit meer over de kaartjes heen - los van hoeveel scores er staan. */
+.tabblad-strip{
+  position:fixed; left:50%; top:clamp(8px, 1.6vw, 18px);
+  transform:translateX(-50%);
+  z-index:100; display:flex; gap:3px;
 }
 .nav-btn{
   font-family:'Baloo 2',cursive,sans-serif;
-  font-size:clamp(.7rem, 1.8vw, .88rem); font-weight:700;
-  padding:4px 14px; border:1.5px solid rgba(201,168,76,.6);
-  border-radius:8px; cursor:pointer;
-  background:rgba(26,39,68,.75); color:#f4e8c1;
-  text-align:left; white-space:nowrap;
-  backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
-  transition:background .2s, color .2s, border-color .2s;
+  font-size:clamp(.72rem, 1.3vw, .9rem); font-weight:700;
+  padding:7px 16px 6px; border:1.5px solid rgba(90,68,32,.55); border-bottom:none;
+  border-radius:8px 8px 0 0; cursor:pointer;
+  background:linear-gradient(180deg,rgba(201,168,76,.55),rgba(168,132,26,.55));
+  color:#4a3818; white-space:nowrap;
+  box-shadow:0 -2px 6px rgba(0,0,0,.15);
+  transition:background .2s, color .2s, transform .15s, box-shadow .2s;
 }
-.nav-btn:hover{ background:rgba(201,168,76,.35); color:#fff;
-  border-color:#c9a84c; }
+.nav-btn:hover{
+  background:linear-gradient(180deg,rgba(201,168,76,.75),rgba(168,132,26,.7));
+  color:#2a1f0c;
+}
 .nav-btn.actief{
-  background:linear-gradient(135deg,#c9a84c,#a8841a);
-  color:#1a2744; border-color:#c9a84c;
+  background:linear-gradient(180deg,#f4e8c1,#c9a84c);
+  color:#3a2c14; border-color:#8a6a24;
+  transform:translateY(-3px);
+  box-shadow:0 -4px 10px rgba(0,0,0,.3);
 }
 
 /* ── Twee-pagina layout (linker- en rechterbladzijde) ─ */
 .boek-paginas{
   display:grid;
   grid-template-columns:1fr 1fr;
-  gap:clamp(30px, 5vw, 80px);         /* ruimte voor de boekrug */
-  padding:clamp(50px,8vw,90px) clamp(30px,5vw,70px) 30px;
+  gap:clamp(40px, 8.6vw, 170px);      /* ruimte voor de boekrug */
+  padding:clamp(64px,14vh,130px) clamp(60px,13.85vw,250px) clamp(56px,10vh,110px);
   width:100%; height:100%;
   overflow:hidden;
 }
@@ -77,9 +84,9 @@ body{
 
 /* Pagina-titel (bv. "Landen" bovenaan de linkerpagina) */
 .pagina-titel{
-  font-size:clamp(.85rem,2.2vw,1.15rem); font-weight:800;
-  color:#5a4420; text-align:center; margin:0 0 8px;
-  padding-bottom:4px;
+  font-size:clamp(1.05rem,2.6vw,1.4rem); font-weight:800;
+  color:#5a4420; text-align:center; margin:0 0 10px;
+  padding-bottom:5px;
   border-bottom:1.5px solid rgba(201,168,76,.4);
   text-shadow:0 1px 0 rgba(244,232,193,.5);
 }
@@ -95,46 +102,54 @@ body{
 }
 .subsectie-kop{
   background:linear-gradient(90deg,rgba(201,168,76,.7),rgba(168,132,26,.5));
-  padding:5px 10px; cursor:pointer;
+  padding:6px 10px; cursor:pointer;
   display:flex; align-items:center; justify-content:space-between;
 }
 .subsectie-kop h3{
-  font-size:clamp(.72rem,1.8vw,.92rem); font-weight:700;
+  font-size:clamp(.92rem,2.1vw,1.15rem); font-weight:700;
   color:#3a2c14; margin:0;
 }
 .subsectie-kop .pijl{
-  font-size:.85rem; color:#3a2c14; transition:transform .25s;
+  font-size:.95rem; color:#3a2c14; transition:transform .25s;
 }
 .subsectie.dicht .subsectie-kop .pijl{ transform:rotate(-90deg); }
 .subsectie.dicht .subsectie-inhoud{ display:none; }
 
-.subsectie-inhoud{ padding:5px 6px 6px; }
+.subsectie-inhoud{ padding:6px 7px 7px; }
 
 /* ── Kolom-layout (All-time / Vandaag) ──────────────── */
 .kolommen{
-  display:grid; grid-template-columns:1fr 1fr; gap:6px;
+  display:grid; grid-template-columns:1fr 1fr; gap:8px;
 }
 @media(max-width:700px){
   .kolommen{ grid-template-columns:1fr; }
 }
 .kolom-titel{
-  font-size:.68rem; font-weight:700; color:#6b5a2e;
-  text-align:center; padding:2px 0 1px;
-  border-bottom:1px solid rgba(201,168,76,.4); margin-bottom:3px;
+  font-size:.85rem; font-weight:700; color:#6b5a2e;
+  text-align:center; padding:3px 0 2px;
+  border-bottom:1px solid rgba(201,168,76,.4); margin-bottom:4px;
 }
 
 /* ── Scoretabel ─────────────────────────────────────── */
 .score-tabel{
-  width:100%; border-collapse:collapse; font-size:clamp(.58rem,1.4vw,.72rem);
+  width:100%; border-collapse:collapse; table-layout:fixed;
+  font-size:clamp(.8rem,1.7vw,.98rem);
 }
 .score-tabel th{
   font-weight:700; color:#6b5a2e; text-align:left;
-  padding:1px 3px; border-bottom:1px solid #d4c8a0;
-  font-size:clamp(.55rem,1.2vw,.65rem);
+  padding:2px 4px; border-bottom:1px solid #d4c8a0;
+  font-size:clamp(.72rem,1.5vw,.85rem);
 }
-.score-tabel th:first-child{ width:22px; text-align:center; }
+/* Vaste kolombreedtes, gelijk in élke tabel op de pagina - zo staan
+   #, Naam, Afstand en Tijd altijd recht onder elkaar, ongeacht hoe lang
+   een naam toevallig is. */
+.score-tabel th:nth-child(1), .score-tabel td:nth-child(1){ width:13%; text-align:center; }
+.score-tabel th:nth-child(2), .score-tabel td:nth-child(2){ width:38%; }
+.score-tabel th:nth-child(3), .score-tabel td:nth-child(3){ width:26%; }
+.score-tabel th:nth-child(4), .score-tabel td:nth-child(4){ width:23%; }
 .score-tabel td{
-  padding:1px 3px; border-bottom:1px solid rgba(201,168,76,.2);
+  padding:2px 4px; border-bottom:1px solid rgba(201,168,76,.2);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
 .score-tabel td:first-child{
   text-align:center; font-weight:700; color:#a8841a;
@@ -146,6 +161,9 @@ body{
 .score-tabel tr.top2 td:first-child{ color:#8a8a8a; }
 .score-tabel tr.top3 td:first-child{ color:#a0522d; }
 
+/* Naam van de speler die nu actief is (zelfde naam als op het naamscherm) */
+.eigen-naam-cel{ font-weight:800; }
+
 /* Scrollbaar deel na top 10 */
 .scroll-wrap{
   max-height:0; overflow:hidden;
@@ -156,43 +174,45 @@ body{
 .meer-knop{
   display:block; width:100%; text-align:center;
   font-family:'Baloo 2',cursive,sans-serif;
-  font-size:.62rem; font-weight:600;
+  font-size:.8rem; font-weight:600;
   color:#6b5a2e; background:rgba(201,168,76,.15);
   border:1px solid rgba(201,168,76,.4); border-radius:5px;
-  padding:2px 0; margin-top:3px; cursor:pointer;
+  padding:3px 0; margin-top:4px; cursor:pointer;
   transition:background .2s;
 }
 .meer-knop:hover{ background:rgba(201,168,76,.3); }
 
 .leeg-tekst{
-  text-align:center; color:#9a8a60; font-size:.68rem;
-  padding:5px 0; font-style:italic;
+  text-align:center; color:#9a8a60; font-size:.85rem;
+  padding:6px 0; font-style:italic;
 }
 
 /* ── Medaille-icoontjes bij top 3 ───────────────────── */
-.medaille{ font-size:.75em; }
+.medaille{ font-size:.8em; }
 
 /* ── Geen-scores-bericht per hele sectie ─────────────── */
 .sectie-leeg{
-  text-align:center; color:#8a7a50; font-size:.78rem;
+  text-align:center; color:#8a7a50; font-size:.95rem;
   padding:20px 8px; opacity:.7; font-style:italic;
 }
 
-/* ── Mobiel: kolommen worden 1 kolom ────────────────── */
+/* ── Mobiel: kolommen worden 1 kolom, tabbladen naar onderen ────────── */
 @media(max-width:600px){
   .boek-paginas{
     grid-template-columns:1fr;
     gap:0;
-    padding:clamp(50px,15vw,100px) 16px 20px;
+    padding:clamp(50px,15vw,100px) 16px 76px;
     overflow-y:auto;
   }
-  .nav-knoppen{
-    left:auto; right:14px;
-    top:14px;
-    flex-direction:row; flex-wrap:wrap;
-    gap:4px;
+  .tabblad-strip{
+    left:50%; top:auto; bottom:10px; transform:translateX(-50%);
+    flex-wrap:wrap; justify-content:center; max-width:94vw; gap:4px;
   }
-  .nav-btn{ font-size:.65rem; padding:3px 8px; }
+  .nav-btn{
+    font-size:.68rem; padding:5px 10px 4px;
+    border-radius:7px; border-bottom:1.5px solid rgba(90,68,32,.55);
+  }
+  .nav-btn.actief{ transform:none; }
 }
 </style>
 </head>
@@ -204,8 +224,8 @@ body{
        onerror="this.parentElement.textContent='⬅ Terug'"/>
 </button>
 
-<!-- Navigatieknoppen -->
-<nav class="nav-knoppen" id="nav-knoppen">
+<!-- Navigatie: tabbladen bovenaan het boek -->
+<nav class="tabblad-strip" id="nav-knoppen">
   <button class="nav-btn actief" data-sectie="landen">Landen</button>
   <button class="nav-btn" data-sectie="hoofdsteden">Hoofdsteden</button>
   <button class="nav-btn" data-sectie="plekken">Iconische plekken</button>
@@ -227,6 +247,14 @@ body{
 // ── Testfilter ────────────────────────────────────────
 var TEST_NAMEN = ['test1','test2'];
 function isTestNaam(n){ return TEST_NAMEN.includes((n||'').toLowerCase().trim()); }
+
+// ── Actieve speler (zelfde naam-sleutel als index.html/raadspel.html) ──
+// Zo kunnen we de naam van de speler die nu op dit apparaat actief is,
+// vetgedrukt tonen als die in een scorelijst voorkomt.
+var SPELERNAAM_SLEUTEL = 'wonkywings_spelernaam';
+function actieveSpelerNaamLC(){
+  return (localStorage.getItem(SPELERNAAM_SLEUTEL) || '').trim().toLowerCase();
+}
 
 // ── Helpers ───────────────────────────────────────────
 function isVandaag(d){
@@ -393,6 +421,8 @@ function maakTabel(rijen, startIndex, type){
   thead.appendChild(hr);
   tabel.appendChild(thead);
 
+  var actieveNaam = actieveSpelerNaamLC();
+
   var tbody = document.createElement('tbody');
   for(var i=0; i<rijen.length; i++){
     var run = rijen[i];
@@ -410,6 +440,10 @@ function maakTabel(rijen, startIndex, type){
 
     var tdNaam = document.createElement('td');
     tdNaam.textContent = run.naam || '?';
+    tdNaam.title = run.naam || '?';
+    if(actieveNaam && (run.naam||'').trim().toLowerCase() === actieveNaam){
+      tdNaam.classList.add('eigen-naam-cel');
+    }
 
     var tdScore = document.createElement('td');
     if(type==='raad'){
