@@ -794,10 +794,14 @@ function formatTijdMs(ms){
 
 // ── Ronde klaar: opslaan + scorebord ──
 function scorebordSleutelRaadspel(catId){ return 'wonkywings_raadspel_scores_'+catId; }
-function opslaanRaadspelScore(catId, naam, goed, tijdMs){
+// 'totaal' = het werkelijke aantal vragen van déze ronde (vraagLijst.length),
+// zodat het scorebord (hier én in highscores.html) altijd "x van de y" kan
+// tonen zonder te hoeven gokken - eerder ontbrak dit veld, waardoor oudere
+// scores altijd op een noodgreep-schatting terugvielen.
+function opslaanRaadspelScore(catId, naam, goed, tijdMs, totaal){
   let lijst=[];
   try{ lijst = JSON.parse(localStorage.getItem(scorebordSleutelRaadspel(catId))||'[]'); }catch(e){ lijst=[]; }
-  const nieuweRun = {naam, goed, tijdMs, datum:Date.now()};
+  const nieuweRun = {naam, goed, tijdMs, totaal, datum:Date.now()};
   lijst.push(nieuweRun);
   // Meeste goed bovenaan; bij gelijke stand de snelste tijd
   lijst.sort((a,b)=> (b.goed-a.goed) || (a.tijdMs-b.tijdMs) );
@@ -811,7 +815,7 @@ function ladenRaadspelScores(catId){
 
 function rondeKlaar(){
   pauzeTimer();
-  const {lijst, nieuweRun} = opslaanRaadspelScore(huidigeCategorie.id, huidigeSpelerNaam(), aantalGoed, tijdVerstreken);
+  const {lijst, nieuweRun} = opslaanRaadspelScore(huidigeCategorie.id, huidigeSpelerNaam(), aantalGoed, tijdVerstreken, vraagLijst.length);
   document.getElementById('klaar-titel').textContent = 'Klaar!';
   document.getElementById('klaar-resultaat').textContent =
     huidigeCategorie.naam+': '+aantalGoed+' van de '+vraagLijst.length+' goed, in '+formatTijdMs(tijdVerstreken);

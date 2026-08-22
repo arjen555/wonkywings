@@ -219,7 +219,7 @@ body{
 <body>
 
 <!-- Terug naar start -->
-<button class="terug-knop" onclick="window.location.href='index.html'" title="Terug naar start">
+<button class="terug-knop" onclick="ganNaarStart()" title="Terug naar start">
   <img src="images/terug-naar-start-knop.png" alt="Terug naar start"
        onerror="this.parentElement.textContent='⬅ Terug'"/>
 </button>
@@ -248,12 +248,28 @@ body{
 var TEST_NAMEN = ['test1','test2'];
 function isTestNaam(n){ return TEST_NAMEN.includes((n||'').toLowerCase().trim()); }
 
+// Zelfde waarde als AANTAL_VRAGEN_MAX in raadspel.html - gebruikt als
+// terugvalwaarde bij "Raad je plaatje"-scores die nog geen totaal-veld
+// hebben (zie de toelichting verderop bij het tonen van de score).
+var AANTAL_VRAGEN_MAX_FALLBACK = 10;
+
 // ── Actieve speler (zelfde naam-sleutel als index.html/raadspel.html) ──
 // Zo kunnen we de naam van de speler die nu op dit apparaat actief is,
 // vetgedrukt tonen als die in een scorelijst voorkomt.
 var SPELERNAAM_SLEUTEL = 'wonkywings_spelernaam';
 function actieveSpelerNaamLC(){
   return (localStorage.getItem(SPELERNAAM_SLEUTEL) || '').trim().toLowerCase();
+}
+
+// Zelfde sessionStorage-sleutel als index.html/raadspel.html/paspoort.html
+// gebruiken: laat aan index.html weten dat we via een menu-knop terugkomen,
+// zodat het verplichte naamscherm daar wordt overgeslagen - de naam is al
+// bekend en actief gebruikt. Zonder dit vlaggetje dacht index.html steeds
+// dat er een gloednieuwe speler binnenkwam.
+var VAN_MENU_NAVIGATIE_SLEUTEL = 'wonkywings_van_menu_navigatie';
+function ganNaarStart(){
+  sessionStorage.setItem(VAN_MENU_NAVIGATIE_SLEUTEL, '1');
+  window.location.href = 'index.html';
 }
 
 // ── Helpers ───────────────────────────────────────────
@@ -447,7 +463,11 @@ function maakTabel(rijen, startIndex, type){
 
     var tdScore = document.createElement('td');
     if(type==='raad'){
-      var totaal = run.totaal || '?';
+      // Oudere scores (van vóór raadspel.html het totaal zelf opsloeg)
+      // kennen run.totaal niet - elke categorie telt inmiddels minstens
+      // AANTAL_VRAGEN_MAX vragen per ronde, dus die waarde klopt ook voor
+      // die oudere scores. Zelfde getal als AANTAL_VRAGEN_MAX in raadspel.html.
+      var totaal = run.totaal || AANTAL_VRAGEN_MAX_FALLBACK;
       tdScore.textContent = run.goed + '/' + totaal;
     } else {
       tdScore.textContent = (run.km != null ? run.km + ' km' : '-');
