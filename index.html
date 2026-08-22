@@ -1222,7 +1222,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.83</div>
+  <div id="versie-label">v0.3.84</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2438,6 +2438,10 @@ function zetMenuUitgeklapt(open){
   // plekken en Raad je plaatje doen dat niet en blijven dus buiten schot.
   toonFiguurKiezer(open);
 }
+// Testaccounts: scores worden gewoon opgeslagen maar nooit getoond.
+const TEST_NAMEN = ['test1','test2'];
+function isTestNaam(n){ return TEST_NAMEN.includes((n||'').toLowerCase().trim()); }
+
 function bouwStartscherm() {
   const lijst = document.getElementById('level-lijst');
   lijst.innerHTML = '';
@@ -4520,8 +4524,6 @@ function updateScorebordCijfers(){
 
 // ── Scorebord (voorlopig lokaal, per level, op dit apparaat) ──
 // Testaccounts: scores worden gewoon opgeslagen maar nooit getoond.
-const TEST_NAMEN = ['test1','test2'];
-function isTestNaam(n){ return TEST_NAMEN.includes((n||'').toLowerCase().trim()); }
 
 function scorebordSleutel(levelId){ return 'wonkywings_scores_'+levelId; }
 function opslaanScore(levelNr, naam, km, tijdSec){
