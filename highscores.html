@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<title>Boek der Groten — Oh Mooie Wereld!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+/* ── Reset & basis ──────────────────────────────────── */
+*{ box-sizing:border-box; margin:0; padding:0; }
+html,body{ width:100%; min-height:100%; overflow-x:hidden;
+  font-family:'Baloo 2',cursive,sans-serif; color:#3a2c14; }
+
+body{
+  background:#1a2744;
+  background-image:url('images/boek-achtergrond.png');
+  background-size:cover;
+  background-position:center top;
+  background-repeat:no-repeat;
+  background-attachment:fixed;
+}
+
+/* ── Titelbalk ──────────────────────────────────────── */
+.titel-balk{
+  text-align:center; padding:18px 12px 6px;
+}
+.titel-balk h1{
+  font-size:clamp(1.4rem,4vw,2rem); font-weight:800;
+  color:#f4e8c1; text-shadow:2px 2px 6px rgba(0,0,0,.6);
+  letter-spacing:.5px;
+}
+
+/* ── Tabs / bladwijzers ─────────────────────────────── */
+.tabs{
+  display:flex; justify-content:center; flex-wrap:wrap;
+  gap:6px; padding:6px 10px 10px; position:sticky; top:0;
+  z-index:50; background:rgba(26,39,68,.85);
+  backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+}
+.tab-knop{
+  font-family:'Baloo 2',cursive,sans-serif;
+  font-size:clamp(.78rem,2.2vw,.95rem); font-weight:700;
+  padding:6px 14px; border:2px solid #c9a84c;
+  border-radius:8px 8px 0 0; cursor:pointer;
+  background:linear-gradient(180deg,#3a2c14 0%,#1a2744 100%);
+  color:#f4e8c1; transition:background .2s,color .2s;
+  white-space:nowrap;
+}
+.tab-knop:hover{ background:#c9a84c; color:#1a2744; }
+.tab-knop.actief{
+  background:linear-gradient(180deg,#c9a84c 0%,#a8841a 100%);
+  color:#1a2744; border-bottom-color:transparent;
+}
+
+/* ── Container ──────────────────────────────────────── */
+.inhoud{
+  max-width:900px; margin:0 auto; padding:10px 12px 60px;
+}
+
+/* ── Sectie (per speltype) ──────────────────────────── */
+.sectie{ display:none; }
+.sectie.actief{ display:block; }
+
+.sectie-titel{
+  font-size:clamp(1.1rem,3vw,1.5rem); font-weight:800;
+  color:#f4e8c1; text-align:center; margin:10px 0 14px;
+  text-shadow:1px 1px 4px rgba(0,0,0,.5);
+}
+
+/* ── Subsectie (per level/categorie) ────────────────── */
+.subsectie{
+  background:rgba(244,232,193,.88);
+  border:2px solid #c9a84c;
+  border-radius:12px;
+  margin-bottom:16px;
+  overflow:hidden;
+  box-shadow:0 3px 10px rgba(0,0,0,.25);
+}
+.subsectie-kop{
+  background:linear-gradient(90deg,#c9a84c,#a8841a);
+  padding:8px 14px; cursor:pointer;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.subsectie-kop h3{
+  font-size:clamp(.9rem,2.5vw,1.1rem); font-weight:700;
+  color:#1a2744; margin:0;
+}
+.subsectie-kop .pijl{
+  font-size:1.1rem; color:#1a2744; transition:transform .25s;
+}
+.subsectie.dicht .subsectie-kop .pijl{ transform:rotate(-90deg); }
+.subsectie.dicht .subsectie-inhoud{ display:none; }
+
+.subsectie-inhoud{ padding:8px 10px 10px; }
+
+/* ── Kolom-layout (All-time / Vandaag) ──────────────── */
+.kolommen{
+  display:grid; grid-template-columns:1fr 1fr; gap:10px;
+}
+@media(max-width:520px){
+  .kolommen{ grid-template-columns:1fr; }
+}
+.kolom-titel{
+  font-size:.82rem; font-weight:700; color:#6b5a2e;
+  text-align:center; padding:4px 0 2px;
+  border-bottom:1.5px solid #c9a84c; margin-bottom:4px;
+}
+
+/* ── Scoretabel ─────────────────────────────────────── */
+.score-tabel{
+  width:100%; border-collapse:collapse; font-size:clamp(.72rem,2vw,.82rem);
+}
+.score-tabel th{
+  font-weight:700; color:#6b5a2e; text-align:left;
+  padding:2px 4px; border-bottom:1px solid #d4c8a0;
+  font-size:.72rem;
+}
+.score-tabel th:first-child{ width:26px; text-align:center; }
+.score-tabel td{
+  padding:2px 4px; border-bottom:1px solid rgba(201,168,76,.25);
+}
+.score-tabel td:first-child{
+  text-align:center; font-weight:700; color:#a8841a;
+}
+.score-tabel tr:nth-child(even) td{ background:rgba(201,168,76,.08); }
+
+/* Top 3 accenten */
+.score-tabel tr.top1 td:first-child{ color:#c9a84c; font-size:.95em; }
+.score-tabel tr.top2 td:first-child{ color:#8a8a8a; }
+.score-tabel tr.top3 td:first-child{ color:#a0522d; }
+
+/* Scrollbaar deel na top 10 */
+.scroll-wrap{
+  max-height:0; overflow:hidden;
+  transition:max-height .35s ease;
+}
+.scroll-wrap.open{ max-height:600px; overflow-y:auto; }
+
+.meer-knop{
+  display:block; width:100%; text-align:center;
+  font-family:'Baloo 2',cursive,sans-serif;
+  font-size:.75rem; font-weight:600;
+  color:#6b5a2e; background:rgba(201,168,76,.18);
+  border:1px solid #c9a84c; border-radius:6px;
+  padding:3px 0; margin-top:4px; cursor:pointer;
+  transition:background .2s;
+}
+.meer-knop:hover{ background:rgba(201,168,76,.35); }
+
+.leeg-tekst{
+  text-align:center; color:#9a8a60; font-size:.8rem;
+  padding:8px 0; font-style:italic;
+}
+
+/* ── Terug-knop ─────────────────────────────────────── */
+.terug-knop{
+  position:fixed; left:12px; top:12px; z-index:100;
+  cursor:pointer; border:none; background:none; padding:0;
+}
+.terug-knop img{
+  height:clamp(36px,6vw,48px); filter:drop-shadow(0 2px 4px rgba(0,0,0,.4));
+  transition:transform .15s;
+}
+.terug-knop:hover img{ transform:scale(1.08); }
+
+/* ── Medaille-icoontjes bij top 3 ───────────────────── */
+.medaille{ font-size:.85em; }
+
+/* ── Geen-scores-bericht per hele sectie ─────────────── */
+.sectie-leeg{
+  text-align:center; color:#f4e8c1; font-size:.95rem;
+  padding:30px 10px; opacity:.8; font-style:italic;
+}
+</style>
+</head>
+<body>
+
+<!-- Terug naar start -->
+<button class="terug-knop" onclick="window.location.href='index.html'" title="Terug naar start">
+  <img src="images/terug-naar-start-knop.png" alt="Terug naar start"
+       onerror="this.parentElement.textContent='⬅ Terug'"/>
+</button>
+
+<div class="titel-balk">
+  <h1>Boek der Groten</h1>
+</div>
+
+<!-- Tabs -->
+<nav class="tabs" id="tabs">
+  <button class="tab-knop actief" data-sectie="topografie">🌍 Topografie</button>
+  <button class="tab-knop" data-sectie="hoofdsteden">🏛️ Hoofdsteden</button>
+  <button class="tab-knop" data-sectie="plekken">🗺️ Iconische plekken</button>
+  <button class="tab-knop" data-sectie="raadspel">🎨 Raad je plaatje</button>
+</nav>
+
+<div class="inhoud" id="inhoud"></div>
+
+<script>
+/* ╔═══════════════════════════════════════════════════════╗
+   ║  Boek der Groten — high-score-overzicht               ║
+   ║  Leest localStorage van index.html en raadspel.html   ║
+   ╚═══════════════════════════════════════════════════════╝ */
+
+// ── Testfilter ────────────────────────────────────────
+const TEST_NAMEN = ['test1','test2'];
+function isTestNaam(n){ return TEST_NAMEN.includes((n||'').toLowerCase().trim()); }
+
+// ── Helpers ───────────────────────────────────────────
+function isVandaag(d){
+  if(!d) return false;
+  const nu = new Date(), dat = new Date(d);
+  return nu.getFullYear()===dat.getFullYear() &&
+         nu.getMonth()===dat.getMonth() &&
+         nu.getDate()===dat.getDate();
+}
+
+function formatTijd(sec){
+  if(sec==null) return '-';
+  const m=Math.floor(sec/60), s=Math.round(sec%60);
+  return m>0 ? m+'m '+s+'s' : s+'s';
+}
+function formatTijdMs(ms){
+  if(ms==null) return '-';
+  const sec=Math.round(ms/1000);
+  const m=Math.floor(sec/60), s=sec%60;
+  return m>0 ? m+'m '+s+'s' : s+'s';
+}
+
+// ── Level- en categorie-definities ────────────────────
+
+// Topografie (index.html → wonkywings_scores_{id})
+const TOPO_SECTIES = [
+  { groep:'Europa', levels:[
+    { id:'eu-alles',       naam:'Heel Europa' },
+    { id:'eu-west',        naam:'West-Europa' },
+    { id:'eu-oost',        naam:'Oost-Europa & Balkan' },
+    { id:'eu-noord',       naam:'Noord-Europa' },
+    { id:'eu-kleinmaarfijn', naam:'Klein maar fijn' },
+  ]},
+  { groep:'Wereld', levels:[
+    { id:'w-alles',        naam:'Alle landen' },
+    { id:'w-amerika',      naam:'Noord-Amerika' },
+    { id:'w-zuid-amerika', naam:'Zuid-Amerika' },
+    { id:'w-afrika',       naam:'Afrika' },
+    { id:'w-azie',         naam:'Azië' },
+    { id:'w-kleinmaarfijn', naam:'Klein maar fijn (Wereld)' },
+  ]},
+];
+
+// Hoofdsteden (index.html → wonkywings_scores_{id})
+const HOOFD_SECTIES = [
+  { groep:'Hoofdsteden', levels:[
+    { id:'hs-europa',       naam:'Europa' },
+    { id:'hs-west-europa',  naam:'West-Europa' },
+    { id:'hs-amerika',      naam:'Noord-Amerika' },
+    { id:'hs-zuid-amerika', naam:'Zuid-Amerika' },
+    { id:'hs-afrika',       naam:'Afrika' },
+    { id:'hs-azie',         naam:'Azië' },
+  ]},
+];
+
+// Iconische plekken (index.html → wonkywings_scores_{id})
+const PLEK_SECTIES = [
+  { groep:'Iconische plekken', levels:[
+    { id:'pl-wereld', naam:'Alle plekken' },
+  ]},
+];
+
+// Raad je plaatje (raadspel.html → wonkywings_raadspel_scores_{id})
+const RAAD_SECTIES = [
+  { groep:'Europa', cats:[
+    { id:'eu-noord', naam:'Noord-Europa' },
+    { id:'eu-zuid',  naam:'Zuid-Europa' },
+    { id:'eu-alles', naam:'Heel Europa' },
+  ]},
+  { groep:'Wereld', cats:[
+    { id:'w-makkelijk',    naam:'Makkelijke landen' },
+    { id:'w-amerika',      naam:'Amerika' },
+    { id:'w-zuid-amerika', naam:'Zuid-Amerika' },
+    { id:'w-azie',         naam:'Azië & Oceanië' },
+    { id:'w-afrika',       naam:'Afrika' },
+    { id:'w-alles',        naam:'Alle landen' },
+    { id:'w-kleinmaarfijn', naam:'Klein maar fijn' },
+  ]},
+  { groep:'Iconische plekken', cats:[
+    { id:'iconische-plekken', naam:'Iconische plekken' },
+  ]},
+];
+
+// ── Scores laden ──────────────────────────────────────
+function laadScores(sleutel){
+  try{ return JSON.parse(localStorage.getItem(sleutel)||'[]'); }
+  catch(e){ return []; }
+}
+function topoScores(id){ return laadScores('wonkywings_scores_'+id); }
+function raadScores(id){ return laadScores('wonkywings_raadspel_scores_'+id); }
+
+// ── Filteren & sorteren ───────────────────────────────
+function filterScores(lijst){
+  return lijst.filter(r => !isTestNaam(r.naam));
+}
+
+// ── HTML-bouwers ──────────────────────────────────────
+
+/** Bouw een scoretabel (max 50 rijen, eerste 10 direct zichtbaar) */
+function bouwScoreTabel(lijst, type, kolomTitel){
+  // type: 'topo' → km+tijd, 'raad' → goed+tijd
+  const gefilterd = filterScores(lijst);
+  const container = document.createElement('div');
+
+  // Kolomkop
+  const kop = document.createElement('div');
+  kop.className = 'kolom-titel';
+  kop.textContent = kolomTitel;
+  container.appendChild(kop);
+
+  if(gefilterd.length === 0){
+    const leeg = document.createElement('div');
+    leeg.className = 'leeg-tekst';
+    leeg.textContent = 'Nog geen scores';
+    container.appendChild(leeg);
+    return container;
+  }
+
+  const top10 = gefilterd.slice(0,10);
+  const rest  = gefilterd.slice(10,50);
+
+  // Tabel top 10
+  container.appendChild(maakTabel(top10, 0, type));
+
+  // Scrollbaar deel (11–50)
+  if(rest.length > 0){
+    const uid = 'sw_'+Math.random().toString(36).slice(2,8);
+    const wrap = document.createElement('div');
+    wrap.className = 'scroll-wrap';
+    wrap.id = uid;
+    wrap.appendChild(maakTabel(rest, 10, type));
+    container.appendChild(wrap);
+
+    const knop = document.createElement('button');
+    knop.className = 'meer-knop';
+    knop.textContent = '▾ Toon meer ('+rest.length+')';
+    knop.onclick = function(){
+      const w = document.getElementById(uid);
+      if(w.classList.contains('open')){
+        w.classList.remove('open');
+        knop.textContent = '▾ Toon meer ('+rest.length+')';
+      } else {
+        w.classList.add('open');
+        knop.textContent = '▴ Inklappen';
+      }
+    };
+    container.appendChild(knop);
+  }
+
+  return container;
+}
+
+function maakTabel(rijen, startIndex, type){
+  const tabel = document.createElement('table');
+  tabel.className = 'score-tabel';
+
+  // Header
+  const thead = document.createElement('thead');
+  const hr = document.createElement('tr');
+  const thNr = document.createElement('th'); thNr.textContent = '#';
+  const thNaam = document.createElement('th'); thNaam.textContent = 'Naam';
+  const thScore = document.createElement('th');
+  thScore.textContent = type==='raad' ? 'Goed' : 'Afstand';
+  const thTijd = document.createElement('th'); thTijd.textContent = 'Tijd';
+  hr.append(thNr, thNaam, thScore, thTijd);
+  thead.appendChild(hr);
+  tabel.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+  rijen.forEach((run, i) => {
+    const pos = startIndex + i + 1;
+    const tr = document.createElement('tr');
+    if(pos===1) tr.className='top1';
+    else if(pos===2) tr.className='top2';
+    else if(pos===3) tr.className='top3';
+
+    const tdPos = document.createElement('td');
+    if(pos===1) tdPos.innerHTML='<span class="medaille">🥇</span>';
+    else if(pos===2) tdPos.innerHTML='<span class="medaille">🥈</span>';
+    else if(pos===3) tdPos.innerHTML='<span class="medaille">🥉</span>';
+    else tdPos.textContent = pos;
+
+    const tdNaam = document.createElement('td');
+    tdNaam.textContent = run.naam || '?';
+
+    const tdScore = document.createElement('td');
+    if(type==='raad'){
+      const totaal = run.totaal || '?';
+      tdScore.textContent = run.goed + '/' + totaal;
+    } else {
+      tdScore.textContent = (run.km != null ? run.km + ' km' : '-');
+    }
+
+    const tdTijd = document.createElement('td');
+    if(type==='raad'){
+      tdTijd.textContent = formatTijdMs(run.tijdMs);
+    } else {
+      tdTijd.textContent = formatTijd(run.tijd);
+    }
+
+    tr.append(tdPos, tdNaam, tdScore, tdTijd);
+    tbody.appendChild(tr);
+  });
+  tabel.appendChild(tbody);
+  return tabel;
+}
+
+/** Bouw een subsectie-kaart met All-time en Vandaag kolommen */
+function bouwSubsectie(naam, sleutel, type){
+  const lijst = (type==='raad') ? raadScores(sleutel) : topoScores(sleutel);
+  const gefilterd = filterScores(lijst);
+
+  // Sla subsecties zonder scores helemaal over
+  if(gefilterd.length === 0) return null;
+
+  const alltime = gefilterd.slice(0,50);
+  const vandaag = gefilterd.filter(r => isVandaag(r.datum)).slice(0,50);
+
+  const wrap = document.createElement('div');
+  wrap.className = 'subsectie';
+
+  // Klikbare kop
+  const kop = document.createElement('div');
+  kop.className = 'subsectie-kop';
+  kop.innerHTML = '<h3>'+naam+'</h3><span class="pijl">▼</span>';
+  kop.onclick = function(){
+    wrap.classList.toggle('dicht');
+  };
+  wrap.appendChild(kop);
+
+  // Inhoud: twee kolommen
+  const inhoud = document.createElement('div');
+  inhoud.className = 'subsectie-inhoud';
+
+  const kolommen = document.createElement('div');
+  kolommen.className = 'kolommen';
+
+  kolommen.appendChild(bouwScoreTabel(alltime, type, '🏆 All-time'));
+  kolommen.appendChild(bouwScoreTabel(vandaag, type, '📅 Vandaag'));
+
+  inhoud.appendChild(kolommen);
+  wrap.appendChild(inhoud);
+  return wrap;
+}
+
+/** Bouw een hele sectie (Topografie / Hoofdsteden / etc.) */
+function bouwSectie(id, secties, type){
+  const sectie = document.createElement('div');
+  sectie.className = 'sectie';
+  sectie.id = 'sectie-'+id;
+
+  let heeftScores = false;
+
+  secties.forEach(groep => {
+    const items = groep.levels || groep.cats;
+    items.forEach(item => {
+      const sub = bouwSubsectie(
+        item.naam,
+        item.id,
+        type
+      );
+      if(sub){
+        heeftScores = true;
+        sectie.appendChild(sub);
+      }
+    });
+  });
+
+  if(!heeftScores){
+    const leeg = document.createElement('div');
+    leeg.className = 'sectie-leeg';
+    leeg.textContent = 'Nog geen scores in deze categorie.';
+    sectie.appendChild(leeg);
+  }
+
+  return sectie;
+}
+
+// ── Pagina opbouwen ───────────────────────────────────
+function bouwPagina(){
+  const inhoud = document.getElementById('inhoud');
+  inhoud.innerHTML = '';
+
+  inhoud.appendChild(bouwSectie('topografie', TOPO_SECTIES, 'topo'));
+  inhoud.appendChild(bouwSectie('hoofdsteden', HOOFD_SECTIES, 'topo'));
+  inhoud.appendChild(bouwSectie('plekken', PLEK_SECTIES, 'topo'));
+  inhoud.appendChild(bouwSectie('raadspel', RAAD_SECTIES, 'raad'));
+
+  // Eerste tab actief
+  wisselSectie('topografie');
+}
+
+// ── Tab-navigatie ─────────────────────────────────────
+function wisselSectie(naam){
+  document.querySelectorAll('.sectie').forEach(s => {
+    s.classList.toggle('actief', s.id === 'sectie-'+naam);
+  });
+  document.querySelectorAll('.tab-knop').forEach(k => {
+    k.classList.toggle('actief', k.dataset.sectie === naam);
+  });
+}
+
+document.getElementById('tabs').addEventListener('click', function(e){
+  const knop = e.target.closest('.tab-knop');
+  if(!knop) return;
+  wisselSectie(knop.dataset.sectie);
+});
+
+// ── Start ─────────────────────────────────────────────
+bouwPagina();
+</script>
+</body>
+</html>

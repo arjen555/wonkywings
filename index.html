@@ -82,15 +82,19 @@
     #opties-sub-lijst.open { max-height:200px; opacity:1; margin-top:8px; }
     .opties-sub-knop { font-size:0.72rem; padding:6px 16px; opacity:0.92; }
 
-    /* ── Landenpaspoort-icoon: altijd zichtbaar, onderaan het rijtje, en
-       even groot als het "Wereld van Wonderen"-logo bovenaan. ── */
-    #paspoort-icoon-knop {
-      width:min(220px, 62%); max-width:100%; display:block;
-      margin:0 auto; cursor:pointer;
+    /* ── Landenpaspoort- en Boek-der-Groten-icoon: naast elkaar onderaan
+       het startmenu, samen even breed als het logo. ── */
+    #startscherm-icoontjes {
+      display:flex; justify-content:center; align-items:flex-end;
+      gap:clamp(8px, 2vw, 16px);
+      width:min(280px, 72%); margin:0 auto;
+    }
+    #paspoort-icoon-knop, #boek-icoon-knop {
+      width:48%; max-width:140px; cursor:pointer;
       filter:drop-shadow(0 4px 16px rgba(0,0,0,0.5));
       transition:transform 0.15s;
     }
-    #paspoort-icoon-knop:hover { transform:scale(1.04); }
+    #paspoort-icoon-knop:hover, #boek-icoon-knop:hover { transform:scale(1.04); }
     #startscherm {
       position:fixed; inset:0; z-index:100;
       display:flex; flex-direction:row;
@@ -1218,7 +1222,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.82</div>
+  <div id="versie-label">v0.3.83</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1256,7 +1260,10 @@
     <button id="help-knop" class="startscherm-knop" onclick="openHulp()">
       Zo werkt de besturing
     </button>
-    <img id="paspoort-icoon-knop" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="window.location.href='paspoort.html'"/>
+    <div id="startscherm-icoontjes">
+      <img id="paspoort-icoon-knop" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="window.location.href='paspoort.html'"/>
+      <img id="boek-icoon-knop" src="images/boek-der-groten-icoon.png" alt="Boek der Groten" onclick="window.location.href='highscores.html'"/>
+    </div>
   </div>
 </div>
 
@@ -2717,6 +2724,7 @@ function bouwTickerKaarten(groep){
     if(!lv.beschikbaar) continue;
     let lijst=[];
     try{ lijst=JSON.parse(localStorage.getItem(scorebordSleutel(lv.id))||'[]'); }catch(e){ lijst=[]; }
+    lijst = lijst.filter(r=>!isTestNaam(r.naam)); // testaccounts uitsluiten
     if(lijst.length===0) continue;
     const naam = lv.kort || lv.naam;
     const vandaag = lijst.filter(r=>isVandaag(r.datum)).slice(0,3);
@@ -4511,6 +4519,10 @@ function updateScorebordCijfers(){
 }
 
 // ── Scorebord (voorlopig lokaal, per level, op dit apparaat) ──
+// Testaccounts: scores worden gewoon opgeslagen maar nooit getoond.
+const TEST_NAMEN = ['test1','test2'];
+function isTestNaam(n){ return TEST_NAMEN.includes((n||'').toLowerCase().trim()); }
+
 function scorebordSleutel(levelId){ return 'wonkywings_scores_'+levelId; }
 function opslaanScore(levelNr, naam, km, tijdSec){
   let lijst=[];
@@ -4631,8 +4643,10 @@ function toonScorebord(levelId, nieuweRun){
 
   // lijst is al gesorteerd op km (laagste/beste eerst) - dus gewoon de eerste
   // 20 pakken voor all-time, en voor "vandaag" eerst filteren en dan top 20.
-  const alltime = lijst.slice(0,20);
-  const vandaag = lijst.filter(r=>isVandaag(r.datum)).slice(0,20);
+  // Testaccounts (test1/test2) worden uitgefilterd zodat ze nooit zichtbaar zijn.
+  const zichtbaar = lijst.filter(r=>!isTestNaam(r.naam));
+  const alltime = zichtbaar.slice(0,20);
+  const vandaag = zichtbaar.filter(r=>isVandaag(r.datum)).slice(0,20);
   bouwScorebordKolom('scorebord-lijst-alltime', alltime, nieuweRun);
   bouwScorebordKolom('scorebord-lijst-vandaag', vandaag, nieuweRun);
 
