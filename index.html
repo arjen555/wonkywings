@@ -1033,13 +1033,6 @@
     #correctie-land-naam { position:fixed; background:rgba(120,90,0,0.85); color:#fff9d6; font-size:1rem; font-weight:800; padding:5px 16px; border-radius:10px; pointer-events:none; white-space:nowrap; opacity:0; transition:opacity 0.2s; z-index:8; transform:translate(-50%,-100%); box-shadow:0 0 14px rgba(255,224,102,0.6); }
     #feedback { position:fixed; top:42%; left:50%; transform:translate(-50%,-50%); font-size:3rem; font-weight:900; pointer-events:none; opacity:0; text-shadow:0 4px 20px rgba(0,0,0,0.8); z-index:30; transition:opacity 0.3s; text-align:center; max-width:85vw; text-wrap:balance; }
     #punten-feedback { position:fixed; top:36%; left:50%; transform:translate(-50%,-50%); font-size:1.6rem; font-weight:900; pointer-events:none; opacity:0; color:#ffd700; text-shadow:0 4px 20px rgba(0,0,0,0.8); z-index:30; transition:opacity 0.3s; }
-    /* Hoera-kader: het plaatje (Hoera.png) plus de erin gecentreerde tekst.
-       54% i.p.v. 50% verticaal, en 64% breed: dat is precies het lege
-       perkament-vlak binnen het plaatje, tussen het kompas bovenin en de
-       tandwielen onderin (opgemeten op het bronbestand). */
-    #goed-banner { position:fixed; top:42%; left:50%; transform:translate(-50%,-50%); width:clamp(260px, 34vw, 460px); pointer-events:none; opacity:0; transition:opacity 0.3s; z-index:30; }
-    #goed-banner img { display:block; width:100%; height:auto; filter:drop-shadow(0 6px 16px rgba(0,0,0,0.45)); }
-    #goed-banner-tekst { position:absolute; left:50%; top:54%; transform:translate(-50%,-50%); width:64%; text-align:center; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:clamp(1.15rem, 3.1vw, 2.15rem); color:#6b3a1a; text-shadow:0 1px 0 rgba(255,255,255,0.35); }
     #muntje-feedback { position:fixed; left:0; top:0; transform:translate(-50%,-50%); font-weight:900; pointer-events:none; opacity:0; color:#ffe066; text-shadow:0 3px 4px rgba(0,0,0,0.6), 0 0 22px rgba(255,200,0,0.9); z-index:120; white-space:nowrap; }
     #ronde-display { font-size:1.2rem; font-weight:700; color:rgba(255,255,255,0.8); }
     #voortgang-bord {
@@ -1225,7 +1218,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.80</div>
+  <div id="versie-label">v0.3.82</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1532,12 +1525,6 @@
   <div id="correctie-land-naam"></div>
   <div id="feedback"></div>
   <div id="punten-feedback"></div>
-  <!-- Hoera-kader: vervangt bij een goede drop in de Landen-modus (Wereld/
-       Europa) de vroegere platte "🎉 Goed zo!"-tekst - zie toonGoedBanner(). -->
-  <div id="goed-banner">
-    <img src="images/Hoera.png" alt=""/>
-    <div id="goed-banner-tekst"></div>
-  </div>
   <div id="richting-rij">
     <div class="richting-knop" onclick="gebruikRichtingwijzer(0)"><img src="images/aanwijzer.png" alt="Richtingaanwijzer"/></div>
     <div class="richting-knop" onclick="gebruikRichtingwijzer(1)"><img src="images/aanwijzer.png" alt="Richtingaanwijzer"/></div>
@@ -3313,6 +3300,10 @@ document.getElementById('plek-kijkgat').addEventListener('click', togglePlekGroo
 let zoekVluchtActief=false, zoekVluchtStartTijd=0, zoekVluchtDuur=0;
 let zoekVluchtStartVec=null, zoekVluchtEindVec=null;
 const CORRECTIE_GLOW_DUUR=900; // ms pulsen, daarna blijft het land geel staan
+// Resterende vliegduur die overblijft als de speler de correctievlucht
+// versnelt met de skip-toets (zie skipDoorgaan): kort genoeg om snel te
+// voelen, lang genoeg om nog echt een vliegbeweging te tonen.
+const VLUCHT_VERSNELD_RESTTIJD_MS=180;
 let jokerBeschikbaar=true, misserAutoTimer=null, goedAutoTimer=null;
 // Oplopend nummer per misser: voorkomt dat de vertraagde score-optelling
 // (zie toonPunten/vliegBeloningNaarDoel hieronder) alsnog toeslaat nadat de
@@ -3362,8 +3353,8 @@ function kiesFoutTekst(km){
   else set = FOUT_TEKSTEN_HEEL_DICHTBIJ;
   return set[Math.floor(Math.random()*set.length)];
 }
-// Teksten bij een goede drop in de Landen-modus (Wereld/Europa) - getoond in
-// het hoera-kader (zie toonGoedBanner()), steeds willekeurig één van gekozen.
+// Teksten bij een goede drop in de Landen-modus (Wereld/Europa) - platte
+// feedbacktekst (zie toonFeedback), steeds willekeurig één van gekozen.
 const GOED_TEKSTEN = [
   'Goed zo!',
   'Bingo!',
@@ -4715,11 +4706,20 @@ function vervangHuidigLand(){
 }
 // ── Direct doorgaan (X-knop / dubbeltik / Enter) ──────
 // Slaat de wachttijd over die normaal automatisch verstrijkt na een goed of
-// fout antwoord, voor spelers die liever meteen doorgaan. Werkt alleen als
-// er ook echt iets te skippen valt (dus niet tijdens het vallen van het
-// vlaggetje zelf, of tijdens de correctievlucht - dat blijft gewoon zichtbaar).
+// fout antwoord, voor spelers die liever meteen doorgaan. Tijdens de
+// correctievlucht zelf (vluchtActief) versnelt dezelfde toets eerst de vlucht
+// naar de aankomst toe; wordt daarna nogmaals gedrukt (tijdens het bericht
+// dat na de vlucht verschijnt), dan gaat het pas echt meteen door naar het
+// volgende land - dat is de bestaande misserAutoTimer-tak hieronder.
 function skipDoorgaan(){
   if(huidigModus!=='spelen' || !spelActief || hulpActief || kennisvraagActief || radActief) return;
+  if(vluchtActief){
+    const verstreken = performance.now()-vluchtStartTijd;
+    if(verstreken < vluchtDuur-VLUCHT_VERSNELD_RESTTIJD_MS){
+      vluchtDuur = verstreken+VLUCHT_VERSNELD_RESTTIJD_MS;
+    }
+    return;
+  }
   if(goedAutoTimer){
     clearTimeout(goedAutoTimer); goedAutoTimer=null;
     nieuwLand();
@@ -6607,8 +6607,12 @@ function drawGlobe(){
         vul='#ffe566'; rand='#c8960a'; dikte=1.6;
       }
     }
-    else if(isHover&&!correctieLand){ vul='#ffe566';rand='#c8960a';dikte=1.2; }
-    else if(isHover&&correctieLand&&zoomNiveau>=ZOOM_OMSLAGPUNT){ vul='rgba(255,240,140,0.5)';rand='#c8960a';dikte=0.8; }
+    else if(isHover&&!correctieLand&&!vluchtActief){ vul='#ffe566';rand='#c8960a';dikte=1.2; }
+    // Tijdens de correctievlucht zelf (vluchtActief) bewust NIET meelichten:
+    // anders licht elk land waar het vliegtuigje toevallig overheen vliegt
+    // even geel op. Alleen het doel-land (isCorrectieLand hierboven) mag dan
+    // gloeien.
+    else if(isHover&&correctieLand&&zoomNiveau>=ZOOM_OMSLAGPUNT&&!vluchtActief){ vul='rgba(255,240,140,0.5)';rand='#c8960a';dikte=0.8; }
     else if(huidigModus==='verkennen'&&isLevelLand){ vul='rgba(120,200,120,0.55)';rand='#3a8a3a';dikte=0.7; }
     else {
       const polys2=f.geometry.type==='Polygon'?[f.geometry.coordinates]:f.geometry.coordinates;
@@ -8054,8 +8058,8 @@ function updateSpel(){
       vluchtActief=false;
       if(vluchtIsHoofdstad){
         vluchtIsHoofdstad=false;
-        correctieLand=vluchtDoelLand;
-        correctieLandStartTijd=performance.now();
+        // correctieLand/-StartTijd staan al vanaf het vertrek van de vlucht
+        // (zie de setTimeout hierboven waar de vlucht wordt opgezet).
         correctieLabelDubbel = { hoofdstad:vluchtHoofdstadNaam, land:vluchtGevallenLandNaam };
         if(vluchtIsGoed){
           const goedTekst = HOOFDSTEDEN_GOED_TEKSTEN[Math.floor(Math.random()*HOOFDSTEDEN_GOED_TEKSTEN.length)];
@@ -8082,8 +8086,7 @@ function updateSpel(){
         });
         toonPlekUitslag(huidigePlek ? huidigePlek.naam : huidigLand, punten);
       } else {
-        correctieLand=vluchtDoelLand;
-        correctieLandStartTijd=performance.now();
+        // correctieLand/-StartTijd staan al vanaf het vertrek van de vlucht.
         const foutTekst = kiesFoutTekst(vluchtAfwijkingKm);
         toonFeedback(foutTekst,'#ff9900');
         // De km-straf wordt nu pas echt bijgeteld zodra de vliegende "+X km"
@@ -8468,24 +8471,12 @@ function toonFeedback(t,k){
   el.textContent=t; el.style.color=k; el.style.opacity='1';
   setTimeout(()=>{ el.style.opacity='0'; },1800);
 }
-// Hoera-kader bij een goede drop in de Landen-modus (Wereld/Europa) - vervangt
-// de vroegere platte "🎉 Goed zo!"-tekst. Zelfde duur (1800ms) als de andere
-// feedback-teksten, zodat hij precies wegvaagt op het moment dat nieuwLand()
-// het volgende land laat verschijnen (zie de goedAutoTimer bij dropVlaggetje).
-function toonGoedBanner(){
-  const tekst = GOED_TEKSTEN[Math.floor(Math.random()*GOED_TEKSTEN.length)];
-  const el = document.getElementById('goed-banner');
-  document.getElementById('goed-banner-tekst').textContent = tekst;
-  el.style.opacity='1';
-  setTimeout(()=>{ el.style.opacity='0'; },1800);
-}
 // vliegNaarScorebord: alleen gebruikt bij een foute drop (zie de aanroep
 // hierboven bij de correctievlucht) - laat de "+X km" net als een gevangen
 // muntje eerst even centraal staan (dezelfde MUNTJE_LEESPAUZE_MS) en dan naar
 // het scorebord rechtsboven wegvliegen, via dezelfde vliegBeloningNaarDoel()
-// als de muntjes. Puur decoratief: de score zelf loopt tijdens de
-// correctievlucht al op via de vluchtActief-animatie in de update-loop, dus
-// deze vlucht verandert de score niet nogmaals (opAankomst hieronder is leeg).
+// als de muntjes. De km-straf wordt pas echt bijgeteld in de meegegeven
+// opAankomst-callback (zie de aanroep bij de correctievlucht), niet hier.
 function toonPunten(p, vliegNaarScorebord, opAankomst){
   if(vliegNaarScorebord && p>0){
     const sx = window.innerWidth*0.5, sy = window.innerHeight*0.36;
@@ -8586,6 +8577,12 @@ function dropVlaggetje(){
         vluchtScoreVoor=score; vluchtScoreNa=score; // score blijft ongewijzigd in deze modus
         vluchtAfwijkingKm=0;
         vluchtDoelLand=doelLand;
+        // Juiste-land-highlight al aanzetten bij vertrek (niet pas bij aankomst),
+        // zodat tijdens de hele vlucht het doel geel oplicht i.p.v. steeds het
+        // land waar het vliegtuigje toevallig overheen komt - zie ook de
+        // gelijke aanpassing hieronder bij de gewone Landen-modus.
+        correctieLand=doelLand;
+        correctieLandStartTijd=performance.now();
       }, FOUT_ZOOM_UIT_MS);
       return;
     }
@@ -8597,7 +8594,8 @@ function dropVlaggetje(){
       zetKmCijfers(score);
       const nieuweStempel = verdienStempelVoorLand(huidigLand);
       if(nieuweStempel) dezeRondeVerdiendeLanden.push(nieuweStempel);
-      toonGoedBanner();
+      const goedTekst = GOED_TEKSTEN[Math.floor(Math.random()*GOED_TEKSTEN.length)];
+      toonFeedback(goedTekst,'#ffd700');
       toonPunten(afwijkingKm);
       toonReactie('blij');
       goedAutoTimer=setTimeout(()=>{ goedAutoTimer=null; nieuwLand(); },1800);
@@ -8620,6 +8618,10 @@ function dropVlaggetje(){
         vluchtScoreNa=score+afwijkingKm;
         vluchtAfwijkingKm=afwijkingKm;
         vluchtDoelLand=doelLand;
+        // Zie toelichting bij de Hoofdsteden-tak hierboven: het juiste land
+        // licht meteen bij vertrek geel op, i.p.v. pas bij aankomst.
+        correctieLand=doelLand;
+        correctieLandStartTijd=performance.now();
       }, FOUT_ZOOM_UIT_MS);
     }
   },1400);
