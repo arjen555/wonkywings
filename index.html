@@ -1224,7 +1224,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.91</div>
+  <div id="versie-label">v0.3.92</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2801,7 +2801,7 @@ function vliegtuigIntroSchaal(){
 // Aparte, iets langere tijdsduur dan de landen-glow hierboven: dit is een
 // zin om te lezen, geen kort visueel effect, dus die verdient wat meer tijd.
 let tipActief=false, tipStartTijd=0;
-const TIP_DUUR = 4200; // ms - kort, het zijn nu losse woorden/korte labels, geen hele zin
+const TIP_DUUR = 12600; // ms - 3x zo lang als voorheen (was 4200), op verzoek van Arjen
 const KNOP_LABELS = ['tip-besturing','tip-hint','tip-joker'];
 let huidigLandIdx=0, huidigLand='', score=0, spelerNaam='';
 let levelStartTijd=0, laatsteLevelTijd=0;
@@ -2855,8 +2855,12 @@ const SCHURK_SPAWN_SCHAAL = 1.5;      // startgrootte in de hoek (t.o.v. normale
 const SCHURK_KRIMP_MS = 1000;         // hoe snel het na vertrek terugkrimpt naar normale grootte
 const SCHURK_VLUCHT_MS = 5000;        // duur van de vlucht naar de overkant
 const SCHURK_AANTAL_WOLKEN = 5;       // aantal wolkjes dat de rat afschiet tijdens de vlucht
-const SCHURK_WOLK_MIN_SNELHEID = 200; // px/s
-const SCHURK_WOLK_MAX_SNELHEID = 320; // px/s
+// Snelheid in graden per seconde (i.p.v. platte schermpixels) - de wolkjes
+// hebben net als muntjes een echte plek op de bol, zodat ze meedraaien met
+// de wereld terwijl de speler stuurt, en dus ook echt te raken/ontwijken zijn.
+const SCHURK_WOLK_MIN_SNELHEID_GRADEN = 35;
+const SCHURK_WOLK_MAX_SNELHEID_GRADEN = 55;
+const SCHURK_WOLK_MAX_LEEFTIJD_MS = 7000; // hoe lang een gemist wolkje maximaal blijft ronddrijven voor het opgeruimd wordt
 const SCHURK_WOLK_RAAK_AFSTAND = 50;  // px - hoe dicht een wolkje bij Wonky moet komen om te raken
 const SCHURK_BLIKSEM_HOUD_MS = 700;   // hoe lang de bliksemwolk vol zichtbaar blijft na een treffer
 const SCHURK_BLIKSEM_FADE_MS = 2000;  // en daarna: vervaagtijd naar volledig transparant
@@ -7742,23 +7746,52 @@ function updateSchurkVliegtuig(){
   }
 }
 
+// schermPuntNaarLonLat(sx,sy): het omgekeerde van de sx,sy-berekening die
+// overal elders gebeurt (lon/lat -> scherm) - hier gaat het van een
+// schermpunt terug naar een lengte-/breedtegraad op de bol, op basis van de
+// HUIDIGE rotatie. Nodig omdat de rat vanaf een scherm-positie schiet (het
+// schurken-vliegtuig is en blijft een los, over-het-scherm-vliegend plaatje),
+// terwijl het wolkje zelf net als een muntje op de bol moet "landen" om
+// vanaf dat moment keurig met de rest van de wereld mee te draaien.
+// Een schermpunt buiten de getekende bolcirkel bestaat niet écht op de bol -
+// dat wordt geklemd tot net binnen de rand (0.98), zodat er altijd een
+// geldige lon/lat uitkomt, ook als de rat van net buiten de bolrand schiet.
+function schermPuntNaarLonLat(sx, sy){
+  const dx = sx - CX, dy = sy - CY;
+  let xNdc = dx / R, yNdc = -dy / R;
+  const lengte = Math.hypot(xNdc, yNdc);
+  if(lengte > 0.98){ xNdc = xNdc/lengte*0.98; yNdc = yNdc/lengte*0.98; }
+  const zNdc = Math.sqrt(Math.max(0, 1 - xNdc*xNdc - yNdc*yNdc));
+  const vWereld = inverseRoteerPunt([xNdc,yNdc,zNdc], wonkyLon, wonkyLat);
+  return vec3NaarLonLat(vWereld);
+}
+
+// schietSchurkWolk(x,y): x,y is de schermpositie van de rat op het moment van
+// schieten. Het wolkje krijgt daar een ECHTE plek op de bol (lon/lat) en een
+// eigen drift-richting, precies zoals een muntje - zo draait het keurig mee
+// met de rest van de wereld terwijl de speler stuurt, en kan het dus ook
+// echt ontweken of geraakt worden door te sturen.
 function schietSchurkWolk(x, y){
   const type = Math.random() < 0.5 ? '100' : '200';
+  const [lon, lat] = schermPuntNaarLonLat(x, y);
   const hoekRad = Math.random() * Math.PI * 2;
-  const snelheid = SCHURK_WOLK_MIN_SNELHEID + Math.random() * (SCHURK_WOLK_MAX_SNELHEID - SCHURK_WOLK_MIN_SNELHEID);
+  const snelheidGraden = SCHURK_WOLK_MIN_SNELHEID_GRADEN + Math.random() * (SCHURK_WOLK_MAX_SNELHEID_GRADEN - SCHURK_WOLK_MIN_SNELHEID_GRADEN);
   schurkWolken.push({
     type: type,
-    x: x, y: y,
-    vx: Math.cos(hoekRad) * snelheid,
-    vy: Math.sin(hoekRad) * snelheid,
+    lon: lon, lat: lat,
+    richtingLon: Math.cos(hoekRad) * snelheidGraden,
+    richtingLat: Math.sin(hoekRad) * snelheidGraden,
+    spawnTijd: performance.now(),
     geraakt: false,
     geraaktTijd: 0
   });
 }
 
-// updateSchurkWolken(): verplaatst alle actieve wolkjes, ruimt wolkjes op die
-// het beeld uitgevlogen zijn, en houdt geraakte (bliksem-)wolkjes een tijdje
-// stilstaand zichtbaar voordat ze vervagen en verdwijnen.
+// updateSchurkWolken(): verplaatst alle actieve wolkjes over de bol (net als
+// updateMuntjes), en ruimt ze op na SCHURK_WOLK_MAX_LEEFTIJD_MS. Geraakte
+// (bliksem-)wolkjes worden niet meer verplaatst - die blijven op hún plek op
+// de wereld hangen (en draaien dus wel nog gewoon mee als de speler stuurt)
+// terwijl ze zichtbaar blijven en daarna vervagen.
 function updateSchurkWolken(){
   if(schurkWolken.length === 0) return;
   const nu = performance.now();
@@ -7769,39 +7802,49 @@ function updateSchurkWolken(){
       if(nu - w.geraaktTijd > SCHURK_BLIKSEM_HOUD_MS + SCHURK_BLIKSEM_FADE_MS){
         schurkWolken.splice(i, 1);
       }
-      continue; // een geraakte wolk blijft hangen op de plek van de klap, niet meer bewegen
+      continue; // een geraakte wolk blijft op zijn wereldpositie hangen, niet meer verplaatsen
     }
-    w.x += w.vx * dt;
-    w.y += w.vy * dt;
-    if(w.x < -120 || w.x > W+120 || w.y < -120 || w.y > H+120){
+    w.lon += w.richtingLon * dt;
+    w.lat += w.richtingLat * dt;
+    if(w.lon > 180) w.lon -= 360;
+    if(w.lon < -180) w.lon += 360;
+    w.lat = Math.max(-85, Math.min(85, w.lat));
+    if(nu - w.spawnTijd > SCHURK_WOLK_MAX_LEEFTIJD_MS){
       schurkWolken.splice(i, 1); // rustig gemist: geen straf, geen effect
     }
   }
 }
 
 // checkSchurkWolkTreffer(wx,wy): checkt elke frame of Wonky (op wx,wy, net
-// als bij checkMuntjeVangst) dicht genoeg bij een nog-niet-geraakt wolkje zit.
+// als bij checkMuntjeVangst) dicht genoeg bij de HUIDIGE schermpositie van
+// een nog-niet-geraakt wolkje zit - die schermpositie wordt hier, ook net als
+// bij checkMuntjeVangst, elk frame opnieuw berekend uit lon/lat + rotM.
 function checkSchurkWolkTreffer(wx, wy){
   if(schurkWolken.length === 0) return;
   for(const w of schurkWolken){
     if(w.geraakt) continue;
-    const afstand = Math.hypot(w.x - wx, w.y - wy);
+    const p3 = roteerPunt(lonLatTo3D(w.lon, w.lat), rotM);
+    if(p3[2] <= 0) continue; // wolkje aan de onzichtbare kant van de bol: kan niet geraakt worden
+    const sx = CX + p3[0]*R, sy = CY - p3[1]*R;
+    const afstand = Math.hypot(sx - wx, sy - wy);
     if(afstand <= SCHURK_WOLK_RAAK_AFSTAND){
-      verwerkSchurkWolkTreffer(w);
+      verwerkSchurkWolkTreffer(w, sx, sy);
     }
   }
 }
 
-// verwerkSchurkWolkTreffer(w): het wolkje wordt op slag geraakt - wisselt om
+// verwerkSchurkWolkTreffer(w, sx, sy): het wolkje wordt op slag geraakt - wisselt om
 // naar de bliksemversie (het vervagen/verdwijnen gebeurt in tekenSchurkWolken)
 // en stuurt tegelijk het bedrag naar het scorebord, via dezelfde
-// vliegBeloningNaarDoel() als het vlaggetje. De km telt pas echt mee zodra
-// het bedrag daar ook echt aankomt, niet eerder.
-function verwerkSchurkWolkTreffer(w){
+// vliegBeloningNaarDoel() als het vlaggetje. sx,sy is de schermpositie op het
+// moment van de klap (door checkSchurkWolkTreffer al berekend), puur als
+// startpunt voor die vlucht - de km telt pas echt mee zodra het bedrag daar
+// ook echt aankomt, niet eerder.
+function verwerkSchurkWolkTreffer(w, sx, sy){
   w.geraakt = true;
   w.geraaktTijd = performance.now();
   const bedrag = w.type === '100' ? 100 : 200;
-  vliegBeloningNaarDoel('+'+bedrag+' km', w.x, w.y, document.getElementById('scorebord-wrap'), ()=>{
+  vliegBeloningNaarDoel('+'+bedrag+' km', sx, sy, document.getElementById('scorebord-wrap'), ()=>{
     score += bedrag;
     document.getElementById('score').textContent = score;
     updateScorebordCijfers();
@@ -7809,11 +7852,15 @@ function verwerkSchurkWolkTreffer(w){
 }
 
 // tekenSchurkWolken(): tekent alle actieve wolkjes op de canvas-laag, net als
-// de rookwolkjes/windvlagen - wordt elke frame aangeroepen vanuit drawGlobe().
+// de muntjes - elk frame opnieuw geprojecteerd vanuit lon/lat + rotM, zodat
+// ze automatisch met de bol meedraaien. Wordt elke frame aangeroepen vanuit drawGlobe().
 function tekenSchurkWolken(){
   if(schurkWolken.length === 0) return;
   const nu = performance.now();
   for(const w of schurkWolken){
+    const p3 = roteerPunt(lonLatTo3D(w.lon, w.lat), rotM);
+    if(p3[2] <= 0) continue; // achterkant van de bol: niet zichtbaar
+    const sx = CX + p3[0]*R, sy = CY - p3[1]*R;
     let img, weergaveHoogte;
     if(w.geraakt){
       img = w.type === '100' ? schurkBliksem100Img : schurkBliksem200Img;
@@ -7835,7 +7882,7 @@ function tekenSchurkWolken(){
     const bw = bh * (img.naturalWidth / img.naturalHeight);
     ctx.save();
     ctx.globalAlpha = alpha;
-    ctx.drawImage(img, w.x - bw/2, w.y - bh/2, bw, bh);
+    ctx.drawImage(img, sx - bw/2, sy - bh/2, bw, bh);
     ctx.restore();
   }
 }
