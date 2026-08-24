@@ -1224,7 +1224,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.89</div>
+  <div id="versie-label">v0.3.90</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2850,7 +2850,9 @@ const MUNTJE_SCHERM_PX = 30; // hoe groot het muntje op het scherm wordt geteken
 
 // ── Schurken-vliegtuig: eenmalige pest-ronde per potje ──────────────────
 // Zie startSchurkVliegtuig()/updateSchurkVliegtuig() verderop voor de opzet.
-const SCHURK_PAUZE_MS = 2000;         // stilstand in de hoek, op 3x grootte
+const SCHURK_PAUZE_MS = 2000;         // stilstand in de hoek, op SCHURK_SPAWN_SCHAAL grootte
+const SCHURK_SPAWN_SCHAAL = 1.5;      // startgrootte in de hoek (t.o.v. normale grootte)
+const SCHURK_KRIMP_MS = 1000;         // hoe snel het na vertrek terugkrimpt naar normale grootte
 const SCHURK_VLUCHT_MS = 5000;        // duur van de vlucht naar de overkant
 const SCHURK_AANTAL_WOLKEN = 5;       // aantal wolkjes dat de rat afschiet tijdens de vlucht
 const SCHURK_WOLK_MIN_SNELHEID = 200; // px/s
@@ -7689,10 +7691,11 @@ function positioneerSchurkEl(el, cx, cy, schaal){
 }
 
 // updateSchurkVliegtuig(): wordt elke frame aangeroepen vanuit updateSpel().
-// Fase 1 (0 - SCHURK_PAUZE_MS): stilstaan op 3x grootte in de gekozen hoek.
-// Fase 2 (daarna, SCHURK_VLUCHT_MS lang): een lichte boog naar de overkant,
-// waarbij het geleidelijk terugkrimpt naar normale grootte en de rat
-// onderweg wolkjes afschiet.
+// Fase 1 (0 - SCHURK_PAUZE_MS): stilstaan op SCHURK_SPAWN_SCHAAL grootte in de gekozen hoek.
+// Fase 2 (daarna, SCHURK_VLUCHT_MS lang): een lichte boog naar de overkant. De
+// eerste SCHURK_KRIMP_MS daarvan krimpt het vliegtuigje snel terug naar normale
+// grootte; pas zodra dat bereikt is, begint de rat wolkjes af te schieten,
+// verspreid over de rest van de tijd dat het vliegtuigje nog in beeld is.
 function updateSchurkVliegtuig(){
   if(!schurkVliegtuig) return;
   const el = document.getElementById('schurk-vliegtuig');
@@ -7700,7 +7703,7 @@ function updateSchurkVliegtuig(){
   const t = performance.now() - schurkVliegtuig.spawnTijd;
 
   if(t < SCHURK_PAUZE_MS){
-    positioneerSchurkEl(el, hoek.vanX*W, hoek.vanY*H, 3);
+    positioneerSchurkEl(el, hoek.vanX*W, hoek.vanY*H, SCHURK_SPAWN_SCHAAL);
     return;
   }
 
@@ -7708,17 +7711,28 @@ function updateSchurkVliegtuig(){
   const te = vt<0.5 ? 2*vt*vt : 1-Math.pow(-2*vt+2,2)/2; // zelfde ease-in-out als de correctievlucht
   const [px,py] = kwadratischeBezier(hoek.vanX,hoek.vanY, hoek.boogX,hoek.boogY, hoek.naarX,hoek.naarY, te);
   const cx = px*W, cy = py*H;
-  const schaal = 3 - 2*te; // krimpt geleidelijk van 3x naar 1x, begint zodra het vertrekt
+
+  // Krimpen gebeurt sneller dan de rest van de vlucht duurt: binnen
+  // SCHURK_KRIMP_MS na vertrek al terug op normale grootte, niet pas aan het einde.
+  const tSindsVertrek = t - SCHURK_PAUZE_MS;
+  const krimpFractie = Math.min(1, tSindsVertrek / SCHURK_KRIMP_MS);
+  const schaal = SCHURK_SPAWN_SCHAAL - (SCHURK_SPAWN_SCHAAL - 1) * krimpFractie;
   positioneerSchurkEl(el, cx, cy, schaal);
 
-  // Wolkjes afschieten: 5 stuks verdeeld over de volledige vluchttijd
-  const gewenstAantal = Math.min(SCHURK_AANTAL_WOLKEN, Math.floor(vt * SCHURK_AANTAL_WOLKEN) + 1);
-  if(gewenstAantal > schurkVliegtuig.wolkenGeschoten){
-    schurkVliegtuig.wolkenGeschoten = gewenstAantal;
-    const ratFracX = schurkVliegtuig.gespiegeld ? (1 - RAT_OFFSET_FRAC.x) : RAT_OFFSET_FRAC.x;
-    const ratX = cx + (ratFracX - 0.5) * el.offsetWidth;
-    const ratY = cy + (RAT_OFFSET_FRAC.y - 0.5) * el.offsetHeight;
-    schietSchurkWolk(ratX, ratY);
+  // Wolkjes pas afschieten zodra het vliegtuigje normale grootte heeft (krimp
+  // klaar), daarna 5 stuks verspreid over de resterende tijd dat het nog vliegt.
+  if(krimpFractie >= 1){
+    const restDuur = SCHURK_VLUCHT_MS - SCHURK_KRIMP_MS;
+    const tSindsNormaal = tSindsVertrek - SCHURK_KRIMP_MS;
+    const wt = restDuur > 0 ? Math.min(1, tSindsNormaal / restDuur) : 1;
+    const gewenstAantal = Math.min(SCHURK_AANTAL_WOLKEN, Math.floor(wt * SCHURK_AANTAL_WOLKEN) + 1);
+    if(gewenstAantal > schurkVliegtuig.wolkenGeschoten){
+      schurkVliegtuig.wolkenGeschoten = gewenstAantal;
+      const ratFracX = schurkVliegtuig.gespiegeld ? (1 - RAT_OFFSET_FRAC.x) : RAT_OFFSET_FRAC.x;
+      const ratX = cx + (ratFracX - 0.5) * el.offsetWidth;
+      const ratY = cy + (RAT_OFFSET_FRAC.y - 0.5) * el.offsetHeight;
+      schietSchurkWolk(ratX, ratY);
+    }
   }
 
   if(vt >= 1){
