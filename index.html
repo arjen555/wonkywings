@@ -91,6 +91,13 @@
     }
     #paspoort-icoon-knop, #boek-icoon-knop {
       height:clamp(140px, 19vw, 230px); width:auto;
+      /* Grensbewaking: nooit breder dan ~46% van de zijbalk (met wat marge
+         voor de tussenruimte) - op een breed scherm blijft de hoogte hierboven
+         gewoon leidend (zoals goedgekeurd), maar op een smallere balk (laptop,
+         of door de zoom:1.4 op #start-rechts hierboven) krimpt de breedte-grens
+         het plaatje eerder terug, zodat het nooit meer buiten beeld valt. */
+      max-width:46%;
+      min-width:0; /* laat flexbox ook écht krimpen i.p.v. bij de intrinsieke breedte te blijven hangen */
       object-fit:contain;
       cursor:pointer;
       filter:drop-shadow(0 4px 16px rgba(0,0,0,0.5));
@@ -1224,7 +1231,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.92</div>
+  <div id="versie-label">v0.3.94</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2853,13 +2860,14 @@ const MUNTJE_SCHERM_PX = 30; // hoe groot het muntje op het scherm wordt geteken
 const SCHURK_PAUZE_MS = 2000;         // stilstand in de hoek, op SCHURK_SPAWN_SCHAAL grootte
 const SCHURK_SPAWN_SCHAAL = 1.5;      // startgrootte in de hoek (t.o.v. normale grootte)
 const SCHURK_KRIMP_MS = 1000;         // hoe snel het na vertrek terugkrimpt naar normale grootte
-const SCHURK_VLUCHT_MS = 5000;        // duur van de vlucht naar de overkant
+const SCHURK_VLUCHT_MS = 8000;        // duur van de vlucht naar de overkant (was 5000)
 const SCHURK_AANTAL_WOLKEN = 5;       // aantal wolkjes dat de rat afschiet tijdens de vlucht
 // Snelheid in graden per seconde (i.p.v. platte schermpixels) - de wolkjes
 // hebben net als muntjes een echte plek op de bol, zodat ze meedraaien met
 // de wereld terwijl de speler stuurt, en dus ook echt te raken/ontwijken zijn.
 const SCHURK_WOLK_MIN_SNELHEID_GRADEN = 35;
 const SCHURK_WOLK_MAX_SNELHEID_GRADEN = 55;
+const SCHURK_WOLK_MIKSPELING_GRADEN = 25; // hoeveel de rat naast Wonky's positie mag mikken (± graden, schermhoek) - geen feilloze schutter, maar ook niet random
 const SCHURK_WOLK_MAX_LEEFTIJD_MS = 7000; // hoe lang een gemist wolkje maximaal blijft ronddrijven voor het opgeruimd wordt
 const SCHURK_WOLK_RAAK_AFSTAND = 50;  // px - hoe dicht een wolkje bij Wonky moet komen om te raken
 const SCHURK_BLIKSEM_HOUD_MS = 700;   // hoe lang de bliksemwolk vol zichtbaar blijft na een treffer
@@ -7687,7 +7695,7 @@ function kwadratischeBezier(x0,y0,cx,cy,x1,y1,t){
 }
 
 function positioneerSchurkEl(el, cx, cy, schaal){
-  const basis = 260; // natuurlijke afmeting van plus250km_vliegtuig.png
+  const basis = 150; // weergavegrootte in CSS-pixels bij schaal 1 (was 260 - flink kleiner op Arjens verzoek)
   const grootte = basis * schaal;
   el.style.width = grootte + 'px';
   el.style.height = grootte + 'px';
@@ -7771,16 +7779,30 @@ function schermPuntNaarLonLat(sx, sy){
 // eigen drift-richting, precies zoals een muntje - zo draait het keurig mee
 // met de rest van de wereld terwijl de speler stuurt, en kan het dus ook
 // echt ontweken of geraakt worden door te sturen.
+//
+// De rat mikt daarbij (met wat speling) op Wonky's ECHTE positie op de bol
+// (wonkyLon/wonkyLat - dezelfde plek waar ook de camera altijd op focust):
+// de basisrichting is de kortste weg van het wolkje naar die plek (inclusief
+// een correcte afwikkeling over de datumgrens via lonVerschil), met daarna
+// een willekeurige hoek-speling erbovenop zodat de rat geen feilloze
+// schutter is.
 function schietSchurkWolk(x, y){
   const type = Math.random() < 0.5 ? '100' : '200';
   const [lon, lat] = schermPuntNaarLonLat(x, y);
-  const hoekRad = Math.random() * Math.PI * 2;
   const snelheidGraden = SCHURK_WOLK_MIN_SNELHEID_GRADEN + Math.random() * (SCHURK_WOLK_MAX_SNELHEID_GRADEN - SCHURK_WOLK_MIN_SNELHEID_GRADEN);
+
+  const dLon = lonVerschil(lon, wonkyLon), dLat = wonkyLat - lat;
+  const basisHoek = (Math.hypot(dLon, dLat) < 1e-6) ? Math.random() * Math.PI * 2 : Math.atan2(dLat, dLon);
+  const spelingRad = (Math.random() * 2 - 1) * SCHURK_WOLK_MIKSPELING_GRADEN * Math.PI / 180;
+  const mikHoek = basisHoek + spelingRad;
+  const richtingLon = Math.cos(mikHoek) * snelheidGraden;
+  const richtingLat = Math.sin(mikHoek) * snelheidGraden;
+
   schurkWolken.push({
     type: type,
     lon: lon, lat: lat,
-    richtingLon: Math.cos(hoekRad) * snelheidGraden,
-    richtingLat: Math.sin(hoekRad) * snelheidGraden,
+    richtingLon: richtingLon,
+    richtingLat: richtingLat,
     spawnTijd: performance.now(),
     geraakt: false,
     geraaktTijd: 0
