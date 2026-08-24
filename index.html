@@ -1224,7 +1224,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.88</div>
+  <div id="versie-label">v0.3.89</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1517,6 +1517,9 @@
        de update-loop). Lagere z-index dan het vliegtuigje zelf, want hij
        hoort er duidelijk achter/onder te zitten. -->
   <img id="jan-de-wind" src="images/Jan_de_Wind.png" alt="Jan de Wind" style="position:fixed;width:clamp(113px, 9vmin, 195px);pointer-events:none;z-index:9;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.5));transform-origin:center center;"/>
+  <!-- Schurken-vliegtuig: eenmalige pest-ronde per potje, zie startSchurkVliegtuig()
+       hierboven. Positie/grootte worden volledig per frame in JS gezet. -->
+  <img id="schurk-vliegtuig" src="images/plus250km_vliegtuig.png" alt="Schurken-vliegtuig" style="position:fixed;pointer-events:none;z-index:30;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.6));transform-origin:center center;"/>
   <img id="vlag-valt" src="images/vlag_valt.png" alt="vlag"/>
   <img id="vlag-grond" src="images/vlag_grond.png" alt="vlag"/>
 
@@ -2844,6 +2847,45 @@ let muntjesPlanning = [];    // welke land-nummers (0-indexed) deze ronde een mu
 let muntjeImgGewoon = null;  // preloaded Image voor muntje2.png
 let muntjeImgBijzonder = null; // preloaded Image voor muntje.png
 const MUNTJE_SCHERM_PX = 30; // hoe groot het muntje op het scherm wordt getekend
+
+// ── Schurken-vliegtuig: eenmalige pest-ronde per potje ──────────────────
+// Zie startSchurkVliegtuig()/updateSchurkVliegtuig() verderop voor de opzet.
+const SCHURK_PAUZE_MS = 2000;         // stilstand in de hoek, op 3x grootte
+const SCHURK_VLUCHT_MS = 5000;        // duur van de vlucht naar de overkant
+const SCHURK_AANTAL_WOLKEN = 5;       // aantal wolkjes dat de rat afschiet tijdens de vlucht
+const SCHURK_WOLK_MIN_SNELHEID = 200; // px/s
+const SCHURK_WOLK_MAX_SNELHEID = 320; // px/s
+const SCHURK_WOLK_RAAK_AFSTAND = 50;  // px - hoe dicht een wolkje bij Wonky moet komen om te raken
+const SCHURK_BLIKSEM_HOUD_MS = 700;   // hoe lang de bliksemwolk vol zichtbaar blijft na een treffer
+const SCHURK_BLIKSEM_FADE_MS = 2000;  // en daarna: vervaagtijd naar volledig transparant
+const SCHURK_WOLK_HOOGTE_KALM = 70;     // weergavegrootte op het scherm (px hoogte)
+const SCHURK_WOLK_HOOGTE_BLIKSEM = 105; // bewust groter dan de rustige voorganger
+// Positie van de rat t.o.v. de linkerboven-hoek van het vliegtuigplaatje (0..1),
+// afgemeten op de referentieafbeelding die Arjen aanleverde met de rode cirkel.
+const RAT_OFFSET_FRAC = {x:0.206, y:0.397};
+// Vier vertrekhoeken met bijbehorend eindpunt en boog-controlepunt (alle
+// waarden als fractie 0..1 van het scherm) - een lichte kwadratische boog
+// per hoek, ongeveer zoals Arjen liet zien met de pijlen op zijn schermafbeelding.
+const SCHURK_HOEKEN = [
+  { naam:'linksboven',  vanX:0.09, vanY:0.09, naarX:0.90, naarY:0.62, boogX:0.50, boogY:0.86 },
+  { naam:'rechtsboven', vanX:0.91, vanY:0.09, naarX:0.10, naarY:0.62, boogX:0.50, boogY:0.86 },
+  { naam:'linksonder',  vanX:0.09, vanY:0.90, naarX:0.90, naarY:0.38, boogX:0.50, boogY:0.14 },
+  { naam:'rechtsonder', vanX:0.91, vanY:0.90, naarX:0.10, naarY:0.38, boogX:0.50, boogY:0.14 },
+];
+let schurkGeplandLandIdx = null; // welk land-nummer (0-indexed) deze ronde de pestronde triggert, of null
+let schurkGespawnd = false;
+let schurkVliegtuig = null;      // actieve toestand {hoek, spawnTijd, wolkenGeschoten, gespiegeld}, of null
+let schurkWolken = [];           // actief afgeschoten wolkjes
+let schurkVliegtuigImg = null;
+let schurkWolk100Img = null, schurkWolk200Img = null;
+let schurkBliksem100Img = null, schurkBliksem200Img = null;
+(function(){
+  schurkVliegtuigImg = new Image(); schurkVliegtuigImg.src = 'images/plus250km_vliegtuig.png';
+  schurkWolk100Img = new Image(); schurkWolk100Img.src = 'images/plus100km_wolk.png';
+  schurkWolk200Img = new Image(); schurkWolk200Img.src = 'images/plus200km_wolk.png';
+  schurkBliksem100Img = new Image(); schurkBliksem100Img.src = 'images/plus100km_bliksemwolk.png';
+  schurkBliksem200Img = new Image(); schurkBliksem200Img.src = 'images/plus200km_bliksemwolk.png';
+})();
 
 // Preload muntje-afbeeldingen
 (function(){
@@ -4390,11 +4432,17 @@ function startSpel(levelId, modus) {
   }
   updateVoortgang();
   planMuntjesVoorRonde();
+  // Schurken-pestronde: alleen bij een gewone Landen-ronde (niet bij
+  // Hoofdsteden, Plekken of Verkennen - die gebruiken een ander scorebord).
+  schurkVliegtuig = null; schurkWolken = [];
+  document.getElementById('schurk-vliegtuig').style.display = 'none';
+  planSchurkenRonde(modus==='spelen' && !isHoofdsteden && !isPlekken);
   spelActief=true;
   W=window.innerWidth; H=window.innerHeight;
   canvas.width=W; canvas.height=H;
   // Eerste muntje-check pas ná spelActief=true, anders is de bol nog niet zichtbaar
   checkMuntjeSpawn();
+  checkSchurkSpawn();
 
   if(!globeGestart){
     globeGestart=true;
@@ -4906,6 +4954,7 @@ function nieuwLand(){
   zetOpdrachtTekst();
   updateVoortgang(); wachten=false;
   checkMuntjeSpawn();
+  checkSchurkSpawn();
 }
 
 // ── Canvas & variabelen ───────────────────────────────
@@ -6934,6 +6983,7 @@ function drawGlobe(){
 
   tekenRook(); // rookwolkjes als laatste, zodat ze boven de kaart liggen (Wonky zelf is een los plaatje en blijft er automatisch bovenop)
   tekenWind(); // windvlagen van Jan de Wind, zelfde laag als de rookwolkjes
+  tekenSchurkWolken(); // schurken-wolkjes, zelfde laag
 }
 
 // ── Rookwolkjes: elk personage zijn eigen uitlaat ──────────
@@ -7581,6 +7631,200 @@ function verwerkMuntje(m, sx, sy){
   }
 }
 
+// ── Schurken-vliegtuig: functies ─────────────────────────────────────────
+// planSchurkenRonde(actief): wordt één keer per ronde aangeroepen vanuit
+// startSpel(). Kiest willekeurig (gewogen naar het midden van de ronde) bij
+// welk land-nummer de schurken langskomen - of laat het helemaal weg als
+// deze speelmodus niet meetelt (Hoofdsteden/Plekken/Verkennen).
+function planSchurkenRonde(actief){
+  schurkGeplandLandIdx = null;
+  schurkGespawnd = false;
+  if(!actief || spelLanden.length < 2) return;
+  // Gemiddelde van 3 gelijkverdeelde worpen valt vaker in het midden en
+  // soms (zelden) helemaal aan het begin of einde - precies wat Arjen vroeg.
+  const r = (Math.random()+Math.random()+Math.random())/3;
+  schurkGeplandLandIdx = Math.round(r * (spelLanden.length - 1));
+}
+
+// checkSchurkSpawn(): zelfde opzet als checkMuntjeSpawn(), wordt aangeroepen
+// bij elk nieuw land. Start de pestronde zodra het geplande land-nummer bereikt is.
+function checkSchurkSpawn(){
+  if(schurkGeplandLandIdx === null || schurkGespawnd) return;
+  if(huidigLandIdx === schurkGeplandLandIdx){
+    schurkGespawnd = true;
+    startSchurkVliegtuig();
+  }
+}
+
+function startSchurkVliegtuig(){
+  const hoek = SCHURK_HOEKEN[Math.floor(Math.random()*SCHURK_HOEKEN.length)];
+  schurkVliegtuig = {
+    hoek: hoek,
+    spawnTijd: performance.now(),
+    wolkenGeschoten: 0,
+    gespiegeld: hoek.naarX < hoek.vanX // vliegt het naar links? Dan het plaatje spiegelen zodat het niet achterstevoren lijkt te vliegen
+  };
+  const el = document.getElementById('schurk-vliegtuig');
+  el.style.transform = schurkVliegtuig.gespiegeld ? 'scaleX(-1)' : 'scaleX(1)';
+  el.style.display = 'block';
+}
+
+// kwadratischeBezier(): punt op t (0..1) langs een kwadratische boog van
+// (x0,y0) via controlepunt (cx,cy) naar (x1,y1). Alle coördinaten als fractie 0..1.
+function kwadratischeBezier(x0,y0,cx,cy,x1,y1,t){
+  const mt = 1 - t;
+  return [
+    mt*mt*x0 + 2*mt*t*cx + t*t*x1,
+    mt*mt*y0 + 2*mt*t*cy + t*t*y1
+  ];
+}
+
+function positioneerSchurkEl(el, cx, cy, schaal){
+  const basis = 260; // natuurlijke afmeting van plus250km_vliegtuig.png
+  const grootte = basis * schaal;
+  el.style.width = grootte + 'px';
+  el.style.height = grootte + 'px';
+  el.style.left = (cx - grootte/2) + 'px';
+  el.style.top = (cy - grootte/2) + 'px';
+}
+
+// updateSchurkVliegtuig(): wordt elke frame aangeroepen vanuit updateSpel().
+// Fase 1 (0 - SCHURK_PAUZE_MS): stilstaan op 3x grootte in de gekozen hoek.
+// Fase 2 (daarna, SCHURK_VLUCHT_MS lang): een lichte boog naar de overkant,
+// waarbij het geleidelijk terugkrimpt naar normale grootte en de rat
+// onderweg wolkjes afschiet.
+function updateSchurkVliegtuig(){
+  if(!schurkVliegtuig) return;
+  const el = document.getElementById('schurk-vliegtuig');
+  const hoek = schurkVliegtuig.hoek;
+  const t = performance.now() - schurkVliegtuig.spawnTijd;
+
+  if(t < SCHURK_PAUZE_MS){
+    positioneerSchurkEl(el, hoek.vanX*W, hoek.vanY*H, 3);
+    return;
+  }
+
+  const vt = Math.min(1, (t - SCHURK_PAUZE_MS) / SCHURK_VLUCHT_MS);
+  const te = vt<0.5 ? 2*vt*vt : 1-Math.pow(-2*vt+2,2)/2; // zelfde ease-in-out als de correctievlucht
+  const [px,py] = kwadratischeBezier(hoek.vanX,hoek.vanY, hoek.boogX,hoek.boogY, hoek.naarX,hoek.naarY, te);
+  const cx = px*W, cy = py*H;
+  const schaal = 3 - 2*te; // krimpt geleidelijk van 3x naar 1x, begint zodra het vertrekt
+  positioneerSchurkEl(el, cx, cy, schaal);
+
+  // Wolkjes afschieten: 5 stuks verdeeld over de volledige vluchttijd
+  const gewenstAantal = Math.min(SCHURK_AANTAL_WOLKEN, Math.floor(vt * SCHURK_AANTAL_WOLKEN) + 1);
+  if(gewenstAantal > schurkVliegtuig.wolkenGeschoten){
+    schurkVliegtuig.wolkenGeschoten = gewenstAantal;
+    const ratFracX = schurkVliegtuig.gespiegeld ? (1 - RAT_OFFSET_FRAC.x) : RAT_OFFSET_FRAC.x;
+    const ratX = cx + (ratFracX - 0.5) * el.offsetWidth;
+    const ratY = cy + (RAT_OFFSET_FRAC.y - 0.5) * el.offsetHeight;
+    schietSchurkWolk(ratX, ratY);
+  }
+
+  if(vt >= 1){
+    el.style.display = 'none';
+    schurkVliegtuig = null;
+  }
+}
+
+function schietSchurkWolk(x, y){
+  const type = Math.random() < 0.5 ? '100' : '200';
+  const hoekRad = Math.random() * Math.PI * 2;
+  const snelheid = SCHURK_WOLK_MIN_SNELHEID + Math.random() * (SCHURK_WOLK_MAX_SNELHEID - SCHURK_WOLK_MIN_SNELHEID);
+  schurkWolken.push({
+    type: type,
+    x: x, y: y,
+    vx: Math.cos(hoekRad) * snelheid,
+    vy: Math.sin(hoekRad) * snelheid,
+    geraakt: false,
+    geraaktTijd: 0
+  });
+}
+
+// updateSchurkWolken(): verplaatst alle actieve wolkjes, ruimt wolkjes op die
+// het beeld uitgevlogen zijn, en houdt geraakte (bliksem-)wolkjes een tijdje
+// stilstaand zichtbaar voordat ze vervagen en verdwijnen.
+function updateSchurkWolken(){
+  if(schurkWolken.length === 0) return;
+  const nu = performance.now();
+  const dt = 1/60; // vast, voorkomt rare sprongen bij lag - zelfde aanpak als bij de muntjes
+  for(let i = schurkWolken.length - 1; i >= 0; i--){
+    const w = schurkWolken[i];
+    if(w.geraakt){
+      if(nu - w.geraaktTijd > SCHURK_BLIKSEM_HOUD_MS + SCHURK_BLIKSEM_FADE_MS){
+        schurkWolken.splice(i, 1);
+      }
+      continue; // een geraakte wolk blijft hangen op de plek van de klap, niet meer bewegen
+    }
+    w.x += w.vx * dt;
+    w.y += w.vy * dt;
+    if(w.x < -120 || w.x > W+120 || w.y < -120 || w.y > H+120){
+      schurkWolken.splice(i, 1); // rustig gemist: geen straf, geen effect
+    }
+  }
+}
+
+// checkSchurkWolkTreffer(wx,wy): checkt elke frame of Wonky (op wx,wy, net
+// als bij checkMuntjeVangst) dicht genoeg bij een nog-niet-geraakt wolkje zit.
+function checkSchurkWolkTreffer(wx, wy){
+  if(schurkWolken.length === 0) return;
+  for(const w of schurkWolken){
+    if(w.geraakt) continue;
+    const afstand = Math.hypot(w.x - wx, w.y - wy);
+    if(afstand <= SCHURK_WOLK_RAAK_AFSTAND){
+      verwerkSchurkWolkTreffer(w);
+    }
+  }
+}
+
+// verwerkSchurkWolkTreffer(w): het wolkje wordt op slag geraakt - wisselt om
+// naar de bliksemversie (het vervagen/verdwijnen gebeurt in tekenSchurkWolken)
+// en stuurt tegelijk het bedrag naar het scorebord, via dezelfde
+// vliegBeloningNaarDoel() als het vlaggetje. De km telt pas echt mee zodra
+// het bedrag daar ook echt aankomt, niet eerder.
+function verwerkSchurkWolkTreffer(w){
+  w.geraakt = true;
+  w.geraaktTijd = performance.now();
+  const bedrag = w.type === '100' ? 100 : 200;
+  vliegBeloningNaarDoel('+'+bedrag+' km', w.x, w.y, document.getElementById('scorebord-wrap'), ()=>{
+    score += bedrag;
+    document.getElementById('score').textContent = score;
+    updateScorebordCijfers();
+  });
+}
+
+// tekenSchurkWolken(): tekent alle actieve wolkjes op de canvas-laag, net als
+// de rookwolkjes/windvlagen - wordt elke frame aangeroepen vanuit drawGlobe().
+function tekenSchurkWolken(){
+  if(schurkWolken.length === 0) return;
+  const nu = performance.now();
+  for(const w of schurkWolken){
+    let img, weergaveHoogte;
+    if(w.geraakt){
+      img = w.type === '100' ? schurkBliksem100Img : schurkBliksem200Img;
+      weergaveHoogte = SCHURK_WOLK_HOOGTE_BLIKSEM;
+    } else {
+      img = w.type === '100' ? schurkWolk100Img : schurkWolk200Img;
+      weergaveHoogte = SCHURK_WOLK_HOOGTE_KALM;
+    }
+    if(!img || !img.complete || !img.naturalWidth) continue;
+    let alpha = 1;
+    if(w.geraakt){
+      const sindsRaak = nu - w.geraaktTijd;
+      if(sindsRaak > SCHURK_BLIKSEM_HOUD_MS){
+        alpha = Math.max(0, 1 - (sindsRaak - SCHURK_BLIKSEM_HOUD_MS) / SCHURK_BLIKSEM_FADE_MS);
+      }
+    }
+    if(alpha <= 0) continue;
+    const bh = weergaveHoogte;
+    const bw = bh * (img.naturalWidth / img.naturalHeight);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(img, w.x - bw/2, w.y - bh/2, bw, bh);
+    ctx.restore();
+  }
+}
+
 // ── Kennisvraag-pop-up (bijzonder muntje) ───────────────────────────────
 let kennisvraagOpenTijd = 0;         // voor het "tijd staat stil"-effect, zelfde principe als hulpOpenTijd
 let kennisvraagWachtOpDoorgaan = false; // true zodra er een antwoord gekozen is, wacht op klik/tik/toets om verder te gaan
@@ -7943,6 +8187,8 @@ function updateSpel(){
   if(!spelActief || hulpActief || kennisvraagActief || radActief) return;
 
   updateMuntjes();
+  updateSchurkVliegtuig();
+  updateSchurkWolken();
   updateJokerKnop();
 
   if(huidigModus==='spelen' && levelStartTijd){
@@ -8179,6 +8425,7 @@ function updateSpel(){
   // Wonky's positie is relatief aan de focusstip zelf, niet aan het scherm-midden
   const wx=focusSx + wonkySchermX*W, wy=focusSy-90;
   checkMuntjeVangst(wx, wy);
+  checkSchurkWolkTreffer(wx, wy);
 
   const wonkyFrontaal = document.getElementById('wonky-frontaal');
   const wonkyNaarFrontaal = document.getElementById('wonky-naar-frontaal');
