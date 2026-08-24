@@ -300,12 +300,12 @@ var LANDEN_SECTIES = [
   { groep:'Europa', levels:[
     { id:'eu-alles',       naam:'Heel Europa' },
     { id:'eu-west',        naam:'West-Europa' },
-    { id:'eu-oost',        naam:'Oost-Europa & Balkan' },
     { id:'eu-noord',       naam:'Noord-Europa' },
+    { id:'eu-oost',        naam:'Oost-Europa & Balkan' },
     { id:'eu-kleinmaarfijn', naam:'Klein maar fijn' },
   ]},
   { groep:'Wereld', levels:[
-    { id:'w-alles',        naam:'Alle landen' },
+    { id:'w-alles',        naam:'Alle landen van de wereld' },
     { id:'w-amerika',      naam:'Noord-Amerika' },
     { id:'w-zuid-amerika', naam:'Zuid-Amerika' },
     { id:'w-afrika',       naam:'Afrika' },
@@ -488,12 +488,15 @@ function maakTabel(rijen, startIndex, type){
   return tabel;
 }
 
-/** Bouw een subsectie-kaart met All-time en Vandaag kolommen */
-function bouwSubsectie(naam, sleutel, type){
+/** Bouw een subsectie-kaart met All-time en Vandaag kolommen.
+ * altijdTonen: als true, wordt de kaart ook zonder scores getoond (de twee
+ * kolommen laten dan gewoon elk hun eigen "Nog geen scores" zien - zie
+ * bouwScoreTabel), in plaats van de kaart helemaal weg te laten. */
+function bouwSubsectie(naam, sleutel, type, altijdTonen){
   var lijst = (type==='raad') ? raadScores(sleutel) : topoScores(sleutel);
   var gefilterd = filterScores(lijst);
 
-  if(gefilterd.length === 0) return null;
+  if(gefilterd.length === 0 && !altijdTonen) return null;
 
   var alltime = gefilterd.slice(0,50);
   var vandaag = gefilterd.filter(function(r){ return isVandaag(r.datum); }).slice(0,50);
@@ -522,8 +525,15 @@ function bouwSubsectie(naam, sleutel, type){
 }
 
 // ── Sectie-definities (per tab) ───────────────────────
+// 'landen' krijgt een vaste indeling: de Europa-groep staat altijd op de
+// linkerpagina, de Wereld-groep altijd op de rechterpagina (in plaats van
+// automatisch fifty-fifty verdeeld), en elke categorie is altijd zichtbaar,
+// ook zonder scores. De andere tabbladen blijven het oude, dynamische
+// gedrag houden (leeg = overgeslagen, verdeeld op basis van aantal).
 var SECTIES = {
-  landen:      { label:'Landen',            data:LANDEN_SECTIES, type:'topo' },
+  landen:      { label:'Landen',            data:LANDEN_SECTIES, type:'topo',
+                 splitPerGroep:true, toonLegeCategorieen:true,
+                 titelLinks:'Europa Masters', titelRechts:'Wereld Masters' },
   hoofdsteden: { label:'Hoofdsteden',       data:HOOFD_SECTIES,  type:'topo' },
   plekken:     { label:'Iconische plekken', data:PLEK_SECTIES,   type:'topo' },
   raadspel:    { label:'Raad je plaatje',   data:RAAD_SECTIES,   type:'raad' },
@@ -538,11 +548,29 @@ function bouwSubsecties(sectieId){
     var groep = def.data[g];
     var items = groep.levels || groep.cats;
     for(var j=0; j<items.length; j++){
-      var sub = bouwSubsectie(items[j].naam, items[j].id, def.type);
+      var sub = bouwSubsectie(items[j].naam, items[j].id, def.type, def.toonLegeCategorieen);
       if(sub) nodes.push(sub);
     }
   }
   return nodes;
+}
+
+/** Zelfde als bouwSubsecties(), maar per groep apart - voor secties met
+ * splitPerGroep, waar groep 0 altijd links en groep 1 altijd rechts hoort. */
+function bouwSubsectiesPerGroep(sectieId){
+  var def = SECTIES[sectieId];
+  var uitkomst = { links:[], rechts:[] };
+  if(!def) return uitkomst;
+  for(var g=0; g<def.data.length; g++){
+    var groep = def.data[g];
+    var items = groep.levels || groep.cats;
+    var doel = (g===0) ? uitkomst.links : uitkomst.rechts;
+    for(var j=0; j<items.length; j++){
+      var sub = bouwSubsectie(items[j].naam, items[j].id, def.type, def.toonLegeCategorieen);
+      if(sub) doel.push(sub);
+    }
+  }
+  return uitkomst;
 }
 
 // ── Pagina opbouwen ───────────────────────────────────
@@ -555,6 +583,28 @@ function bouwPagina(){
   rechts.innerHTML = '';
 
   var def = SECTIES[huidigeSectie];
+
+  // Vaste indeling (nu alleen 'landen'): groep 0 altijd links, groep 1
+  // altijd rechts, in de volgorde uit LANDEN_SECTIES, elke categorie
+  // altijd zichtbaar - geen automatische fifty-fifty verdeling.
+  if(def.splitPerGroep){
+    var perGroep = bouwSubsectiesPerGroep(huidigeSectie);
+
+    var titelL = document.createElement('div');
+    titelL.className = 'pagina-titel';
+    titelL.textContent = def.titelLinks;
+    links.appendChild(titelL);
+    for(var li=0; li<perGroep.links.length; li++) links.appendChild(perGroep.links[li]);
+
+    var titelR = document.createElement('div');
+    titelR.className = 'pagina-titel';
+    titelR.textContent = def.titelRechts;
+    rechts.appendChild(titelR);
+    for(var ri=0; ri<perGroep.rechts.length; ri++) rechts.appendChild(perGroep.rechts[ri]);
+
+    return;
+  }
+
   var subsecties = bouwSubsecties(huidigeSectie);
 
   if(subsecties.length === 0){
