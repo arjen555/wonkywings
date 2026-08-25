@@ -82,28 +82,15 @@
     #opties-sub-lijst.open { max-height:200px; opacity:1; margin-top:8px; }
     .opties-sub-knop { font-size:0.72rem; padding:6px 16px; opacity:0.92; }
 
-    /* ── Landenpaspoort- en Boek-der-Groten-icoon: naast elkaar onderaan
-       het startmenu, even breed als de knoppen erboven. ── */
-    #startscherm-icoontjes {
-      display:flex; justify-content:center; align-items:flex-end;
-      gap:clamp(10px, 2.5vw, 20px);
-      width:100%; margin:0 auto;
-    }
-    #paspoort-icoon-knop, #boek-icoon-knop {
-      height:clamp(140px, 19vw, 230px); width:auto;
-      /* Grensbewaking: nooit breder dan ~46% van de zijbalk (met wat marge
-         voor de tussenruimte) - op een breed scherm blijft de hoogte hierboven
-         gewoon leidend (zoals goedgekeurd), maar op een smallere balk (laptop,
-         of door de zoom:1.4 op #start-rechts hierboven) krimpt de breedte-grens
-         het plaatje eerder terug, zodat het nooit meer buiten beeld valt. */
-      max-width:46%;
-      min-width:0; /* laat flexbox ook écht krimpen i.p.v. bij de intrinsieke breedte te blijven hangen */
-      object-fit:contain;
-      cursor:pointer;
+    /* ── Landenpaspoort-icoon: altijd zichtbaar, onderaan het rijtje, en
+       even groot als het "Wereld van Wonderen"-logo bovenaan. ── */
+    #paspoort-icoon-knop {
+      width:min(220px, 62%); max-width:100%; display:block;
+      margin:0 auto; cursor:pointer;
       filter:drop-shadow(0 4px 16px rgba(0,0,0,0.5));
       transition:transform 0.15s;
     }
-    #paspoort-icoon-knop:hover, #boek-icoon-knop:hover { transform:scale(1.04); }
+    #paspoort-icoon-knop:hover { transform:scale(1.04); }
     #startscherm {
       position:fixed; inset:0; z-index:100;
       display:flex; flex-direction:row;
@@ -115,9 +102,7 @@
       pointer-events:none; user-select:none;
     }
     #intro-titel {
-      /* Bewust niet exact op 50% (schermmidden): daar zit ook het personage-
-         groepje bij levelstart, en die twee overlapten elkaar anders. */
-      position:fixed; top:calc(50% + 95px); left:50%; transform:translate(-50%,-50%);
+      position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
       z-index:15; pointer-events:none; user-select:none;
       font-size:clamp(1.8rem, 5vmin, 3.4rem); font-weight:800;
       color:#fff6c8; text-shadow:0 2px 18px rgba(0,0,0,0.65), 0 0 24px rgba(255,215,0,0.5);
@@ -191,68 +176,6 @@
       font-size:0.62rem; color:rgba(255,255,255,0.6);
       letter-spacing:1.5px; text-transform:uppercase;
       text-align:center; position:relative;
-    }
-    /* 'display:contents' laat de twee kinderen (logo + subtitel) gewoon
-       meedoen als losse flex-items van #start-rechts, alsof deze wrapper er
-       niet stond - zo blijft de bestaande 14px-gap-opmaak intact. Wordt via
-       JS naar 'none' gezet zodra een categorie openklapt (zie
-       toonFiguurKiezer hieronder), en dan verschijnt #figuur-kiezer-blok
-       op precies dezelfde plek in de rij. */
-    #start-logo-blok { display:contents; }
-
-    /* ── Vliegfiguur-kiezer: verschijnt op de plek van het logo zodra
-       Europa/Wereld/Hoofdsteden openklapt (Iconische plekken en Raad je
-       plaatje doen dit niet - die hebben geen open/dicht-status). Rij met
-       pijl-terug, het personage-plaatje, pijl-verder. ── */
-    #figuur-kiezer-blok {
-      display:none; /* wordt 'flex' via toonFiguurKiezer() */
-      align-items:center; justify-content:center;
-      gap:clamp(6px, 2vw, 16px);
-      width:100%;
-    }
-    .figuur-pijl-knop {
-      flex:none; background:none; border:none; cursor:pointer; padding:0;
-      width:clamp(34px, 8vw, 64px);
-      opacity:0.85; transition:opacity 0.15s, transform 0.15s;
-      filter:drop-shadow(0 3px 8px rgba(0,0,0,0.5));
-    }
-    .figuur-pijl-knop img { width:100%; display:block; }
-    .figuur-pijl-knop:hover:not(:disabled) { opacity:1; transform:scale(1.08); }
-    .figuur-pijl-knop:disabled { opacity:0.15; cursor:default; }
-    /* Vaste hoogte, ongeacht of de afbeelding van dit personage smal-en-hoog
-       (zoals de vogel) of breed-en-laag is - zonder dat zou de rij bij elk
-       personage een andere hoogte krijgen en de rest van het menu mee
-       verspringen. De afbeelding zelf schaalt (object-fit:contain) tot hij
-       precies binnen die hoogte past, in plaats van andersom. */
-    #figuur-kiezer-frame {
-      position:relative;
-      flex:1 1 auto; min-width:60px; max-width:170px;
-      height:clamp(70px, 8.5vw, 140px);
-    }
-    #figuur-kiezer-img {
-      width:100%; height:100%; object-fit:contain; display:block;
-      filter:drop-shadow(0 4px 16px rgba(0,0,0,0.5));
-      transition:filter 0.25s ease;
-    }
-    /* Nog niet vrijgespeeld personage: zelfde soort waas als bij een nog
-       niet verdiende paspoortstempel (zie .stempel-kaart.nog-niet-verzameld
-       in paspoort.html) - vervaagd naar wit, weinig contrast, in plaats van
-       donkerder. Iets minder extreem dan de paspoortstempel, zodat er nog
-       wat meer van de illustratie te onderscheiden is (bewust geen blur). */
-    #figuur-kiezer-img.vergrendeld {
-      filter: grayscale(1) brightness(1.6) contrast(0.45) opacity(0.6);
-    }
-    #figuur-vergrendeld-laag {
-      position:absolute; inset:0; z-index:2;
-      display:none; align-items:center; justify-content:center;
-      text-align:center; pointer-events:none;
-    }
-    #figuur-vergrendeld-laag.toon { display:flex; }
-    #figuur-vergrendeld-tekst {
-      font-family:'Baloo 2',sans-serif; font-weight:800; color:#fff9d6;
-      font-size:clamp(0.5rem, 1.5vw, 0.72rem);
-      text-shadow:0 2px 8px rgba(0,0,0,0.8);
-      max-width:85%;
     }
     #level-lijst { display:flex; flex-direction:column; gap:6px; width:100%; position:relative; }
 
@@ -740,16 +663,10 @@
       border-radius:50%; z-index:1001;
       box-shadow:0 0 0 4px rgba(255,246,200,0.92), 0 8px 22px rgba(0,0,0,0.55);
     }
-    /* Vast linksboven i.p.v. onderaan de kaart: bij een lange ranglijst (bijv.
-       Heel Europa) schoof deze knop anders ver naar beneden mee en leek het
-       alsof je niet meer terug kon naar het startmenu. Zelfde plek/stijl als
-       de terug-knop in het Paspoort. z-index 1001: net als het paspoort-
-       icoontje boven alle pop-ups (rad/help/diploma, die op 997-999 zitten). */
     #hoofdsteden-resultaat-terug-btn, #scorebord-terug-btn, #plekken-eind-verder {
-      position:fixed; left:14px; top:14px; z-index:1001;
       width:clamp(130px, 13vw, 210px); border:none; background:none; padding:0;
       cursor:pointer; opacity:0.92; transition:opacity 0.15s, transform 0.15s;
-      filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5));
+      display:block; margin:14px auto 0;
     }
     #hoofdsteden-resultaat-terug-btn img, #scorebord-terug-btn img, #plekken-eind-verder img {
       width:100%; display:block;
@@ -1231,25 +1148,13 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.96</div>
+  <div id="versie-label">v0.3.60</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
   <div id="start-rechts">
-    <div id="start-logo-blok">
-      <img id="start-titel-logo" src="images/Ohmooiewereld.png" alt="Oh mooie wereld!"/>
-      <div id="start-subtitel">✈ Vliegenderwijs topografie leren ✈</div>
-    </div>
-    <div id="figuur-kiezer-blok">
-      <button id="figuur-pijl-terug" class="figuur-pijl-knop" onclick="blaaderVliegfiguur(-1)" aria-label="Vorig personage"><img src="images/paspoort-terug.png" alt="Vorig personage"/></button>
-      <div id="figuur-kiezer-frame">
-        <img id="figuur-kiezer-img" src="images/vliegtuigjes/Wonky.png" alt="Gekozen vliegfiguur"/>
-        <div id="figuur-vergrendeld-laag">
-          <div id="figuur-vergrendeld-tekst"></div>
-        </div>
-      </div>
-      <button id="figuur-pijl-verder" class="figuur-pijl-knop" onclick="blaaderVliegfiguur(1)" aria-label="Volgend personage"><img src="images/paspoort-verder.png" alt="Volgend personage"/></button>
-    </div>
+    <img id="start-titel-logo" src="images/Ohmooiewereld.png" alt="Oh mooie wereld!"/>
+    <div id="start-subtitel">✈ Vliegenderwijs topografie leren ✈</div>
     <div id="level-lijst"></div>
     <div id="opties-groep">
       <button id="opties-knop" class="startscherm-knop" onclick="zetOptiesOpen(!optiesOpen)">
@@ -1269,10 +1174,7 @@
     <button id="help-knop" class="startscherm-knop" onclick="openHulp()">
       Zo werkt de besturing
     </button>
-    <div id="startscherm-icoontjes">
-      <img id="paspoort-icoon-knop" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="window.location.href='paspoort.html'"/>
-      <img id="boek-icoon-knop" src="images/boek-der-groten-icoon.png" alt="Boek der Groten" onclick="window.location.href='highscores.html'"/>
-    </div>
+    <img id="paspoort-icoon-knop" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="window.location.href='paspoort.html'"/>
   </div>
 </div>
 
@@ -1512,21 +1414,13 @@
   <div id="tip-besturing" class="knop-label">besturing</div>
   <div id="tip-hint" class="knop-label">waar ligt het?</div>
   <div id="tip-joker" class="knop-label">ruilen voor ander land</div>
-  <img id="wonky" src="images/vliegtuigjes/Wonky.png" alt="Wonky"/>
-  <img id="wonky-frontaal" src="images/vliegtuigjes/Timbo_frontaal.png" alt="Wonky frontaal" style="position:fixed;width:clamp(83px, 6.77vmin, 148px);pointer-events:none;z-index:11;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));"/>
-  <img id="wonky-naar-frontaal" src="images/vliegtuigjes/Timbo_naar_frontaal.png" alt="Wonky naar frontaal" style="position:fixed;width:clamp(86px, 7.03vmin, 154px);pointer-events:none;z-index:11;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
-  <img id="wonky-turbo" src="images/vliegtuigjes/Timbo_turbo.png" alt="Wonky turbo" style="position:fixed;width:clamp(90px, 7.3vmin, 160px);pointer-events:none;z-index:10;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
-  <img id="wonky-dropt" src="images/vliegtuigjes/Timbo_dropt.png" alt="Wonky dropt" style="position:fixed;width:clamp(90px, 7.3vmin, 160px);pointer-events:none;z-index:10;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
-  <img id="wonky-blij" src="images/vliegtuigjes/Timbo_blij.png" alt="Wonky blij" style="position:fixed;width:clamp(90px, 7.3vmin, 160px);pointer-events:none;z-index:10;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
-  <img id="wonky-sad"  src="images/vliegtuigjes/Timbo_sad.png"  alt="Wonky sad"  style="position:fixed;width:clamp(90px, 7.3vmin, 160px);pointer-events:none;z-index:10;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
-  <!-- Jan de Wind: blaast tijdens de correctie-vlucht na een foute drop het
-       vliegtuigje richting de juiste bestemming (zie de vluchtActief-tak in
-       de update-loop). Lagere z-index dan het vliegtuigje zelf, want hij
-       hoort er duidelijk achter/onder te zitten. -->
-  <img id="jan-de-wind" src="images/Jan_de_Wind.png" alt="Jan de Wind" style="position:fixed;width:clamp(113px, 9vmin, 195px);pointer-events:none;z-index:9;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.5));transform-origin:center center;"/>
-  <!-- Schurken-vliegtuig: eenmalige pest-ronde per potje, zie startSchurkVliegtuig()
-       hierboven. Positie/grootte worden volledig per frame in JS gezet. -->
-  <img id="schurk-vliegtuig" src="images/plus250km_vliegtuig.png" alt="Schurken-vliegtuig" style="position:fixed;pointer-events:none;z-index:30;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.6));transform-origin:center center;"/>
+  <img id="wonky" src="images/Wonky.png" alt="Wonky"/>
+  <img id="wonky-frontaal" src="images/Timbo_frontaal.png" alt="Wonky frontaal" style="position:fixed;width:clamp(83px, 6.77vmin, 148px);pointer-events:none;z-index:11;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));"/>
+  <img id="wonky-naar-frontaal" src="images/Timbo_naar_frontaal.png" alt="Wonky naar frontaal" style="position:fixed;width:clamp(86px, 7.03vmin, 154px);pointer-events:none;z-index:11;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
+  <img id="wonky-turbo" src="images/Timbo_turbo.png" alt="Wonky turbo" style="position:fixed;width:clamp(90px, 7.3vmin, 160px);pointer-events:none;z-index:10;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
+  <img id="wonky-dropt" src="images/Timbo_dropt.png" alt="Wonky dropt" style="position:fixed;width:clamp(90px, 7.3vmin, 160px);pointer-events:none;z-index:10;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
+  <img id="wonky-blij" src="images/Timbo_blij.png" alt="Wonky blij" style="position:fixed;width:clamp(90px, 7.3vmin, 160px);pointer-events:none;z-index:10;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
+  <img id="wonky-sad"  src="images/Timbo_sad.png"  alt="Wonky sad"  style="position:fixed;width:clamp(90px, 7.3vmin, 160px);pointer-events:none;z-index:10;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
   <img id="vlag-valt" src="images/vlag_valt.png" alt="vlag"/>
   <img id="vlag-grond" src="images/vlag_grond.png" alt="vlag"/>
 
@@ -1924,7 +1818,7 @@ const MENU = [
         altijd_alle:false, beschikbaar:true },
       { id:'eu-kleinmaarfijn', naam:'Klein maar fijn', start:{lon:10, lat:46},
         landen:["San Marino","Vaticaanstad","Monaco","Andorra","Liechtenstein","Malta","Faeröer"],
-        altijd_alle:false, beschikbaar:true },
+        altijd_alle:false, beschikbaar:true, geenScorebord:true },
     ]
   },
   {
@@ -1946,7 +1840,7 @@ const MENU = [
         landen:["Australië","Nieuw-Zeeland","Papoea-Nieuw-Guinea","Fiji","Vanuatu","Nieuw-Caledonië","Salomonseilanden","Samoa","Tonga","Tuvalu","Nauru","Micronesia","Palau","Frans-Polynesië"],
         altijd_alle:false, beschikbaar:true },
       { id:'w-kleinmaarfijn', naam:'Klein maar fijn', start:{lon:0, lat:10},
-        landen:["Trinidad en Tobago","Grenada","Barbados","Saint Lucia","Dominica","Antigua en Barbuda","Saint Kitts en Nevis","Seychellen","Comoren","Sao Tomé en Principe","Kaapverdië","Mauritius","Maldiven","San Marino","Vaticaanstad","Monaco","Andorra","Liechtenstein","Malta","Faeröer","Brunei","Falklandeilanden"],
+        landen:["Trinidad en Tobago","Grenada","Barbados","Saint Lucia","Dominica","Antigua en Barbuda","Saint Kitts en Nevis","Seychellen","Comoren","Sao Tomé en Principe","Kaapverdië","Mauritius","Maldiven","San Marino","Vaticaanstad","Monaco","Andorra","Liechtenstein","Malta","Faeröer","Brunei","Falklandeilanden","Zuid-Georgia en de Zuidelijke Sandwicheilanden"],
         altijd_alle:false, beschikbaar:true },
       { id:'w-alles', naam:'Alle landen wereld', kort:'Alle landen', start:{lon:0, lat:20},
         landen:["Indonesië","Maleisië","Chili","Bolivia","Peru","Argentinië","Cyprus","India","China","Israël","Palestina","Libanon","Ethiopië","Zuid-Soedan","Somalië","Kenia","Malawi","Tanzania","Syrië","Frankrijk","Suriname","Guyana","Zuid-Korea","Noord-Korea","Marokko","Westelijke Sahara","Costa Rica","Nicaragua","Congo-Brazzaville","Congo-Kinshasa","Bhutan","Oekraïne","Wit-Rusland","Namibië","Zuid-Afrika","Oman","Oezbekistan","Kazachstan","Tadzjikistan","Litouwen","Brazilië","Uruguay","Mongolië","Rusland","Tsjechië","Duitsland","Estland","Letland","Noorwegen","Zweden","Finland","Vietnam","Cambodja","Luxemburg","Verenigde Arabische Emiraten","België","Georgië","Noord-Macedonië","Albanië","Azerbeidzjan","Kosovo","Turkije","Spanje","Laos","Kirgizië","Armenië","Denemarken","Libië","Tunesië","Roemenië","Hongarije","Slowakije","Polen","Ierland","Verenigd Koninkrijk","Griekenland","Zambia","Sierra Leone","Guinee","Liberia","Centraal-Afrikaanse Republiek","Soedan","Djibouti","Eritrea","Oostenrijk","Irak","Italië","Zwitserland","Iran","Nederland","Ivoorkust","Servië","Mali","Senegal","Nigeria","Benin","Angola","Kroatië","Slovenië","Qatar","Saoedi-Arabië","Botswana","Zimbabwe","Pakistan","Bulgarije","Thailand","Haïti","Dominicaanse Republiek","Tsjaad","Koeweit","El Salvador","Guatemala","Oost-Timor","Algerije","Mozambique","Burundi","Rwanda","Myanmar","Bangladesh","Afghanistan","Montenegro","Bosnië-Herzegovina","Oeganda","Cuba","Honduras","Ecuador","Colombia","Paraguay","Portugal","Moldavië","Jordanië","Nepal","Lesotho","Kameroen","Gabon","Niger","Burkina Faso","Togo","Ghana","Guinee-Bissau","Gibraltar","Verenigde Staten","Canada","Mexico","Belize","Panama","Venezuela","Papoea-Nieuw-Guinea","Egypte","Jemen","Mauritanië","Equatoriaal-Guinea","Gambia","Antarctica","Australië","Groenland","Fiji","Nieuw-Zeeland","Madagaskar","Filipijnen","Sri Lanka","Taiwan","Japan","IJsland","Jamaica","Singapore","Bahrein"],
@@ -2409,10 +2303,57 @@ function zelfdeLandAlsChinaWest(a,b){
   return (a==='West-China'&&b==='China') || (a==='China'&&b==='West-China');
 }
 
+// ── Buitenste Eilanden als los kalibreerbaar pseudo-land ──
+// De Seychellen bestaan uit de dichtbijeen liggende Binnenste Eilanden
+// (Mahé, Praslin, La Digue e.o. - rond 55-56°O) en een handvol ver
+// afgelegen eilandengroepen (Aldabra, de Amirante-eilanden, Coëtivy) die
+// samen tot 1000+ km verderop liggen, richting 46°O. Een simpele knip op
+// één lengtegraad bleek niet nauwkeurig genoeg (de Amirante-eilanden en
+// Coëtivy liggen namelijk oostelijker dan verwacht) - daarom hier een knip
+// op basis van de daadwerkelijke ligging van elk eilandje in de kaartdata:
+// alles wat duidelijk los ligt van de Binnenste-Eilanden-cluster (voorbij
+// SEYCHELLEN_BUITEN_LON_MAX naar het westen, óf voorbij
+// SEYCHELLEN_BUITEN_LAT_MAX naar het zuiden) wordt Buitenste Eilanden.
+const SEYCHELLEN_BUITEN_LON_MAX = 54;
+const SEYCHELLEN_BUITEN_LAT_MAX = -6;
+(function initSeychellenBuitenAlsPseudoLand(){
+  const info = alleLandenFeatureMap['Seychellen'];
+  if(!info) return;
+  const g = info.feature.geometry;
+  const polys = g.type==='Polygon' ? [g.coordinates] : g.coordinates;
+  const buitenPolys=[];
+  for(const poly of polys){
+    if(!poly[0]||poly[0].length<3) continue;
+    const lonMax=Math.max(...poly[0].map(p=>p[0]));
+    const latMax=Math.max(...poly[0].map(p=>p[1]));
+    if(lonMax < SEYCHELLEN_BUITEN_LON_MAX || latMax < SEYCHELLEN_BUITEN_LAT_MAX) buitenPolys.push(poly);
+  }
+  if(!buitenPolys.length) return;
+  let minLon=Infinity,maxLon=-Infinity,minLat=Infinity,maxLat=-Infinity;
+  for(const poly of buitenPolys) for(const [lo,la] of poly[0]){
+    if(lo<minLon)minLon=lo; if(lo>maxLon)maxLon=lo;
+    if(la<minLat)minLat=la; if(la>maxLat)maxLat=la;
+  }
+  const buitenFeature = {
+    type:'Feature',
+    properties:{dutch:'Buitenste Eilanden', name:'Buitenste Eilanden'},
+    geometry:{type:'MultiPolygon', coordinates: buitenPolys}
+  };
+  alleLandenFeatureMap['Buitenste Eilanden'] = {
+    feature:buitenFeature, minLon,maxLon,minLat,maxLat,
+    kruistDatumgrens:(maxLon-minLon)>180
+  };
+})();
+
+// Zelfde bescherming als zelfdeLandAlsAlaska, maar dan voor Seychellen/Buitenste Eilanden.
+function zelfdeLandAlsSeychellenBuiten(a,b){
+  return (a==='Buitenste Eilanden'&&b==='Seychellen') || (a==='Seychellen'&&b==='Buitenste Eilanden');
+}
+
 // Gedeelde check voor alle pseudo-land-paren samen, zodat de gum-/sluipeffect-
 // loops verderop met één aanroep beide gevallen afdekken.
 function zelfdePseudoLand(a,b){
-  return zelfdeLandAlsAlaska(a,b) || zelfdeLandAlsHawai(a,b) || zelfdeLandAlsGalapagos(a,b) || zelfdeLandAlsCanaria(a,b) || zelfdeLandAlsAzoren(a,b) || zelfdeLandAlsReunion(a,b) || zelfdeLandAlsMayotte(a,b) || zelfdeLandAlsOostMaleisie(a,b) || zelfdeLandAlsChinaWest(a,b);
+  return zelfdeLandAlsAlaska(a,b) || zelfdeLandAlsHawai(a,b) || zelfdeLandAlsGalapagos(a,b) || zelfdeLandAlsCanaria(a,b) || zelfdeLandAlsAzoren(a,b) || zelfdeLandAlsReunion(a,b) || zelfdeLandAlsMayotte(a,b) || zelfdeLandAlsOostMaleisie(a,b) || zelfdeLandAlsChinaWest(a,b) || zelfdeLandAlsSeychellenBuiten(a,b);
 }
 
 // ── Startscherm ───────────────────────────────────────
@@ -2443,17 +2384,7 @@ function zetMenuUitgeklapt(open){
       rechts.style.width=''; rechts.style.zIndex='';
     }, 380);
   }
-  // Zelfde moment als het openklappen: op de plek van het logo verschijnt
-  // de vliegfiguur-kiezer (zie toonFiguurKiezer, verderop bij de rest van
-  // de vliegfiguur-code). Geldt alleen voor Europa/Wereld/Hoofdsteden - dit
-  // zijn de enige groepen die via deze functie open/dicht klappen; Iconische
-  // plekken en Raad je plaatje doen dat niet en blijven dus buiten schot.
-  toonFiguurKiezer(open);
 }
-// Testaccounts: scores worden gewoon opgeslagen maar nooit getoond.
-const TEST_NAMEN = ['test1','test2'];
-function isTestNaam(n){ return TEST_NAMEN.includes((n||'').toLowerCase().trim()); }
-
 function bouwStartscherm() {
   const lijst = document.getElementById('level-lijst');
   lijst.innerHTML = '';
@@ -2658,11 +2589,6 @@ function bevestigSpelerNaam(){
   naamOverlayVerplicht = false; // vanaf nu is er altijd al een geldige naam bekend
   document.getElementById('naam-overlay').classList.remove('tonen');
   document.getElementById('level-lijst').classList.remove('vergrendeld');
-  // Nieuwe/andere speler kan een ander vrijgespeeld personage (of nog geen
-  // enkel extra personage) hebben - kiezer én daadwerkelijk vliegtuigje
-  // meteen bijwerken, in plaats van pas zodra er toevallig doorgebladerd
-  // wordt in de kiezer.
-  initialiseerVliegfiguurVoorSpeler();
 }
 // Sluit de banner zonder wijzigingen - alleen toegestaan als er al eerder
 // een geldige naam is bevestigd (dus nooit bij de allereerste, verplichte
@@ -2740,7 +2666,6 @@ function bouwTickerKaarten(groep){
     if(!lv.beschikbaar) continue;
     let lijst=[];
     try{ lijst=JSON.parse(localStorage.getItem(scorebordSleutel(lv.id))||'[]'); }catch(e){ lijst=[]; }
-    lijst = lijst.filter(r=>!isTestNaam(r.naam)); // testaccounts uitsluiten
     if(lijst.length===0) continue;
     const naam = lv.kort || lv.naam;
     const vandaag = lijst.filter(r=>isVandaag(r.datum)).slice(0,3);
@@ -2783,32 +2708,12 @@ let spelLandenFeatureMap={}; // snelle naam->GeoJSON-feature koppeling voor de l
 let huidigLevelLanden=[]; // volledige landenlijst van het level (los van de willekeurige speelronde-subset)
 let introActief=false, introStartTijd=0;
 const INTRO_DUUR = 3500; // ms
-// ── Vliegtuigje bij levelstart eerst 4x uitvergroot, daarna krimpen ────
-// Eerste seconde vol op 4x (goed te zien terwijl de titel nog in beeld is),
-// daarna in 0,7 sec terug naar normale grootte. Werkt via een schaalfactor
-// die wordt meevermenigvuldigd in dezelfde CSS transform als de rotatie/
-// spiegeling van het vliegtuigje (zie updateWonkyPositie) - dat verandert
-// niets aan de positieberekening, want scale() beïnvloedt de layout-
-// afmeting (offsetWidth) niet, alleen hoe groot het er ÚITZIET.
-const INTRO_VLIEGTUIG_SCHAAL = 4;
-const INTRO_VLIEGTUIG_VOL_MS = 1000;
-const INTRO_VLIEGTUIG_KRIMP_MS = 700;
-function vliegtuigIntroSchaal(){
-  if(!introActief) return 1;
-  const verstreken = performance.now() - introStartTijd;
-  if(verstreken < INTRO_VLIEGTUIG_VOL_MS) return INTRO_VLIEGTUIG_SCHAAL;
-  const krimpVerstreken = verstreken - INTRO_VLIEGTUIG_VOL_MS;
-  if(krimpVerstreken >= INTRO_VLIEGTUIG_KRIMP_MS) return 1;
-  const frac = krimpVerstreken / INTRO_VLIEGTUIG_KRIMP_MS; // 0→1
-  const eased = 1 - Math.pow(1-frac, 2); // vlot begin, zachte landing
-  return INTRO_VLIEGTUIG_SCHAAL - (INTRO_VLIEGTUIG_SCHAAL-1)*eased;
-}
 
 // ── Bedieningstip bij spelstart (niet-blokkerend) ──────────────────────
 // Aparte, iets langere tijdsduur dan de landen-glow hierboven: dit is een
 // zin om te lezen, geen kort visueel effect, dus die verdient wat meer tijd.
 let tipActief=false, tipStartTijd=0;
-const TIP_DUUR = 12600; // ms - 3x zo lang als voorheen (was 4200), op verzoek van Arjen
+const TIP_DUUR = 4200; // ms - kort, het zijn nu losse woorden/korte labels, geen hele zin
 const KNOP_LABELS = ['tip-besturing','tip-hint','tip-joker'];
 let huidigLandIdx=0, huidigLand='', score=0, spelerNaam='';
 let levelStartTijd=0, laatsteLevelTijd=0;
@@ -2854,63 +2759,6 @@ let muntjesPlanning = [];    // welke land-nummers (0-indexed) deze ronde een mu
 let muntjeImgGewoon = null;  // preloaded Image voor muntje2.png
 let muntjeImgBijzonder = null; // preloaded Image voor muntje.png
 const MUNTJE_SCHERM_PX = 30; // hoe groot het muntje op het scherm wordt getekend
-
-// ── Schurken-vliegtuig: eenmalige pest-ronde per potje ──────────────────
-// Zie startSchurkVliegtuig()/updateSchurkVliegtuig() verderop voor de opzet.
-const SCHURK_PAUZE_MS = 2000;         // stilstand in de hoek, op SCHURK_SPAWN_SCHAAL grootte
-const SCHURK_SPAWN_SCHAAL = 1.5;      // startgrootte in de hoek (t.o.v. normale grootte)
-const SCHURK_KRIMP_MS = 1000;         // hoe snel het na vertrek terugkrimpt naar normale grootte
-const SCHURK_VLUCHT_MS = 8000;        // duur van de vlucht naar de overkant (was 5000)
-const SCHURK_AANTAL_WOLKEN = 5;       // aantal wolkjes dat de rat afschiet tijdens de vlucht
-// Snelheid in graden per seconde (i.p.v. platte schermpixels) - de wolkjes
-// hebben net als muntjes een echte plek op de bol, zodat ze meedraaien met
-// de wereld terwijl de speler stuurt, en dus ook echt te raken/ontwijken zijn.
-const SCHURK_WOLK_MIN_SNELHEID_GRADEN = 35;
-const SCHURK_WOLK_MAX_SNELHEID_GRADEN = 55;
-const SCHURK_WOLK_MIKSPELING_GRADEN = 25; // hoeveel de rat naast Wonky's positie mag mikken (± graden, schermhoek) - geen feilloze schutter, maar ook niet random
-const SCHURK_WOLK_MAX_LEEFTIJD_MS = 7000; // hoe lang een gemist wolkje maximaal blijft ronddrijven voor het opgeruimd wordt
-const SCHURK_WOLK_RAAK_AFSTAND = 50;  // px - hoe dicht een wolkje bij Wonky moet komen om te raken
-const SCHURK_BLIKSEM_HOUD_MS = 700;   // hoe lang de bliksemwolk vol zichtbaar blijft na een treffer
-const SCHURK_BLIKSEM_FADE_MS = 2000;  // en daarna: vervaagtijd naar volledig transparant
-const SCHURK_WOLK_HOOGTE_KALM = 70;     // weergavegrootte op het scherm (px hoogte)
-const SCHURK_WOLK_HOOGTE_BLIKSEM = 105; // bewust groter dan de rustige voorganger
-// Positie van de rat t.o.v. de linkerboven-hoek van het vliegtuigplaatje (0..1),
-// afgemeten op de referentieafbeelding die Arjen aanleverde met de rode cirkel.
-const RAT_OFFSET_FRAC = {x:0.206, y:0.397};
-// Vier vertrekroutes met bijbehorend eindpunt en boog-controlepunt (alle
-// waarden als fractie 0..1 van het scherm) - nagemeten op Arjens eigen
-// tekening (rood/blauw), zo gekozen dat geen van de vier nog door het midden
-// van het scherm loopt (waar de speler altijd ongeveer zit).
-const SCHURK_HOEKEN = [
-  { naam:'rood-boven',  vanX:0.041, vanY:0.088, naarX:0.909, naarY:0.343, boogX:0.333, boogY:0.017 },
-  { naam:'rood-onder',  vanX:0.050, vanY:0.941, naarX:0.888, naarY:0.593, boogX:0.659, boogY:0.985 },
-  { naam:'blauw-boven', vanX:0.945, vanY:0.091, naarX:0.031, naarY:0.373, boogX:0.372, boogY:0.064 },
-  { naam:'blauw-onder', vanX:0.949, vanY:0.944, naarX:0.031, naarY:0.616, boogX:0.676, boogY:1.038 },
-];
-const SCHURK_PAD_SAMPLES = 40; // aantal punten waarmee de vliegroute bij vertrek "bevroren" wordt op de wereldbol
-// Zodra de geplande route (SCHURK_VLUCHT_MS) erop zit, kan het geplande
-// eindpunt door het sturen van de speler alsnog middenin beeld zijn beland
-// (in plaats van buiten beeld, zoals de bedoeling is). Daarom wordt de route
-// al bij vertrek een stuk verder dan het "echte" eindpunt bemonsterd
-// (SCHURK_PAD_EXTRA_T_MAX keer zo ver), zodat de schurk daarna gewoon in
-// dezelfde richting kan doorvliegen tot hij écht buiten beeld is.
-const SCHURK_PAD_EXTRA_T_MAX = 2.2;
-const SCHURK_UITVLIEG_MS = 2500;       // maximale duur van die "doorvlieg"-fase
-const SCHURK_UITVLIEG_MARGE_PX = 150;  // hoe ver voorbij de schermrand voor hij pas als "weg" telt
-let schurkGeplandLandIdx = null; // welk land-nummer (0-indexed) deze ronde de pestronde triggert, of null
-let schurkGespawnd = false;
-let schurkVliegtuig = null;      // actieve toestand {hoek, spawnTijd, wolkenGeschoten, gespiegeld}, of null
-let schurkWolken = [];           // actief afgeschoten wolkjes
-let schurkVliegtuigImg = null;
-let schurkWolk100Img = null, schurkWolk200Img = null;
-let schurkBliksem100Img = null, schurkBliksem200Img = null;
-(function(){
-  schurkVliegtuigImg = new Image(); schurkVliegtuigImg.src = 'images/plus250km_vliegtuig.png';
-  schurkWolk100Img = new Image(); schurkWolk100Img.src = 'images/plus100km_wolk.png';
-  schurkWolk200Img = new Image(); schurkWolk200Img.src = 'images/plus200km_wolk.png';
-  schurkBliksem100Img = new Image(); schurkBliksem100Img.src = 'images/plus100km_bliksemwolk.png';
-  schurkBliksem200Img = new Image(); schurkBliksem200Img.src = 'images/plus200km_bliksemwolk.png';
-})();
 
 // Preload muntje-afbeeldingen
 (function(){
@@ -3063,11 +2911,6 @@ let huidigeKennisvraag = null;          // de op dit moment getoonde vraag (uit 
 let radActief = false;                  // pauzeert het spel zolang het rad open staat (stap 4)
 
 let vluchtStartVec=null, vluchtEindVec=null, vluchtEindLon=0, vluchtEindLat=0;
-// Vorige lon/lat tijdens de correctie-vlucht, bewaard zodat Jan de Wind
-// (verderop in de update-loop) de werkelijke vliegrichting op het scherm
-// kan berekenen - inclusief het schuine/diagonale deel, niet alleen links/
-// rechts. Zie de toelichting bij vluchtSchermRichting() hieronder.
-let vluchtVorigeLon=null, vluchtVorigeLat=null;
 let vluchtScoreVoor=0, vluchtScoreNa=0, vluchtAfwijkingKm=0, vluchtDoelLand=null;
 let correctieLand=null, correctieLandStartTijd=0;
 
@@ -3381,76 +3224,18 @@ document.getElementById('plek-kijkgat').addEventListener('click', togglePlekGroo
 let zoekVluchtActief=false, zoekVluchtStartTijd=0, zoekVluchtDuur=0;
 let zoekVluchtStartVec=null, zoekVluchtEindVec=null;
 const CORRECTIE_GLOW_DUUR=900; // ms pulsen, daarna blijft het land geel staan
-// Resterende vliegduur die overblijft als de speler de correctievlucht
-// versnelt met de skip-toets (zie skipDoorgaan): kort genoeg om snel te
-// voelen, lang genoeg om nog echt een vliegbeweging te tonen.
-const VLUCHT_VERSNELD_RESTTIJD_MS=180;
 let jokerBeschikbaar=true, misserAutoTimer=null, goedAutoTimer=null;
-// Oplopend nummer per misser: voorkomt dat de vertraagde score-optelling
-// (zie toonPunten/vliegBeloningNaarDoel hieronder) alsnog toeslaat nadat de
-// speler de misser met de joker heeft teruggedraaid - zie gebruikJoker().
-let misserVerwerkingId=0;
 const MISSER_AUTO_MS=4000; // hoe lang de foutcorrectie in beeld blijft voor 'ie vanzelf doorschakelt
-// Verschillende teksten die getoond kunnen worden bij een fout antwoord in de
-// Landen-modus (Wereld/Europa) — welk setje gebruikt wordt hangt af van hoe
-// ver het gegooide vlaggetje van het juiste land af zat (vluchtAfwijkingKm),
-// zodat de reactie een beetje meebeweegt met hoe dichtbij je zat. Binnen een
-// setje wordt steeds willekeurig één tekst gekozen (zie kiesFoutTekst()).
-const FOUT_TEKSTEN_VER = [        // 5000 km of meer
-  'Oei, dat is een eind uit de richting!',
-  'Gelukkig hoef je het verschil niet te lopen!',
-  'Zal ik het land verplaatsen, dan klopt het weer',
-  'Dit is zo ver weg, wel twee keer de helft!'
-];
-const FOUT_TEKSTEN_VRIJ_VER = [   // meer dan 1000, minder dan 5000 km
-  'Tsja... wat moet ik ervan zeggen',
-  'Dit zijn euh geen maximale punten he',
-  'Ach ja, nooit te oud om te leren',
-  'Kijk maar goed waar het wél ligt'
-];
-const FOUT_TEKSTEN_MIDDEN = [     // meer dan 500, tot en met 1000 km
-  'Je bent in de buurt, maar nog niet helemaal',
-  'Al doende leert men',
-  'Je had een idee, maar het idee deed niet helemaal mee',
-  'Het kón verder natuurlijk'
-];
-const FOUT_TEKSTEN_DICHTBIJ = [   // meer dan 100, tot en met 500 km
-  'Dit komt wel in de buurt',
-  'Je wist waar het lag, maar toch ook weer niet',
-  'Oepsie woepsie'
-];
-const FOUT_TEKSTEN_HEEL_DICHTBIJ = [ // 100 km of minder
-  'Nou, dat is sneu, bij-na!',
-  'Een windje blies je vlaggetje nét verkeerd',
-  'Je wist het, maar kon niet precies gooien',
-  'Nou... zó dichtbij!'
-];
-function kiesFoutTekst(km){
-  let set;
-  if(km >= 5000) set = FOUT_TEKSTEN_VER;
-  else if(km > 1000) set = FOUT_TEKSTEN_VRIJ_VER;
-  else if(km > 500) set = FOUT_TEKSTEN_MIDDEN;
-  else if(km > 100) set = FOUT_TEKSTEN_DICHTBIJ;
-  else set = FOUT_TEKSTEN_HEEL_DICHTBIJ;
-  return set[Math.floor(Math.random()*set.length)];
-}
-// Teksten bij een goede drop in de Landen-modus (Wereld/Europa) - platte
-// feedbacktekst (zie toonFeedback), steeds willekeurig één van gekozen.
-const GOED_TEKSTEN = [
-  'Goed zo!',
-  'Bingo!',
-  'Nou en of!',
-  'Topper!',
-  'Rrrraak!',
-  'Wauw!',
-  'In de roos!',
-  "That's it!",
-  'Hoppaaa!',
-  'Kwaliteit!',
-  'Slay!',
-  'Kanjer!',
-  'Boelie!',
-  'Unlimited Aura'
+// Verschillende teksten die getoond kunnen worden bij een fout antwoord — steeds
+// willekeurig één van gekozen, zodat het niet elke keer hetzelfde "Oepsie
+// woepsie" is.
+const FOUT_TEKSTEN = [
+  'Oepsie woepsie, hier is het!',
+  'Ho ho, hier moet je zijn, niet daar!',
+  'Kijk, dit is de juiste plek!',
+  'Als je nou hier je vlaggetje had gegooid, was het goed!',
+  'Ik presenteer... het enige goede land!',
+  'De volgende keer, gooi het vlaggetje dan hier!'
 ];
 // Aparte feedback-teksten voor de hoofdsteden-modus (i.p.v. de teksten hierboven)
 const HOOFDSTEDEN_GOED_TEKSTEN = [
@@ -3559,11 +3344,11 @@ function shuffle(arr){
 // continent - de fun-facts zijn hier niet nodig). Dit is de complete lijst
 // van alle landen die een eigen paspoortpagina hebben; bij nieuwe landen in
 // paspoort.html moet deze lijst hier (en in raadspel.html) worden bijgewerkt.
-const PASPOORT_LANDEN = [{"naam": "Albanië", "bestand": "Albanie", "continent": "EU"}, {"naam": "België", "bestand": "Belgie", "continent": "EU"}, {"naam": "Bosnië en Herzegovina", "bestand": "Bosnie-Herzegovina", "continent": "EU"}, {"naam": "Bulgarije", "bestand": "Bulgarije", "continent": "EU"}, {"naam": "Denemarken", "bestand": "Denemarken", "continent": "EU"}, {"naam": "Duitsland", "bestand": "Duitsland", "continent": "EU"}, {"naam": "Estland", "bestand": "Estland", "continent": "EU"}, {"naam": "Finland", "bestand": "Finland", "continent": "EU"}, {"naam": "Frankrijk", "bestand": "Frankrijk", "continent": "EU"}, {"naam": "Griekenland", "bestand": "Griekenland", "continent": "EU"}, {"naam": "Hongarije", "bestand": "Hongarije", "continent": "EU"}, {"naam": "Ierland", "bestand": "Ierland", "continent": "EU"}, {"naam": "IJsland", "bestand": "IJsland", "continent": "EU"}, {"naam": "Italië", "bestand": "Italie", "continent": "EU"}, {"naam": "Kroatië", "bestand": "Kroatie", "continent": "EU"}, {"naam": "Litouwen", "bestand": "Litouwen", "continent": "EU"}, {"naam": "Luxemburg", "bestand": "Luxemburg", "continent": "EU"}, {"naam": "Montenegro", "bestand": "Montenegro", "continent": "EU"}, {"naam": "Nederland", "bestand": "Nederland", "continent": "EU"}, {"naam": "Noord-Macedonië", "bestand": "Noord-Macedonie", "continent": "EU"}, {"naam": "Noorwegen", "bestand": "Noorwegen", "continent": "EU"}, {"naam": "Oekraïne", "bestand": "Oekraine", "continent": "EU"}, {"naam": "Oostenrijk", "bestand": "Oostenrijk", "continent": "EU"}, {"naam": "Polen", "bestand": "Polen", "continent": "EU"}, {"naam": "Portugal", "bestand": "Portugal", "continent": "EU"}, {"naam": "Roemenië", "bestand": "Roemenie", "continent": "EU"}, {"naam": "Rusland", "bestand": "Rusland", "continent": "EU"}, {"naam": "Servië", "bestand": "Servie", "continent": "EU"}, {"naam": "Slovenië", "bestand": "Slovenie", "continent": "EU"}, {"naam": "Slowakije", "bestand": "Slowakije", "continent": "EU"}, {"naam": "Spanje", "bestand": "Spanje", "continent": "EU"}, {"naam": "Tsjechië", "bestand": "Tsjechie", "continent": "EU"}, {"naam": "Verenigd Koninkrijk", "bestand": "Verenigd_Koninkrijk", "continent": "EU"}, {"naam": "Wit-Rusland", "bestand": "Wit-Rusland", "continent": "EU"}, {"naam": "Zweden", "bestand": "Zweden", "continent": "EU"}, {"naam": "Zwitserland", "bestand": "Zwitserland", "continent": "EU"}, {"naam": "Andorra", "bestand": "Andorra", "continent": "EU"}, {"naam": "Cyprus", "bestand": "Cyprus", "continent": "EU"}, {"naam": "Faeröer", "bestand": "Faroer", "continent": "EU"}, {"naam": "Gibraltar", "bestand": "Gibraltar", "continent": "EU"}, {"naam": "Kosovo", "bestand": "Kosovo", "continent": "EU"}, {"naam": "Letland", "bestand": "Letland", "continent": "EU"}, {"naam": "Liechtenstein", "bestand": "Liechtenstein", "continent": "EU"}, {"naam": "Malta", "bestand": "Malta", "continent": "EU"}, {"naam": "Moldavië", "bestand": "Moldavie", "continent": "EU"}, {"naam": "Monaco", "bestand": "Monaco", "continent": "EU"}, {"naam": "San Marino", "bestand": "San_Marino", "continent": "EU"}, {"naam": "Vaticaanstad", "bestand": "Vaticaanstad", "continent": "EU"}, {"naam": "Algerije", "bestand": "Algerije", "continent": "AF"}, {"naam": "Angola", "bestand": "Angola", "continent": "AF"}, {"naam": "Benin", "bestand": "Benin", "continent": "AF"}, {"naam": "Botswana", "bestand": "Botswana", "continent": "AF"}, {"naam": "Burkina Faso", "bestand": "Burkina_Faso", "continent": "AF"}, {"naam": "Centraal-Afrikaanse Republiek", "bestand": "Centraal-Afrikaanse_Republiek", "continent": "AF"}, {"naam": "Congo-Brazzaville", "bestand": "Congo-Brazzaville", "continent": "AF"}, {"naam": "Congo-Kinshasa", "bestand": "Congo-Kinshasa", "continent": "AF"}, {"naam": "Egypte", "bestand": "Egypte", "continent": "AF"}, {"naam": "Ethiopië", "bestand": "Ethiopie", "continent": "AF"}, {"naam": "Gabon", "bestand": "Gabon", "continent": "AF"}, {"naam": "Ghana", "bestand": "Ghana", "continent": "AF"}, {"naam": "Guinee", "bestand": "Guinee", "continent": "AF"}, {"naam": "Ivoorkust", "bestand": "Ivoorkust", "continent": "AF"}, {"naam": "Kameroen", "bestand": "Kameroen", "continent": "AF"}, {"naam": "Kenia", "bestand": "Kenia", "continent": "AF"}, {"naam": "Liberia", "bestand": "Liberia", "continent": "AF"}, {"naam": "Libië", "bestand": "Libie", "continent": "AF"}, {"naam": "Madagaskar", "bestand": "Madagaskar", "continent": "AF"}, {"naam": "Malawi", "bestand": "Malawi", "continent": "AF"}, {"naam": "Mali", "bestand": "Mali", "continent": "AF"}, {"naam": "Marokko", "bestand": "Marokko", "continent": "AF"}, {"naam": "Mauritanië", "bestand": "Mauritanie", "continent": "AF"}, {"naam": "Mozambique", "bestand": "Mozambique", "continent": "AF"}, {"naam": "Namibië", "bestand": "Namibie", "continent": "AF"}, {"naam": "Niger", "bestand": "Niger", "continent": "AF"}, {"naam": "Nigeria", "bestand": "Nigeria", "continent": "AF"}, {"naam": "Oeganda", "bestand": "Oeganda", "continent": "AF"}, {"naam": "Senegal", "bestand": "Senegal", "continent": "AF"}, {"naam": "Sierra Leone", "bestand": "Sierra_Leone", "continent": "AF"}, {"naam": "Soedan", "bestand": "Soedan", "continent": "AF"}, {"naam": "Somalië", "bestand": "Somalie", "continent": "AF"}, {"naam": "Tanzania", "bestand": "Tanzania", "continent": "AF"}, {"naam": "Tsjaad", "bestand": "Tsjaad", "continent": "AF"}, {"naam": "Tunesië", "bestand": "Tunesie", "continent": "AF"}, {"naam": "Zambia", "bestand": "Zambia", "continent": "AF"}, {"naam": "Zimbabwe", "bestand": "Zimbabwe", "continent": "AF"}, {"naam": "Zuid-Afrika", "bestand": "Zuid-Afrika", "continent": "AF"}, {"naam": "Burundi", "bestand": "Burundi", "continent": "AF"}, {"naam": "Comoren", "bestand": "Comoren", "continent": "AF"}, {"naam": "Djibouti", "bestand": "Djibouti", "continent": "AF"}, {"naam": "Equatoriaal-Guinea", "bestand": "Equatoriaal-Guinee", "continent": "AF"}, {"naam": "Eritrea", "bestand": "Eritrea", "continent": "AF"}, {"naam": "Eswatini", "bestand": "Eswatini", "continent": "AF"}, {"naam": "Gambia", "bestand": "Gambia", "continent": "AF"}, {"naam": "Guinee-Bissau", "bestand": "Guinee-Bissau", "continent": "AF"}, {"naam": "Kaapverdië", "bestand": "Kaapverdie", "continent": "AF"}, {"naam": "Lesotho", "bestand": "Lesotho", "continent": "AF"}, {"naam": "Mauritius", "bestand": "Mauritius", "continent": "AF"}, {"naam": "Rwanda", "bestand": "Rwanda", "continent": "AF"}, {"naam": "São Tomé en Príncipe", "bestand": "Sao_Tome_en_Principe", "continent": "AF"}, {"naam": "Seychellen", "bestand": "Seychellen", "continent": "AF"}, {"naam": "Togo", "bestand": "Togo", "continent": "AF"}, {"naam": "Westelijke Sahara", "bestand": "Westelijke_Sahara", "continent": "AF"}, {"naam": "Zuid-Soedan", "bestand": "Zuid-Soedan", "continent": "AF"}, {"naam": "Afghanistan", "bestand": "Afghanistan", "continent": "AS"}, {"naam": "Armenië", "bestand": "Armenie", "continent": "AS"}, {"naam": "Azerbeidzjan", "bestand": "Azerbeidzjan", "continent": "AS"}, {"naam": "Bangladesh", "bestand": "Bangladesh", "continent": "AS"}, {"naam": "Cambodja", "bestand": "Cambodja", "continent": "AS"}, {"naam": "China", "bestand": "China", "continent": "AS"}, {"naam": "Filipijnen", "bestand": "Filipijnen", "continent": "AS"}, {"naam": "Georgië", "bestand": "Georgie", "continent": "AS"}, {"naam": "India", "bestand": "India", "continent": "AS"}, {"naam": "Indonesië", "bestand": "Indonesie", "continent": "AS"}, {"naam": "Irak", "bestand": "Irak", "continent": "AS"}, {"naam": "Iran", "bestand": "Iran", "continent": "AS"}, {"naam": "Japan", "bestand": "Japan", "continent": "AS"}, {"naam": "Jemen", "bestand": "Jemen", "continent": "AS"}, {"naam": "Jordanië", "bestand": "Jordanie", "continent": "AS"}, {"naam": "Kazachstan", "bestand": "Kazachstan", "continent": "AS"}, {"naam": "Laos", "bestand": "Laos", "continent": "AS"}, {"naam": "Maleisië", "bestand": "Maleisie", "continent": "AS"}, {"naam": "Mongolië", "bestand": "Mongolie", "continent": "AS"}, {"naam": "Myanmar", "bestand": "Myanmar", "continent": "AS"}, {"naam": "Nepal", "bestand": "Nepal", "continent": "AS"}, {"naam": "Noord-Korea", "bestand": "Noord-Korea", "continent": "AS"}, {"naam": "Oezbekistan", "bestand": "Oezbekistan", "continent": "AS"}, {"naam": "Oman", "bestand": "Oman", "continent": "AS"}, {"naam": "Pakistan", "bestand": "Pakistan", "continent": "AS"}, {"naam": "Saoedi-Arabië", "bestand": "Saoedi-Arabie", "continent": "AS"}, {"naam": "Sri Lanka", "bestand": "Sri_Lanka", "continent": "AS"}, {"naam": "Syrië", "bestand": "Syrie", "continent": "AS"}, {"naam": "Taiwan", "bestand": "Taiwan", "continent": "AS"}, {"naam": "Thailand", "bestand": "Thailand", "continent": "AS"}, {"naam": "Turkije", "bestand": "Turkije", "continent": "AS"}, {"naam": "Turkmenistan", "bestand": "Turkmenistan", "continent": "AS"}, {"naam": "Verenigde Arabische Emiraten", "bestand": "Verenigde_Arabische_Emiraten", "continent": "AS"}, {"naam": "Vietnam", "bestand": "Vietnam", "continent": "AS"}, {"naam": "Zuid-Korea", "bestand": "Zuid-Korea", "continent": "AS"}, {"naam": "Bahrein", "bestand": "Bahrein", "continent": "AS"}, {"naam": "Bhutan", "bestand": "Bhutan", "continent": "AS"}, {"naam": "Brunei", "bestand": "Brunei", "continent": "AS"}, {"naam": "Kirgistan", "bestand": "Kirgistan", "continent": "AS"}, {"naam": "Koeweit", "bestand": "Koeweit", "continent": "AS"}, {"naam": "Libanon", "bestand": "Libanon", "continent": "AS"}, {"naam": "Maldiven", "bestand": "Maldiven", "continent": "AS"}, {"naam": "Oost-Timor", "bestand": "Oost-Timor", "continent": "AS"}, {"naam": "Palestina", "bestand": "Palestina", "continent": "AS"}, {"naam": "Qatar", "bestand": "Qatar", "continent": "AS"}, {"naam": "Singapore", "bestand": "Singapore", "continent": "AS"}, {"naam": "Tadzjikistan", "bestand": "Tadzjikistan", "continent": "AS"}, {"naam": "Canada", "bestand": "Canada", "continent": "NA"}, {"naam": "Costa Rica", "bestand": "Costa_Rica", "continent": "NA"}, {"naam": "Cuba", "bestand": "Cuba", "continent": "NA"}, {"naam": "Dominicaanse Republiek", "bestand": "Dominicaanse_Republiek", "continent": "NA"}, {"naam": "Groenland", "bestand": "Groenland", "continent": "NA"}, {"naam": "Guatemala", "bestand": "Guatemala", "continent": "NA"}, {"naam": "Haïti", "bestand": "Haiti", "continent": "NA"}, {"naam": "Honduras", "bestand": "Honduras", "continent": "NA"}, {"naam": "Mexico", "bestand": "Mexico", "continent": "NA"}, {"naam": "Nicaragua", "bestand": "Nicaragua", "continent": "NA"}, {"naam": "Panama", "bestand": "Panama", "continent": "NA"}, {"naam": "Verenigde Staten", "bestand": "Verenigde_Staten", "continent": "NA"}, {"naam": "Antigua en Barbuda", "bestand": "Antigua_en_Barbuda", "continent": "NA"}, {"naam": "Bahama's", "bestand": "Bahamas", "continent": "NA"}, {"naam": "Barbados", "bestand": "Barbados", "continent": "NA"}, {"naam": "Belize", "bestand": "Belize", "continent": "NA"}, {"naam": "Dominica", "bestand": "Dominica", "continent": "NA"}, {"naam": "El Salvador", "bestand": "El_Salvador", "continent": "NA"}, {"naam": "Grenada", "bestand": "Grenada", "continent": "NA"}, {"naam": "Jamaica", "bestand": "Jamaica", "continent": "NA"}, {"naam": "Saint Kitts en Nevis", "bestand": "Saint_Kitts_en_Nevis", "continent": "NA"}, {"naam": "Saint Lucia", "bestand": "Saint_Lucia", "continent": "NA"}, {"naam": "Saint Vincent en de Grenadines", "bestand": "Saint_Vincent_en_de_Grenadines", "continent": "NA"}, {"naam": "Trinidad en Tobago", "bestand": "Trinidad_en_Tobago", "continent": "NA"}, {"naam": "Argentinië", "bestand": "Argentinie", "continent": "ZA"}, {"naam": "Bolivia", "bestand": "Bolivia", "continent": "ZA"}, {"naam": "Brazilië", "bestand": "Brazilie", "continent": "ZA"}, {"naam": "Chili", "bestand": "Chili", "continent": "ZA"}, {"naam": "Colombia", "bestand": "Colombia", "continent": "ZA"}, {"naam": "Ecuador", "bestand": "Ecuador", "continent": "ZA"}, {"naam": "Frans-Guyana", "bestand": "Frans_Guyana", "continent": "ZA"}, {"naam": "Guyana", "bestand": "Guyana", "continent": "ZA"}, {"naam": "Paraguay", "bestand": "Paraguay", "continent": "ZA"}, {"naam": "Peru", "bestand": "Peru", "continent": "ZA"}, {"naam": "Suriname", "bestand": "Suriname", "continent": "ZA"}, {"naam": "Uruguay", "bestand": "Uruguay", "continent": "ZA"}, {"naam": "Venezuela", "bestand": "Venezuela", "continent": "ZA"}, {"naam": "Falklandeilanden", "bestand": "Falklandeilanden", "continent": "ZA"}, {"naam": "Australië", "bestand": "Australie", "continent": "OC"}, {"naam": "Nieuw-Zeeland", "bestand": "Nieuw-Zeeland", "continent": "OC"}, {"naam": "Papoea-Nieuw-Guinea", "bestand": "Papoea-Nieuw-Guinea", "continent": "OC"}, {"naam": "Fiji", "bestand": "Fiji", "continent": "OC"}, {"naam": "Frans-Polynesië", "bestand": "Frans-Polynesie", "continent": "OC"}, {"naam": "Micronesia", "bestand": "Micronesia", "continent": "OC"}, {"naam": "Nauru", "bestand": "Nauru", "continent": "OC"}, {"naam": "Nieuw-Caledonië", "bestand": "Nieuw-Caledonie", "continent": "OC"}, {"naam": "Palau", "bestand": "Palau", "continent": "OC"}, {"naam": "Salomonseilanden", "bestand": "Salomonseilanden", "continent": "OC"}, {"naam": "Samoa", "bestand": "Samoa", "continent": "OC"}, {"naam": "Tonga", "bestand": "Tonga", "continent": "OC"}, {"naam": "Tuvalu", "bestand": "Tuvalu", "continent": "OC"}, {"naam": "Vanuatu", "bestand": "Vanuatu", "continent": "OC"}, {"naam": "Antarctica", "bestand": "Antarctica", "continent": "OV"}, {"naam": "Noordpool", "bestand": "Noordpool", "continent": "OV"}];
+const PASPOORT_LANDEN = [{"naam": "Albanië", "bestand": "Albanie", "continent": "EU"}, {"naam": "België", "bestand": "Belgie", "continent": "EU"}, {"naam": "Bosnië en Herzegovina", "bestand": "Bosnie-Herzegovina", "continent": "EU"}, {"naam": "Bulgarije", "bestand": "Bulgarije", "continent": "EU"}, {"naam": "Denemarken", "bestand": "Denemarken", "continent": "EU"}, {"naam": "Duitsland", "bestand": "Duitsland", "continent": "EU"}, {"naam": "Estland", "bestand": "Estland", "continent": "EU"}, {"naam": "Finland", "bestand": "Finland", "continent": "EU"}, {"naam": "Frankrijk", "bestand": "Frankrijk", "continent": "EU"}, {"naam": "Griekenland", "bestand": "Griekenland", "continent": "EU"}, {"naam": "Hongarije", "bestand": "Hongarije", "continent": "EU"}, {"naam": "Ierland", "bestand": "Ierland", "continent": "EU"}, {"naam": "IJsland", "bestand": "IJsland", "continent": "EU"}, {"naam": "Italië", "bestand": "Italie", "continent": "EU"}, {"naam": "Kroatië", "bestand": "Kroatie", "continent": "EU"}, {"naam": "Litouwen", "bestand": "Litouwen", "continent": "EU"}, {"naam": "Luxemburg", "bestand": "Luxemburg", "continent": "EU"}, {"naam": "Montenegro", "bestand": "Montenegro", "continent": "EU"}, {"naam": "Nederland", "bestand": "Nederland", "continent": "EU"}, {"naam": "Noord-Macedonië", "bestand": "Noord-Macedonie", "continent": "EU"}, {"naam": "Noorwegen", "bestand": "Noorwegen", "continent": "EU"}, {"naam": "Oekraïne", "bestand": "Oekraine", "continent": "EU"}, {"naam": "Oostenrijk", "bestand": "Oostenrijk", "continent": "EU"}, {"naam": "Polen", "bestand": "Polen", "continent": "EU"}, {"naam": "Portugal", "bestand": "Portugal", "continent": "EU"}, {"naam": "Roemenië", "bestand": "Roemenie", "continent": "EU"}, {"naam": "Rusland", "bestand": "Rusland", "continent": "EU"}, {"naam": "Servië", "bestand": "Servie", "continent": "EU"}, {"naam": "Slovenië", "bestand": "Slovenie", "continent": "EU"}, {"naam": "Slowakije", "bestand": "Slowakije", "continent": "EU"}, {"naam": "Spanje", "bestand": "Spanje", "continent": "EU"}, {"naam": "Tsjechië", "bestand": "Tsjechie", "continent": "EU"}, {"naam": "Verenigd Koninkrijk", "bestand": "Verenigd_Koninkrijk", "continent": "EU"}, {"naam": "Wit-Rusland", "bestand": "Wit-Rusland", "continent": "EU"}, {"naam": "Zweden", "bestand": "Zweden", "continent": "EU"}, {"naam": "Zwitserland", "bestand": "Zwitserland", "continent": "EU"}, {"naam": "Andorra", "bestand": "Andorra", "continent": "EU"}, {"naam": "Cyprus", "bestand": "Cyprus", "continent": "EU"}, {"naam": "Faeröer", "bestand": "Faroer", "continent": "EU"}, {"naam": "Gibraltar", "bestand": "Gibraltar", "continent": "EU"}, {"naam": "Kosovo", "bestand": "Kosovo", "continent": "EU"}, {"naam": "Letland", "bestand": "Letland", "continent": "EU"}, {"naam": "Liechtenstein", "bestand": "Liechtenstein", "continent": "EU"}, {"naam": "Malta", "bestand": "Malta", "continent": "EU"}, {"naam": "Moldavië", "bestand": "Moldavie", "continent": "EU"}, {"naam": "Monaco", "bestand": "Monaco", "continent": "EU"}, {"naam": "San Marino", "bestand": "San_Marino", "continent": "EU"}, {"naam": "Vaticaanstad", "bestand": "Vaticaanstad", "continent": "EU"}, {"naam": "Algerije", "bestand": "Algerije", "continent": "AF"}, {"naam": "Angola", "bestand": "Angola", "continent": "AF"}, {"naam": "Benin", "bestand": "Benin", "continent": "AF"}, {"naam": "Botswana", "bestand": "Botswana", "continent": "AF"}, {"naam": "Burkina Faso", "bestand": "Burkina_Faso", "continent": "AF"}, {"naam": "Centraal-Afrikaanse Republiek", "bestand": "Centraal-Afrikaanse_Republiek", "continent": "AF"}, {"naam": "Congo-Brazzaville", "bestand": "Congo-Brazzaville", "continent": "AF"}, {"naam": "Congo-Kinshasa", "bestand": "Congo-Kinshasa", "continent": "AF"}, {"naam": "Egypte", "bestand": "Egypte", "continent": "AF"}, {"naam": "Ethiopië", "bestand": "Ethiopie", "continent": "AF"}, {"naam": "Gabon", "bestand": "Gabon", "continent": "AF"}, {"naam": "Ghana", "bestand": "Ghana", "continent": "AF"}, {"naam": "Guinee", "bestand": "Guinee", "continent": "AF"}, {"naam": "Ivoorkust", "bestand": "Ivoorkust", "continent": "AF"}, {"naam": "Kameroen", "bestand": "Kameroen", "continent": "AF"}, {"naam": "Kenia", "bestand": "Kenia", "continent": "AF"}, {"naam": "Liberia", "bestand": "Liberia", "continent": "AF"}, {"naam": "Libië", "bestand": "Libie", "continent": "AF"}, {"naam": "Madagaskar", "bestand": "Madagaskar", "continent": "AF"}, {"naam": "Malawi", "bestand": "Malawi", "continent": "AF"}, {"naam": "Mali", "bestand": "Mali", "continent": "AF"}, {"naam": "Marokko", "bestand": "Marokko", "continent": "AF"}, {"naam": "Mauritanië", "bestand": "Mauritanie", "continent": "AF"}, {"naam": "Mozambique", "bestand": "Mozambique", "continent": "AF"}, {"naam": "Namibië", "bestand": "Namibie", "continent": "AF"}, {"naam": "Niger", "bestand": "Niger", "continent": "AF"}, {"naam": "Nigeria", "bestand": "Nigeria", "continent": "AF"}, {"naam": "Oeganda", "bestand": "Oeganda", "continent": "AF"}, {"naam": "Senegal", "bestand": "Senegal", "continent": "AF"}, {"naam": "Sierra Leone", "bestand": "Sierra_Leone", "continent": "AF"}, {"naam": "Soedan", "bestand": "Soedan", "continent": "AF"}, {"naam": "Somalië", "bestand": "Somalie", "continent": "AF"}, {"naam": "Tanzania", "bestand": "Tanzania", "continent": "AF"}, {"naam": "Tsjaad", "bestand": "Tsjaad", "continent": "AF"}, {"naam": "Tunesië", "bestand": "Tunesie", "continent": "AF"}, {"naam": "Zambia", "bestand": "Zambia", "continent": "AF"}, {"naam": "Zimbabwe", "bestand": "Zimbabwe", "continent": "AF"}, {"naam": "Zuid-Afrika", "bestand": "Zuid-Afrika", "continent": "AF"}, {"naam": "Burundi", "bestand": "Burundi", "continent": "AF"}, {"naam": "Comoren", "bestand": "Comoren", "continent": "AF"}, {"naam": "Djibouti", "bestand": "Djibouti", "continent": "AF"}, {"naam": "Equatoriaal-Guinea", "bestand": "Equatoriaal-Guinee", "continent": "AF"}, {"naam": "Eritrea", "bestand": "Eritrea", "continent": "AF"}, {"naam": "Eswatini", "bestand": "Eswatini", "continent": "AF"}, {"naam": "Gambia", "bestand": "Gambia", "continent": "AF"}, {"naam": "Guinee-Bissau", "bestand": "Guinee-Bissau", "continent": "AF"}, {"naam": "Kaapverdië", "bestand": "Kaapverdie", "continent": "AF"}, {"naam": "Lesotho", "bestand": "Lesotho", "continent": "AF"}, {"naam": "Mauritius", "bestand": "Mauritius", "continent": "AF"}, {"naam": "Rwanda", "bestand": "Rwanda", "continent": "AF"}, {"naam": "São Tomé en Príncipe", "bestand": "Sao_Tome_en_Principe", "continent": "AF"}, {"naam": "Seychellen", "bestand": "Seychellen", "continent": "AF"}, {"naam": "Togo", "bestand": "Togo", "continent": "AF"}, {"naam": "Westelijke Sahara", "bestand": "Westelijke_Sahara", "continent": "AF"}, {"naam": "Zuid-Soedan", "bestand": "Zuid-Soedan", "continent": "AF"}, {"naam": "Afghanistan", "bestand": "Afghanistan", "continent": "AS"}, {"naam": "Armenië", "bestand": "Armenie", "continent": "AS"}, {"naam": "Azerbeidzjan", "bestand": "Azerbeidzjan", "continent": "AS"}, {"naam": "Bangladesh", "bestand": "Bangladesh", "continent": "AS"}, {"naam": "Cambodja", "bestand": "Cambodja", "continent": "AS"}, {"naam": "China", "bestand": "China", "continent": "AS"}, {"naam": "Filipijnen", "bestand": "Filipijnen", "continent": "AS"}, {"naam": "Georgië", "bestand": "Georgie", "continent": "AS"}, {"naam": "India", "bestand": "India", "continent": "AS"}, {"naam": "Indonesië", "bestand": "Indonesie", "continent": "AS"}, {"naam": "Irak", "bestand": "Irak", "continent": "AS"}, {"naam": "Iran", "bestand": "Iran", "continent": "AS"}, {"naam": "Japan", "bestand": "Japan", "continent": "AS"}, {"naam": "Jemen", "bestand": "Jemen", "continent": "AS"}, {"naam": "Jordanië", "bestand": "Jordanie", "continent": "AS"}, {"naam": "Kazachstan", "bestand": "Kazachstan", "continent": "AS"}, {"naam": "Laos", "bestand": "Laos", "continent": "AS"}, {"naam": "Maleisië", "bestand": "Maleisie", "continent": "AS"}, {"naam": "Mongolië", "bestand": "Mongolie", "continent": "AS"}, {"naam": "Myanmar", "bestand": "Myanmar", "continent": "AS"}, {"naam": "Nepal", "bestand": "Nepal", "continent": "AS"}, {"naam": "Noord-Korea", "bestand": "Noord-Korea", "continent": "AS"}, {"naam": "Oezbekistan", "bestand": "Oezbekistan", "continent": "AS"}, {"naam": "Oman", "bestand": "Oman", "continent": "AS"}, {"naam": "Pakistan", "bestand": "Pakistan", "continent": "AS"}, {"naam": "Saoedi-Arabië", "bestand": "Saoedi-Arabie", "continent": "AS"}, {"naam": "Sri Lanka", "bestand": "Sri_Lanka", "continent": "AS"}, {"naam": "Syrië", "bestand": "Syrie", "continent": "AS"}, {"naam": "Taiwan", "bestand": "Taiwan", "continent": "AS"}, {"naam": "Thailand", "bestand": "Thailand", "continent": "AS"}, {"naam": "Turkije", "bestand": "Turkije", "continent": "AS"}, {"naam": "Turkmenistan", "bestand": "Turkmenistan", "continent": "AS"}, {"naam": "Verenigde Arabische Emiraten", "bestand": "Verenigde_Arabische_Emiraten", "continent": "AS"}, {"naam": "Vietnam", "bestand": "Vietnam", "continent": "AS"}, {"naam": "Zuid-Korea", "bestand": "Zuid-Korea", "continent": "AS"}, {"naam": "Bahrein", "bestand": "Bahrein", "continent": "AS"}, {"naam": "Bhutan", "bestand": "Bhutan", "continent": "AS"}, {"naam": "Brunei", "bestand": "Brunei", "continent": "AS"}, {"naam": "Kirgistan", "bestand": "Kirgistan", "continent": "AS"}, {"naam": "Koeweit", "bestand": "Koeweit", "continent": "AS"}, {"naam": "Libanon", "bestand": "Libanon", "continent": "AS"}, {"naam": "Maldiven", "bestand": "Maldiven", "continent": "AS"}, {"naam": "Oost-Timor", "bestand": "Oost-Timor", "continent": "AS"}, {"naam": "Palestina", "bestand": "Palestina", "continent": "AS"}, {"naam": "Qatar", "bestand": "Qatar", "continent": "AS"}, {"naam": "Singapore", "bestand": "Singapore", "continent": "AS"}, {"naam": "Tadzjikistan", "bestand": "Tadzjikistan", "continent": "AS"}, {"naam": "Canada", "bestand": "Canada", "continent": "NA"}, {"naam": "Costa Rica", "bestand": "Costa_Rica", "continent": "NA"}, {"naam": "Cuba", "bestand": "Cuba", "continent": "NA"}, {"naam": "Dominicaanse Republiek", "bestand": "Dominicaanse_Republiek", "continent": "NA"}, {"naam": "Groenland", "bestand": "Groenland", "continent": "NA"}, {"naam": "Guatemala", "bestand": "Guatemala", "continent": "NA"}, {"naam": "Haïti", "bestand": "Haiti", "continent": "NA"}, {"naam": "Honduras", "bestand": "Honduras", "continent": "NA"}, {"naam": "Mexico", "bestand": "Mexico", "continent": "NA"}, {"naam": "Nicaragua", "bestand": "Nicaragua", "continent": "NA"}, {"naam": "Panama", "bestand": "Panama", "continent": "NA"}, {"naam": "Verenigde Staten", "bestand": "Verenigde_Staten", "continent": "NA"}, {"naam": "Antigua en Barbuda", "bestand": "Antigua_en_Barbuda", "continent": "NA"}, {"naam": "Bahama's", "bestand": "Bahamas", "continent": "NA"}, {"naam": "Barbados", "bestand": "Barbados", "continent": "NA"}, {"naam": "Belize", "bestand": "Belize", "continent": "NA"}, {"naam": "Dominica", "bestand": "Dominica", "continent": "NA"}, {"naam": "El Salvador", "bestand": "El_Salvador", "continent": "NA"}, {"naam": "Grenada", "bestand": "Grenada", "continent": "NA"}, {"naam": "Jamaica", "bestand": "Jamaica", "continent": "NA"}, {"naam": "Saint Kitts en Nevis", "bestand": "Saint_Kitts_en_Nevis", "continent": "NA"}, {"naam": "Saint Lucia", "bestand": "Saint_Lucia", "continent": "NA"}, {"naam": "Saint Vincent en de Grenadines", "bestand": "Saint_Vincent_en_de_Grenadines", "continent": "NA"}, {"naam": "Trinidad en Tobago", "bestand": "Trinidad_en_Tobago", "continent": "NA"}, {"naam": "Argentinië", "bestand": "Argentinie", "continent": "ZA"}, {"naam": "Bolivia", "bestand": "Bolivia", "continent": "ZA"}, {"naam": "Brazilië", "bestand": "Brazilie", "continent": "ZA"}, {"naam": "Chili", "bestand": "Chili", "continent": "ZA"}, {"naam": "Colombia", "bestand": "Colombia", "continent": "ZA"}, {"naam": "Ecuador", "bestand": "Ecuador", "continent": "ZA"}, {"naam": "Frans-Guyana", "bestand": "Frans_Guyana", "continent": "ZA"}, {"naam": "Guyana", "bestand": "Guyana", "continent": "ZA"}, {"naam": "Paraguay", "bestand": "Paraguay", "continent": "ZA"}, {"naam": "Peru", "bestand": "Peru", "continent": "ZA"}, {"naam": "Suriname", "bestand": "Suriname", "continent": "ZA"}, {"naam": "Uruguay", "bestand": "Uruguay", "continent": "ZA"}, {"naam": "Venezuela", "bestand": "Venezuela", "continent": "ZA"}, {"naam": "Falklandeilanden", "bestand": "Falklandeilanden", "continent": "ZA"}, {"naam": "Zuid-Georgia en de Zuidelijke Sandwicheilanden", "bestand": "Zuid-Georgia_en_de_Zuidelijke_Sandwicheilanden", "continent": "ZA"}, {"naam": "Australië", "bestand": "Australie", "continent": "OC"}, {"naam": "Nieuw-Zeeland", "bestand": "Nieuw-Zeeland", "continent": "OC"}, {"naam": "Papoea-Nieuw-Guinea", "bestand": "Papoea-Nieuw-Guinea", "continent": "OC"}, {"naam": "Fiji", "bestand": "Fiji", "continent": "OC"}, {"naam": "Frans-Polynesië", "bestand": "Frans-Polynesie", "continent": "OC"}, {"naam": "Micronesia", "bestand": "Micronesia", "continent": "OC"}, {"naam": "Nauru", "bestand": "Nauru", "continent": "OC"}, {"naam": "Nieuw-Caledonië", "bestand": "Nieuw-Caledonie", "continent": "OC"}, {"naam": "Palau", "bestand": "Palau", "continent": "OC"}, {"naam": "Salomonseilanden", "bestand": "Salomonseilanden", "continent": "OC"}, {"naam": "Samoa", "bestand": "Samoa", "continent": "OC"}, {"naam": "Tonga", "bestand": "Tonga", "continent": "OC"}, {"naam": "Tuvalu", "bestand": "Tuvalu", "continent": "OC"}, {"naam": "Vanuatu", "bestand": "Vanuatu", "continent": "OC"}, {"naam": "Antarctica", "bestand": "Antarctica", "continent": "OV"}, {"naam": "Noordpool", "bestand": "Noordpool", "continent": "OV"}];
 // De "klein maar fijn"-landen (unie van de Europa- en Wereld-lijst - de
 // Wereld-lijst bevat toevallig al alle 7 Europese) als bestandsnamen, de
 // prioriteitspool voor verrassingsstempels bij Hoofdsteden/Plekken/Raadspel.
-const KLEIN_MAAR_FIJN_BESTANDEN = ["Tonga", "Samoa", "Salomonseilanden", "Tuvalu", "Nauru", "Micronesia", "Palau", "Vanuatu", "Nieuw-Caledonie", "Frans-Polynesie", "Trinidad_en_Tobago", "Grenada", "Barbados", "Saint_Lucia", "Dominica", "Antigua_en_Barbuda", "Saint_Kitts_en_Nevis", "Seychellen", "Comoren", "Sao_Tome_en_Principe", "Kaapverdie", "Mauritius", "Maldiven", "San_Marino", "Vaticaanstad", "Monaco", "Andorra", "Liechtenstein", "Malta", "Faroer", "Brunei", "Falklandeilanden"];
+const KLEIN_MAAR_FIJN_BESTANDEN = ["Tonga", "Samoa", "Salomonseilanden", "Tuvalu", "Nauru", "Micronesia", "Palau", "Vanuatu", "Nieuw-Caledonie", "Frans-Polynesie", "Trinidad_en_Tobago", "Grenada", "Barbados", "Saint_Lucia", "Dominica", "Antigua_en_Barbuda", "Saint_Kitts_en_Nevis", "Seychellen", "Comoren", "Sao_Tome_en_Principe", "Kaapverdie", "Mauritius", "Maldiven", "San_Marino", "Vaticaanstad", "Monaco", "Andorra", "Liechtenstein", "Malta", "Faroer", "Brunei", "Falklandeilanden", "Zuid-Georgia_en_de_Zuidelijke_Sandwicheilanden"];
 
 // Stempels horen bij de speler die nu is ingelogd (de naam uit het
 // naamscherm) - anders deelt iedereen die op dit apparaat speelt hetzelfde
@@ -3791,209 +3576,6 @@ function sluitEmbleemMelding(){
   if(overlay) overlay.classList.remove('toon');
   setTimeout(volgendeEmbleemMelding, 350);
 }
-
-// ── Vliegfiguren: kiesbare personages, later vrij te spelen ─────────────
-// Fase 1 (fundering): alleen de personagelijst en de wissel-functie. Nog
-// geen vrijspeel-logica of keuzescherm op het startscherm - dat komt in een
-// latere stap. Voor nu blijft Timbo/Wonky gewoon het enige personage
-// waarmee gespeeld wordt; deze functie wordt hieronder één keer aangeroepen
-// met 'timbo' en verandert dus (nog) niets aan wat de speler te zien krijgt.
-//
-// Per personage: 'prefix' is de bestandsnaam-basis voor turbo/dropt/blij/
-// sad (en bij de meeste ook frontaal/naar_frontaal) - die staan altijd in
-// VLIEGFIGUUR_MAP (images/vliegtuigjes/). 'heroBestand' is de grote
-// afbeelding op het startscherm (#start-timbo), 'basisBestand' de kleine
-// "gewoon rechtdoor vliegen"-afbeelding in het spel zelf (#wonky).
-// Bij Timbo zijn dat toevallig twee verschillende bestanden (Timbo.png resp.
-// Wonky.png, een historisch verschil van vóór dit personage-systeem) - en
-// Timbo.png is bovendien een titelplaatje, geen speelbaar vliegtuigje, dus
-// die blijft gewoon in de hoofdmap staan (vandaar 'heroMap' hieronder). Bij
-// de nieuwe personages is heroBestand === basisBestand: één en hetzelfde
-// bestand, gewoon in images/vliegtuigjes/.
-// 'heeftBocht': heeft dit personage eigen frontaal/naar_frontaal-tekeningen
-// voor de bocht-animatie? Zo niet (de ronde alien draait niet zichtbaar),
-// dan valt de bocht terug op de basisafbeelding - nooit een gele vlek.
-const VLIEGFIGUUR_MAP = 'images/vliegtuigjes/';
-// 'drempel': hoeveel landenstempels (in totaal, over alle werelddelen samen)
-// er nodig zijn om dit personage vrij te spelen. Timbo staat op 0 - die kan
-// iedereen vanaf het begin gewoon spelen.
-// 'rookBestanden': het setje uitlaat-plaatjes voor dít personage (zie
-// laadRookAfbeeldingen hieronder) - null betekent geen rookspoor (vogel
-// zit in een ballon, alien is een UFO; geen van beide heeft een uitlaat).
-const VLIEGFIGUREN = [
-  { id:'timbo',  prefix:'Timbo',  heroBestand:'Timbo',  heroMap:'images/', basisBestand:'Wonky',  heeftBocht:true,  drempel:0,
-    rookBestanden:['images/rookwolkje1.png','images/rookwolkje2.png'] },
-  { id:'meisje', prefix:'meisje', heroBestand:'meisje', basisBestand:'meisje', heeftBocht:true,  drempel:10,
-    rookBestanden:['images/rookwolkje_meisje1.png','images/rookwolkje_meisje2.png','images/rookwolkje_meisje_bloem.png','images/rookwolkje_meisje_blaadje.png'] },
-  { id:'vogel',  prefix:'vogel',  heroBestand:'vogel',  basisBestand:'vogel',  heeftBocht:true,  drempel:25,
-    rookBestanden:null },
-  { id:'alien',  prefix:'alien',  heroBestand:'alien',  basisBestand:'alien',  heeftBocht:false, drempel:50,
-    rookBestanden:null },
-  { id:'allen',  prefix:'allen',  heroBestand:'allen',  basisBestand:'allen',  heeftBocht:true,  drempel:90,
-    rookBestanden:['images/rookwolkje_allen1.png','images/rookwolkje_allen2.png','images/rookwolkje_allen3.png'] },
-  { id:'kip',    prefix:'kip',    heroBestand:'kip',    basisBestand:'kip',    heeftBocht:true,  drempel:150,
-    rookBestanden:['images/rookwolkje_kip1.png','images/rookwolkje_kip2.png','images/rookwolkje_kip_poep.png'] },
-];
-
-// Rookwolkjes-plaatjes van het huidige personage - herladen door
-// laadRookAfbeeldingen() zodra het personage wisselt (aangeroepen vanuit
-// zetActiefVliegfiguur hieronder). Leeg = dit personage laat geen rookspoor
-// achter. Moet hier al staan (vóór initialiseerVliegfiguurVoorSpeler()
-// verderop, die bij het laden van de pagina meteen zetActiefVliegfiguur
-// aanroept) - anders bestaan rookImgs/rookWolkjes nog niet op het moment
-// dat ze voor het eerst gebruikt worden.
-let rookImgs = [];
-let rookWolkjes = [];
-function laadRookAfbeeldingen(fig){
-  rookImgs = (fig.rookBestanden||[]).map(pad=>{
-    const img = new Image(); img.src = pad; return img;
-  });
-  rookWolkjes = []; // laat geen wolkjes van het vorige personage doorlopen
-}
-
-// Is dit personage al vrijgespeeld? Gebaseerd op het totaal aantal
-// paspoortstempels van de speler, over alle werelddelen samen (dus niet per
-// continent) - simpel te tellen en werkt voor elke speelmodus die stempels
-// oplevert (Europa/Wereld, Hoofdsteden, Plekken, Raad je plaatje).
-function totaalAantalStempels(){
-  return geefVerdiendeStempels().length;
-}
-function isVliegfiguurVrijgespeeld(fig){
-  return totaalAantalStempels() >= fig.drempel;
-}
-function vrijgespeeldeVliegfiguren(){
-  return VLIEGFIGUREN.filter(isVliegfiguurVrijgespeeld);
-}
-// Het eerstvolgende nog te ontgrendelen personage, met hoeveel stempels de
-// speler daar nog voor nodig heeft - handig voor een latere "nog x landen
-// te gaan"-tekst bij het personage-keuzescherm. Geeft null als alles al
-// vrijgespeeld is.
-function volgendeVliegfiguur(){
-  const nu = totaalAantalStempels();
-  const volgende = VLIEGFIGUREN.find(f=>f.drempel > nu);
-  if(!volgende) return null;
-  return { figuur:volgende, nogNodig: volgende.drempel - nu };
-}
-
-// Welk personage deze speler momenteel gekozen heeft - per speler
-// opgeslagen (zelfde patroon als de stempels en de emblemen hierboven).
-// Staat er nog niets, dan is Timbo de standaard: iedereen kan meteen spelen.
-function actiefVliegfiguurSleutel(){
-  const naam = localStorage.getItem(SPELERNAAM_SLEUTEL) || 'Speler';
-  return 'wonkywings_actief_vliegfiguur::' + naam;
-}
-function geefActiefVliegfiguurId(){
-  return localStorage.getItem(actiefVliegfiguurSleutel()) || 'timbo';
-}
-
-// Herschrijft de src van alle Timbo/Wonky-afbeeldingen (startscherm +
-// spelscherm) naar het gekozen personage. De rest van de vlieglogica
-// (posities, welke stand wanneer getoond wordt, animaties) blijft
-// ongewijzigd - die werkt met dezelfde vaste element-id's, ongeacht wie
-// erin vliegt.
-function zetActiefVliegfiguur(id){
-  const fig = VLIEGFIGUREN.find(f=>f.id===id) || VLIEGFIGUREN[0];
-  laadRookAfbeeldingen(fig);
-  // #start-timbo (de grote foto links) raken we hier expres niet aan - die
-  // blijft altijd gewoon Timbo, ongeacht wie er als personage gekozen is.
-  // #figuur-kiezer-img is het kleine plaatje dat op de plek van het logo
-  // verschijnt zodra een categorie openklapt (zie toonFiguurKiezer) - dat
-  // gebruikt bewust basisBestand (dezelfde afbeelding als #wonky in het
-  // spel zelf), niet heroBestand: dat laatste is specifiek het grote
-  // titelplaatje voor #start-timbo en past hier niet.
-  document.getElementById('figuur-kiezer-img').src = VLIEGFIGUUR_MAP + fig.basisBestand + '.png';
-  document.getElementById('wonky').src       = VLIEGFIGUUR_MAP + fig.basisBestand + '.png';
-  document.getElementById('wonky-turbo').src = VLIEGFIGUUR_MAP + fig.prefix + '_turbo.png';
-  document.getElementById('wonky-dropt').src = VLIEGFIGUUR_MAP + fig.prefix + '_dropt.png';
-  document.getElementById('wonky-blij').src  = VLIEGFIGUUR_MAP + fig.prefix + '_blij.png';
-  document.getElementById('wonky-sad').src   = VLIEGFIGUUR_MAP + fig.prefix + '_sad.png';
-  if(fig.heeftBocht){
-    document.getElementById('wonky-frontaal').src      = VLIEGFIGUUR_MAP + fig.prefix + '_frontaal.png';
-    document.getElementById('wonky-naar-frontaal').src = VLIEGFIGUUR_MAP + fig.prefix + '_naar_frontaal.png';
-  } else {
-    document.getElementById('wonky-frontaal').src      = VLIEGFIGUUR_MAP + fig.basisBestand + '.png';
-    document.getElementById('wonky-naar-frontaal').src = VLIEGFIGUUR_MAP + fig.basisBestand + '.png';
-  }
-}
-// ── Vliegfiguur-carrousel: verschijnt op de plek van het logo zodra Europa/
-// Wereld/Hoofdsteden openklapt (zie toonFiguurKiezer, aangeroepen vanuit
-// zetMenuUitgeklapt hierboven). De grote Timbo-foto links (#start-timbo)
-// verandert hier nooit door mee - die blijft altijd gewoon Timbo.
-//
-// figuurBrowseIndex is waar de speler op dit moment doorheen aan het
-// bladeren is - dat kan verder staan dan wat er al vrijgespeeld is (je mag
-// vooruitkijken naar wat je nog kan winnen, zie de wazige weergave
-// hieronder). Zodra je op een al vrijgespeeld personage uitkomt, wordt dat
-// er ook meteen mee gespeeld - bladeren ís hier dus kiezen.
-let figuurBrowseIndex = 0;
-
-function ververfFiguurKeuze(){
-  const fig = VLIEGFIGUREN[figuurBrowseIndex];
-  const vrij = isVliegfiguurVrijgespeeld(fig);
-  const kiezerImg = document.getElementById('figuur-kiezer-img');
-  const laag = document.getElementById('figuur-vergrendeld-laag');
-  const tekst = document.getElementById('figuur-vergrendeld-tekst');
-
-  if(vrij){
-    // Vrijgespeeld: dit wordt meteen het personage waarmee gespeeld wordt -
-    // zowel hier op het startscherm als straks in het spel zelf (#wonky
-    // etc.), en onthouden voor de volgende keer dat deze speler het spel
-    // opent. zetActiefVliegfiguur() zet ook meteen de juiste src.
-    zetActiefVliegfiguur(fig.id);
-    localStorage.setItem(actiefVliegfiguurSleutel(), fig.id);
-    kiezerImg.classList.remove('vergrendeld');
-    laag.classList.remove('toon');
-  } else {
-    // Nog vergrendeld: alleen dit kiezer-plaatje laten zien als voorproefje
-    // (gedimd, geen blur, zie .vergrendeld) - #wonky en de rest blijven op
-    // het laatst gekozen (wél vrijgespeelde) personage staan, dit wordt
-    // niet echt "actief".
-    kiezerImg.src = VLIEGFIGUUR_MAP + fig.basisBestand + '.png';
-    kiezerImg.classList.add('vergrendeld');
-    laag.classList.add('toon');
-    const nogNodig = fig.drempel - totaalAantalStempels();
-    tekst.textContent = nogNodig + ' paspoort-stempels';
-  }
-  document.getElementById('figuur-pijl-terug').disabled = (figuurBrowseIndex === 0);
-  document.getElementById('figuur-pijl-verder').disabled = (figuurBrowseIndex === VLIEGFIGUREN.length-1);
-}
-
-// Aangeroepen door de pijltjes-knoppen (delta -1 of +1). Stopt gewoon aan
-// de uiteinden van de lijst (Timbo respectievelijk Kip) - geen rondje.
-function blaaderVliegfiguur(delta){
-  figuurBrowseIndex = Math.max(0, Math.min(VLIEGFIGUREN.length-1, figuurBrowseIndex+delta));
-  ververfFiguurKeuze();
-}
-
-// Wisselt tussen het logo+ondertitel en de vliegfiguur-kiezer, op de
-// plek in de rij (zie #start-logo-blok, display:contents). Wordt vanuit
-// zetMenuUitgeklapt(open) aangeroepen - dus alleen bij Europa/Wereld/
-// Hoofdsteden, niet bij Iconische plekken of Raad je plaatje (die klappen
-// niet open/dicht, zie de toelichting daar).
-function toonFiguurKiezer(toon){
-  document.getElementById('start-logo-blok').style.display = toon ? 'none' : 'contents';
-  document.getElementById('figuur-kiezer-blok').style.display = toon ? 'flex' : 'none';
-}
-
-// Haalt op/zet welk personage DEZE speler laatst gekozen had (of, bij een
-// nieuwe speler, Timbo) en past dat meteen toe - zowel op de kiezer als op
-// de echte vliegtuigje-afbeeldingen in het spel (via ververfFiguurKeuze()).
-// Blijkt het opgeslagen personage (bijv. na een latere aanpassing van de
-// drempels, of gewoon omdat déze speler het nog niet verdiend heeft)
-// onverhoopt niet meer vrijgespeeld te zijn, dan valt dit terug op Timbo.
-// Wordt aangeroepen bij het laden van de pagina, én telkens wanneer er van
-// speler gewisseld wordt (bevestigSpelerNaam) - anders bleven de kiezer én
-// het daadwerkelijk vliegende personage nog even op de vorige speler staan.
-function initialiseerVliegfiguurVoorSpeler(){
-  let start = VLIEGFIGUREN.findIndex(f=>f.id===geefActiefVliegfiguurId());
-  if(start < 0 || !isVliegfiguurVrijgespeeld(VLIEGFIGUREN[start])) start = 0;
-  figuurBrowseIndex = start;
-  ververfFiguurKeuze();
-}
-// Eén keer meteen aanroepen bij het laden van de pagina - dit moet ná de
-// VLIEGFIGUREN-lijst hierboven staan, anders bestaat die lijst nog niet op
-// het moment dat deze regel uitgevoerd wordt.
-initialiseerVliegfiguurVoorSpeler();
 
 // ── Topografie Master diploma ── Los van de korte embleem-melding
 // hierboven (die vaak al middenin het spel verschijnt, zodra het laatste
@@ -4287,6 +3869,14 @@ function laadIllustratie(naam, forceHerlaad) {
     cwImg.onerror = () => { landIllustraties['__ChinaWest'] = false; };
     cwImg.src = 'images/landen/China_WestChina.png';
   }
+  // Speciaal geval: Buitenste Eilanden horen bij Seychellen, eigen plaatje.
+  if(naam==='Seychellen' && landIllustraties['__SeychellenBuiten']===undefined){
+    landIllustraties['__SeychellenBuiten'] = null;
+    const sbImg = new Image();
+    sbImg.onload  = () => { landIllustraties['__SeychellenBuiten'] = sbImg; };
+    sbImg.onerror = () => { landIllustraties['__SeychellenBuiten'] = false; };
+    sbImg.src = 'images/landen/Seychellen_Buitenste_Eilanden.png';
+  }
   // Speciaal geval: Noordpool heeft twee plaatjes - Noordpool2.png (eenvoudige witte
   // vlek, getoond tot het omslagpunt) en Noordpool.png (illustratie met dieren/mensen,
   // getoond daarna). Cross-fade tussen beide gebeurt in tekenLandIllustratie.
@@ -4458,17 +4048,11 @@ function startSpel(levelId, modus) {
   }
   updateVoortgang();
   planMuntjesVoorRonde();
-  // Schurken-pestronde: alleen bij een gewone Landen-ronde (niet bij
-  // Hoofdsteden, Plekken of Verkennen - die gebruiken een ander scorebord).
-  schurkVliegtuig = null; schurkWolken = [];
-  document.getElementById('schurk-vliegtuig').style.display = 'none';
-  planSchurkenRonde(modus==='spelen' && !isHoofdsteden && !isPlekken);
   spelActief=true;
   W=window.innerWidth; H=window.innerHeight;
   canvas.width=W; canvas.height=H;
   // Eerste muntje-check pas ná spelActief=true, anders is de bol nog niet zichtbaar
   checkMuntjeSpawn();
-  checkSchurkSpawn();
 
   if(!globeGestart){
     globeGestart=true;
@@ -4599,8 +4183,6 @@ function updateScorebordCijfers(){
 }
 
 // ── Scorebord (voorlopig lokaal, per level, op dit apparaat) ──
-// Testaccounts: scores worden gewoon opgeslagen maar nooit getoond.
-
 function scorebordSleutel(levelId){ return 'wonkywings_scores_'+levelId; }
 function opslaanScore(levelNr, naam, km, tijdSec){
   let lijst=[];
@@ -4721,10 +4303,8 @@ function toonScorebord(levelId, nieuweRun){
 
   // lijst is al gesorteerd op km (laagste/beste eerst) - dus gewoon de eerste
   // 20 pakken voor all-time, en voor "vandaag" eerst filteren en dan top 20.
-  // Testaccounts (test1/test2) worden uitgefilterd zodat ze nooit zichtbaar zijn.
-  const zichtbaar = lijst.filter(r=>!isTestNaam(r.naam));
-  const alltime = zichtbaar.slice(0,20);
-  const vandaag = zichtbaar.filter(r=>isVandaag(r.datum)).slice(0,20);
+  const alltime = lijst.slice(0,20);
+  const vandaag = lijst.filter(r=>isVandaag(r.datum)).slice(0,20);
   bouwScorebordKolom('scorebord-lijst-alltime', alltime, nieuweRun);
   bouwScorebordKolom('scorebord-lijst-vandaag', vandaag, nieuweRun);
 
@@ -4798,20 +4378,11 @@ function vervangHuidigLand(){
 }
 // ── Direct doorgaan (X-knop / dubbeltik / Enter) ──────
 // Slaat de wachttijd over die normaal automatisch verstrijkt na een goed of
-// fout antwoord, voor spelers die liever meteen doorgaan. Tijdens de
-// correctievlucht zelf (vluchtActief) versnelt dezelfde toets eerst de vlucht
-// naar de aankomst toe; wordt daarna nogmaals gedrukt (tijdens het bericht
-// dat na de vlucht verschijnt), dan gaat het pas echt meteen door naar het
-// volgende land - dat is de bestaande misserAutoTimer-tak hieronder.
+// fout antwoord, voor spelers die liever meteen doorgaan. Werkt alleen als
+// er ook echt iets te skippen valt (dus niet tijdens het vallen van het
+// vlaggetje zelf, of tijdens de correctievlucht - dat blijft gewoon zichtbaar).
 function skipDoorgaan(){
   if(huidigModus!=='spelen' || !spelActief || hulpActief || kennisvraagActief || radActief) return;
-  if(vluchtActief){
-    const verstreken = performance.now()-vluchtStartTijd;
-    if(verstreken < vluchtDuur-VLUCHT_VERSNELD_RESTTIJD_MS){
-      vluchtDuur = verstreken+VLUCHT_VERSNELD_RESTTIJD_MS;
-    }
-    return;
-  }
   if(goedAutoTimer){
     clearTimeout(goedAutoTimer); goedAutoTimer=null;
     nieuwLand();
@@ -4834,7 +4405,6 @@ function gebruikJoker(){
     // Misser corrigeren: km-straf terugdraaien en meteen een nieuw land
     if(misserAutoTimer){ clearTimeout(misserAutoTimer); misserAutoTimer=null; }
     stopMisserCountdown();
-    misserVerwerkingId++; // maakt een eventueel nog vliegende '+X km' hierboven ongeldig
     score=vluchtScoreVoor;
     document.getElementById('score').textContent=score;
     updateScorebordCijfers();
@@ -4980,7 +4550,6 @@ function nieuwLand(){
   zetOpdrachtTekst();
   updateVoortgang(); wachten=false;
   checkMuntjeSpawn();
-  checkSchurkSpawn();
 }
 
 // ── Canvas & variabelen ───────────────────────────────
@@ -5530,6 +5099,7 @@ function effectiefPseudoLand(naam, lon, lat){
   if(naam==='Frankrijk' && lon > 50 && alleLandenFeatureMap['Réunion']) return 'Réunion';
   if(naam==='Frankrijk' && lon > 20 && lon < 50 && alleLandenFeatureMap['Mayotte']) return 'Mayotte';
   if(naam==='China' && lon < 105 && alleLandenFeatureMap['West-China']) return 'West-China';
+  if(naam==='Seychellen' && (lon < SEYCHELLEN_BUITEN_LON_MAX || lat < SEYCHELLEN_BUITEN_LAT_MAX) && alleLandenFeatureMap['Buitenste Eilanden']) return 'Buitenste Eilanden';
   return naam;
 }
 
@@ -5543,7 +5113,7 @@ const MOEDERLAND_VAN_PSEUDOLAND = {
   'Oost-Maleisië':'Maleisië', 'Galápagos':'Ecuador',
   'Canarische Eilanden':'Spanje', 'Azoren':'Portugal',
   'Réunion':'Frankrijk', 'Mayotte':'Frankrijk',
-  'West-China':'China'
+  'West-China':'China', 'Buitenste Eilanden':'Seychellen'
 };
 
 function startKalibratie(){
@@ -5564,6 +5134,7 @@ function startKalibratie(){
   else if(naam==='Réunion') laadIllustratie('Frankrijk'); // laadt ook __Reunion mee
   else if(naam==='Mayotte') laadIllustratie('Frankrijk'); // laadt ook __Mayotte mee
   else if(naam==='West-China') laadIllustratie('China'); // laadt ook __ChinaWest mee
+  else if(naam==='Buitenste Eilanden') laadIllustratie('Seychellen'); // laadt ook __SeychellenBuiten mee
   else laadIllustratie(naam);
   kalibratieNaam=naam;
   kalibratieFeature=featureVoorKalibratie;
@@ -6397,6 +5968,24 @@ function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
     return;
   }
 
+  // Zelfde aanpak voor de Seychellen: Binnenste Eilanden en Buitenste
+  // Eilanden los behandelen zodra er een apart plaatje voor de Buitenste
+  // Eilanden is. Gebruikt dezelfde lon/lat-knip als effectiefPseudoLand
+  // hierboven (zie de toelichting bij SEYCHELLEN_BUITEN_LON_MAX/_LAT_MAX).
+  if(dutch==='Seychellen' && landIllustraties['__SeychellenBuiten']){
+    const buitenDelen=[], hoofdDelen=[];
+    for(const poly of polysLijst){
+      if(!poly[0]||poly[0].length<3){ hoofdDelen.push(poly); continue; }
+      const lonMax=Math.max(...poly[0].map(p=>p[0]));
+      const latMax=Math.max(...poly[0].map(p=>p[1]));
+      if(lonMax < SEYCHELLEN_BUITEN_LON_MAX || latMax < SEYCHELLEN_BUITEN_LAT_MAX) buitenDelen.push(poly);
+      else hoofdDelen.push(poly);
+    }
+    tekenLandDelen('Seychellen', hoofdDelen, img);
+    tekenLandDelen('Buitenste Eilanden', buitenDelen, landIllustraties['__SeychellenBuiten']);
+    return;
+  }
+
   tekenLandDelen(dutch, polysLijst, img);
 }
 
@@ -6620,6 +6209,15 @@ function puntVoorbijGrens(vanLon,vanLat,lon,lat,km){
   const lambda2=lambda1+Math.atan2(Math.sin(bearing)*Math.sin(d)*Math.cos(phi1b), Math.cos(d)-Math.sin(phi1b)*Math.sin(phi2b));
   return [lambda2*toDeg, phi2b*toDeg];
 }
+// Coulance-marge voor vlaggetjes die op open zee vallen (bijv. midden in een
+// brede binnenzee/golf als de Golf van Korinthe of de Kvarner-golf) maar wel
+// dicht genoeg bij de kust van het bedoelde land liggen - zie de toepassing
+// bij isGoed in dropVlaggetje(). Geldt uitdrukkelijk alleen als het vlaggetje
+// nérgens op land valt (getLandOpPunt geeft dan null): valt het al op het
+// vasteland van een ánder land, dan is er allang een echt antwoord gevonden
+// en komt deze marge er niet meer aan te pas.
+const ZEE_COULANCE_KM = 20;
+
 // Geeft {km, punt:[lon,lat]} terug. punt is null als je al in het land staat.
 // punt ligt niet exact op de grens, maar 50km voorbij de grens (in dezelfde vliegrichting),
 // zodat de correctievlucht duidelijk het foute land in vliegt in plaats van precies op de lijn te landen.
@@ -6700,12 +6298,8 @@ function drawGlobe(){
         vul='#ffe566'; rand='#c8960a'; dikte=1.6;
       }
     }
-    else if(isHover&&!correctieLand&&!vluchtActief){ vul='#ffe566';rand='#c8960a';dikte=1.2; }
-    // Tijdens de correctievlucht zelf (vluchtActief) bewust NIET meelichten:
-    // anders licht elk land waar het vliegtuigje toevallig overheen vliegt
-    // even geel op. Alleen het doel-land (isCorrectieLand hierboven) mag dan
-    // gloeien.
-    else if(isHover&&correctieLand&&zoomNiveau>=ZOOM_OMSLAGPUNT&&!vluchtActief){ vul='rgba(255,240,140,0.5)';rand='#c8960a';dikte=0.8; }
+    else if(isHover&&!correctieLand){ vul='#ffe566';rand='#c8960a';dikte=1.2; }
+    else if(isHover&&correctieLand&&zoomNiveau>=ZOOM_OMSLAGPUNT){ vul='rgba(255,240,140,0.5)';rand='#c8960a';dikte=0.8; }
     else if(huidigModus==='verkennen'&&isLevelLand){ vul='rgba(120,200,120,0.55)';rand='#3a8a3a';dikte=0.7; }
     else {
       const polys2=f.geometry.type==='Polygon'?[f.geometry.coordinates]:f.geometry.coordinates;
@@ -6804,7 +6398,7 @@ function drawGlobe(){
     const lonMargeGraden = Math.min(90, latMargeGraden / Math.max(0.15, Math.cos(wonkyLat*Math.PI/180)));
 
     for(const naam in alleLandenFeatureMap){
-      if(naam==='Alaska'||naam==='Hawaï'||naam==='Galápagos'||naam==='Canarische Eilanden'||naam==='Azoren'||naam==='Réunion'||naam==='Mayotte'||naam==='Oost-Maleisië'||naam==='West-China') continue; // los pseudo-land, geen eigen sluipeffect
+      if(naam==='Alaska'||naam==='Hawaï'||naam==='Galápagos'||naam==='Canarische Eilanden'||naam==='Azoren'||naam==='Réunion'||naam==='Mayotte'||naam==='Oost-Maleisië'||naam==='West-China'||naam==='Buitenste Eilanden') continue; // los pseudo-land, geen eigen sluipeffect
       const info = alleLandenFeatureMap[naam];
       if(hoverLand && info.feature===hoverLand) continue;
       if(!info.kruistDatumgrens){
@@ -6865,6 +6459,9 @@ function drawGlobe(){
     } else if(kalibratieNaam==='West-China'){
       laadIllustratie('China'); // laadt ook __ChinaWest mee
       kalImg = landIllustraties['__ChinaWest'];
+    } else if(kalibratieNaam==='Buitenste Eilanden'){
+      laadIllustratie('Seychellen'); // laadt ook __SeychellenBuiten mee
+      kalImg = landIllustraties['__SeychellenBuiten'];
     } else {
       laadIllustratie(kalibratieNaam);
       kalImg = landIllustraties[kalibratieNaam];
@@ -6967,24 +6564,8 @@ function drawGlobe(){
   if(vluchtActief){
     ctx.save();
     ctx.lineCap='round'; ctx.lineJoin='round';
-    // Windlint i.p.v. de vroegere effen gele lijn: een lichtblauw-wit lint
-    // waarvan de streepjes voortdurend langs het pad stromen - past bij de
-    // wind die het vliegtuigje tijdens deze correctievlucht voortstuwt. Puur
-    // een stijlwijziging van deze ene lijn; Jan de Wind zelf en zijn
-    // windvlaagjes blijven hier volledig buiten.
-    const p3Start = roteerPunt(vluchtStartVec, rotM);
-    const p3Eind  = roteerPunt(vluchtEindVec, rotM);
-    const windGrad = ctx.createLinearGradient(
-      CX+p3Start[0]*R, CY-p3Start[1]*R,
-      CX+p3Eind[0]*R,  CY-p3Eind[1]*R
-    );
-    windGrad.addColorStop(0, 'rgba(190,225,255,0.95)');
-    windGrad.addColorStop(1, 'rgba(255,255,255,0.95)');
-    ctx.shadowColor='rgba(190,225,255,0.75)'; ctx.shadowBlur=12;
-    ctx.strokeStyle=windGrad; ctx.lineWidth=3;
-    const WINDLINT_STREEP=[12,9];
-    ctx.setLineDash(WINDLINT_STREEP);
-    ctx.lineDashOffset = -(performance.now()/1000*40) % (WINDLINT_STREEP[0]+WINDLINT_STREEP[1]);
+    ctx.shadowColor='#ffe066'; ctx.shadowBlur=14;
+    ctx.strokeStyle='rgba(255,224,102,0.9)'; ctx.lineWidth=3;
     ctx.beginPath();
     let pen=false;
     const STAPPEN=48;
@@ -7008,21 +6589,19 @@ function drawGlobe(){
   ctx.beginPath(); ctx.arc(CX,CY,R*1.02,0,Math.PI*2); ctx.fillStyle=atm; ctx.fill();
 
   tekenRook(); // rookwolkjes als laatste, zodat ze boven de kaart liggen (Wonky zelf is een los plaatje en blijft er automatisch bovenop)
-  tekenWind(); // windvlagen van Jan de Wind, zelfde laag als de rookwolkjes
-  tekenSchurkWolken(); // schurken-wolkjes, zelfde laag
 }
 
-// ── Rookwolkjes: elk personage zijn eigen uitlaat ──────────
-// Wolkjes uit de staart, in wisselende grootte, die groeien, wegdrijven en
-// vervagen. Turbo geeft extra rook; bij stilhangen verschijnt er telkens
-// één wolkje op een vaste plek achter het vliegtuig. Welke plaatjes hier
-// gebruikt worden (rookImgs) hangt af van het gekozen personage - zie
-// VLIEGFIGUREN.rookBestanden en laadRookAfbeeldingen() hierboven. Is
-// rookImgs leeg (vogel/alien), dan verschijnt er nooit een wolkje.
+// ── Rookwolkjes: Wonky is een ouwe rammelpot ──────────
+// Zwarte pruttelwolkjes uit de staart, in wisselende grootte, die groeien,
+// wegdrijven en vervagen. Turbo geeft extra rook; bij stilhangen verschijnt
+// er telkens één wolkje op een vaste plek achter het vliegtuig.
+const rookImgs=['images/rookwolkje1.png','images/rookwolkje2.png'].map(pad=>{
+  const img=new Image(); img.src=pad; return img;
+});
+let rookWolkjes=[];
 let rookVolgende=0; // tijdstip waarop het volgende wolkje mag verschijnen
 
 function updateRook(wx,wy,scaleX,dx,dy,turbo,wonkyBreedte){
-  if(rookImgs.length===0) return; // dit personage heeft geen uitlaat (vogel/alien)
   const nu=performance.now();
   if(nu<rookVolgende) return;
   // Beweegt Wonky? Input telt, en ook nog-uitrollende snelheid na het loslaten.
@@ -7079,84 +6658,6 @@ function tekenRook(){
     ctx.globalAlpha=w.alpha0*(1-f);       // steeds transparanter tot hij weg is
     ctx.translate(w.x+w.vx*t, w.y+w.vy*t);
     ctx.rotate(w.rot*f);
-    ctx.drawImage(img,-bw/2,-bh/2,bw,bh);
-    ctx.restore();
-  }
-}
-
-// Werkelijke vliegrichting van de correctie-vlucht, geprojecteerd op het
-// scherm (dus mét het schuine/diagonale deel - niet alleen links/rechts).
-// Vergelijkt waar de VORIGE positie nu op het scherm zou vallen (via de
-// zojuist bijgewerkte rotM, die al opnieuw gecentreerd is op de NIEUWE
-// positie) met het scherm-midden zelf. Geeft een los (niet-genormaliseerd)
-// {x,y}-richtingsvectortje terug, of null als er nog geen vorige positie is
-// (allereerste frame van de vlucht) of de twee punten samenvallen.
-function vluchtSchermRichting(){
-  if(vluchtVorigeLon===null) return null;
-  const p3prev = roteerPunt(lonLatTo3D(vluchtVorigeLon, vluchtVorigeLat), rotM);
-  const p3nu = roteerPunt(lonLatTo3D(wonkyLon, wonkyLat), rotM);
-  const psx=CX+p3prev[0]*R, psy=CY-p3prev[1]*R;
-  const nsx=CX+p3nu[0]*R, nsy=CY-p3nu[1]*R;
-  const rx=nsx-psx, ry=nsy-psy;
-  if(Math.abs(rx)<0.01 && Math.abs(ry)<0.01) return null;
-  return {x:rx, y:ry};
-}
-
-// ── Windvlagen: Jan de Wind blaast het vliegtuigje tijdens de correctie-
-// vlucht (na een foute drop) richting de juiste bestemming. Zelfde opzet als
-// de rookwolkjes hierboven, maar dan omgekeerd: geen spoor dat achterblijft,
-// maar vlagen die van bij Jan vandaan komen, langs het vliegtuigje waaien in
-// de vliegrichting, en dan vervagen. Wordt alleen aangeroepen zolang
-// vluchtActief is (zie updateWonkyPositie/de vluchtActief-tak).
-const windImgs=['images/Windvlaag1.png','images/Windvlaag2.png'].map(pad=>{
-  const img=new Image(); img.src=pad; return img;
-});
-let windVlagen=[];
-let windVolgende=0;
-
-// richtX,richtY: genormaliseerde (lengte 1) richtingsvector van de
-// werkelijke vliegrichting - mag van elke kant komen, ook schuin, niet
-// alleen links/rechts (zie vluchtSchermRichting()).
-function updateWind(janX,janY,richtX,richtY){
-  const nu=performance.now();
-  if(nu<windVolgende) return;
-  if(windVlagen.length>=10) return; // vangnet, net als bij de rookwolkjes
-  windVolgende = nu + 220*(0.6+Math.random()*0.9); // onregelmatig, net als de rook
-  const snelheid = 160+Math.random()*70;
-  windVlagen.push({
-    img: Math.floor(Math.random()*windImgs.length),
-    x: janX + (Math.random()-0.5)*14,
-    y: janY + (Math.random()-0.5)*14,
-    // Vliegt vanaf Jan mee de werkelijke (eventueel schuine) vliegrichting op.
-    vx: richtX*snelheid + (Math.random()-0.5)*12,
-    vy: richtY*snelheid + (Math.random()-0.5)*12,
-    schaal: (0.35+Math.random()*0.35)/4,
-    // Basishoek volgt meteen de vliegrichting (geen ingroei-effect zoals bij
-    // de rookwolkjes) - alleen een klein beetje extra draai die tijdens het
-    // vervagen opbouwt, voor wat textuur.
-    hoekBasis: Math.atan2(richtY,richtX),
-    hoekJitter: (Math.random()-0.5)*0.5,
-    alpha0: 0.8,
-    start: nu,
-    duur: 550+Math.random()*250
-  });
-}
-
-function tekenWind(){
-  if(!windVlagen.length) return;
-  const nu=performance.now();
-  windVlagen=windVlagen.filter(w=>nu-w.start<w.duur);
-  for(const w of windVlagen){
-    const img=windImgs[w.img];
-    if(!img.complete || !img.naturalWidth) continue;
-    const f=(nu-w.start)/w.duur;
-    const t=(nu-w.start)/1000;
-    const sc=w.schaal*(1+0.25*f);
-    const bw=img.naturalWidth*sc, bh=img.naturalHeight*sc;
-    ctx.save();
-    ctx.globalAlpha=w.alpha0*Math.sin(Math.min(1,f)*Math.PI); // in- én uitvagen
-    ctx.translate(w.x+w.vx*t, w.y+w.vy*t);
-    ctx.rotate(w.hoekBasis + w.hoekJitter*f);
     ctx.drawImage(img,-bw/2,-bh/2,bw,bh);
     ctx.restore();
   }
@@ -7466,7 +6967,7 @@ const MAX_DRIFT=0.035, DRIFT_S=0.08;  // Wonky blijft dichter bij de focusstip
 let laatsteDx = 0;          // vorige horizontale richting (-1, 0, 1)
 let inOmbocht = false;      // bezig met richting omkeren?
 let ombochtTimer = 0;
-const OMBOCHT_DUUR = 260;   // ms vertraging bij omkeren - 3 fasen elk goed zichtbaar
+const OMBOCHT_DUUR = 130;   // ms vertraging bij omkeren - 3 fasen elk goed zichtbaar
 
 // ── Vlag-drop animatie timer ──────────────────────────
 let dropAnimatieActief = false;
@@ -7654,332 +7155,6 @@ function verwerkMuntje(m, sx, sy){
     toonMuntjeBeloning(bedrag, sx, sy);
   } else {
     toonKennisvraag();
-  }
-}
-
-// ── Schurken-vliegtuig: functies ─────────────────────────────────────────
-// planSchurkenRonde(actief): wordt één keer per ronde aangeroepen vanuit
-// startSpel(). Kiest willekeurig (gewogen naar het midden van de ronde) bij
-// welk land-nummer de schurken langskomen - of laat het helemaal weg als
-// deze speelmodus niet meetelt (Hoofdsteden/Plekken/Verkennen).
-function planSchurkenRonde(actief){
-  schurkGeplandLandIdx = null;
-  schurkGespawnd = false;
-  if(!actief || spelLanden.length < 2) return;
-  // Gemiddelde van 3 gelijkverdeelde worpen valt vaker in het midden en
-  // soms (zelden) helemaal aan het begin of einde - precies wat Arjen vroeg.
-  const r = (Math.random()+Math.random()+Math.random())/3;
-  schurkGeplandLandIdx = Math.round(r * (spelLanden.length - 1));
-}
-
-// checkSchurkSpawn(): zelfde opzet als checkMuntjeSpawn(), wordt aangeroepen
-// bij elk nieuw land. Start de pestronde zodra het geplande land-nummer bereikt is.
-function checkSchurkSpawn(){
-  if(schurkGeplandLandIdx === null || schurkGespawnd) return;
-  if(huidigLandIdx === schurkGeplandLandIdx){
-    schurkGespawnd = true;
-    startSchurkVliegtuig();
-  }
-}
-
-function startSchurkVliegtuig(){
-  const hoek = SCHURK_HOEKEN[Math.floor(Math.random()*SCHURK_HOEKEN.length)];
-  // De bedoelde schermboog wordt hier, op het moment van vertrek, één keer
-  // "bevroren" als een reeks echte plekken op de wereldbol (lon/lat): elk
-  // bemonsterd puntje van de boog wordt omgezet naar lon/lat op basis van de
-  // HUIDIGE rotatie. Zo blijft de route daarna aan een vaste plek op de kaart
-  // hangen, wat de speler ook doet met sturen - precies zoals de wolkjes en
-  // muntjes al werken (zie schermPuntNaarLonLat/lonLatNaarScherm verderop).
-  // De route wordt niet alleen tot het geplande eindpunt (s=1) bemonsterd,
-  // maar tot SCHURK_PAD_EXTRA_T_MAX erna - de kwadratische boog-formule loopt
-  // gewoon door voorbij s=1, in dezelfde richting waarin de boog al bewoog.
-  const pad = [];
-  const totaalStappen = Math.round(SCHURK_PAD_SAMPLES * SCHURK_PAD_EXTRA_T_MAX);
-  for(let i = 0; i <= totaalStappen; i++){
-    const s = (i / totaalStappen) * SCHURK_PAD_EXTRA_T_MAX;
-    const [px, py] = kwadratischeBezier(hoek.vanX,hoek.vanY, hoek.boogX,hoek.boogY, hoek.naarX,hoek.naarY, s);
-    pad.push(schermPuntNaarLonLat(px*W, py*H));
-  }
-  schurkVliegtuig = {
-    hoek: hoek,
-    pad: pad,
-    spawnTijd: performance.now(),
-    wolkenGeschoten: 0,
-    gespiegeld: hoek.naarX < hoek.vanX // vloog het (op het scherm, bij vertrek) naar links? Dan het plaatje spiegelen zodat het niet achterstevoren lijkt te vliegen
-  };
-  const el = document.getElementById('schurk-vliegtuig');
-  el.style.transform = schurkVliegtuig.gespiegeld ? 'scaleX(-1)' : 'scaleX(1)';
-  el.style.display = 'block';
-}
-
-// schurkPadPunt(pad, te): geeft de lon/lat op fractie te (0..SCHURK_PAD_EXTRA_T_MAX)
-// langs de bevroren route, door lineair te interpoleren tussen de twee
-// dichtstbijzijnde bemonsterde punten. te=1 is het oorspronkelijk geplande
-// eindpunt; alles daarboven (tot SCHURK_PAD_EXTRA_T_MAX) is de "doorvlieg"-
-// verlenging voor als dat eindpunt door het sturen van de speler toch nog
-// middenin beeld bleek te liggen.
-function schurkPadPunt(pad, te){
-  const teClamped = Math.max(0, Math.min(SCHURK_PAD_EXTRA_T_MAX, te));
-  const idxF = (teClamped / SCHURK_PAD_EXTRA_T_MAX) * (pad.length - 1);
-  const i0 = Math.min(pad.length - 2, Math.floor(idxF));
-  const frac = idxF - i0;
-  const [lon0, lat0] = pad[i0], [lon1, lat1] = pad[i0 + 1];
-  return [lon0 + lonVerschil(lon0, lon1) * frac, lat0 + (lat1 - lat0) * frac];
-}
-
-// lonLatNaarScherm(lon,lat): de voorwaartse projectie (het omgekeerde van
-// schermPuntNaarLonLat), op basis van de HUIDIGE rotatie - geeft null als het
-// punt net op dat moment aan de onzichtbare achterkant van de bol ligt.
-function lonLatNaarScherm(lon, lat){
-  const p3 = roteerPunt(lonLatTo3D(lon, lat), rotM);
-  if(p3[2] <= 0) return null;
-  return [CX + p3[0]*R, CY - p3[1]*R];
-}
-
-// kwadratischeBezier(): punt op t (0..1) langs een kwadratische boog van
-// (x0,y0) via controlepunt (cx,cy) naar (x1,y1). Alle coördinaten als fractie 0..1.
-function kwadratischeBezier(x0,y0,cx,cy,x1,y1,t){
-  const mt = 1 - t;
-  return [
-    mt*mt*x0 + 2*mt*t*cx + t*t*x1,
-    mt*mt*y0 + 2*mt*t*cy + t*t*y1
-  ];
-}
-
-function positioneerSchurkEl(el, cx, cy, schaal){
-  const basis = 150; // weergavegrootte in CSS-pixels bij schaal 1 (was 260 - flink kleiner op Arjens verzoek)
-  const grootte = basis * schaal;
-  el.style.width = grootte + 'px';
-  el.style.height = grootte + 'px';
-  el.style.left = (cx - grootte/2) + 'px';
-  el.style.top = (cy - grootte/2) + 'px';
-}
-
-// updateSchurkVliegtuig(): wordt elke frame aangeroepen vanuit updateSpel().
-// Fase 1 (0 - SCHURK_PAUZE_MS): stilstaan op SCHURK_SPAWN_SCHAAL grootte, op
-// de bevroren startplek. Fase 2 (daarna, SCHURK_VLUCHT_MS lang): een lichte
-// boog naar de overkant, gevolgd langs de bij vertrek bevroren wereldroute
-// (schurkVliegtuig.pad) - dus aan een vaste plek op de kaart hangend, niet aan
-// het scherm. De eerste SCHURK_KRIMP_MS daarvan krimpt het vliegtuigje snel
-// terug naar normale grootte; pas zodra dat bereikt is, begint de rat
-// wolkjes af te schieten, verspreid over de rest van de tijd dat het
-// vliegtuigje nog in beeld is. Fase 3 ("uitvliegen"): het geplande eindpunt
-// kan door het sturen van de speler toch middenin beeld zijn beland - dan
-// vliegt de schurk gewoon door in dezelfde richting tot hij écht buiten
-// beeld is (of na SCHURK_UITVLIEG_MS sowieso, als veiligheidsgrens).
-function updateSchurkVliegtuig(){
-  if(!schurkVliegtuig) return;
-  const el = document.getElementById('schurk-vliegtuig');
-  const t = performance.now() - schurkVliegtuig.spawnTijd;
-
-  if(t < SCHURK_PAUZE_MS){
-    const [lon0, lat0] = schurkVliegtuig.pad[0];
-    const scherm = lonLatNaarScherm(lon0, lat0);
-    if(scherm) positioneerSchurkEl(el, scherm[0], scherm[1], SCHURK_SPAWN_SCHAAL);
-    return;
-  }
-
-  const tSindsVertrek = t - SCHURK_PAUZE_MS;
-
-  if(tSindsVertrek >= SCHURK_VLUCHT_MS){
-    const tUitvlieg = tSindsVertrek - SCHURK_VLUCHT_MS;
-    const te = 1 + (tUitvlieg / SCHURK_UITVLIEG_MS) * (SCHURK_PAD_EXTRA_T_MAX - 1);
-    const [lon, lat] = schurkPadPunt(schurkVliegtuig.pad, te);
-    const scherm = lonLatNaarScherm(lon, lat);
-    const buitenBeeld = !scherm
-      || scherm[0] < -SCHURK_UITVLIEG_MARGE_PX || scherm[0] > W + SCHURK_UITVLIEG_MARGE_PX
-      || scherm[1] < -SCHURK_UITVLIEG_MARGE_PX || scherm[1] > H + SCHURK_UITVLIEG_MARGE_PX;
-    if(buitenBeeld || tUitvlieg >= SCHURK_UITVLIEG_MS){
-      el.style.display = 'none';
-      schurkVliegtuig = null;
-    } else {
-      positioneerSchurkEl(el, scherm[0], scherm[1], 1);
-    }
-    return;
-  }
-
-  const vt = tSindsVertrek / SCHURK_VLUCHT_MS;
-  const te = vt<0.5 ? 2*vt*vt : 1-Math.pow(-2*vt+2,2)/2; // zelfde ease-in-out als de correctievlucht
-  const [lon, lat] = schurkPadPunt(schurkVliegtuig.pad, te);
-  const scherm = lonLatNaarScherm(lon, lat);
-
-  // Krimpen gebeurt sneller dan de rest van de vlucht duurt: binnen
-  // SCHURK_KRIMP_MS na vertrek al terug op normale grootte, niet pas aan het einde.
-  const krimpFractie = Math.min(1, tSindsVertrek / SCHURK_KRIMP_MS);
-  const schaal = SCHURK_SPAWN_SCHAAL - (SCHURK_SPAWN_SCHAAL - 1) * krimpFractie;
-  if(scherm) positioneerSchurkEl(el, scherm[0], scherm[1], schaal);
-
-  // Wolkjes pas afschieten zodra het vliegtuigje normale grootte heeft (krimp
-  // klaar), daarna 5 stuks verspreid over de resterende tijd dat het nog vliegt.
-  // (scherm kan héél soms null zijn - de bol is dan net helemaal omgedraaid -
-  // dan wachten we gewoon tot de volgende frame.)
-  if(krimpFractie >= 1 && scherm){
-    const restDuur = SCHURK_VLUCHT_MS - SCHURK_KRIMP_MS;
-    const tSindsNormaal = tSindsVertrek - SCHURK_KRIMP_MS;
-    const wt = restDuur > 0 ? Math.min(1, tSindsNormaal / restDuur) : 1;
-    const gewenstAantal = Math.min(SCHURK_AANTAL_WOLKEN, Math.floor(wt * SCHURK_AANTAL_WOLKEN) + 1);
-    if(gewenstAantal > schurkVliegtuig.wolkenGeschoten){
-      schurkVliegtuig.wolkenGeschoten = gewenstAantal;
-      const ratFracX = schurkVliegtuig.gespiegeld ? (1 - RAT_OFFSET_FRAC.x) : RAT_OFFSET_FRAC.x;
-      const ratX = scherm[0] + (ratFracX - 0.5) * el.offsetWidth;
-      const ratY = scherm[1] + (RAT_OFFSET_FRAC.y - 0.5) * el.offsetHeight;
-      schietSchurkWolk(ratX, ratY);
-    }
-  }
-}
-
-// schermPuntNaarLonLat(sx,sy): het omgekeerde van de sx,sy-berekening die
-// overal elders gebeurt (lon/lat -> scherm) - hier gaat het van een
-// schermpunt terug naar een lengte-/breedtegraad op de bol, op basis van de
-// HUIDIGE rotatie. Nodig omdat de rat vanaf een scherm-positie schiet (het
-// schurken-vliegtuig is en blijft een los, over-het-scherm-vliegend plaatje),
-// terwijl het wolkje zelf net als een muntje op de bol moet "landen" om
-// vanaf dat moment keurig met de rest van de wereld mee te draaien.
-// Een schermpunt buiten de getekende bolcirkel bestaat niet écht op de bol -
-// dat wordt geklemd tot net binnen de rand (0.98), zodat er altijd een
-// geldige lon/lat uitkomt, ook als de rat van net buiten de bolrand schiet.
-function schermPuntNaarLonLat(sx, sy){
-  const dx = sx - CX, dy = sy - CY;
-  let xNdc = dx / R, yNdc = -dy / R;
-  const lengte = Math.hypot(xNdc, yNdc);
-  if(lengte > 0.98){ xNdc = xNdc/lengte*0.98; yNdc = yNdc/lengte*0.98; }
-  const zNdc = Math.sqrt(Math.max(0, 1 - xNdc*xNdc - yNdc*yNdc));
-  const vWereld = inverseRoteerPunt([xNdc,yNdc,zNdc], wonkyLon, wonkyLat);
-  return vec3NaarLonLat(vWereld);
-}
-
-// schietSchurkWolk(x,y): x,y is de schermpositie van de rat op het moment van
-// schieten. Het wolkje krijgt daar een ECHTE plek op de bol (lon/lat) en een
-// eigen drift-richting, precies zoals een muntje - zo draait het keurig mee
-// met de rest van de wereld terwijl de speler stuurt, en kan het dus ook
-// echt ontweken of geraakt worden door te sturen.
-//
-// De rat mikt daarbij (met wat speling) op Wonky's ECHTE positie op de bol
-// (wonkyLon/wonkyLat - dezelfde plek waar ook de camera altijd op focust):
-// de basisrichting is de kortste weg van het wolkje naar die plek (inclusief
-// een correcte afwikkeling over de datumgrens via lonVerschil), met daarna
-// een willekeurige hoek-speling erbovenop zodat de rat geen feilloze
-// schutter is.
-function schietSchurkWolk(x, y){
-  const type = Math.random() < 0.5 ? '100' : '200';
-  const [lon, lat] = schermPuntNaarLonLat(x, y);
-  const snelheidGraden = SCHURK_WOLK_MIN_SNELHEID_GRADEN + Math.random() * (SCHURK_WOLK_MAX_SNELHEID_GRADEN - SCHURK_WOLK_MIN_SNELHEID_GRADEN);
-
-  const dLon = lonVerschil(lon, wonkyLon), dLat = wonkyLat - lat;
-  const basisHoek = (Math.hypot(dLon, dLat) < 1e-6) ? Math.random() * Math.PI * 2 : Math.atan2(dLat, dLon);
-  const spelingRad = (Math.random() * 2 - 1) * SCHURK_WOLK_MIKSPELING_GRADEN * Math.PI / 180;
-  const mikHoek = basisHoek + spelingRad;
-  const richtingLon = Math.cos(mikHoek) * snelheidGraden;
-  const richtingLat = Math.sin(mikHoek) * snelheidGraden;
-
-  schurkWolken.push({
-    type: type,
-    lon: lon, lat: lat,
-    richtingLon: richtingLon,
-    richtingLat: richtingLat,
-    spawnTijd: performance.now(),
-    geraakt: false,
-    geraaktTijd: 0
-  });
-}
-
-// updateSchurkWolken(): verplaatst alle actieve wolkjes over de bol (net als
-// updateMuntjes), en ruimt ze op na SCHURK_WOLK_MAX_LEEFTIJD_MS. Geraakte
-// (bliksem-)wolkjes worden niet meer verplaatst - die blijven op hún plek op
-// de wereld hangen (en draaien dus wel nog gewoon mee als de speler stuurt)
-// terwijl ze zichtbaar blijven en daarna vervagen.
-function updateSchurkWolken(){
-  if(schurkWolken.length === 0) return;
-  const nu = performance.now();
-  const dt = 1/60; // vast, voorkomt rare sprongen bij lag - zelfde aanpak als bij de muntjes
-  for(let i = schurkWolken.length - 1; i >= 0; i--){
-    const w = schurkWolken[i];
-    if(w.geraakt){
-      if(nu - w.geraaktTijd > SCHURK_BLIKSEM_HOUD_MS + SCHURK_BLIKSEM_FADE_MS){
-        schurkWolken.splice(i, 1);
-      }
-      continue; // een geraakte wolk blijft op zijn wereldpositie hangen, niet meer verplaatsen
-    }
-    w.lon += w.richtingLon * dt;
-    w.lat += w.richtingLat * dt;
-    if(w.lon > 180) w.lon -= 360;
-    if(w.lon < -180) w.lon += 360;
-    w.lat = Math.max(-85, Math.min(85, w.lat));
-    if(nu - w.spawnTijd > SCHURK_WOLK_MAX_LEEFTIJD_MS){
-      schurkWolken.splice(i, 1); // rustig gemist: geen straf, geen effect
-    }
-  }
-}
-
-// checkSchurkWolkTreffer(wx,wy): checkt elke frame of Wonky (op wx,wy, net
-// als bij checkMuntjeVangst) dicht genoeg bij de HUIDIGE schermpositie van
-// een nog-niet-geraakt wolkje zit - die schermpositie wordt hier, ook net als
-// bij checkMuntjeVangst, elk frame opnieuw berekend uit lon/lat + rotM.
-function checkSchurkWolkTreffer(wx, wy){
-  if(schurkWolken.length === 0) return;
-  for(const w of schurkWolken){
-    if(w.geraakt) continue;
-    const p3 = roteerPunt(lonLatTo3D(w.lon, w.lat), rotM);
-    if(p3[2] <= 0) continue; // wolkje aan de onzichtbare kant van de bol: kan niet geraakt worden
-    const sx = CX + p3[0]*R, sy = CY - p3[1]*R;
-    const afstand = Math.hypot(sx - wx, sy - wy);
-    if(afstand <= SCHURK_WOLK_RAAK_AFSTAND){
-      verwerkSchurkWolkTreffer(w, sx, sy);
-    }
-  }
-}
-
-// verwerkSchurkWolkTreffer(w, sx, sy): het wolkje wordt op slag geraakt - wisselt om
-// naar de bliksemversie (het vervagen/verdwijnen gebeurt in tekenSchurkWolken)
-// en stuurt tegelijk het bedrag naar het scorebord, via dezelfde
-// vliegBeloningNaarDoel() als het vlaggetje. sx,sy is de schermpositie op het
-// moment van de klap (door checkSchurkWolkTreffer al berekend), puur als
-// startpunt voor die vlucht - de km telt pas echt mee zodra het bedrag daar
-// ook echt aankomt, niet eerder.
-function verwerkSchurkWolkTreffer(w, sx, sy){
-  w.geraakt = true;
-  w.geraaktTijd = performance.now();
-  const bedrag = w.type === '100' ? 100 : 200;
-  vliegBeloningNaarDoel('+'+bedrag+' km', sx, sy, document.getElementById('scorebord-wrap'), ()=>{
-    score += bedrag;
-    document.getElementById('score').textContent = score;
-    updateScorebordCijfers();
-  });
-}
-
-// tekenSchurkWolken(): tekent alle actieve wolkjes op de canvas-laag, net als
-// de muntjes - elk frame opnieuw geprojecteerd vanuit lon/lat + rotM, zodat
-// ze automatisch met de bol meedraaien. Wordt elke frame aangeroepen vanuit drawGlobe().
-function tekenSchurkWolken(){
-  if(schurkWolken.length === 0) return;
-  const nu = performance.now();
-  for(const w of schurkWolken){
-    const p3 = roteerPunt(lonLatTo3D(w.lon, w.lat), rotM);
-    if(p3[2] <= 0) continue; // achterkant van de bol: niet zichtbaar
-    const sx = CX + p3[0]*R, sy = CY - p3[1]*R;
-    let img, weergaveHoogte;
-    if(w.geraakt){
-      img = w.type === '100' ? schurkBliksem100Img : schurkBliksem200Img;
-      weergaveHoogte = SCHURK_WOLK_HOOGTE_BLIKSEM;
-    } else {
-      img = w.type === '100' ? schurkWolk100Img : schurkWolk200Img;
-      weergaveHoogte = SCHURK_WOLK_HOOGTE_KALM;
-    }
-    if(!img || !img.complete || !img.naturalWidth) continue;
-    let alpha = 1;
-    if(w.geraakt){
-      const sindsRaak = nu - w.geraaktTijd;
-      if(sindsRaak > SCHURK_BLIKSEM_HOUD_MS){
-        alpha = Math.max(0, 1 - (sindsRaak - SCHURK_BLIKSEM_HOUD_MS) / SCHURK_BLIKSEM_FADE_MS);
-      }
-    }
-    if(alpha <= 0) continue;
-    const bh = weergaveHoogte;
-    const bw = bh * (img.naturalWidth / img.naturalHeight);
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.drawImage(img, sx - bw/2, sy - bh/2, bw, bh);
-    ctx.restore();
   }
 }
 
@@ -8345,8 +7520,6 @@ function updateSpel(){
   if(!spelActief || hulpActief || kennisvraagActief || radActief) return;
 
   updateMuntjes();
-  updateSchurkVliegtuig();
-  updateSchurkWolken();
   updateJokerKnop();
 
   if(huidigModus==='spelen' && levelStartTijd){
@@ -8464,24 +7637,23 @@ function updateSpel(){
     const tRuw=Math.min(1,(performance.now()-vluchtStartTijd)/vluchtDuur);
     const t = tRuw<0.5 ? 2*tRuw*tRuw : 1-Math.pow(-2*tRuw+2,2)/2; // ease-in-out
     const prevLon=wonkyLon, prevLat=wonkyLat;
-    vluchtVorigeLon=prevLon; vluchtVorigeLat=prevLat;
     const v=slerp3(vluchtStartVec,vluchtEindVec,t);
     const [nLon,nLat]=vec3NaarLonLat(v);
     wonkyLon=nLon; wonkyLat=nLat;
     dx=Math.sign(lonVerschil(prevLon,nLon))||0;
     dy=Math.sign(nLat-prevLat)||0;
     rotM=maakRotMatrix(wonkyLon,wonkyLat);
-    // Het scorebord telt bewust NIET live mee tijdens deze vlucht: de km's
-    // mogen pas op het scorebord verschijnen op het moment dat de "+X km"
-    // vlieg-animatie daar ook echt aankomt (zie toonPunten hieronder) -
-    // anders lijkt het net of er twee keer wordt opgeteld.
+
+    const scoreNu=Math.round(vluchtScoreVoor+(vluchtScoreNa-vluchtScoreVoor)*t);
+    document.getElementById('score').textContent=scoreNu;
+    zetKmCijfers(scoreNu);
 
     if(tRuw>=1){
       vluchtActief=false;
       if(vluchtIsHoofdstad){
         vluchtIsHoofdstad=false;
-        // correctieLand/-StartTijd staan al vanaf het vertrek van de vlucht
-        // (zie de setTimeout hierboven waar de vlucht wordt opgezet).
+        correctieLand=vluchtDoelLand;
+        correctieLandStartTijd=performance.now();
         correctieLabelDubbel = { hoofdstad:vluchtHoofdstadNaam, land:vluchtGevallenLandNaam };
         if(vluchtIsGoed){
           const goedTekst = HOOFDSTEDEN_GOED_TEKSTEN[Math.floor(Math.random()*HOOFDSTEDEN_GOED_TEKSTEN.length)];
@@ -8508,21 +7680,14 @@ function updateSpel(){
         });
         toonPlekUitslag(huidigePlek ? huidigePlek.naam : huidigLand, punten);
       } else {
-        // correctieLand/-StartTijd staan al vanaf het vertrek van de vlucht.
-        const foutTekst = kiesFoutTekst(vluchtAfwijkingKm);
+        score=vluchtScoreNa;
+        document.getElementById('score').textContent=score;
+        updateScorebordCijfers();
+        correctieLand=vluchtDoelLand;
+        correctieLandStartTijd=performance.now();
+        const foutTekst = FOUT_TEKSTEN[Math.floor(Math.random()*FOUT_TEKSTEN.length)];
         toonFeedback(foutTekst,'#ff9900');
-        // De km-straf wordt nu pas echt bijgeteld zodra de vliegende "+X km"
-        // hieronder het scorebord bereikt (opAankomst) - niet meteen hier.
-        // misserVerwerkingId voorkomt dat dit alsnog gebeurt als de speler
-        // ondertussen de joker gebruikt om deze misser terug te draaien.
-        misserVerwerkingId++;
-        const dezeMisserId = misserVerwerkingId;
-        toonPunten(vluchtAfwijkingKm, true, ()=>{
-          if(dezeMisserId !== misserVerwerkingId) return;
-          score += vluchtAfwijkingKm;
-          document.getElementById('score').textContent=score;
-          updateScorebordCijfers();
-        });
+        toonPunten(vluchtAfwijkingKm);
         startMisserCountdown();
         misserAutoTimer=setTimeout(nieuwLand,MISSER_AUTO_MS);
       }
@@ -8583,7 +7748,6 @@ function updateSpel(){
   // Wonky's positie is relatief aan de focusstip zelf, niet aan het scherm-midden
   const wx=focusSx + wonkySchermX*W, wy=focusSy-90;
   checkMuntjeVangst(wx, wy);
-  checkSchurkWolkTreffer(wx, wy);
 
   const wonkyFrontaal = document.getElementById('wonky-frontaal');
   const wonkyNaarFrontaal = document.getElementById('wonky-naar-frontaal');
@@ -8591,10 +7755,6 @@ function updateSpel(){
   const wonkyDropt = document.getElementById('wonky-dropt');
   const wonkyBlijEl = document.getElementById('wonky-blij');
   const wonkySadEl = document.getElementById('wonky-sad');
-  const janDeWindEl = document.getElementById('jan-de-wind');
-  // Jan de Wind is alleen tijdens de correctie-vlucht (vluchtActief) in
-  // beeld - overal elders standaard verborgen, alleen die ene tak zet 'm aan.
-  janDeWindEl.style.display='none';
 
   // Tijdens ombocht: 3 fasen - naar_frontaal -> frontaal -> naar_frontaal (gespiegeld)
   const ombochtVerstreken = performance.now() - ombochtTimer;
@@ -8611,12 +7771,6 @@ function updateSpel(){
     wonkySadEl.style.display='none';
     wonkyDropt.style.display='block';
     { const h=wonkyDropt.offsetWidth/2; wonkyDropt.style.left=(wx-h)+'px'; wonkyDropt.style.top=(wy-h)+'px'; }
-    // Was hier vergeten: zonder deze regel bleef het dropt-plaatje altijd in
-    // zijn ongespiegelde basisrichting staan, ongeacht welke kant Wonky net
-    // op vloog - dan leek de kijkrichting op het moment van droppen ineens
-    // om te slaan. laatsteScaleX is de laatst bekende vliegrichting (wordt
-    // ook gebruikt voor de blij/sad-reacties), dus die hergebruiken we hier.
-    wonkyDropt.style.transform = `scaleX(${laatsteScaleX})`;
     if(performance.now()-dropAnimatieTimer > DROP_ANIMATIE_DUUR) dropAnimatieActief=false;
   } else if(toontOmbocht){
     wonkyEl.style.display='none'; wonkyTurbo.style.display='none'; wonkyDropt.style.display='none';
@@ -8632,20 +7786,19 @@ function updateSpel(){
       wonkyNaarFrontaal.style.display='block';
       { const h=wonkyNaarFrontaal.offsetWidth/2; wonkyNaarFrontaal.style.left=(wx-h)+'px'; wonkyNaarFrontaal.style.top=(wy-h)+'px'; }
       const sc = draaitNaarLinks ? -1 : 1;
-      wonkyNaarFrontaal.style.transform = `scaleX(${sc}) scale(${vliegtuigIntroSchaal()})`;
+      wonkyNaarFrontaal.style.transform = `scaleX(${sc})`;
     } else if(ombochtFractie < 0.72){
       // Fase 2: volledig frontaal (langste fase, het "moment" van de bocht)
       wonkyNaarFrontaal.style.display='none';
       wonkyFrontaal.style.display='block';
       { const h=wonkyFrontaal.offsetWidth/2; wonkyFrontaal.style.left=(wx-h)+'px'; wonkyFrontaal.style.top=(wy-h)+'px'; }
-      wonkyFrontaal.style.transform = `scale(${vliegtuigIntroSchaal()})`;
     } else {
       // Fase 3: naar_frontaal - draait door naar nieuwe richting
       wonkyFrontaal.style.display='none';
       wonkyNaarFrontaal.style.display='block';
       { const h=wonkyNaarFrontaal.offsetWidth/2; wonkyNaarFrontaal.style.left=(wx-h)+'px'; wonkyNaarFrontaal.style.top=(wy-h)+'px'; }
       const sc = draaitNaarLinks ? 1 : -1;
-      wonkyNaarFrontaal.style.transform = `scaleX(${sc}) scale(${vliegtuigIntroSchaal()})`;
+      wonkyNaarFrontaal.style.transform = `scaleX(${sc})`;
     }
   } else if(vluchtActief){
     // Correctie-vlucht na een foute drop: bij een grote afwijking (>=100km) houdt Timbo
@@ -8659,43 +7812,14 @@ function updateSpel(){
       wonkyEl.style.display='none'; wonkyTurbo.style.display='none';
       wonkySadEl.style.display='block';
       { const h=wonkySadEl.offsetWidth/2; wonkySadEl.style.left=(wx-h)+'px'; wonkySadEl.style.top=(wy-h)+'px'; }
-      // Sad-plaatje kijkt dezelfde kant op als de rest van dit personage se
-      // sprites (zelfde scaleX-conventie, geen omdraai meer nodig).
-      wonkySadEl.style.transform=`scaleX(${scaleX})`;
+      // Timbo_sad.png is gespiegeld getekend t.o.v. de andere sprites, dus omgekeerd t.o.v. scaleX
+      wonkySadEl.style.transform=`scaleX(${-scaleX})`;
     } else {
       wonkyTurbo.style.display='none'; wonkySadEl.style.display='none';
       wonkyEl.style.display='block';
       { const h=wonkyEl.offsetWidth/2; wonkyEl.style.left=(wx-h)+'px'; wonkyEl.style.top=(wy-h)+'px'; }
       wonkyEl.style.transform=`scaleX(${scaleX})`;
     }
-    // Jan de Wind: staat schuin achter het vliegtuigje, in het verlengde van
-    // de WERKELIJKE vliegrichting (ook als die schuin omhoog/omlaag gaat,
-    // niet alleen recht links/rechts - zie vluchtSchermRichting()), en
-    // blaast diezelfde richting op. scaleX kiest de grove kant (links- of
-    // rechts-achtig, nodig omdat spiegelen de enige manier is om Jan
-    // overtuigend de andere kant op te laten kijken); de rotate() erbovenop
-    // kantelt 'm vervolgens verder tot de exacte hoek klopt. tiltDeg is al
-    // voor beide spiegel-kanten wiskundig kloppend afgeleid (dus GEEN extra
-    // minteken nodig zoals bij het vliegtuigje zelf - dat was hier juist de
-    // fout: Jan blies dan bij "naar links" de verkeerde kant op).
-    janDeWindEl.style.display='block';
-    const vliegtuigBreedte = vluchtAfwijkingKm>=100 ? wonkySadEl.offsetWidth : wonkyEl.offsetWidth;
-    const richting = vluchtSchermRichting();
-    let richtX = -scaleX, richtY = 0; // terugval: recht opzij, voor het allereerste frame
-    if(richting){
-      const lengte = Math.hypot(richting.x, richting.y);
-      if(lengte>0){ richtX = richting.x/lengte; richtY = richting.y/lengte; }
-    }
-    const janScaleX = richtX<0 ? 1 : -1;
-    const janAfstand = vliegtuigBreedte*0.5 + janDeWindEl.offsetWidth*0.45;
-    const janX = wx - richtX*janAfstand, janY = wy - richtY*janAfstand;
-    { const h=janDeWindEl.offsetWidth/2; janDeWindEl.style.left=(janX-h)+'px'; janDeWindEl.style.top=(janY-h)+'px'; }
-    const tiltDeg = Math.atan2(-richtY, Math.abs(richtX)) * 180/Math.PI;
-    janDeWindEl.style.transform=`scaleX(${janScaleX}) rotate(${tiltDeg}deg)`;
-    // Windvlaagjes ontstaan net vóór Jan's mond, in de vliegrichting.
-    const mondX = janX + richtX*janDeWindEl.offsetWidth*0.25;
-    const mondY = janY + richtY*janDeWindEl.offsetWidth*0.25;
-    updateWind(mondX, mondY, richtX, richtY);
   } else if(turbo){
     wonkyEl.style.display='none'; wonkyFrontaal.style.display='none';
     wonkyNaarFrontaal.style.display='none'; wonkyDropt.style.display='none';
@@ -8706,11 +7830,7 @@ function updateSpel(){
     const scaleX=richting<0?1:-1;
     laatsteScaleX = scaleX;
     // dy>0 (omhoog/noord) = neus omhoog, dy<0 (omlaag/zuid) = neus omlaag
-    // Het minteken voor scaleX* compenseert dat een gespiegelde (scaleX=-1)
-    // afbeelding de draairichting van rotate() omdraait - zonder die
-    // correctie helde de ballon bij vliegen naar links de verkeerde kant op
-    // (leek dan vóór het mandje te hangen i.p.v. erachter aan te slepen).
-    wonkyTurbo.style.transform=`scaleX(${scaleX}) rotate(${-scaleX*(dx*14+dy*12)}deg) scale(${vliegtuigIntroSchaal()})`;
+    wonkyTurbo.style.transform=`scaleX(${scaleX}) rotate(${dx*14+dy*12}deg)`;
   } else {
     wonkyFrontaal.style.display='none'; wonkyNaarFrontaal.style.display='none';
     wonkyTurbo.style.display='none'; wonkyDropt.style.display='none';
@@ -8721,9 +7841,7 @@ function updateSpel(){
     const scaleX=richting<0?1:-1;
     laatsteScaleX = scaleX;
     // Gefixed: dy>0 (omhoog) = neus omhoog (+rot), dy<0 (omlaag) = neus omlaag (-rot)
-    // Zelfde minteken-correctie als bij wonkyTurbo hierboven (zie toelichting
-    // daar) voor de spiegeling, plus de tijdelijke intro-uitvergroting.
-    wonkyEl.style.transform=`scaleX(${scaleX}) rotate(${-scaleX*(dx*14+dy*12)}deg) scale(${vliegtuigIntroSchaal()})`;
+    wonkyEl.style.transform=`scaleX(${scaleX}) rotate(${dx*14+dy*12}deg)`;
   }
 
   // Rookwolkjes bijhouden nu positie, kijkrichting en turbo-stand bekend zijn
@@ -8894,18 +8012,7 @@ function toonFeedback(t,k){
   el.textContent=t; el.style.color=k; el.style.opacity='1';
   setTimeout(()=>{ el.style.opacity='0'; },1800);
 }
-// vliegNaarScorebord: alleen gebruikt bij een foute drop (zie de aanroep
-// hierboven bij de correctievlucht) - laat de "+X km" net als een gevangen
-// muntje eerst even centraal staan (dezelfde MUNTJE_LEESPAUZE_MS) en dan naar
-// het scorebord rechtsboven wegvliegen, via dezelfde vliegBeloningNaarDoel()
-// als de muntjes. De km-straf wordt pas echt bijgeteld in de meegegeven
-// opAankomst-callback (zie de aanroep bij de correctievlucht), niet hier.
-function toonPunten(p, vliegNaarScorebord, opAankomst){
-  if(vliegNaarScorebord && p>0){
-    const sx = window.innerWidth*0.5, sy = window.innerHeight*0.36;
-    vliegBeloningNaarDoel('+'+p+' km', sx, sy, document.getElementById('scorebord-wrap'), opAankomst || (()=>{}));
-    return;
-  }
+function toonPunten(p){
   const el=document.getElementById('punten-feedback');
   el.textContent=(p===0?'Raak! 0 km':'+'+p+' km');
   el.style.opacity='1';
@@ -8971,7 +8078,10 @@ function dropVlaggetje(){
     const doelLand=GEOJSON.features.find(f=>(f.properties.dutch||f.properties.name)===huidigLand);
     const uitkomst = doelLand ? berekenAfwijking(dropLon,dropLat,doelLand) : {km:0,punt:null};
     const afwijkingKm = Math.round(uitkomst.km);
-    const isGoed = (afwijkingKm===0 || !uitkomst.punt);
+    // Op open zee (nergens land onder het vlaggetje) mag een kleine afwijking
+    // nog steeds goedgerekend worden - zie toelichting bij ZEE_COULANCE_KM.
+    const valtOpZee = !getLandOpPunt(dropLon,dropLat);
+    const isGoed = (afwijkingKm===0 || !uitkomst.punt) || (valtOpZee && afwijkingKm <= ZEE_COULANCE_KM);
 
     if(LEVELS[huidigLevel].hoofdsteden){
       // ── Hoofdsteden-modus: altijd naar de hoofdstad-stip vliegen, geen km-score ──
@@ -9000,12 +8110,6 @@ function dropVlaggetje(){
         vluchtScoreVoor=score; vluchtScoreNa=score; // score blijft ongewijzigd in deze modus
         vluchtAfwijkingKm=0;
         vluchtDoelLand=doelLand;
-        // Juiste-land-highlight al aanzetten bij vertrek (niet pas bij aankomst),
-        // zodat tijdens de hele vlucht het doel geel oplicht i.p.v. steeds het
-        // land waar het vliegtuigje toevallig overheen komt - zie ook de
-        // gelijke aanpassing hieronder bij de gewone Landen-modus.
-        correctieLand=doelLand;
-        correctieLandStartTijd=performance.now();
       }, FOUT_ZOOM_UIT_MS);
       return;
     }
@@ -9017,8 +8121,7 @@ function dropVlaggetje(){
       zetKmCijfers(score);
       const nieuweStempel = verdienStempelVoorLand(huidigLand);
       if(nieuweStempel) dezeRondeVerdiendeLanden.push(nieuweStempel);
-      const goedTekst = GOED_TEKSTEN[Math.floor(Math.random()*GOED_TEKSTEN.length)];
-      toonFeedback(goedTekst,'#ffd700');
+      toonFeedback('🎉 Goed zo!','#ffd700');
       toonPunten(afwijkingKm);
       toonReactie('blij');
       goedAutoTimer=setTimeout(()=>{ goedAutoTimer=null; nieuwLand(); },1800);
@@ -9041,10 +8144,6 @@ function dropVlaggetje(){
         vluchtScoreNa=score+afwijkingKm;
         vluchtAfwijkingKm=afwijkingKm;
         vluchtDoelLand=doelLand;
-        // Zie toelichting bij de Hoofdsteden-tak hierboven: het juiste land
-        // licht meteen bij vertrek geel op, i.p.v. pas bij aankomst.
-        correctieLand=doelLand;
-        correctieLandStartTijd=performance.now();
       }, FOUT_ZOOM_UIT_MS);
     }
   },1400);
@@ -9095,9 +8194,10 @@ function toonReactie(type) {
   document.getElementById('wonky-dropt').style.display = 'none';
   if(reactieTimer){ clearTimeout(reactieTimer); reactieTimer = null; }
   const el = type === 'blij' ? blij : sad;
-  // Blij én sad kijken dezelfde kant op als vlak voor de reactie (zelfde
-  // scaleX-conventie als de rest van dit personage se sprites).
-  el.style.transform = `scaleX(${laatsteScaleX})`;
+  // Timbo_sad.png is gespiegeld getekend t.o.v. de andere sprites, dus draaien we
+  // de richting om zodat hij dezelfde kant op kijkt als vlak voor de reactie.
+  const scaleX = type === 'sad' ? -laatsteScaleX : laatsteScaleX;
+  el.style.transform = `scaleX(${scaleX})`;
   el.style.display = 'block';
   // Bij 'blij' verdwijnt de reactie na 3s vanzelf (geen vervolgvlucht).
   // Bij 'sad' blijft hij staan tot de update-loop 'm overneemt zodra vluchtActief start
