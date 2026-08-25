@@ -1275,7 +1275,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.98</div>
+  <div id="versie-label">v0.3.100</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2468,10 +2468,57 @@ function zelfdeLandAlsChinaWest(a,b){
   return (a==='West-China'&&b==='China') || (a==='China'&&b==='West-China');
 }
 
+// ── Buitenste Eilanden (Seychellen) als los kalibreerbaar pseudo-land ──
+// De Seychellen bestaan uit 26 losse eilandjes, in twee duidelijk gescheiden
+// groepen: een dichte kern rond Mahé/Praslin/La Digue ("Binnenste", blijft
+// gewoon het normale Seychellen.png) en een handvol ver afgelegen atollen/
+// eilanden (Aldabra, Cosmoledo, de Amirante-eilanden, Alphonse, Coëtivy) die
+// samen "Buitenste Eilanden" worden. In tegenstelling tot bijv. Hawaï is dit
+// geen simpele lengtegraad-knip: sommige Buitenste eilanden liggen juist ver
+// wéstelijk (Aldabra e.o.), andere juist ver zuidelijk op een vergelijkbare
+// lengtegraad als de kern (Coëtivy) - vandaar de "of"-conditie hieronder.
+// Nagerekend op de echte kaartdata geeft dit exact 19 eilandjes bij Binnenste
+// en 7 bij Buitenste.
+(function initSeychellenBuitensteAlsPseudoLand(){
+  const info = alleLandenFeatureMap['Seychellen'];
+  if(!info) return;
+  const g = info.feature.geometry;
+  const polys = g.type==='Polygon' ? [g.coordinates] : g.coordinates;
+  const SEYCHELLEN_KNIP_LON = 55;   // ten westen hiervan: Buitenste
+  const SEYCHELLEN_KNIP_LAT = -6;   // ten zuiden hiervan: Buitenste
+  const buitenPolys=[];
+  for(const poly of polys){
+    if(!poly[0]||poly[0].length<3) continue;
+    const lonMax=Math.max(...poly[0].map(p=>p[0]));
+    const latMax=Math.max(...poly[0].map(p=>p[1]));
+    if(lonMax < SEYCHELLEN_KNIP_LON || latMax < SEYCHELLEN_KNIP_LAT) buitenPolys.push(poly);
+  }
+  if(!buitenPolys.length) return;
+  let minLon=Infinity,maxLon=-Infinity,minLat=Infinity,maxLat=-Infinity;
+  for(const poly of buitenPolys) for(const [lo,la] of poly[0]){
+    if(lo<minLon)minLon=lo; if(lo>maxLon)maxLon=lo;
+    if(la<minLat)minLat=la; if(la>maxLat)maxLat=la;
+  }
+  const buitenFeature = {
+    type:'Feature',
+    properties:{dutch:'Buitenste Eilanden', name:'Buitenste Eilanden'},
+    geometry:{type:'MultiPolygon', coordinates: buitenPolys}
+  };
+  alleLandenFeatureMap['Buitenste Eilanden'] = {
+    feature:buitenFeature, minLon,maxLon,minLat,maxLat,
+    kruistDatumgrens:(maxLon-minLon)>180
+  };
+})();
+
+// Zelfde bescherming als zelfdeLandAlsAlaska, maar dan voor Seychellen/Buitenste Eilanden.
+function zelfdeLandAlsSeychellenBuitenste(a,b){
+  return (a==='Buitenste Eilanden'&&b==='Seychellen') || (a==='Seychellen'&&b==='Buitenste Eilanden');
+}
+
 // Gedeelde check voor alle pseudo-land-paren samen, zodat de gum-/sluipeffect-
 // loops verderop met één aanroep beide gevallen afdekken.
 function zelfdePseudoLand(a,b){
-  return zelfdeLandAlsAlaska(a,b) || zelfdeLandAlsHawai(a,b) || zelfdeLandAlsGalapagos(a,b) || zelfdeLandAlsCanaria(a,b) || zelfdeLandAlsAzoren(a,b) || zelfdeLandAlsReunion(a,b) || zelfdeLandAlsMayotte(a,b) || zelfdeLandAlsOostMaleisie(a,b) || zelfdeLandAlsChinaWest(a,b);
+  return zelfdeLandAlsAlaska(a,b) || zelfdeLandAlsHawai(a,b) || zelfdeLandAlsGalapagos(a,b) || zelfdeLandAlsCanaria(a,b) || zelfdeLandAlsAzoren(a,b) || zelfdeLandAlsReunion(a,b) || zelfdeLandAlsMayotte(a,b) || zelfdeLandAlsOostMaleisie(a,b) || zelfdeLandAlsChinaWest(a,b) || zelfdeLandAlsSeychellenBuitenste(a,b);
 }
 
 // ── Startscherm ───────────────────────────────────────
@@ -4435,6 +4482,14 @@ function laadIllustratie(naam, forceHerlaad) {
     cwImg.onerror = () => { landIllustraties['__ChinaWest'] = false; };
     cwImg.src = 'images/landen/China_WestChina.png';
   }
+  // Speciaal geval: Buitenste Eilanden horen bij de Seychellen, eigen plaatje.
+  if(naam==='Seychellen' && landIllustraties['__SeychellenBuitenste']===undefined){
+    landIllustraties['__SeychellenBuitenste'] = null;
+    const seyImg = new Image();
+    seyImg.onload  = () => { landIllustraties['__SeychellenBuitenste'] = seyImg; };
+    seyImg.onerror = () => { landIllustraties['__SeychellenBuitenste'] = false; };
+    seyImg.src = 'images/landen/Seychellen_Buitenste_Eilanden.png';
+  }
   // Speciaal geval: Noordpool heeft twee plaatjes - Noordpool2.png (eenvoudige witte
   // vlek, getoond tot het omslagpunt) en Noordpool.png (illustratie met dieren/mensen,
   // getoond daarna). Cross-fade tussen beide gebeurt in tekenLandIllustratie.
@@ -5678,6 +5733,7 @@ function effectiefPseudoLand(naam, lon, lat){
   if(naam==='Frankrijk' && lon > 50 && alleLandenFeatureMap['Réunion']) return 'Réunion';
   if(naam==='Frankrijk' && lon > 20 && lon < 50 && alleLandenFeatureMap['Mayotte']) return 'Mayotte';
   if(naam==='China' && lon < 105 && alleLandenFeatureMap['West-China']) return 'West-China';
+  if(naam==='Seychellen' && (lon < 55 || lat < -6) && alleLandenFeatureMap['Buitenste Eilanden']) return 'Buitenste Eilanden';
   return naam;
 }
 
@@ -5691,7 +5747,7 @@ const MOEDERLAND_VAN_PSEUDOLAND = {
   'Oost-Maleisië':'Maleisië', 'Galápagos':'Ecuador',
   'Canarische Eilanden':'Spanje', 'Azoren':'Portugal',
   'Réunion':'Frankrijk', 'Mayotte':'Frankrijk',
-  'West-China':'China'
+  'West-China':'China', 'Buitenste Eilanden':'Seychellen'
 };
 
 function startKalibratie(){
@@ -5712,6 +5768,7 @@ function startKalibratie(){
   else if(naam==='Réunion') laadIllustratie('Frankrijk'); // laadt ook __Reunion mee
   else if(naam==='Mayotte') laadIllustratie('Frankrijk'); // laadt ook __Mayotte mee
   else if(naam==='West-China') laadIllustratie('China'); // laadt ook __ChinaWest mee
+  else if(naam==='Buitenste Eilanden') laadIllustratie('Seychellen'); // laadt ook __SeychellenBuitenste mee
   else laadIllustratie(naam);
   kalibratieNaam=naam;
   kalibratieFeature=featureVoorKalibratie;
@@ -6528,6 +6585,24 @@ function tekenLandIllustratie(feature,img,zoomstandActief,doorzicht){
     return;
   }
 
+  // Zelfde aanpak voor de Seychellen: de dichte kern (Mahé/Praslin/La Digue -
+  // blijft gewoon het normale Seychellen-plaatje) en de afgelegen Buitenste
+  // Eilanden los behandelen zodra er een apart Buitenste-plaatje is. Zelfde
+  // "west óf zuid"-selectie als bij initSeychellenBuitensteAlsPseudoLand.
+  if(dutch==='Seychellen' && landIllustraties['__SeychellenBuitenste']){
+    const buitenDelen=[], hoofdDelen=[];
+    for(const poly of polysLijst){
+      if(!poly[0]||poly[0].length<3){ hoofdDelen.push(poly); continue; }
+      const lonMax=Math.max(...poly[0].map(p=>p[0]));
+      const latMax=Math.max(...poly[0].map(p=>p[1]));
+      if(lonMax < 55 || latMax < -6) buitenDelen.push(poly);
+      else hoofdDelen.push(poly);
+    }
+    tekenLandDelen('Seychellen', hoofdDelen, img);
+    tekenLandDelen('Buitenste Eilanden', buitenDelen, landIllustraties['__SeychellenBuitenste']);
+    return;
+  }
+
   // Zelfde aanpak voor Frankrijk: vasteland, Réunion en Mayotte los
   // behandelen zodra er een apart plaatje voor is.
   if(dutch==='Frankrijk' && (landIllustraties['__Reunion']||landIllustraties['__Mayotte'])){
@@ -6768,7 +6843,15 @@ function puntVoorbijGrens(vanLon,vanLat,lon,lat,km){
   const lambda2=lambda1+Math.atan2(Math.sin(bearing)*Math.sin(d)*Math.cos(phi1b), Math.cos(d)-Math.sin(phi1b)*Math.sin(phi2b));
   return [lambda2*toDeg, phi2b*toDeg];
 }
-// Geeft {km, punt:[lon,lat]} terug. punt is null als je al in het land staat.
+// Kust-coulance: val je in zee, dicht bij de kust van het doelland (en niet
+// al duidelijk op het land van een ánder land), dan telt dat toch als goed.
+// Zonder dit werd een vlaggetje midden in een brede baai - Golf van Korinthe,
+// de Saronische Golf bij Athene, de Kvarnergolf in Kroatië - onterecht als
+// "mis" gerekend, terwijl het voor een speler duidelijk "in" dat land voelt.
+// Geldt voor alle landen tegelijk (geen land-voor-land lijstje nodig).
+const KUST_COULANCE_KM = 20;
+// Geeft {km, punt:[lon,lat]} terug. punt is null als je al in het land staat
+// (of, dankzij de kust-coulance hierboven, er dicht genoeg bij in zee valt).
 // punt ligt niet exact op de grens, maar 50km voorbij de grens (in dezelfde vliegrichting),
 // zodat de correctievlucht duidelijk het foute land in vliegt in plaats van precies op de lijn te landen.
 function berekenAfwijking(lon,lat,feature){
@@ -6779,6 +6862,7 @@ function berekenAfwijking(lon,lat,feature){
     const km=afstandKmTussenPunten(lon,lat,rLon,rLat);
     if(km<minKm){ minKm=km; minLon=rLon; minLat=rLat; }
   }
+  if(minKm<=KUST_COULANCE_KM && !getLandOpPunt(lon,lat)) return {km:0,punt:null};
   const VOORBIJ_GRENS_KM=50;
   const [eindLon,eindLat]=puntVoorbijGrens(lon,lat,minLon,minLat,VOORBIJ_GRENS_KM);
   return {km:minKm, punt:[eindLon,eindLat]};
@@ -6952,7 +7036,7 @@ function drawGlobe(){
     const lonMargeGraden = Math.min(90, latMargeGraden / Math.max(0.15, Math.cos(wonkyLat*Math.PI/180)));
 
     for(const naam in alleLandenFeatureMap){
-      if(naam==='Alaska'||naam==='Hawaï'||naam==='Galápagos'||naam==='Canarische Eilanden'||naam==='Azoren'||naam==='Réunion'||naam==='Mayotte'||naam==='Oost-Maleisië'||naam==='West-China') continue; // los pseudo-land, geen eigen sluipeffect
+      if(naam==='Alaska'||naam==='Hawaï'||naam==='Galápagos'||naam==='Canarische Eilanden'||naam==='Azoren'||naam==='Réunion'||naam==='Mayotte'||naam==='Oost-Maleisië'||naam==='West-China'||naam==='Buitenste Eilanden') continue; // los pseudo-land, geen eigen sluipeffect
       const info = alleLandenFeatureMap[naam];
       if(hoverLand && info.feature===hoverLand) continue;
       if(!info.kruistDatumgrens){
@@ -7013,6 +7097,9 @@ function drawGlobe(){
     } else if(kalibratieNaam==='West-China'){
       laadIllustratie('China'); // laadt ook __ChinaWest mee
       kalImg = landIllustraties['__ChinaWest'];
+    } else if(kalibratieNaam==='Buitenste Eilanden'){
+      laadIllustratie('Seychellen'); // laadt ook __SeychellenBuitenste mee
+      kalImg = landIllustraties['__SeychellenBuitenste'];
     } else {
       laadIllustratie(kalibratieNaam);
       kalImg = landIllustraties[kalibratieNaam];
