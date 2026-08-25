@@ -1231,7 +1231,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.95</div>
+  <div id="versie-label">v0.3.96</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2888,6 +2888,15 @@ const SCHURK_HOEKEN = [
   { naam:'blauw-onder', vanX:0.949, vanY:0.944, naarX:0.031, naarY:0.616, boogX:0.676, boogY:1.038 },
 ];
 const SCHURK_PAD_SAMPLES = 40; // aantal punten waarmee de vliegroute bij vertrek "bevroren" wordt op de wereldbol
+// Zodra de geplande route (SCHURK_VLUCHT_MS) erop zit, kan het geplande
+// eindpunt door het sturen van de speler alsnog middenin beeld zijn beland
+// (in plaats van buiten beeld, zoals de bedoeling is). Daarom wordt de route
+// al bij vertrek een stuk verder dan het "echte" eindpunt bemonsterd
+// (SCHURK_PAD_EXTRA_T_MAX keer zo ver), zodat de schurk daarna gewoon in
+// dezelfde richting kan doorvliegen tot hij écht buiten beeld is.
+const SCHURK_PAD_EXTRA_T_MAX = 2.2;
+const SCHURK_UITVLIEG_MS = 2500;       // maximale duur van die "doorvlieg"-fase
+const SCHURK_UITVLIEG_MARGE_PX = 150;  // hoe ver voorbij de schermrand voor hij pas als "weg" telt
 let schurkGeplandLandIdx = null; // welk land-nummer (0-indexed) deze ronde de pestronde triggert, of null
 let schurkGespawnd = false;
 let schurkVliegtuig = null;      // actieve toestand {hoek, spawnTijd, wolkenGeschoten, gespiegeld}, of null
@@ -7681,9 +7690,13 @@ function startSchurkVliegtuig(){
   // HUIDIGE rotatie. Zo blijft de route daarna aan een vaste plek op de kaart
   // hangen, wat de speler ook doet met sturen - precies zoals de wolkjes en
   // muntjes al werken (zie schermPuntNaarLonLat/lonLatNaarScherm verderop).
+  // De route wordt niet alleen tot het geplande eindpunt (s=1) bemonsterd,
+  // maar tot SCHURK_PAD_EXTRA_T_MAX erna - de kwadratische boog-formule loopt
+  // gewoon door voorbij s=1, in dezelfde richting waarin de boog al bewoog.
   const pad = [];
-  for(let i = 0; i <= SCHURK_PAD_SAMPLES; i++){
-    const s = i / SCHURK_PAD_SAMPLES;
+  const totaalStappen = Math.round(SCHURK_PAD_SAMPLES * SCHURK_PAD_EXTRA_T_MAX);
+  for(let i = 0; i <= totaalStappen; i++){
+    const s = (i / totaalStappen) * SCHURK_PAD_EXTRA_T_MAX;
     const [px, py] = kwadratischeBezier(hoek.vanX,hoek.vanY, hoek.boogX,hoek.boogY, hoek.naarX,hoek.naarY, s);
     pad.push(schermPuntNaarLonLat(px*W, py*H));
   }
@@ -7699,12 +7712,15 @@ function startSchurkVliegtuig(){
   el.style.display = 'block';
 }
 
-// schurkPadPunt(pad, te): geeft de lon/lat op fractie te (0..1) langs de
-// bevroren route, door lineair te interpoleren tussen de twee dichtstbijzijnde
-// bemonsterde punten (met SCHURK_PAD_SAMPLES+1 punten dicht genoeg bij elkaar
-// om vloeiend aan te voelen).
+// schurkPadPunt(pad, te): geeft de lon/lat op fractie te (0..SCHURK_PAD_EXTRA_T_MAX)
+// langs de bevroren route, door lineair te interpoleren tussen de twee
+// dichtstbijzijnde bemonsterde punten. te=1 is het oorspronkelijk geplande
+// eindpunt; alles daarboven (tot SCHURK_PAD_EXTRA_T_MAX) is de "doorvlieg"-
+// verlenging voor als dat eindpunt door het sturen van de speler toch nog
+// middenin beeld bleek te liggen.
 function schurkPadPunt(pad, te){
-  const idxF = Math.max(0, Math.min(1, te)) * (pad.length - 1);
+  const teClamped = Math.max(0, Math.min(SCHURK_PAD_EXTRA_T_MAX, te));
+  const idxF = (teClamped / SCHURK_PAD_EXTRA_T_MAX) * (pad.length - 1);
   const i0 = Math.min(pad.length - 2, Math.floor(idxF));
   const frac = idxF - i0;
   const [lon0, lat0] = pad[i0], [lon1, lat1] = pad[i0 + 1];
@@ -7747,7 +7763,10 @@ function positioneerSchurkEl(el, cx, cy, schaal){
 // het scherm. De eerste SCHURK_KRIMP_MS daarvan krimpt het vliegtuigje snel
 // terug naar normale grootte; pas zodra dat bereikt is, begint de rat
 // wolkjes af te schieten, verspreid over de rest van de tijd dat het
-// vliegtuigje nog in beeld is.
+// vliegtuigje nog in beeld is. Fase 3 ("uitvliegen"): het geplande eindpunt
+// kan door het sturen van de speler toch middenin beeld zijn beland - dan
+// vliegt de schurk gewoon door in dezelfde richting tot hij écht buiten
+// beeld is (of na SCHURK_UITVLIEG_MS sowieso, als veiligheidsgrens).
 function updateSchurkVliegtuig(){
   if(!schurkVliegtuig) return;
   const el = document.getElementById('schurk-vliegtuig');
@@ -7760,14 +7779,32 @@ function updateSchurkVliegtuig(){
     return;
   }
 
-  const vt = Math.min(1, (t - SCHURK_PAUZE_MS) / SCHURK_VLUCHT_MS);
+  const tSindsVertrek = t - SCHURK_PAUZE_MS;
+
+  if(tSindsVertrek >= SCHURK_VLUCHT_MS){
+    const tUitvlieg = tSindsVertrek - SCHURK_VLUCHT_MS;
+    const te = 1 + (tUitvlieg / SCHURK_UITVLIEG_MS) * (SCHURK_PAD_EXTRA_T_MAX - 1);
+    const [lon, lat] = schurkPadPunt(schurkVliegtuig.pad, te);
+    const scherm = lonLatNaarScherm(lon, lat);
+    const buitenBeeld = !scherm
+      || scherm[0] < -SCHURK_UITVLIEG_MARGE_PX || scherm[0] > W + SCHURK_UITVLIEG_MARGE_PX
+      || scherm[1] < -SCHURK_UITVLIEG_MARGE_PX || scherm[1] > H + SCHURK_UITVLIEG_MARGE_PX;
+    if(buitenBeeld || tUitvlieg >= SCHURK_UITVLIEG_MS){
+      el.style.display = 'none';
+      schurkVliegtuig = null;
+    } else {
+      positioneerSchurkEl(el, scherm[0], scherm[1], 1);
+    }
+    return;
+  }
+
+  const vt = tSindsVertrek / SCHURK_VLUCHT_MS;
   const te = vt<0.5 ? 2*vt*vt : 1-Math.pow(-2*vt+2,2)/2; // zelfde ease-in-out als de correctievlucht
   const [lon, lat] = schurkPadPunt(schurkVliegtuig.pad, te);
   const scherm = lonLatNaarScherm(lon, lat);
 
   // Krimpen gebeurt sneller dan de rest van de vlucht duurt: binnen
   // SCHURK_KRIMP_MS na vertrek al terug op normale grootte, niet pas aan het einde.
-  const tSindsVertrek = t - SCHURK_PAUZE_MS;
   const krimpFractie = Math.min(1, tSindsVertrek / SCHURK_KRIMP_MS);
   const schaal = SCHURK_SPAWN_SCHAAL - (SCHURK_SPAWN_SCHAAL - 1) * krimpFractie;
   if(scherm) positioneerSchurkEl(el, scherm[0], scherm[1], schaal);
@@ -7788,11 +7825,6 @@ function updateSchurkVliegtuig(){
       const ratY = scherm[1] + (RAT_OFFSET_FRAC.y - 0.5) * el.offsetHeight;
       schietSchurkWolk(ratX, ratY);
     }
-  }
-
-  if(vt >= 1){
-    el.style.display = 'none';
-    schurkVliegtuig = null;
   }
 }
 
