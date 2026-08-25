@@ -96,11 +96,20 @@
     font-size:clamp(1rem,2.2vw,1.7rem); text-align:center; margin-bottom:5%;
     max-width:90%; line-height:1.3;
   }
-  #scherm-naam input {
+  #scherm-naam input, #scherm-woord input {
     font-family:'Baloo 2',sans-serif; font-weight:700; font-size:clamp(0.85rem,1.8vw,1.3rem);
     border:2px solid #8a6a3a; border-radius:10px; padding:8px 16px; background:#fffaf0; color:#3b2a18;
     width:60%; max-width:20em; text-align:center; margin-bottom:4%;
   }
+  /* — Geheim-woordje-scherm: voorkomt dat iemand een bestaande naam kan
+     "stelen" door 'm gewoon in te typen. Zelfde opzet als #scherm-naam. — */
+  .woord-fout {
+    font-family:'Baloo 2',sans-serif; font-weight:700; color:#b03a2a;
+    font-size:clamp(0.7rem,1.4vw,0.95rem); text-align:center;
+    max-width:90%; min-height:1.3em; margin:-2% 0 4%; opacity:0; transition:opacity 0.2s;
+  }
+  .woord-fout.zichtbaar { opacity:1; }
+  #scherm-woord .actie-btn.secundair { margin-top:3%; }
 
   /* — Categorie-kiesscherm — */
   #scherm-kies { justify-content:flex-start; overflow-y:auto; }
@@ -263,6 +272,14 @@
       <div class="naam-titel">Je naam voor eeuwige roem &amp; glorie!</div>
       <input type="text" id="naam-input" maxlength="16" placeholder="Jouw naam" autofocus/>
       <button class="actie-btn" id="btn-naam-door" onclick="bevestigNaam()">Doorgaan ▶</button>
+    </div>
+
+    <div id="scherm-woord" class="scherm">
+      <div class="naam-titel" id="woord-titel"></div>
+      <input type="text" id="woord-input" maxlength="20" placeholder="geheim woordje" autocomplete="off"/>
+      <div class="woord-fout" id="woord-fout"></div>
+      <button class="actie-btn" id="btn-woord-door" onclick="bevestigGeheimwoord()">Doorgaan ▶</button>
+      <button class="actie-btn secundair" onclick="terugNaarNaamScherm()">◀ Andere naam</button>
     </div>
 
     <div id="scherm-kies" class="scherm">
@@ -502,9 +519,10 @@ function ladenSpelerNaam(){
   const opgeslagen = localStorage.getItem(NAAM_SLEUTEL) || '';
   document.getElementById('naam-input').value = opgeslagen;
 }
-document.getElementById('naam-input').addEventListener('input', e=>{
-  localStorage.setItem(NAAM_SLEUTEL, e.target.value);
-});
+// Let op: hier bewust GEEN live-opslaan-per-toetsaanslag meer (dat was het
+// vroeger wel) - anders zou een halve, onbevestigde naam via het geheime
+// woordje heen kunnen glippen als iemand meteen wegnavigeert. De naam wordt
+// nu pas echt "actief" ná een geslaagde woordje-check, zie rondNaamAfMet().
 document.getElementById('naam-input').addEventListener('keydown', e=>{
   if(e.key==='Enter'){ e.preventDefault(); bevestigNaam(); }
 });
@@ -514,6 +532,8 @@ function huidigeSpelerNaam(){
 // Eerste scherm dat de speler ziet: verplicht (een niet-lege) naam invullen
 // voordat er een categorie gekozen kan worden - dat voorkomt dat spelers
 // vergeten hun naam in te vullen en daardoor niet op het scorebord komen.
+// Rondt zelf nog niet af: eerst moet het geheime woordje van deze naam
+// gecontroleerd (of net gekozen) worden, zie toonGeheimwoordScherm().
 function bevestigNaam(){
   const input = document.getElementById('naam-input');
   const naam = input.value.trim();
@@ -523,9 +543,93 @@ function bevestigNaam(){
     input.focus();
     return;
   }
+  input.style.borderColor = '';
+  toonGeheimwoordScherm(naam);
+}
+// Rondt het inloggen daadwerkelijk af - wordt pas aangeroepen nadat het
+// geheime woordje van 'naam' gecontroleerd (of net gekozen) is.
+function rondNaamAfMet(naam){
   localStorage.setItem(NAAM_SLEUTEL, naam);
+  document.getElementById('naam-input').value = naam;
   toonScherm('scherm-kies');
 }
+
+// ── Geheim woordje: voorkomt dat iemand een bestaande naam kan "stelen" ──
+// Zelfde sleutels en logica als index.html (dat heeft een eigen,
+// onafhankelijk naamscherm en moet dus apart even goed beschermd worden).
+const GEHEIMWOORD_PREFIX = 'wonkywings_geheimwoord::';
+function geheimwoordVoorNaam(naam){ return localStorage.getItem(GEHEIMWOORD_PREFIX+naam); }
+function zetGeheimwoordVoorNaam(naam,woord){ localStorage.setItem(GEHEIMWOORD_PREFIX+naam, woord.trim().toLowerCase()); }
+function woordKlopt(naam,ingevoerd){ return geheimwoordVoorNaam(naam)===ingevoerd.trim().toLowerCase(); }
+// Heeft deze naam al ooit stempels of scores verdiend? Gebruikt om bij een
+// bestaande, oudere naam (van vóór het geheime woordje) een andere,
+// geruststellende tekst te tonen dan bij een gloednieuwe naam.
+function heeftBestaandeSpelerData(naam){
+  try{
+    if(JSON.parse(localStorage.getItem('wonkywings_verdiende_stempels::'+naam)||'[]').length) return true;
+  }catch(e){}
+  for(let i=0;i<localStorage.length;i++){
+    const key = localStorage.key(i);
+    if(key.indexOf('wonkywings_scores_')===0 || key.indexOf('wonkywings_raadspel_scores_')===0){
+      try{
+        const lijst = JSON.parse(localStorage.getItem(key)||'[]');
+        if(lijst.some(r=>r.naam===naam)) return true;
+      }catch(e){}
+    }
+  }
+  return false;
+}
+let geheimwoordKandidaatNaam = '';
+function toonGeheimwoordScherm(naam){
+  geheimwoordKandidaatNaam = naam;
+  const titelEl = document.getElementById('woord-titel');
+  const foutEl = document.getElementById('woord-fout');
+  const input = document.getElementById('woord-input');
+  foutEl.classList.remove('zichtbaar');
+  input.value = '';
+  if(geheimwoordVoorNaam(naam)){
+    titelEl.textContent = 'Wat is het geheime woordje van ' + naam + '?';
+  } else if(heeftBestaandeSpelerData(naam)){
+    titelEl.textContent = 'Dit is de eerste keer dat we een geheim woordje vragen. Kies er nu een voor ' + naam + ', zodat niemand anders jouw naam kan gebruiken!';
+  } else {
+    titelEl.textContent = 'Kies een geheim woordje, zodat deze naam van jou blijft!';
+  }
+  toonScherm('scherm-woord');
+  input.focus();
+}
+// Eén stapje terug naar het naam-scherm, bijvoorbeeld bij een typefout.
+function terugNaarNaamScherm(){
+  toonScherm('scherm-naam');
+  document.getElementById('naam-input').focus();
+}
+function bevestigGeheimwoord(){
+  const input = document.getElementById('woord-input');
+  const foutEl = document.getElementById('woord-fout');
+  const woord = input.value.trim();
+  if(!woord){
+    foutEl.textContent = 'Vul een geheim woordje in!';
+    foutEl.classList.add('zichtbaar');
+    input.focus();
+    return;
+  }
+  if(geheimwoordVoorNaam(geheimwoordKandidaatNaam)){
+    if(!woordKlopt(geheimwoordKandidaatNaam, woord)){
+      foutEl.textContent = 'Dat is niet het juiste geheime woordje.';
+      foutEl.classList.add('zichtbaar');
+      input.value='';
+      input.focus();
+      return;
+    }
+  } else {
+    zetGeheimwoordVoorNaam(geheimwoordKandidaatNaam, woord);
+  }
+  foutEl.classList.remove('zichtbaar');
+  rondNaamAfMet(geheimwoordKandidaatNaam);
+}
+document.getElementById('woord-input').addEventListener('keydown', e=>{
+  if(e.key==='Enter'){ e.preventDefault(); bevestigGeheimwoord(); }
+  else if(e.key==='Escape'){ e.preventDefault(); terugNaarNaamScherm(); }
+});
 
 // ── Schermwissel ──
 function toonScherm(id){

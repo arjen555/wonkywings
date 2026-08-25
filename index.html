@@ -309,6 +309,50 @@
     }
     #naam-overlay-fout.zichtbaar { opacity:1; }
 
+    /* ── Geheim-woordje-popup: voorkomt dat iemand een bestaande naam kan
+       "stelen" door 'm gewoon in te typen. Verschijnt bovenop de naam-banner
+       zodra er een geldige naam is ingetypt - zelfde kaart-stijl als de
+       kennisvraag-popup, maar dan met een invoerveld i.p.v. keuze-knoppen.
+       Los gehouden van #kennisvraag-* (geen gedeelde classes), zodat de twee
+       elkaar nooit per ongeluk beïnvloeden. ── */
+    #geheimwoord-popup {
+      display:none; position:fixed; inset:0; z-index:201;
+      background:rgba(0,0,0,0.72); backdrop-filter:blur(4px);
+      align-items:center; justify-content:center;
+    }
+    #geheimwoord-popup.tonen { display:flex; }
+    #geheimwoord-kaart {
+      background:linear-gradient(145deg,#3a2408,#1c1204);
+      border:2px solid rgba(255,215,0,0.55);
+      border-radius:24px; padding:36px 42px; width:min(560px,90vw);
+      box-shadow:0 20px 70px rgba(0,0,0,0.8), inset 0 0 30px rgba(255,215,0,0.06);
+      display:flex; flex-direction:column; gap:16px; align-items:center;
+    }
+    #geheimwoord-tekst {
+      font-family:'Baloo 2',sans-serif; font-size:1.1rem; font-weight:800;
+      color:#ffe9a8; text-align:center; line-height:1.4;
+      text-shadow:0 2px 8px rgba(0,0,0,0.5);
+    }
+    #geheimwoord-input {
+      font-family:'Baloo 2',sans-serif; font-weight:700; font-size:1.1rem;
+      border:2px solid rgba(255,215,0,0.5); border-radius:10px; padding:10px 16px;
+      background:#fffaf0; color:#3b2a18; width:80%; max-width:16em; text-align:center;
+    }
+    #geheimwoord-fout {
+      font-family:'Baloo 2',sans-serif; font-weight:700; color:#ff8a70;
+      font-size:0.85rem; text-align:center; opacity:0; transition:opacity 0.2s; min-height:1.1em;
+    }
+    #geheimwoord-fout.zichtbaar { opacity:1; }
+    #geheimwoord-knoppen { display:flex; gap:12px; }
+    .geheimwoord-knop {
+      font-family:'Baloo 2',sans-serif; font-size:1rem; font-weight:700;
+      color:#fff; background:rgba(255,255,255,0.1);
+      border:2px solid rgba(255,255,255,0.3); border-radius:14px;
+      padding:10px 22px; cursor:pointer; transition:background 0.15s, border-color 0.15s;
+    }
+    .geheimwoord-knop:hover { background:rgba(255,255,255,0.2); }
+    .geheimwoord-knop.secundair { opacity:0.7; }
+
     /* Zolang de naam-banner in beeld is, zien de categorie-tegels er
        duidelijk ontoegankelijk uit (los van de functionele blokkade die de
        overlay zelf al afdwingt). */
@@ -1231,7 +1275,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.97</div>
+  <div id="versie-label">v0.3.98</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1283,6 +1327,21 @@
       <div id="naam-overlay-hint">JE NAAM</div>
       <input type="text" id="naam-overlay-input" maxlength="20" autocomplete="off"/>
       <div id="naam-overlay-fout">Vul eerst je naam in!</div>
+    </div>
+  </div>
+</div>
+
+<!-- Geheim-woordje-popup: zie toonGeheimwoordPopup()/bevestigGeheimwoord()
+     hieronder bij de naam-overlay-logica. Voorkomt dat iemand een bestaande
+     naam kan "stelen" door 'm gewoon in te typen. -->
+<div id="geheimwoord-popup">
+  <div id="geheimwoord-kaart">
+    <div id="geheimwoord-tekst"></div>
+    <input type="text" id="geheimwoord-input" maxlength="20" autocomplete="off"/>
+    <div id="geheimwoord-fout"></div>
+    <div id="geheimwoord-knoppen">
+      <button class="geheimwoord-knop secundair" onclick="terugNaarNaamOverlay()">◀ Andere naam</button>
+      <button class="geheimwoord-knop" onclick="bevestigGeheimwoord()">Doorgaan ▶</button>
     </div>
   </div>
 </div>
@@ -2653,6 +2712,16 @@ function bevestigSpelerNaam(){
     input.focus();
     return;
   }
+  foutEl.classList.remove('zichtbaar');
+  // Niet meteen inloggen: eerst het geheime woordje van deze naam checken
+  // (of, bij een gloednieuwe of nog niet beveiligde naam, er eentje laten
+  // kiezen) - zie toonGeheimwoordPopup() hieronder. Pas ná een geslaagde
+  // check rondt rondNaamAfMet() het inloggen daadwerkelijk af.
+  toonGeheimwoordPopup(naam);
+}
+// Rondt het inloggen daadwerkelijk af - wordt pas aangeroepen nadat het
+// geheime woordje van 'naam' gecontroleerd (of net gekozen) is.
+function rondNaamAfMet(naam){
   localStorage.setItem(SPELERNAAM_SLEUTEL, naam);
   spelerNaam = naam;
   naamOverlayVerplicht = false; // vanaf nu is er altijd al een geldige naam bekend
@@ -2664,6 +2733,85 @@ function bevestigSpelerNaam(){
   // wordt in de kiezer.
   initialiseerVliegfiguurVoorSpeler();
 }
+
+// ── Geheim woordje: voorkomt dat iemand een bestaande naam kan "stelen" ──
+// Zelfde sleutels en logica als raadspel.html (dat heeft een eigen,
+// onafhankelijk naam-scherm en moet dus apart even goed beschermd worden).
+const GEHEIMWOORD_PREFIX = 'wonkywings_geheimwoord::';
+function geheimwoordVoorNaam(naam){ return localStorage.getItem(GEHEIMWOORD_PREFIX+naam); }
+function zetGeheimwoordVoorNaam(naam,woord){ localStorage.setItem(GEHEIMWOORD_PREFIX+naam, woord.trim().toLowerCase()); }
+function woordKlopt(naam,ingevoerd){ return geheimwoordVoorNaam(naam)===ingevoerd.trim().toLowerCase(); }
+// Heeft deze naam al ooit stempels of scores verdiend? Gebruikt om bij een
+// bestaande, oudere naam (van vóór het geheime woordje) een andere,
+// geruststellende tekst te tonen dan bij een gloednieuwe naam.
+function heeftBestaandeSpelerData(naam){
+  try{
+    if(JSON.parse(localStorage.getItem('wonkywings_verdiende_stempels::'+naam)||'[]').length) return true;
+  }catch(e){}
+  for(let i=0;i<localStorage.length;i++){
+    const key = localStorage.key(i);
+    if(key.indexOf('wonkywings_scores_')===0 || key.indexOf('wonkywings_raadspel_scores_')===0){
+      try{
+        const lijst = JSON.parse(localStorage.getItem(key)||'[]');
+        if(lijst.some(r=>r.naam===naam)) return true;
+      }catch(e){}
+    }
+  }
+  return false;
+}
+let geheimwoordKandidaatNaam = '';
+function toonGeheimwoordPopup(naam){
+  geheimwoordKandidaatNaam = naam;
+  const tekstEl = document.getElementById('geheimwoord-tekst');
+  const foutEl = document.getElementById('geheimwoord-fout');
+  const input = document.getElementById('geheimwoord-input');
+  foutEl.classList.remove('zichtbaar');
+  input.value = '';
+  if(geheimwoordVoorNaam(naam)){
+    tekstEl.textContent = 'Wat is het geheime woordje van ' + naam + '?';
+  } else if(heeftBestaandeSpelerData(naam)){
+    tekstEl.textContent = 'Dit is de eerste keer dat we een geheim woordje vragen. Kies er nu een voor ' + naam + ', zodat niemand anders jouw naam kan gebruiken!';
+  } else {
+    tekstEl.textContent = 'Kies een geheim woordje, zodat deze naam van jou blijft!';
+  }
+  document.getElementById('geheimwoord-popup').classList.add('tonen');
+  setTimeout(()=>input.focus(), 0);
+}
+// Eén stapje terug: geheim-woordje-kaartje weer weg, naam-overlay (die er
+// gewoon nog steeds achter staat, met de eerder ingetypte naam) weer actief.
+function terugNaarNaamOverlay(){
+  document.getElementById('geheimwoord-popup').classList.remove('tonen');
+  document.getElementById('naam-overlay-input').focus();
+}
+function bevestigGeheimwoord(){
+  const input = document.getElementById('geheimwoord-input');
+  const foutEl = document.getElementById('geheimwoord-fout');
+  const woord = input.value.trim();
+  if(!woord){
+    foutEl.textContent = 'Vul een geheim woordje in!';
+    foutEl.classList.add('zichtbaar');
+    input.focus();
+    return;
+  }
+  if(geheimwoordVoorNaam(geheimwoordKandidaatNaam)){
+    if(!woordKlopt(geheimwoordKandidaatNaam, woord)){
+      foutEl.textContent = 'Dat is niet het juiste geheime woordje.';
+      foutEl.classList.add('zichtbaar');
+      input.value='';
+      input.focus();
+      return;
+    }
+  } else {
+    zetGeheimwoordVoorNaam(geheimwoordKandidaatNaam, woord);
+  }
+  foutEl.classList.remove('zichtbaar');
+  document.getElementById('geheimwoord-popup').classList.remove('tonen');
+  rondNaamAfMet(geheimwoordKandidaatNaam);
+}
+document.getElementById('geheimwoord-input').addEventListener('keydown', e=>{
+  if(e.key==='Enter'){ e.preventDefault(); bevestigGeheimwoord(); }
+  else if(e.key==='Escape'){ e.preventDefault(); terugNaarNaamOverlay(); }
+});
 // Sluit de banner zonder wijzigingen - alleen toegestaan als er al eerder
 // een geldige naam is bevestigd (dus nooit bij de allereerste, verplichte
 // keer). Gebruikt door zowel Escape als het sluiten via de knop hieronder.
