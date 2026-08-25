@@ -1231,7 +1231,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.3.96</div>
+  <div id="versie-label">v0.3.97</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -8914,6 +8914,12 @@ function toonPunten(p, vliegNaarScorebord, opAankomst){
 
 function dropVlaggetje(){
   if(wachten||!spelActief||huidigModus!=='spelen'||hulpActief||kennisvraagActief||radActief) return;
+  // Vangnet: zodra een level al klaar is (huidigLandIdx voorbij het einde van
+  // spelLanden) blijft spelActief nog even 'true' staan voor de aflopende
+  // animaties, maar een spatiebalk/klik/gamepad-druk mag dan geen nieuwe gok
+  // meer laten meetellen - anders komt er telkens een extra scorebord-entry
+  // bij zolang iemand nog wat drukt terwijl het scorebord al in beeld is.
+  if(huidigLandIdx>=spelLanden.length) return;
   const wx=W*(0.5+wonkySchermX);
   const wy=focusSy-90;
   const dropTijdstip = performance.now(); // voor de snelheidsbonus bij Plekken: exact moment van droppen
