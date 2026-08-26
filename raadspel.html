@@ -256,13 +256,21 @@
   ::-webkit-scrollbar-thumb { background:rgba(90,58,26,0.55); border-radius:6px; }
 
   /* ── Spelkeuze-scherm (Raad je Plaatje / Landje Schuif) ── */
-  #scherm-spelkeuze { justify-content:center; align-items:center; }
+  /* ── Spelkeuze-scherm: fullscreen, buiten #kader ── */
+  #spelkeuze-veld {
+    display:none; position:fixed; inset:0; z-index:200;
+    background:#020d1a;
+    align-items:center; justify-content:center;
+  }
+  #spelkeuze-veld.actief { display:flex; }
   #spelkeuze-wrap {
-    position:relative; width:100%; height:100%;
+    position:relative;
+    width:min(96vw, 96vh * 1.5);
+    aspect-ratio:3/2;
     background:url('images/keuzescherm.jpg') center/contain no-repeat;
   }
   .spelkeuze-knop {
-    position:absolute; top:18%; height:68%; border:none; background:none;
+    position:absolute; top:14%; height:72%; border:none; background:none;
     cursor:pointer; border-radius:12px;
     transition:background 0.15s;
   }
@@ -430,13 +438,6 @@
       <button class="actie-btn secundair" onclick="terugNaarNaamScherm()">◀ Andere naam</button>
     </div>
 
-    <div id="scherm-spelkeuze" class="scherm">
-      <div id="spelkeuze-wrap">
-        <button class="spelkeuze-knop" id="btn-keuze-raadjeplaatje" onclick="kiesRaadJePlaatje()" aria-label="Raad je Plaatje"></button>
-        <button class="spelkeuze-knop" id="btn-keuze-landjeschuif" onclick="kiesLandjeSchuif()" aria-label="Landje Schuif"></button>
-      </div>
-    </div>
-
     <div id="scherm-kies" class="scherm">
       <div class="kies-titel">Kies een werelddeel</div>
       <div id="kies-inhoud" style="width:100%;"></div>
@@ -487,6 +488,17 @@
   <button id="klaar-nogeenronde-knop" onclick="terugNaarKiezen()">
     <img src="images/nog_een_ronde_raad_je_plaatje.png" alt="Nog een ronde Raad je plaatje"/>
   </button>
+</div>
+
+<!-- ── Spelkeuze-scherm: fullscreen, buiten #kader, zodat alleen het
+     keuzescherm-plaatje te zien is zonder de Raad je Plaatje-interface
+     eromheen. Twee onzichtbare knoppen liggen over de linker- en
+     rechterhelft van het boek. ── -->
+<div id="spelkeuze-veld">
+  <div id="spelkeuze-wrap">
+    <button class="spelkeuze-knop" id="btn-keuze-raadjeplaatje" onclick="kiesRaadJePlaatje()" aria-label="Raad je Plaatje"></button>
+    <button class="spelkeuze-knop" id="btn-keuze-landjeschuif" onclick="kiesLandjeSchuif()" aria-label="Landje Schuif"></button>
+  </div>
 </div>
 
 <!-- ── Landje Schuif: volledig apart speelveld, buiten #kader, met eigen
@@ -733,7 +745,19 @@ function bevestigNaam(){
 function rondNaamAfMet(naam){
   localStorage.setItem(NAAM_SLEUTEL, naam);
   document.getElementById('naam-input').value = naam;
-  toonScherm('scherm-spelkeuze');
+  toonSpelkeuze();
+}
+// Toont het fullscreen spelkeuze-scherm (buiten #kader).
+function toonSpelkeuze(){
+  // Verberg alle normale schermen en #kader
+  document.querySelectorAll('.scherm').forEach(el=>el.classList.remove('actief'));
+  document.getElementById('antwoorden-grid').classList.remove('actief');
+  document.getElementById('klaar-paspoort-icoon').style.display = 'none';
+  document.getElementById('klaar-linksboven-knoppen').style.display = 'none';
+  document.getElementById('landjeschuif-veld').classList.remove('actief');
+  document.getElementById('kader').style.display = 'none';
+  document.getElementById('spelkeuze-veld').classList.add('actief');
+  sluitUitvergroting();
 }
 
 // ── Geheim woordje: voorkomt dat iemand een bestaande naam kan "stelen" ──
@@ -803,8 +827,10 @@ function toonScherm(id){
   // .scherm-cascade - hier expliciet meesturen.
   document.getElementById('klaar-paspoort-icoon').style.display = (id==='scherm-klaar') ? 'block' : 'none';
   document.getElementById('klaar-linksboven-knoppen').style.display = (id==='scherm-klaar') ? 'flex' : 'none';
-  // Landje Schuif heeft een eigen volledig scherm buiten #kader; bij elke
-  // "normale" schermwissel moet dat dicht en #kader weer zichtbaar worden.
+  // Spelkeuze en Landje Schuif hebben eigen fullscreen containers buiten
+  // #kader; bij elke "normale" schermwissel moeten die dicht en #kader
+  // weer zichtbaar worden.
+  document.getElementById('spelkeuze-veld').classList.remove('actief');
   document.getElementById('landjeschuif-veld').classList.remove('actief');
   document.getElementById('kader').style.display = '';
   sluitUitvergroting();
@@ -1160,6 +1186,9 @@ function terugNaarKiezen(){
 
 // ── Spelkeuze-scherm: de twee knoppen ──
 function kiesRaadJePlaatje(){
+  // Verberg spelkeuze, toon #kader weer, ga naar categorie-keuze
+  document.getElementById('spelkeuze-veld').classList.remove('actief');
+  document.getElementById('kader').style.display = '';
   toonScherm('scherm-kies');
 }
 function kiesLandjeSchuif(){
@@ -1577,8 +1606,7 @@ function lsNaarMenu(){
 function lsNaarSpelkeuze(){
   lsStopTimer();
   document.getElementById('landjeschuif-veld').classList.remove('actief');
-  document.getElementById('kader').style.display = '';
-  toonScherm('scherm-spelkeuze');
+  toonSpelkeuze();
 }
 
 // ── Init ──
@@ -1590,7 +1618,7 @@ ladenSpelerNaam();
 document.getElementById('speler-waarde').textContent = huidigeSpelerNaam();
 bouwKiesScherm();
 if((localStorage.getItem(NAAM_SLEUTEL)||'').trim()){
-  toonScherm('scherm-spelkeuze');
+  toonSpelkeuze();
 }
 </script>
 
