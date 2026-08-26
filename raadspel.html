@@ -109,14 +109,6 @@
     max-width:90%; min-height:1.3em; margin:-2% 0 4%; opacity:0; transition:opacity 0.2s;
   }
   .woord-fout.zichtbaar { opacity:1; }
-  /* Rijmzinnetje, alleen zichtbaar bij het (voor het eerst) instellen van een
-     geheim woordje - zelfde opzet en lettertype als in index.html. */
-  .woord-tip {
-    display:none; font-family:'Berkshire Swash',cursive; font-weight:400;
-    font-size:clamp(1rem,2.4vw,1.5rem); line-height:1.5; color:#8a6a3a;
-    text-align:center; max-width:90%; margin:-2% 0 4%;
-  }
-  .woord-tip.tonen { display:block; }
   #scherm-woord .actie-btn.secundair { margin-top:3%; }
 
   /* — Categorie-kiesscherm — */
@@ -262,6 +254,154 @@
 
   ::-webkit-scrollbar { width:12px; }
   ::-webkit-scrollbar-thumb { background:rgba(90,58,26,0.55); border-radius:6px; }
+
+  /* ── Spelkeuze-scherm (Raad je Plaatje / Landje Schuif) ── */
+  #scherm-spelkeuze { justify-content:center; align-items:center; }
+  #spelkeuze-wrap {
+    position:relative; width:100%; height:100%;
+    background:url('images/keuzescherm.jpg') center/contain no-repeat;
+  }
+  .spelkeuze-knop {
+    position:absolute; top:18%; height:68%; border:none; background:none;
+    cursor:pointer; border-radius:12px;
+    transition:background 0.15s;
+  }
+  .spelkeuze-knop:hover { background:rgba(255,255,255,0.12); }
+  #btn-keuze-raadjeplaatje { left:15%; width:33%; }
+  #btn-keuze-landjeschuif  { left:52%; width:33%; }
+
+  /* ── Landje Schuif ── */
+  #landjeschuif-veld {
+    display:none; position:fixed; inset:0; z-index:200;
+    background:#020d1a;
+    align-items:center; justify-content:center;
+  }
+  #landjeschuif-veld.actief { display:flex; }
+  #ls-speelveld {
+    position:relative;
+    width:min(96vw, 96vh * 1.5);
+    aspect-ratio:3/2;
+    background:url('images/landjeschuif-achtergrond.jpg') center/contain no-repeat;
+    overflow:hidden;
+  }
+
+  /* Cirkels met landnaam */
+  .ls-cirkel {
+    position:absolute; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    text-align:center; pointer-events:none;
+    font-family:'Baloo 2',sans-serif; font-weight:700;
+    color:#3b2a18; font-size:clamp(0.5rem,1.3vw,0.95rem);
+    line-height:1.15; padding:4%;
+    word-break:break-word;
+  }
+  /* Feedback-ringen (goed/fout) */
+  .ls-ring {
+    position:absolute; border-radius:50%; pointer-events:none;
+    border:4px solid transparent; opacity:0;
+    transition:opacity 0.25s;
+  }
+  .ls-ring.goed { border-color:#4caf50; opacity:1; }
+  .ls-ring.fout { border-color:#e05353; opacity:1; }
+
+  /* Stempels (sleepbaar) */
+  .ls-stempel {
+    position:absolute; touch-action:none;
+    cursor:grab; z-index:10;
+    transition:transform 0.15s;
+  }
+  .ls-stempel.slepen { cursor:grabbing; z-index:50; transition:none; }
+  .ls-stempel.gesnapt {
+    cursor:grab; z-index:5;
+    transition:left 0.2s, top 0.2s, transform 0.15s;
+  }
+  .ls-stempel img {
+    width:100%; height:100%; object-fit:contain;
+    pointer-events:none; border-radius:50%;
+    box-shadow:0 3px 10px rgba(0,0,0,0.4);
+  }
+
+  /* Schelp-knop */
+  #ls-schelp-wrap {
+    position:absolute; right:4%; bottom:5%;
+    width:clamp(50px, 10%, 90px); cursor:pointer;
+    z-index:60;
+    filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5));
+    transition:transform 0.12s;
+  }
+  #ls-schelp-wrap:hover { transform:scale(1.06); }
+  #ls-schelp-wrap:active { transform:scale(0.95); }
+  #ls-schelp-img { width:100%; display:block; }
+
+  /* Speler + timer overlay */
+  #ls-speler-vak {
+    position:absolute; left:3%; top:3%;
+    font-family:'Baloo 2',sans-serif; font-weight:700;
+    color:#fffbe6; font-size:clamp(0.7rem,1.4vw,1.1rem);
+    text-shadow:0 2px 6px rgba(0,0,0,0.7);
+    z-index:60;
+  }
+  #ls-timer-vak {
+    position:absolute; left:3%; top:9%;
+    font-family:'Baloo 2',sans-serif; font-weight:800;
+    color:#ffe9a8; font-size:clamp(1rem,2vw,1.5rem);
+    text-shadow:0 2px 6px rgba(0,0,0,0.7);
+    z-index:60;
+  }
+
+  /* Menu-knop linksboven */
+  #ls-menu-knop {
+    position:absolute; right:3%; top:3%;
+    font-family:'Baloo 2',sans-serif; font-weight:700;
+    color:#fffbe6; font-size:clamp(0.65rem,1.2vw,0.95rem);
+    background:rgba(0,0,0,0.35); border:1.5px solid rgba(255,255,255,0.3);
+    border-radius:8px; padding:4px 12px; cursor:pointer;
+    z-index:60; transition:background 0.15s;
+  }
+  #ls-menu-knop:hover { background:rgba(0,0,0,0.55); }
+
+  /* Bordje (valt naar beneden) */
+  #ls-bordje-wrap {
+    position:absolute; left:50%; top:-60%;
+    transform:translateX(-50%);
+    width:clamp(180px, 35%, 340px);
+    z-index:80; pointer-events:none;
+    transition:top 0.8s cubic-bezier(0.22,1,0.36,1);
+  }
+  #ls-bordje-wrap.gevallen { top:8%; }
+  #ls-bordje-wrap img { width:100%; display:block; }
+  #ls-bordje-tekst {
+    position:absolute; left:50%; top:50%;
+    transform:translate(-50%,-50%) rotate(-3deg);
+    font-family:'Berkshire Swash',serif; font-weight:400;
+    color:#3b2a18; font-size:clamp(0.8rem,1.8vw,1.3rem);
+    text-align:center; white-space:pre-line;
+    width:70%; line-height:1.3;
+  }
+
+  /* Klaar-knoppen (na winst) */
+  #ls-klaar-knoppen {
+    display:none; position:absolute; left:3%; bottom:5%;
+    flex-direction:column; gap:8px; z-index:70;
+  }
+  #ls-klaar-knoppen.actief { display:flex; }
+  #ls-klaar-knoppen button {
+    width:clamp(120px, 14vw, 220px); border:none; background:none;
+    padding:0; cursor:pointer; opacity:0.92;
+    filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5));
+    transition:opacity 0.15s, transform 0.15s;
+  }
+  #ls-klaar-knoppen button:hover { opacity:1; transform:scale(1.03); }
+  #ls-klaar-knoppen button img { width:100%; display:block; }
+
+  /* Paspoort-icoon voor Landje Schuif */
+  #ls-paspoort-icoon {
+    display:none; position:absolute; right:3%; bottom:5%;
+    width:clamp(50px, 10%, 100px); cursor:pointer; z-index:70;
+    filter:drop-shadow(0 6px 20px rgba(0,0,0,0.55));
+    transition:transform 0.15s;
+  }
+  #ls-paspoort-icoon:hover { transform:scale(1.06); }
 </style>
 </head>
 <body>
@@ -284,15 +424,21 @@
 
     <div id="scherm-woord" class="scherm">
       <div class="naam-titel" id="woord-titel"></div>
-      <div class="woord-tip" id="woord-tip">Bewaar dit woordje goed en trouw,<br>dan blijft jouw schat bewaard voor jou.</div>
       <input type="text" id="woord-input" maxlength="20" placeholder="geheim woordje" autocomplete="off"/>
       <div class="woord-fout" id="woord-fout"></div>
       <button class="actie-btn" id="btn-woord-door" onclick="bevestigGeheimwoord()">Doorgaan ▶</button>
       <button class="actie-btn secundair" onclick="terugNaarNaamScherm()">◀ Andere naam</button>
     </div>
 
+    <div id="scherm-spelkeuze" class="scherm">
+      <div id="spelkeuze-wrap">
+        <button class="spelkeuze-knop" id="btn-keuze-raadjeplaatje" onclick="kiesRaadJePlaatje()" aria-label="Raad je Plaatje"></button>
+        <button class="spelkeuze-knop" id="btn-keuze-landjeschuif" onclick="kiesLandjeSchuif()" aria-label="Landje Schuif"></button>
+      </div>
+    </div>
+
     <div id="scherm-kies" class="scherm">
-      <div class="kies-titel">Kies een categorie</div>
+      <div class="kies-titel">Kies een werelddeel</div>
       <div id="kies-inhoud" style="width:100%;"></div>
     </div>
 
@@ -341,6 +487,33 @@
   <button id="klaar-nogeenronde-knop" onclick="terugNaarKiezen()">
     <img src="images/nog_een_ronde_raad_je_plaatje.png" alt="Nog een ronde Raad je plaatje"/>
   </button>
+</div>
+
+<!-- ── Landje Schuif: volledig apart speelveld, buiten #kader, met eigen
+     achtergrond (strand met 9 zandcirkels). Wordt zichtbaar via
+     kiesLandjeSchuif() en verbergt #kader zolang het actief is. ── -->
+<div id="landjeschuif-veld">
+  <div id="ls-speelveld">
+    <div id="ls-speler-vak">Speler</div>
+    <div id="ls-timer-vak">0:00.0</div>
+    <button id="ls-menu-knop" onclick="lsNaarMenu()">MENU</button>
+    <div id="ls-schelp-wrap" onclick="lsSchelpKlik()">
+      <img id="ls-schelp-img" src="images/schelp-groen.png" alt="Start"/>
+    </div>
+    <div id="ls-bordje-wrap">
+      <img src="images/bordje.png" alt=""/>
+      <div id="ls-bordje-tekst"></div>
+    </div>
+    <div id="ls-klaar-knoppen">
+      <button onclick="lsNaarMenu()">
+        <img src="images/terug-naar-start-knop.png" alt="Terug naar start"/>
+      </button>
+      <button onclick="lsNaarSpelkeuze()">
+        <img src="images/nog_een_ronde_raad_je_plaatje.png" alt="Nog een ronde"/>
+      </button>
+    </div>
+    <img id="ls-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="window.location.href='paspoort.html'"/>
+  </div>
 </div>
 
 <script>
@@ -560,7 +733,7 @@ function bevestigNaam(){
 function rondNaamAfMet(naam){
   localStorage.setItem(NAAM_SLEUTEL, naam);
   document.getElementById('naam-input').value = naam;
-  toonScherm('scherm-kies');
+  toonScherm('scherm-spelkeuze');
 }
 
 // ── Geheim woordje: voorkomt dat iemand een bestaande naam kan "stelen" ──
@@ -570,42 +743,18 @@ const GEHEIMWOORD_PREFIX = 'wonkywings_geheimwoord::';
 function geheimwoordVoorNaam(naam){ return localStorage.getItem(GEHEIMWOORD_PREFIX+naam); }
 function zetGeheimwoordVoorNaam(naam,woord){ localStorage.setItem(GEHEIMWOORD_PREFIX+naam, woord.trim().toLowerCase()); }
 function woordKlopt(naam,ingevoerd){ return geheimwoordVoorNaam(naam)===ingevoerd.trim().toLowerCase(); }
-// Heeft deze naam al ooit stempels of scores verdiend? Gebruikt om bij een
-// bestaande, oudere naam (van vóór het geheime woordje) een andere,
-// geruststellende tekst te tonen dan bij een gloednieuwe naam.
-function heeftBestaandeSpelerData(naam){
-  try{
-    if(JSON.parse(localStorage.getItem('wonkywings_verdiende_stempels::'+naam)||'[]').length) return true;
-  }catch(e){}
-  for(let i=0;i<localStorage.length;i++){
-    const key = localStorage.key(i);
-    if(key.indexOf('wonkywings_scores_')===0 || key.indexOf('wonkywings_raadspel_scores_')===0){
-      try{
-        const lijst = JSON.parse(localStorage.getItem(key)||'[]');
-        if(lijst.some(r=>r.naam===naam)) return true;
-      }catch(e){}
-    }
-  }
-  return false;
-}
 let geheimwoordKandidaatNaam = '';
 function toonGeheimwoordScherm(naam){
   geheimwoordKandidaatNaam = naam;
   const titelEl = document.getElementById('woord-titel');
-  const tipEl = document.getElementById('woord-tip');
   const foutEl = document.getElementById('woord-fout');
   const input = document.getElementById('woord-input');
   foutEl.classList.remove('zichtbaar');
   input.value = '';
   if(geheimwoordVoorNaam(naam)){
     titelEl.textContent = 'Wat is het geheime woordje van ' + naam + '?';
-    tipEl.classList.remove('tonen');
-  } else if(heeftBestaandeSpelerData(naam)){
-    titelEl.textContent = 'Dit is de eerste keer dat we een geheim woordje vragen. Kies er nu een voor ' + naam + ', zodat niemand anders jouw naam kan gebruiken!';
-    tipEl.classList.add('tonen');
   } else {
     titelEl.textContent = 'Kies een geheim woord en onthoud dit nou, dan blijft jouw naam bewaard voor jou.';
-    tipEl.classList.remove('tonen');
   }
   toonScherm('scherm-woord');
   input.focus();
@@ -654,6 +803,10 @@ function toonScherm(id){
   // .scherm-cascade - hier expliciet meesturen.
   document.getElementById('klaar-paspoort-icoon').style.display = (id==='scherm-klaar') ? 'block' : 'none';
   document.getElementById('klaar-linksboven-knoppen').style.display = (id==='scherm-klaar') ? 'flex' : 'none';
+  // Landje Schuif heeft een eigen volledig scherm buiten #kader; bij elke
+  // "normale" schermwissel moet dat dicht en #kader weer zichtbaar worden.
+  document.getElementById('landjeschuif-veld').classList.remove('actief');
+  document.getElementById('kader').style.display = '';
   sluitUitvergroting();
 }
 
@@ -1001,6 +1154,433 @@ function terugNaarKiezen(){
   toonScherm('scherm-kies');
 }
 
+// ══════════════════════════════════════════════════════════════════════
+// ██  LANDJE SCHUIF — spellogica                                     ██
+// ══════════════════════════════════════════════════════════════════════
+
+// ── Spelkeuze-scherm: de twee knoppen ──
+function kiesRaadJePlaatje(){
+  toonScherm('scherm-kies');
+}
+function kiesLandjeSchuif(){
+  startLandjeSchuif();
+}
+
+// ── Constanten ──
+const LS_AANTAL = 9;
+// Cirkelposities als percentage van het speelveld (x=centrum, y=centrum).
+// Rij 1 (boven): y≈19%, Rij 2 (midden): y≈50%, Rij 3 (onder): y≈81%
+// Kolom 1: x≈13%, Kolom 2: x≈33%, Kolom 3: x≈53%
+const LS_CIRKELS = [
+  {x:13, y:19}, {x:33, y:19}, {x:53, y:19},
+  {x:13, y:50}, {x:33, y:50}, {x:53, y:50},
+  {x:13, y:81}, {x:33, y:81}, {x:53, y:81}
+];
+const LS_CIRKEL_GROOTTE = 17.5;   // diameter als % van speelveld-breedte
+const LS_STEMPEL_GROOTTE = 14;    // stempel als % van speelveld-breedte
+const LS_SNAP_DREMPEL = 9;        // snap-afstand als % van speelveld-breedte
+
+// ── State ──
+let lsLanden = [];           // 9 gekozen PASPOORT_LANDEN-entries
+let lsKoppeling = [];        // cirkelindex → stempelindex (-1 = leeg)
+let lsStempelOpCirkel = [];  // stempelindex → cirkelindex (-1 = los)
+let lsActief = false;
+let lsKlaar = false;
+let lsTijdVerstreken = 0;
+let lsTijdStart = null;
+let lsTimerInterval = null;
+let lsSchelpStatus = 'groen'; // groen | paars | rood
+let lsSleepIdx = -1;
+let lsSleepOffset = {x:0, y:0};
+
+// ── Start een nieuw potje ──
+function startLandjeSchuif(){
+  // Kies 9 willekeurige landen uit PASPOORT_LANDEN
+  const geschud = shuffle([...PASPOORT_LANDEN]);
+  lsLanden = geschud.slice(0, LS_AANTAL);
+
+  // Reset state
+  lsKoppeling = new Array(LS_AANTAL).fill(-1);
+  lsStempelOpCirkel = new Array(LS_AANTAL).fill(-1);
+  lsActief = false;
+  lsKlaar = false;
+  lsTijdVerstreken = 0;
+  lsTijdStart = null;
+  lsSchelpStatus = 'groen';
+  lsSleepIdx = -1;
+
+  // Verberg #kader, toon landjeschuif-veld
+  document.getElementById('kader').style.display = 'none';
+  const veld = document.getElementById('landjeschuif-veld');
+  veld.classList.add('actief');
+
+  // Speler-info
+  document.getElementById('ls-speler-vak').textContent = huidigeSpelerNaam();
+  document.getElementById('ls-timer-vak').textContent = '0:00.0';
+
+  // Reset schelp
+  document.getElementById('ls-schelp-img').src = 'images/schelp-groen.png';
+  document.getElementById('ls-schelp-wrap').style.display = '';
+
+  // Reset bordje
+  const bordjeWrap = document.getElementById('ls-bordje-wrap');
+  bordjeWrap.classList.remove('gevallen');
+  bordjeWrap.style.top = '';
+  document.getElementById('ls-bordje-tekst').textContent = '';
+
+  // Reset klaar-knoppen en paspoort-icoon
+  document.getElementById('ls-klaar-knoppen').classList.remove('actief');
+  document.getElementById('ls-paspoort-icoon').style.display = 'none';
+
+  // Bouw cirkels en stempels
+  bouwLsCirkels();
+  bouwLsStempels();
+}
+
+// ── Bouw de 9 cirkels met landnaam ──
+function bouwLsCirkels(){
+  // Verwijder bestaande cirkels en ringen
+  const veld = document.getElementById('ls-speelveld');
+  veld.querySelectorAll('.ls-cirkel, .ls-ring').forEach(el=>el.remove());
+
+  lsLanden.forEach((land, i)=>{
+    const pos = LS_CIRKELS[i];
+
+    // Feedback-ring (achter de cirkel)
+    const ring = document.createElement('div');
+    ring.className = 'ls-ring';
+    ring.id = 'ls-ring-'+i;
+    ring.style.width = (LS_CIRKEL_GROOTTE+3)+'%';
+    ring.style.height = 'auto';
+    ring.style.aspectRatio = '1';
+    ring.style.left = (pos.x - (LS_CIRKEL_GROOTTE+3)/2)+'%';
+    ring.style.top = (pos.y - (LS_CIRKEL_GROOTTE+3)/2 * 1.5)+'%'; // corrigeer voor aspect-ratio 3:2
+    veld.appendChild(ring);
+
+    // Cirkel met naam
+    const cirkel = document.createElement('div');
+    cirkel.className = 'ls-cirkel';
+    cirkel.id = 'ls-cirkel-'+i;
+    cirkel.style.width = LS_CIRKEL_GROOTTE+'%';
+    cirkel.style.height = 'auto';
+    cirkel.style.aspectRatio = '1';
+    cirkel.style.left = (pos.x - LS_CIRKEL_GROOTTE/2)+'%';
+    cirkel.style.top = (pos.y - LS_CIRKEL_GROOTTE/2 * 1.5)+'%'; // corrigeer voor aspect-ratio 3:2
+    cirkel.textContent = land.naam;
+
+    // Pas tekstgrootte aan voor lange namen
+    veld.appendChild(cirkel);
+  });
+}
+
+// ── Bouw de 9 stempels, willekeurig in het rechter zandgebied ──
+function bouwLsStempels(){
+  const veld = document.getElementById('ls-speelveld');
+  veld.querySelectorAll('.ls-stempel').forEach(el=>el.remove());
+
+  // Schud de volgorde zodat de stempels niet in dezelfde volgorde als de
+  // cirkels liggen (maakt het lastiger om de koppeling te raden)
+  const indices = shuffle([...Array(LS_AANTAL).keys()]);
+
+  indices.forEach((landIdx, i)=>{
+    const land = lsLanden[landIdx];
+    const stempel = document.createElement('div');
+    stempel.className = 'ls-stempel';
+    stempel.id = 'ls-stempel-'+landIdx;
+    stempel.dataset.idx = landIdx;
+    stempel.style.width = LS_STEMPEL_GROOTTE+'%';
+    stempel.style.height = 'auto';
+
+    // Willekeurige positie rechts (65-85% x, verspreid over de hoogte)
+    const rx = 65 + Math.random()*20;
+    const ry = 8 + Math.random()*75;
+    stempel.style.left = rx+'%';
+    stempel.style.top = ry+'%';
+    stempel.style.transform = 'rotate('+(Math.random()*30-15)+'deg)';
+
+    const img = document.createElement('img');
+    img.src = 'images/landenstempels/'+land.bestand+'.png';
+    img.alt = land.naam;
+    img.draggable = false;
+    stempel.appendChild(img);
+
+    // Events
+    stempel.addEventListener('mousedown', lsStartSleep);
+    stempel.addEventListener('touchstart', lsStartSleep, {passive:false});
+
+    veld.appendChild(stempel);
+  });
+}
+
+// ── Drag & drop ──
+function lsGetPointerPos(e){
+  const t = e.touches ? e.touches[0] : e;
+  return {clientX:t.clientX, clientY:t.clientY};
+}
+function lsStartSleep(e){
+  if(lsKlaar) return;
+  // Alleen slepen als het spel actief is (paars/rood status) of als de
+  // speler al een keer op de schelp heeft gedrukt
+  if(!lsActief) return;
+
+  e.preventDefault();
+  const idx = parseInt(e.currentTarget.dataset.idx);
+  lsSleepIdx = idx;
+
+  const stempel = e.currentTarget;
+  const veld = document.getElementById('ls-speelveld');
+  const veldRect = veld.getBoundingClientRect();
+  const pos = lsGetPointerPos(e);
+
+  // Als dit stempel op een cirkel lag, maak die cirkel vrij
+  const oudeCirckel = lsStempelOpCirkel[idx];
+  if(oudeCirckel >= 0){
+    lsKoppeling[oudeCirckel] = -1;
+    lsStempelOpCirkel[idx] = -1;
+  }
+
+  // Bereken offset t.o.v. stempel-linkerbovenhoek
+  const stempelRect = stempel.getBoundingClientRect();
+  lsSleepOffset.x = pos.clientX - stempelRect.left;
+  lsSleepOffset.y = pos.clientY - stempelRect.top;
+
+  stempel.classList.add('slepen');
+  stempel.classList.remove('gesnapt');
+
+  // Globale listeners
+  document.addEventListener('mousemove', lsBeweegSleep);
+  document.addEventListener('mouseup', lsStopSleep);
+  document.addEventListener('touchmove', lsBeweegSleep, {passive:false});
+  document.addEventListener('touchend', lsStopSleep);
+}
+
+function lsBeweegSleep(e){
+  if(lsSleepIdx < 0) return;
+  e.preventDefault();
+  const pos = lsGetPointerPos(e);
+  const veld = document.getElementById('ls-speelveld');
+  const veldRect = veld.getBoundingClientRect();
+
+  const stempel = document.getElementById('ls-stempel-'+lsSleepIdx);
+  const nieuwLeft = ((pos.clientX - lsSleepOffset.x - veldRect.left) / veldRect.width) * 100;
+  const nieuwTop = ((pos.clientY - lsSleepOffset.y - veldRect.top) / veldRect.height) * 100;
+  stempel.style.left = nieuwLeft+'%';
+  stempel.style.top = nieuwTop+'%';
+  stempel.style.transform = 'rotate(0deg)';
+}
+
+function lsStopSleep(e){
+  if(lsSleepIdx < 0) return;
+
+  const idx = lsSleepIdx;
+  lsSleepIdx = -1;
+
+  document.removeEventListener('mousemove', lsBeweegSleep);
+  document.removeEventListener('mouseup', lsStopSleep);
+  document.removeEventListener('touchmove', lsBeweegSleep);
+  document.removeEventListener('touchend', lsStopSleep);
+
+  const stempel = document.getElementById('ls-stempel-'+idx);
+  stempel.classList.remove('slepen');
+
+  // Check of we dicht genoeg bij een cirkel zijn om te snappen
+  const veld = document.getElementById('ls-speelveld');
+  const veldRect = veld.getBoundingClientRect();
+  const stempelRect = stempel.getBoundingClientRect();
+  const stempelCX = ((stempelRect.left + stempelRect.width/2 - veldRect.left) / veldRect.width) * 100;
+  const stempelCY = ((stempelRect.top + stempelRect.height/2 - veldRect.top) / veldRect.height) * 100;
+
+  let dichtstbijIdx = -1;
+  let dichtstbijAfst = Infinity;
+
+  for(let ci = 0; ci < LS_AANTAL; ci++){
+    const cp = LS_CIRKELS[ci];
+    // Y-positie corrigeren: cirkelposities zijn in % van breedte-equivalent,
+    // maar het speelveld heeft aspect-ratio 3:2, dus y in % hoogte =
+    // y_breedte% * (breedte/hoogte) = y * 1.5... maar we vergelijken hier
+    // al in viewport-%, dus laten we gewoon het centrum van de cirkel-div pakken
+    const cirkelEl = document.getElementById('ls-cirkel-'+ci);
+    const cirkelRect = cirkelEl.getBoundingClientRect();
+    const cirkelCX = ((cirkelRect.left + cirkelRect.width/2 - veldRect.left) / veldRect.width) * 100;
+    const cirkelCY = ((cirkelRect.top + cirkelRect.height/2 - veldRect.top) / veldRect.height) * 100;
+
+    const dx = stempelCX - cirkelCX;
+    const dy = (stempelCY - cirkelCY) * (veldRect.height / veldRect.width) * 100;
+    // Vereenvoudigde afstandsberekening in % van breedte
+    const afst = Math.sqrt(dx*dx + ((stempelCY - cirkelCY)*(veldRect.width/veldRect.height))**2  );
+    // Eigenlijk: vergelijk in breedte-%, dus y corrigeren
+    const afstSimple = Math.sqrt(dx*dx + ((stempelCY - cirkelCY) * veldRect.width / veldRect.height)**2);
+
+    if(afstSimple < dichtstbijAfst){
+      dichtstbijAfst = afstSimple;
+      dichtstbijIdx = ci;
+    }
+  }
+
+  if(dichtstbijIdx >= 0 && dichtstbijAfst < LS_SNAP_DREMPEL){
+    // Snap naar deze cirkel
+    // Als er al een ander stempel op deze cirkel lag, duw dat terug
+    const bestaand = lsKoppeling[dichtstbijIdx];
+    if(bestaand >= 0 && bestaand !== idx){
+      // Duw bestaand stempel terug naar een willekeurige plek rechts
+      const oudeStempel = document.getElementById('ls-stempel-'+bestaand);
+      oudeStempel.classList.remove('gesnapt');
+      oudeStempel.style.left = (65 + Math.random()*20)+'%';
+      oudeStempel.style.top = (8 + Math.random()*75)+'%';
+      oudeStempel.style.transform = 'rotate('+(Math.random()*30-15)+'deg)';
+      lsStempelOpCirkel[bestaand] = -1;
+    }
+
+    // Plaats dit stempel op de cirkel
+    lsKoppeling[dichtstbijIdx] = idx;
+    lsStempelOpCirkel[idx] = dichtstbijIdx;
+
+    // Positioneer gecentreerd op de cirkel
+    const cirkelEl = document.getElementById('ls-cirkel-'+dichtstbijIdx);
+    const cirkelRect = cirkelEl.getBoundingClientRect();
+    const snapLeft = ((cirkelRect.left + cirkelRect.width/2 - veldRect.left) / veldRect.width * 100) - LS_STEMPEL_GROOTTE/2;
+    const snapTop = ((cirkelRect.top + cirkelRect.height/2 - veldRect.top) / veldRect.height * 100) - (LS_STEMPEL_GROOTTE/2 * veldRect.width / veldRect.height);
+    stempel.style.left = snapLeft+'%';
+    stempel.style.top = snapTop+'%';
+    stempel.style.transform = 'rotate(0deg)';
+    stempel.classList.add('gesnapt');
+  }
+}
+
+// ── Schelp-knop: statusmachine ──
+function lsSchelpKlik(){
+  if(lsKlaar) return;
+
+  if(lsSchelpStatus === 'groen'){
+    // Groen → kort ingedrukt → paars (start spel)
+    document.getElementById('ls-schelp-img').src = 'images/schelp-groen-ingedrukt.png';
+    setTimeout(()=>{
+      lsSchelpStatus = 'paars';
+      document.getElementById('ls-schelp-img').src = 'images/schelp-paars.png';
+      lsActief = true;
+      lsStartTimer();
+    }, 200);
+    return;
+  }
+
+  if(lsSchelpStatus === 'paars'){
+    // Paars → check antwoorden
+    lsCheckAntwoorden();
+    return;
+  }
+
+  // Rood: klik wordt genegeerd (2 seconden wachttijd loopt)
+}
+
+// ── Antwoorden checken ──
+function lsCheckAntwoorden(){
+  let alleGoed = true;
+
+  for(let ci = 0; ci < LS_AANTAL; ci++){
+    const ring = document.getElementById('ls-ring-'+ci);
+    const stempelIdx = lsKoppeling[ci];
+
+    if(stempelIdx >= 0 && lsLanden[stempelIdx].bestand === lsLanden[ci].bestand){
+      ring.className = 'ls-ring goed';
+    } else {
+      ring.className = 'ls-ring fout';
+      alleGoed = false;
+    }
+  }
+
+  if(alleGoed){
+    // Gewonnen!
+    lsKlaar = true;
+    lsStopTimer();
+    lsSchelpStatus = 'groen';
+    document.getElementById('ls-schelp-wrap').style.display = 'none';
+
+    // Score opslaan
+    lsOpslaanScore(huidigeSpelerNaam(), lsTijdVerstreken);
+
+    // Bonus stempels (altijd 2, want altijd 9/9 goed)
+    const gekozenLanden = kiesBonusLanden(2);
+
+    // Bordje laten vallen
+    const tekst = huidigeSpelerNaam()+'\n'+formatTijdMs(lsTijdVerstreken);
+    document.getElementById('ls-bordje-tekst').textContent = tekst;
+    setTimeout(()=>{
+      document.getElementById('ls-bordje-wrap').classList.add('gevallen');
+    }, 100);
+
+    // Klaar-knoppen tonen
+    setTimeout(()=>{
+      document.getElementById('ls-klaar-knoppen').classList.add('actief');
+      document.getElementById('ls-paspoort-icoon').style.display = 'block';
+      toonVliegendeStempels(gekozenLanden, document.getElementById('ls-paspoort-icoon'));
+    }, 900);
+
+    // Ringen na 3 sec verbergen
+    setTimeout(()=>{
+      for(let i=0;i<LS_AANTAL;i++){
+        document.getElementById('ls-ring-'+i).className = 'ls-ring';
+      }
+    }, 3000);
+
+  } else {
+    // Fout: schelp wordt rood, na 2 seconden weer paars
+    lsSchelpStatus = 'rood';
+    document.getElementById('ls-schelp-img').src = 'images/schelp-rood.png';
+
+    setTimeout(()=>{
+      // Ringen weghalen
+      for(let i=0;i<LS_AANTAL;i++){
+        document.getElementById('ls-ring-'+i).className = 'ls-ring';
+      }
+      // Terug naar paars
+      lsSchelpStatus = 'paars';
+      document.getElementById('ls-schelp-img').src = 'images/schelp-paars.png';
+    }, 2000);
+  }
+}
+
+// ── Timer ──
+function lsStartTimer(){
+  lsTijdStart = performance.now() - lsTijdVerstreken;
+  lsTimerInterval = setInterval(lsUpdateTimer, 100);
+}
+function lsStopTimer(){
+  if(lsTimerInterval){ clearInterval(lsTimerInterval); lsTimerInterval = null; }
+  lsTijdVerstreken = performance.now() - lsTijdStart;
+  lsUpdateTimer();
+}
+function lsUpdateTimer(){
+  if(lsTijdStart !== null) lsTijdVerstreken = performance.now() - lsTijdStart;
+  document.getElementById('ls-timer-vak').textContent = formatTijdMs(lsTijdVerstreken);
+}
+
+// ── Score opslaan ──
+function lsOpslaanScore(naam, tijdMs){
+  const sleutel = 'wonkywings_landjeschuif_scores';
+  let lijst = [];
+  try{ lijst = JSON.parse(localStorage.getItem(sleutel)||'[]'); }catch(e){ lijst=[]; }
+  lijst.push({naam, tijdMs, datum:Date.now()});
+  // Snelste tijd bovenaan
+  lijst.sort((a,b)=> a.tijdMs - b.tijdMs);
+  lijst = lijst.slice(0, 300);
+  localStorage.setItem(sleutel, JSON.stringify(lijst));
+}
+
+// ── Navigatie ──
+function lsNaarMenu(){
+  lsStopTimer();
+  document.getElementById('landjeschuif-veld').classList.remove('actief');
+  document.getElementById('kader').style.display = '';
+  sessionStorage.setItem(VAN_MENU_NAVIGATIE_SLEUTEL, '1');
+  window.location.href = 'index.html';
+}
+function lsNaarSpelkeuze(){
+  lsStopTimer();
+  document.getElementById('landjeschuif-veld').classList.remove('actief');
+  document.getElementById('kader').style.display = '';
+  toonScherm('scherm-spelkeuze');
+}
+
 // ── Init ──
 // Zelfde naam-sleutel als index.html: als de speler daar al een naam heeft
 // ingevuld (het normale pad), slaan we dit eigen naam-scherm gewoon over.
@@ -1010,7 +1590,7 @@ ladenSpelerNaam();
 document.getElementById('speler-waarde').textContent = huidigeSpelerNaam();
 bouwKiesScherm();
 if((localStorage.getItem(NAAM_SLEUTEL)||'').trim()){
-  toonScherm('scherm-kies');
+  toonScherm('scherm-spelkeuze');
 }
 </script>
 
