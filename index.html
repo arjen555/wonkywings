@@ -1286,7 +1286,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.4.3</div>
+  <div id="versie-label">v0.4.4</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2898,8 +2898,8 @@ function toonGeheimwoordPopup(naam){
     tekstEl.textContent = 'Dit is de eerste keer dat we een geheim woordje vragen. Kies er nu een voor ' + naam + ', zodat niemand anders jouw naam kan gebruiken!';
     tipEl.classList.add('tonen');
   } else {
-    tekstEl.textContent = 'Kies een geheim woordje, zodat deze naam van jou blijft!';
-    tipEl.classList.add('tonen');
+    tekstEl.textContent = 'Kies een geheim woord en onthoud dit nou, dan blijft jouw naam bewaard voor jou.';
+    tipEl.classList.remove('tonen');
   }
   document.getElementById('geheimwoord-popup').classList.add('tonen');
   setTimeout(()=>input.focus(), 0);

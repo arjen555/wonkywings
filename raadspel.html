@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <title>Raad het land bij het plaatje — Wereld van Wonderen</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Berkshire+Swash&display=swap" rel="stylesheet"/>
 <style>
   * { box-sizing:border-box; }
   html, body { width:100vw; height:100vh; margin:0; overflow:hidden; background:#020d1a; font-family:"Segoe UI",sans-serif; user-select:none; }
@@ -109,6 +109,14 @@
     max-width:90%; min-height:1.3em; margin:-2% 0 4%; opacity:0; transition:opacity 0.2s;
   }
   .woord-fout.zichtbaar { opacity:1; }
+  /* Rijmzinnetje, alleen zichtbaar bij het (voor het eerst) instellen van een
+     geheim woordje - zelfde opzet en lettertype als in index.html. */
+  .woord-tip {
+    display:none; font-family:'Berkshire Swash',cursive; font-weight:400;
+    font-size:clamp(1rem,2.4vw,1.5rem); line-height:1.5; color:#8a6a3a;
+    text-align:center; max-width:90%; margin:-2% 0 4%;
+  }
+  .woord-tip.tonen { display:block; }
   #scherm-woord .actie-btn.secundair { margin-top:3%; }
 
   /* — Categorie-kiesscherm — */
@@ -276,6 +284,7 @@
 
     <div id="scherm-woord" class="scherm">
       <div class="naam-titel" id="woord-titel"></div>
+      <div class="woord-tip" id="woord-tip">Bewaar dit woordje goed en trouw,<br>dan blijft jouw schat bewaard voor jou.</div>
       <input type="text" id="woord-input" maxlength="20" placeholder="geheim woordje" autocomplete="off"/>
       <div class="woord-fout" id="woord-fout"></div>
       <button class="actie-btn" id="btn-woord-door" onclick="bevestigGeheimwoord()">Doorgaan ▶</button>
@@ -583,16 +592,20 @@ let geheimwoordKandidaatNaam = '';
 function toonGeheimwoordScherm(naam){
   geheimwoordKandidaatNaam = naam;
   const titelEl = document.getElementById('woord-titel');
+  const tipEl = document.getElementById('woord-tip');
   const foutEl = document.getElementById('woord-fout');
   const input = document.getElementById('woord-input');
   foutEl.classList.remove('zichtbaar');
   input.value = '';
   if(geheimwoordVoorNaam(naam)){
     titelEl.textContent = 'Wat is het geheime woordje van ' + naam + '?';
+    tipEl.classList.remove('tonen');
   } else if(heeftBestaandeSpelerData(naam)){
     titelEl.textContent = 'Dit is de eerste keer dat we een geheim woordje vragen. Kies er nu een voor ' + naam + ', zodat niemand anders jouw naam kan gebruiken!';
+    tipEl.classList.add('tonen');
   } else {
-    titelEl.textContent = 'Kies een geheim woordje, zodat deze naam van jou blijft!';
+    titelEl.textContent = 'Kies een geheim woord en onthoud dit nou, dan blijft jouw naam bewaard voor jou.';
+    tipEl.classList.remove('tonen');
   }
   toonScherm('scherm-woord');
   input.focus();
