@@ -358,13 +358,18 @@
     transition:opacity 0.3s;
   }
 
-  /* Speler overlay linksboven */
+  /* Spelernaam rechts op het zand, groot en zwierig */
   #ls-speler-vak {
-    position:absolute; left:3%; top:3%;
-    font-family:'Baloo 2',sans-serif; font-weight:700;
-    color:#fffbe6; font-size:clamp(0.7rem,1.4vw,1.1rem);
-    text-shadow:0 2px 6px rgba(0,0,0,0.7);
-    z-index:60;
+    position:absolute; right:5%; top:38%;
+    transform:rotate(-5deg);
+    font-family:'Berkshire Swash',serif; font-weight:400;
+    color:#5a3d1a; font-size:clamp(1.4rem,3.5vw,2.8rem);
+    text-shadow:0 2px 4px rgba(0,0,0,0.2), 0 0 12px rgba(255,240,180,0.3);
+    z-index:3; pointer-events:none;
+    letter-spacing:0.03em;
+    max-width:30%;
+    text-align:center;
+    word-break:break-word;
   }
 
   /* Wekkerradio rechtsonder met timer op het schermpje */
@@ -387,7 +392,7 @@
 
   /* Menu-knop linksboven — afbeelding (terug-naar-start-knop) */
   #ls-menu-knop {
-    position:absolute; left:3%; bottom:4%;
+    position:absolute; left:3%; top:3%;
     width:clamp(100px, 12%, 180px);
     border:none; background:none; padding:0; cursor:pointer;
     z-index:60; opacity:0.92;
@@ -1242,7 +1247,7 @@ const LS_CIRKELS = [
 ];
 const LS_CIRKEL_GROOTTE = 17.5;   // diameter als % van speelveld-breedte
 const LS_STEMPEL_GROOTTE = 14;    // stempel als % van speelveld-breedte
-const LS_SNAP_DREMPEL = 9;        // snap-afstand als % van speelveld-breedte
+const LS_SNAP_DREMPEL = 14;       // snap-afstand als % van speelveld-breedte (ruim magnetisch)
 
 // ── State ──
 let lsLanden = [];           // 9 gekozen PASPOORT_LANDEN-entries
@@ -1257,11 +1262,55 @@ let lsSchelpStatus = 'groen'; // groen | paars | rood
 let lsSleepIdx = -1;
 let lsSleepOffset = {x:0, y:0};
 
+// ── Continent-gebalanceerde landenselectie ──
+// Verdeling: EU 2-3, AF 1-3, AS 1-3, AM(NA+ZA) 1-3, OC/OV 0-1
+// Altijd precies 1 klein-maar-fijn land, nooit meer.
+function kiesLsLanden(){
+  // 1. Kies 1 klein-maar-fijn land
+  const kmfPool = PASPOORT_LANDEN.filter(p => KLEIN_MAAR_FIJN_BESTANDEN.includes(p.bestand));
+  const kmf = kmfPool[Math.floor(Math.random() * kmfPool.length)];
+
+  // Welk continent telt het kmf-land voor?
+  const contVan = c => (c==='NA'||c==='ZA') ? 'AM' : (c==='OC'||c==='OV') ? 'OC' : c;
+  const kmfCont = contVan(kmf.continent);
+
+  // 2. Verdeling: start met minimum (som=5), verdeel 4 extra willekeurig
+  const doel = {EU:2, AF:1, AS:1, AM:1, OC:0};
+  const maxTotaal = {EU:3, AF:3, AS:3, AM:3, OC:1};
+  let rest = 4;
+  const sloten = shuffle(['EU','AF','AS','AM','OC','EU','AF','AS','AM','OC']);
+  for(const c of sloten){
+    if(rest <= 0) break;
+    if(doel[c] < maxTotaal[c]){ doel[c]++; rest--; }
+  }
+
+  // 3. Het kmf-land telt mee voor zijn continent
+  doel[kmfCont] = Math.max(0, doel[kmfCont] - 1);
+
+  // 4. Vul per continent aan (geen klein-maar-fijn, geen dubbelingen)
+  const gekozen = [kmf];
+  const gekozenBestanden = new Set([kmf.bestand]);
+
+  for(const c of ['EU','AF','AS','AM','OC']){
+    const codes = c==='AM' ? ['NA','ZA'] : c==='OC' ? ['OC','OV'] : [c];
+    const pool = shuffle(PASPOORT_LANDEN.filter(p =>
+      codes.includes(p.continent) &&
+      !KLEIN_MAAR_FIJN_BESTANDEN.includes(p.bestand) &&
+      !gekozenBestanden.has(p.bestand)
+    ));
+    for(let i=0; i<doel[c] && pool.length>0; i++){
+      const land = pool.pop();
+      gekozen.push(land);
+      gekozenBestanden.add(land.bestand);
+    }
+  }
+
+  return gekozen.slice(0, LS_AANTAL);
+}
+
 // ── Start een nieuw potje ──
 function startLandjeSchuif(){
-  // Kies 9 willekeurige landen uit PASPOORT_LANDEN
-  const geschud = shuffle([...PASPOORT_LANDEN]);
-  lsLanden = geschud.slice(0, LS_AANTAL);
+  lsLanden = kiesLsLanden();
 
   // Reset state
   lsKoppeling = new Array(LS_AANTAL).fill(-1);
@@ -1476,15 +1525,14 @@ function lsStopSleep(e){
     const cirkelCX = ((cirkelRect.left + cirkelRect.width/2 - veldRect.left) / veldRect.width) * 100;
     const cirkelCY = ((cirkelRect.top + cirkelRect.height/2 - veldRect.top) / veldRect.height) * 100;
 
-    const dx = stempelCX - cirkelCX;
-    const dy = (stempelCY - cirkelCY) * (veldRect.height / veldRect.width) * 100;
-    // Vereenvoudigde afstandsberekening in % van breedte
-    const afst = Math.sqrt(dx*dx + ((stempelCY - cirkelCY)*(veldRect.width/veldRect.height))**2  );
-    // Eigenlijk: vergelijk in breedte-%, dus y corrigeren
-    const afstSimple = Math.sqrt(dx*dx + ((stempelCY - cirkelCY) * veldRect.width / veldRect.height)**2);
+    // Afstand in pixels (nauwkeurig, ongeacht aspect-ratio)
+    const dxPx = (stempelRect.left + stempelRect.width/2) - (cirkelRect.left + cirkelRect.width/2);
+    const dyPx = (stempelRect.top + stempelRect.height/2) - (cirkelRect.top + cirkelRect.height/2);
+    // Omrekenen naar % van speelveld-breedte voor vergelijking met snap-drempel
+    const afst = Math.sqrt(dxPx*dxPx + dyPx*dyPx) / veldRect.width * 100;
 
-    if(afstSimple < dichtstbijAfst){
-      dichtstbijAfst = afstSimple;
+    if(afst < dichtstbijAfst){
+      dichtstbijAfst = afst;
       dichtstbijIdx = ci;
     }
   }
