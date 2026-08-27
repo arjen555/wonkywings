@@ -316,11 +316,14 @@
     word-break:break-word;
     transform:translate(-50%,-50%);
   }
-  /* Feedback-ringen (goed/fout) — gecentreerd via transform */
+  /* Feedback-ringen (goed/fout) — gecentreerd via transform.
+     z-index MOET hoger zijn dan alle .ls-stempel-varianten (max 50),
+     anders zit de ring altijd verstopt ónder het stempel. */
   .ls-ring {
     position:absolute; border-radius:50%; pointer-events:none;
-    border:clamp(10px, 1.8vw, 22px) solid transparent; opacity:0;
-    box-shadow:0 0 0 3px rgba(255,255,255,0.85);
+    z-index:55;
+    border:clamp(20px, 3.6vw, 44px) solid transparent; opacity:0;
+    box-shadow:0 0 0 4px rgba(255,255,255,0.9);
     transition:opacity 0.25s;
     transform:translate(-50%,-50%);
   }
