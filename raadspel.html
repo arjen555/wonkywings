@@ -319,7 +319,8 @@
   /* Feedback-ringen (goed/fout) — gecentreerd via transform */
   .ls-ring {
     position:absolute; border-radius:50%; pointer-events:none;
-    border:7px solid transparent; opacity:0;
+    border:clamp(10px, 1.8vw, 22px) solid transparent; opacity:0;
+    box-shadow:0 0 0 3px rgba(255,255,255,0.85);
     transition:opacity 0.25s;
     transform:translate(-50%,-50%);
   }
@@ -332,6 +333,7 @@
     cursor:grab; z-index:10;
     transition:transform 0.15s;
   }
+  .ls-stempel.vergroot { z-index:45; }
   .ls-stempel.slepen { cursor:grabbing; z-index:50; transition:none; }
   .ls-stempel.gesnapt {
     cursor:grab; z-index:5;
@@ -342,6 +344,20 @@
     pointer-events:none; border-radius:50%;
     box-shadow:0 3px 10px rgba(0,0,0,0.4);
   }
+
+  /* Grote pijl die bij start van het spel even naar de groene knop wijst */
+  #ls-start-pijl {
+    position:absolute;
+    right:24%; bottom:34%;
+    width:clamp(130px, 23vw, 260px);
+    aspect-ratio:640/431;
+    z-index:70;
+    pointer-events:none;
+    opacity:0;
+    transition:opacity 0.6s ease;
+    filter:drop-shadow(0 4px 10px rgba(0,0,0,0.5));
+  }
+  #ls-start-pijl.zichtbaar { opacity:1; }
 
   /* Schelp + timer samen, rechtsonder — timer als platte tekst boven de schelp */
   #ls-schelp-tijd-groep {
@@ -577,6 +593,7 @@
     <button id="ls-menu-knop" onclick="lsNaarMenu()">
       <img src="images/terug-naar-start-knop.png" alt="Menu"/>
     </button>
+    <img id="ls-start-pijl" src="images/start-pijl.png" alt=""/>
     <div id="ls-schelp-tijd-groep">
       <div id="ls-timer-vak">0:00.0</div>
       <div id="ls-schelp-wrap" onclick="lsSchelpKlik()">
@@ -1315,6 +1332,39 @@ let lsSleepIdx = -1;
 let lsSleepOffset = {x:0, y:0};
 let lsGekozenBonusLanden = [];   // bonus-landen, meteen bij winst bepaald en bijgeschreven
 let lsEindAnimatieGestart = false; // voorkomt dat de klik-ergens-animatie 2x start
+let lsPijlTimer = null;          // timer die de start-pijl weer laat vervagen
+
+// ── Vergroten van stempels via dubbeltik/dubbelklik ──
+let lsLaatsteTik = {};              // stempelindex → tijdstip laatste tik (ms)
+let lsVergroteStempels = new Set(); // stempelindex-en die momenteel 3x vergroot zijn
+const LS_DUBBELTIK_MS = 350;
+
+// Zet de transform (rotatie + evt. 3x-schaal) van één stempel-element.
+// Alle plekken die de rotatie van een stempel zetten gaan via deze functie,
+// zodat een vergroot stempel zijn grootte houdt tijdens slepen/terugspringen.
+function lsStempelTransform(stempelEl, idx, graden){
+  if(!stempelEl) return;
+  const schaal = lsVergroteStempels.has(idx) ? ' scale(3)' : '';
+  stempelEl.style.transform = 'rotate('+graden+'deg)'+schaal;
+}
+
+// Wissel een stempel tussen normaal en 3x vergroot formaat (dubbeltik/-klik)
+function lsToggleStempelVergroting(idx){
+  const stempel = document.getElementById('ls-stempel-'+idx);
+  if(!stempel) return;
+  const huidige = stempel.style.transform || '';
+  const match = huidige.match(/rotate\(([-\d.]+)deg\)/);
+  const graden = match ? parseFloat(match[1]) : 0;
+
+  if(lsVergroteStempels.has(idx)){
+    lsVergroteStempels.delete(idx);
+    stempel.classList.remove('vergroot');
+  } else {
+    lsVergroteStempels.add(idx);
+    stempel.classList.add('vergroot');
+  }
+  lsStempelTransform(stempel, idx, graden);
+}
 
 // ── Continent-gebalanceerde landenselectie ──
 // Verdeling: EU 2-3, AF 1-3, AS 1-3, AM(NA+ZA) 1-3, OC/OV 0-1
@@ -1377,6 +1427,8 @@ function startLandjeSchuif(){
   lsSleepIdx = -1;
   lsGekozenBonusLanden = [];
   lsEindAnimatieGestart = false;
+  lsVergroteStempels.clear();
+  lsLaatsteTik = {};
 
   // Verberg #kader, toon landjeschuif-veld
   document.getElementById('kader').style.display = 'none';
@@ -1408,6 +1460,22 @@ function startLandjeSchuif(){
   // Bouw cirkels en stempels
   bouwLsCirkels();
   bouwLsStempels();
+
+  // Grote pijl kort tonen die naar de groene startknop wijst
+  lsToonStartPijl();
+}
+
+// ── Pijl die bij start even naar de groene knop wijst, en dan vervaagt ──
+function lsToonStartPijl(){
+  const pijl = document.getElementById('ls-start-pijl');
+  if(!pijl) return;
+  clearTimeout(lsPijlTimer);
+  pijl.classList.remove('zichtbaar');
+  // Force reflow, zodat de fade-in ook opnieuw start als de pijl van een
+  // vorig potje nog (deels) zichtbaar was
+  void pijl.offsetWidth;
+  pijl.classList.add('zichtbaar');
+  lsPijlTimer = setTimeout(()=>{ pijl.classList.remove('zichtbaar'); }, 2200);
 }
 
 // ── Bouw de 9 cirkels met landnaam ──
@@ -1472,7 +1540,7 @@ function bouwLsStempels(){
     } while(lsInVerbodenZone(rx, ry));
     stempel.style.left = rx+'%';
     stempel.style.top = ry+'%';
-    stempel.style.transform = 'rotate('+(Math.random()*30-15)+'deg)';
+    lsStempelTransform(stempel, landIdx, Math.random()*30-15);
 
     const img = document.createElement('img');
     img.src = 'images/landenstempels/'+land.bestand+'.png';
@@ -1501,6 +1569,18 @@ function lsStartSleep(e){
 
   e.preventDefault();
   const idx = parseInt(e.currentTarget.dataset.idx);
+
+  // Dubbeltik/dubbelklik op een stempel: 3x vergroten, of weer terug naar
+  // normaal formaat. Vervangt dan het slepen voor deze aanraking/klik.
+  const nu = Date.now();
+  const vorigeTik = lsLaatsteTik[idx] || 0;
+  lsLaatsteTik[idx] = nu;
+  if(nu - vorigeTik < LS_DUBBELTIK_MS){
+    lsLaatsteTik[idx] = 0;
+    lsToggleStempelVergroting(idx);
+    return;
+  }
+
   lsSleepIdx = idx;
 
   const stempel = e.currentTarget;
@@ -1542,7 +1622,7 @@ function lsBeweegSleep(e){
   const nieuwTop = ((pos.clientY - lsSleepOffset.y - veldRect.top) / veldRect.height) * 100;
   stempel.style.left = nieuwLeft+'%';
   stempel.style.top = nieuwTop+'%';
-  stempel.style.transform = 'rotate(0deg)';
+  lsStempelTransform(stempel, lsSleepIdx, 0);
 }
 
 function lsStopSleep(e){
@@ -1605,7 +1685,7 @@ function lsStopSleep(e){
       do { terugX = 65+Math.random()*18; terugY = 8+Math.random()*72; } while(lsInVerbodenZone(terugX, terugY));
       oudeStempel.style.left = terugX+'%';
       oudeStempel.style.top = terugY+'%';
-      oudeStempel.style.transform = 'rotate('+(Math.random()*30-15)+'deg)';
+      lsStempelTransform(oudeStempel, bestaand, Math.random()*30-15);
       lsStempelOpCirkel[bestaand] = -1;
     }
 
@@ -1620,7 +1700,7 @@ function lsStopSleep(e){
     const snapTop = ((cirkelRect.top + cirkelRect.height/2 - veldRect.top) / veldRect.height * 100) - (LS_STEMPEL_GROOTTE/2 * veldRect.width / veldRect.height);
     stempel.style.left = snapLeft+'%';
     stempel.style.top = snapTop+'%';
-    stempel.style.transform = 'rotate(0deg)';
+    lsStempelTransform(stempel, idx, 0);
     stempel.classList.add('gesnapt');
   } else {
     // Niet gesnapt — check of stempel in het schelp+tijd-gebied terecht is gekomen
@@ -1632,7 +1712,7 @@ function lsStopSleep(e){
       do { rx2=65+Math.random()*18; ry2=8+Math.random()*72; } while(lsInVerbodenZone(rx2, ry2));
       stempel.style.left = rx2+'%';
       stempel.style.top = ry2+'%';
-      stempel.style.transform = 'rotate('+(Math.random()*30-15)+'deg)';
+      lsStempelTransform(stempel, idx, Math.random()*30-15);
     }
   }
 }
@@ -1648,6 +1728,9 @@ function lsSchelpKlik(){
     document.getElementById('ls-schelp-wrap').classList.remove('gloed');
     const schelpTekst = document.getElementById('ls-schelp-tekst');
     if(schelpTekst) schelpTekst.style.opacity = '0';
+    // Pijl meteen wegvagen zodra er echt op de knop gedrukt is
+    const pijl = document.getElementById('ls-start-pijl');
+    if(pijl){ pijl.classList.remove('zichtbaar'); clearTimeout(lsPijlTimer); }
     setTimeout(()=>{
       lsSchelpStatus = 'paars';
       document.getElementById('ls-schelp-img').src = 'images/schelp-paars.png';
