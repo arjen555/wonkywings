@@ -1367,16 +1367,26 @@ const LS_RING_GROOTTE = 14;
 // ook niet links van de knop — zodat álle losse stempels boven de tijd
 // blijven zweven en de knop nooit "in dezelfde rij" oogt. Vandaar dat dit
 // een volledige horizontale band is (elke x, vanaf yMin) en geen rechthoek
-// die alleen de rechterkant afschermt. yMin is gemeten op het echte
-// schelp/tijd-blok (niet ruim geschat), zodat er zoveel mogelijk
-// zandruimte overblijft om stempels neer te leggen.
-const LS_VERBODEN_ZONE = { yMin: 64 };
+// die alleen de rechterkant afschermt.
+//
+// yMin wordt LIVE gemeten aan #ls-schelp-tijd-groep (i.p.v. een vast
+// percentage), want die groep heeft zelf ook een clamp() met een
+// pixel-maximum — op een breed scherm valt die groep relatief kleiner uit
+// en zakt hij dus verder omlaag. Een vast yMin klopte dan niet meer met
+// waar de tijd/knop ECHT stonden, en bleef er onnodig veel zandruimte
+// onbenut. Door 'm elke keer opnieuw op te meten, klopt de grens altijd,
+// op elk schermformaat.
+function lsMeetVerbodenYMin(veldRect){
+  const groep = document.getElementById('ls-schelp-tijd-groep');
+  const groepRect = groep.getBoundingClientRect();
+  return (groepRect.top - veldRect.top) / veldRect.height * 100;
+}
 // hoogte is de eigen hoogte van het stempel, in % van de speelveld-hoogte —
 // zonder dit meegewogen zou alleen de bovenkant van het stempel gecheckt
 // worden, terwijl de onderkant (het stempel is zelf best hoog) alsnog ver
 // het verboden gebied in kan steken. Vandaar: bovenkant + hoogte > yMin.
-function lsInVerbodenZone(x, y, hoogte){
-  return (y + (hoogte||0)) > LS_VERBODEN_ZONE.yMin;
+function lsInVerbodenZone(x, y, hoogte, yMin){
+  return (y + (hoogte||0)) > yMin;
 }
 
 // ── State ──
@@ -1604,6 +1614,7 @@ function bouwLsStempels(){
   // vierkant, dus breedte-% omrekenen naar hoogte-% via de veld-aspectratio)
   const veldRect = veld.getBoundingClientRect();
   const lsStempelHoogtePct = LS_STEMPEL_GROOTTE * veldRect.width / veldRect.height * LS_STEMPEL_ROTATIE_MARGE;
+  const lsYMin = lsMeetVerbodenYMin(veldRect);
 
   // Schud de volgorde zodat de stempels niet in dezelfde volgorde als de
   // cirkels liggen (maakt het lastiger om de koppeling te raden)
@@ -1624,7 +1635,7 @@ function bouwLsStempels(){
     do {
       rx = 65 + Math.random()*18;
       ry = 8 + Math.random()*72;
-    } while(lsInVerbodenZone(rx, ry, lsStempelHoogtePct));
+    } while(lsInVerbodenZone(rx, ry, lsStempelHoogtePct, lsYMin));
     stempel.style.left = rx+'%';
     stempel.style.top = ry+'%';
     lsStempelTransform(stempel, landIdx, Math.random()*30-15);
@@ -1640,6 +1651,51 @@ function bouwLsStempels(){
     stempel.addEventListener('touchstart', lsStartSleep, {passive:false});
 
     veld.appendChild(stempel);
+  });
+
+  // lsMeetVerbodenYMin() hierboven leunt op de ECHTE, actuele afmeting van
+  // #ls-schelp-tijd-groep. Vlak bij de allereerste ronde (net na het laden
+  // van de pagina) kan het zijn dat de schelp-afbeelding of het lettertype
+  // nog niet klaar is — dan oogt die groep tijdelijk kleiner dan straks, en
+  // schat lsYMin de grens te ruim in. Zodra alles écht geladen is,
+  // controleren we daarom nog één keer of alle stempels boven de
+  // (dan pas definitieve) grens staan, en schuiven we de uitzonderingen bij.
+  lsHerstelStempelsNaLaden(veld);
+}
+
+function lsHerstelStempelsNaLaden(veld){
+  const schelpImg = document.getElementById('ls-schelp-img');
+  const imgKlaar = (schelpImg && !schelpImg.complete)
+    ? new Promise(res => {
+        schelpImg.addEventListener('load', res, {once:true});
+        schelpImg.addEventListener('error', res, {once:true});
+      })
+    : Promise.resolve();
+  const fontsKlaar = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+
+  Promise.all([imgKlaar, fontsKlaar]).then(() => {
+    // Nog één frame wachten: direct na het load/ready-event is de layout
+    // soms nog niet helemaal bijgewerkt.
+    requestAnimationFrame(() => {
+      const veldRect = veld.getBoundingClientRect();
+      const hoogte = LS_STEMPEL_GROOTTE * veldRect.width / veldRect.height * LS_STEMPEL_ROTATIE_MARGE;
+      const yMin = lsMeetVerbodenYMin(veldRect);
+      veld.querySelectorAll('.ls-stempel').forEach(st => {
+        // Niet aankomen als de speler 'm al beet heeft of al heeft neergelegd
+        if(st.classList.contains('gesnapt') || st.classList.contains('slepen')) return;
+        const curLeft = parseFloat(st.style.left);
+        const curTop = parseFloat(st.style.top);
+        if(lsInVerbodenZone(curLeft, curTop, hoogte, yMin)){
+          let rx, ry;
+          do {
+            rx = 65 + Math.random()*18;
+            ry = 8 + Math.random()*72;
+          } while(lsInVerbodenZone(rx, ry, hoogte, yMin));
+          st.style.left = rx+'%';
+          st.style.top = ry+'%';
+        }
+      });
+    });
   });
 }
 
@@ -1735,6 +1791,7 @@ function lsStopSleep(e){
   // Eigen hoogte van een (normaal formaat) stempel in % van de speelveld-hoogte,
   // voor de verboden-zone-check hieronder (zie lsInVerbodenZone)
   const lsStempelHoogtePct = LS_STEMPEL_GROOTTE * veldRect.width / veldRect.height * LS_STEMPEL_ROTATIE_MARGE;
+  const lsYMin = lsMeetVerbodenYMin(veldRect);
 
   let dichtstbijIdx = -1;
   let dichtstbijAfst = Infinity;
@@ -1772,7 +1829,7 @@ function lsStopSleep(e){
       oudeStempel.classList.remove('gesnapt');
       // Vermijd het schelp+tijd-gebied bij terugplaatsen
       let terugX, terugY;
-      do { terugX = 65+Math.random()*18; terugY = 8+Math.random()*72; } while(lsInVerbodenZone(terugX, terugY, lsStempelHoogtePct));
+      do { terugX = 65+Math.random()*18; terugY = 8+Math.random()*72; } while(lsInVerbodenZone(terugX, terugY, lsStempelHoogtePct, lsYMin));
       oudeStempel.style.left = terugX+'%';
       oudeStempel.style.top = terugY+'%';
       lsStempelTransform(oudeStempel, bestaand, Math.random()*30-15);
@@ -1796,10 +1853,10 @@ function lsStopSleep(e){
     // Niet gesnapt — check of stempel in het schelp+tijd-gebied terecht is gekomen
     const dropLeft = parseFloat(stempel.style.left);
     const dropTop = parseFloat(stempel.style.top);
-    if(lsInVerbodenZone(dropLeft, dropTop, lsStempelHoogtePct)){
+    if(lsInVerbodenZone(dropLeft, dropTop, lsStempelHoogtePct, lsYMin)){
       // Duw terug naar veilige zone
       let rx2, ry2;
-      do { rx2=65+Math.random()*18; ry2=8+Math.random()*72; } while(lsInVerbodenZone(rx2, ry2, lsStempelHoogtePct));
+      do { rx2=65+Math.random()*18; ry2=8+Math.random()*72; } while(lsInVerbodenZone(rx2, ry2, lsStempelHoogtePct, lsYMin));
       stempel.style.left = rx2+'%';
       stempel.style.top = ry2+'%';
       lsStempelTransform(stempel, idx, Math.random()*30-15);
