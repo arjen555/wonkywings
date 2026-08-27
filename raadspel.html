@@ -385,6 +385,36 @@
     100% { filter:drop-shadow(0 4px 10px rgba(0,0,0,0.5)) contrast(1.818) brightness(1.43); }
   }
 
+  /* Uitlegkader linksboven de cirkels — zelfde intro-overlay als de pijl:
+     verschijnt bij start, blijft staan tot de eerste klik/tik. Simpel
+     doorschijnend vlak, geen nieuwe illustratie nodig. Krijgt dezelfde
+     contrast/brightness-compensatie als de pijl, anders wordt de tekst
+     door #ls-speelveld.pijl-toont zelf ook gedimd en minder leesbaar. */
+  #ls-uitleg-kader {
+    position:absolute;
+    left:4%; top:50%;
+    transform:translateY(-50%);
+    width:clamp(230px, 40%, 460px);
+    background:rgba(10,20,30,0.85);
+    border:2px solid rgba(255,255,255,0.3);
+    border-radius:16px;
+    padding:clamp(14px,2.2vw,26px) clamp(16px,2.6vw,30px);
+    color:#f5efe0;
+    font-family:'Baloo 2',sans-serif; font-weight:700;
+    font-size:clamp(0.8rem,1.5vw,1.1rem);
+    line-height:1.6;
+    z-index:69;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.6s ease;
+    box-shadow:0 8px 30px rgba(0,0,0,0.5);
+    filter:contrast(1.818) brightness(1.43);
+  }
+  #ls-uitleg-kader.zichtbaar { opacity:1; }
+  #ls-uitleg-kader ul { margin:0; padding-left:1.15em; }
+  #ls-uitleg-kader li { margin-bottom:0.55em; }
+  #ls-uitleg-kader li:last-child { margin-bottom:0; }
+
   /* Schelp + timer samen, rechtsonder — timer als platte tekst boven de schelp */
   #ls-schelp-tijd-groep {
     position:absolute; right:3%; bottom:3%;
@@ -630,6 +660,16 @@
       </button>
     </div>
     <img id="ls-start-pijl" src="images/start-pijl.png" alt=""/>
+    <div id="ls-uitleg-kader">
+      <ul>
+        <li>Druk op de groene knop om te beginnen</li>
+        <li>Leg de sticker op het juiste land</li>
+        <li>Beter zien? Twee keer erop drukken</li>
+        <li>Denk je dat het goed is, druk dan op de paarse knop</li>
+        <li>Nog een foutje? Ga snel verder!</li>
+        <li>Alle 9 goed? Stop de tijd!</li>
+      </ul>
+    </div>
     <div id="ls-schelp-tijd-groep">
       <div id="ls-timer-vak">0:00.0</div>
       <div id="ls-schelp-wrap" onclick="lsSchelpKlik()">
@@ -1363,7 +1403,6 @@ let lsSleepIdx = -1;
 let lsSleepOffset = {x:0, y:0};
 let lsGekozenBonusLanden = [];   // bonus-landen, meteen bij winst bepaald en bijgeschreven
 let lsEindAnimatieGestart = false; // voorkomt dat de klik-ergens-animatie 2x start
-let lsPijlTimer = null;          // timer die de start-pijl weer laat vervagen
 
 // ── Vergroten van stempels via dubbeltik/dubbelklik ──
 let lsLaatsteTik = {};              // stempelindex → tijdstip laatste tik (ms)
@@ -1492,27 +1531,43 @@ function startLandjeSchuif(){
   bouwLsCirkels();
   bouwLsStempels();
 
-  // Grote pijl kort tonen die naar de groene startknop wijst
-  lsToonStartPijl();
+  // Pijl + uitlegkader tonen — blijven nu staan tot de speler ergens
+  // klikt/tikt (geen vaste tijd meer)
+  lsToonIntroOverlay();
 }
 
-// ── Pijl die bij start even naar de groene knop wijst, en dan vervaagt ──
-function lsToonStartPijl(){
+// ── Intro-overlay: pijl + uitlegkader bij start van het potje ──
+// Blijven allebei zichtbaar (met de dim eronder) totdat de speler ergens
+// op het speelveld klikt of tikt — niet meer na een vaste tijd.
+function lsVerbergIntroOverlay(){
   const pijl = document.getElementById('ls-start-pijl');
   const veld = document.getElementById('ls-speelveld');
-  if(!pijl) return;
-  clearTimeout(lsPijlTimer);
+  const uitleg = document.getElementById('ls-uitleg-kader');
+  if(pijl) pijl.classList.remove('zichtbaar');
+  if(veld) veld.classList.remove('pijl-toont');
+  if(uitleg) uitleg.classList.remove('zichtbaar');
+}
+function lsToonIntroOverlay(){
+  const pijl = document.getElementById('ls-start-pijl');
+  const veld = document.getElementById('ls-speelveld');
+  const uitleg = document.getElementById('ls-uitleg-kader');
+  if(!pijl || !veld) return;
+
   pijl.classList.remove('zichtbaar');
   veld.classList.remove('pijl-toont');
-  // Force reflow, zodat de fade-in/dim ook opnieuw start als de pijl van
-  // een vorig potje nog (deels) zichtbaar was
+  if(uitleg) uitleg.classList.remove('zichtbaar');
+  // Force reflow, zodat de fade-in/dim ook opnieuw start als een en ander
+  // van een vorig potje nog (deels) zichtbaar was
   void pijl.offsetWidth;
   pijl.classList.add('zichtbaar');
   veld.classList.add('pijl-toont');
-  lsPijlTimer = setTimeout(()=>{
-    pijl.classList.remove('zichtbaar');
-    veld.classList.remove('pijl-toont');
-  }, 3200);
+  if(uitleg) uitleg.classList.add('zichtbaar');
+
+  // Capture + once: dit vuurt altijd bij de allereerste klik/tik ergens
+  // op het speelveld — ook als het doelelement (bv. een stempel of de
+  // schelp-knop) de klik daarna zelf nog verder afhandelt.
+  veld.addEventListener('mousedown', lsVerbergIntroOverlay, { capture:true, once:true });
+  veld.addEventListener('touchstart', lsVerbergIntroOverlay, { capture:true, once:true, passive:true });
 }
 
 // ── Bouw de 9 cirkels met landnaam ──
@@ -1765,14 +1820,8 @@ function lsSchelpKlik(){
     document.getElementById('ls-schelp-wrap').classList.remove('gloed');
     const schelpTekst = document.getElementById('ls-schelp-tekst');
     if(schelpTekst) schelpTekst.style.opacity = '0';
-    // Pijl (en de dim eronder) meteen wegvagen zodra er echt op de knop
-    // gedrukt is
-    const pijl = document.getElementById('ls-start-pijl');
-    if(pijl){
-      pijl.classList.remove('zichtbaar');
-      document.getElementById('ls-speelveld').classList.remove('pijl-toont');
-      clearTimeout(lsPijlTimer);
-    }
+    // Pijl/uitlegkader/dim zijn al weggevaagd door de mousedown-capture-
+    // listener in lsToonIntroOverlay() (die vuurt eerder dan deze klik)
     setTimeout(()=>{
       lsSchelpStatus = 'paars';
       document.getElementById('ls-schelp-img').src = 'images/schelp-paars.png';
