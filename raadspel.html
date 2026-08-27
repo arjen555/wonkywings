@@ -359,8 +359,8 @@
      en één keer oplicht om extra op te vallen tegen de drukke achtergrond */
   #ls-start-pijl {
     position:absolute;
-    right:20%; bottom:30%;
-    width:clamp(190px, 32vw, 360px);
+    right:14.6%; bottom:2.3%;
+    width:clamp(260px, 64vw, 720px);
     aspect-ratio:640/431;
     z-index:70;
     pointer-events:none;
@@ -442,17 +442,25 @@
     word-break:break-word;
   }
 
-  /* Menu-knop linksboven — afbeelding (terug-naar-start-knop) */
-  #ls-menu-knop {
+  /* Menu-knop linksboven (terug-naar-start-knop) +, pas zichtbaar zodra
+     een potje klaar is, de octopus-knop eronder om meteen opnieuw te
+     spelen (nieuwe 9 landen, geen paginaherlaad) */
+  #ls-menu-groep {
     position:absolute; left:3%; top:3%;
+    display:flex; flex-direction:column; gap:10px;
+    z-index:60;
+  }
+  #ls-menu-knop, #ls-opnieuw-knop {
     width:clamp(120px, 15%, 220px);
     border:none; background:none; padding:0; cursor:pointer;
-    z-index:60; opacity:0.92;
+    opacity:0.92;
     filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5));
     transition:opacity 0.15s, transform 0.15s;
   }
-  #ls-menu-knop:hover { opacity:1; transform:scale(1.03); }
-  #ls-menu-knop img { width:100%; display:block; }
+  #ls-menu-knop:hover, #ls-opnieuw-knop:hover { opacity:1; transform:scale(1.03); }
+  #ls-menu-knop img, #ls-opnieuw-knop img { width:100%; display:block; }
+  #ls-opnieuw-knop { display:none; }
+  #ls-opnieuw-knop.actief { display:block; }
 
   /* Bordje (valt naar beneden) */
   #ls-bordje-wrap {
@@ -609,9 +617,14 @@
 <div id="landjeschuif-veld">
   <div id="ls-speelveld">
     <div id="ls-speler-vak">Speler</div>
-    <button id="ls-menu-knop" onclick="lsNaarMenu()">
-      <img src="images/terug-naar-start-knop.png" alt="Menu"/>
-    </button>
+    <div id="ls-menu-groep">
+      <button id="ls-menu-knop" onclick="lsNaarMenu()">
+        <img src="images/terug-naar-start-knop.png" alt="Menu"/>
+      </button>
+      <button id="ls-opnieuw-knop" onclick="startLandjeSchuif()">
+        <img src="images/opnieuw-knop.png" alt="Nog een ronde"/>
+      </button>
+    </div>
     <img id="ls-start-pijl" src="images/start-pijl.png" alt=""/>
     <div id="ls-schelp-tijd-groep">
       <div id="ls-timer-vak">0:00.0</div>
@@ -1464,8 +1477,9 @@ function startLandjeSchuif(){
   bordjeWrap.style.top = '';
   document.getElementById('ls-bordje-tekst').textContent = '';
 
-  // Reset de paspoort/boek-iconen
+  // Reset de paspoort/boek-iconen en de octopus-herstartknop
   document.getElementById('ls-eind-iconen').classList.remove('actief');
+  document.getElementById('ls-opnieuw-knop').classList.remove('actief');
 
   // Bouw cirkels en stempels
   bouwLsCirkels();
@@ -1796,6 +1810,7 @@ function lsCheckAntwoorden(){
     // (zelfde vak in #ls-schelp-tijd-groep), zodat de timer erboven niet
     // verspringt.
     document.getElementById('ls-eind-iconen').classList.add('actief');
+    document.getElementById('ls-opnieuw-knop').classList.add('actief');
 
     // Score opslaan
     lsOpslaanScore(huidigeSpelerNaam(), lsTijdVerstreken);
