@@ -293,21 +293,23 @@
     overflow:hidden;
   }
 
-  /* Cirkels met landnaam */
+  /* Cirkels met landnaam — gecentreerd via transform */
   .ls-cirkel {
     position:absolute; border-radius:50%;
     display:flex; align-items:center; justify-content:center;
     text-align:center; pointer-events:none;
     font-family:'Baloo 2',sans-serif; font-weight:700;
     color:#3b2a18; font-size:clamp(0.7rem,1.7vw,1.15rem);
-    line-height:1.15; padding:4%;
+    line-height:1.15; padding:10%;
     word-break:break-word;
+    transform:translate(-50%,-50%);
   }
-  /* Feedback-ringen (goed/fout) */
+  /* Feedback-ringen (goed/fout) — gecentreerd via transform */
   .ls-ring {
     position:absolute; border-radius:50%; pointer-events:none;
     border:4px solid transparent; opacity:0;
     transition:opacity 0.25s;
+    transform:translate(-50%,-50%);
   }
   .ls-ring.goed { border-color:#4caf50; opacity:1; }
   .ls-ring.fout { border-color:#e05353; opacity:1; }
@@ -331,8 +333,8 @@
 
   /* Schelp-knop — groot, rechtsonder naast wekkerradio */
   #ls-schelp-wrap {
-    position:absolute; right:22%; bottom:3%;
-    width:clamp(70px, 13%, 120px); cursor:pointer;
+    position:absolute; right:18%; bottom:2%;
+    width:clamp(180px, 30%, 300px); cursor:pointer;
     z-index:65;
     filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5));
     transition:transform 0.12s;
@@ -363,7 +365,7 @@
     position:absolute; right:5%; top:38%;
     transform:rotate(-5deg);
     font-family:'Berkshire Swash',serif; font-weight:400;
-    color:#5a3d1a; font-size:clamp(1.4rem,3.5vw,2.8rem);
+    color:#5a3d1a; font-size:clamp(2.8rem,7vw,5.5rem);
     text-shadow:0 2px 4px rgba(0,0,0,0.2), 0 0 12px rgba(255,240,180,0.3);
     z-index:3; pointer-events:none;
     letter-spacing:0.03em;
@@ -375,7 +377,7 @@
   /* Wekkerradio rechtsonder met timer op het schermpje */
   #ls-wekkerradio {
     position:absolute; right:0; bottom:0;
-    width:clamp(120px, 20%, 210px);
+    width:clamp(180px, 30%, 320px);
     z-index:55; pointer-events:none;
   }
   #ls-wekkerradio-img { width:100%; display:block; }
@@ -384,7 +386,7 @@
     left:38%; top:26%; width:38%; height:30%;
     display:flex; align-items:center; justify-content:center;
     font-family:'Baloo 2',sans-serif; font-weight:800;
-    color:#5dffd0; font-size:clamp(0.7rem,1.4vw,1.15rem);
+    color:#5dffd0; font-size:clamp(1rem,2vw,1.6rem);
     text-shadow:0 0 8px rgba(93,255,208,0.6), 0 0 16px rgba(93,255,208,0.25);
     transform:rotate(-7deg);
     pointer-events:none;
@@ -1370,22 +1372,21 @@ function bouwLsCirkels(){
     ring.style.width = (LS_CIRKEL_GROOTTE+3)+'%';
     ring.style.height = 'auto';
     ring.style.aspectRatio = '1';
-    ring.style.left = (pos.x - (LS_CIRKEL_GROOTTE+3)/2)+'%';
-    ring.style.top = (pos.y - (LS_CIRKEL_GROOTTE+3)/2 * 1.5)+'%'; // corrigeer voor aspect-ratio 3:2
+    ring.style.left = pos.x+'%';
+    ring.style.top = pos.y+'%';
     veld.appendChild(ring);
 
-    // Cirkel met naam
+    // Cirkel met naam — left/top = middelpunt, CSS transform centreert
     const cirkel = document.createElement('div');
     cirkel.className = 'ls-cirkel';
     cirkel.id = 'ls-cirkel-'+i;
     cirkel.style.width = LS_CIRKEL_GROOTTE+'%';
     cirkel.style.height = 'auto';
     cirkel.style.aspectRatio = '1';
-    cirkel.style.left = (pos.x - LS_CIRKEL_GROOTTE/2)+'%';
-    cirkel.style.top = (pos.y - LS_CIRKEL_GROOTTE/2 * 1.5)+'%'; // corrigeer voor aspect-ratio 3:2
+    cirkel.style.left = pos.x+'%';
+    cirkel.style.top = pos.y+'%';
     cirkel.textContent = land.naam;
 
-    // Pas tekstgrootte aan voor lange namen
     veld.appendChild(cirkel);
   });
 }
@@ -1409,12 +1410,12 @@ function bouwLsStempels(){
     stempel.style.height = 'auto';
 
     // Willekeurige positie rechts (65-83% x, verspreid over de hoogte)
-    // Vermijd de wekkerradio-hoek rechtsonder (x>76% EN y>60%)
+    // Vermijd de wekkerradio-hoek rechtsonder EN het schelp-gebied
     let rx, ry;
     do {
       rx = 65 + Math.random()*18;
       ry = 8 + Math.random()*72;
-    } while(rx > 76 && ry > 58);
+    } while((rx > 70 && ry > 52) || (rx > 76 && ry > 48));
     stempel.style.left = rx+'%';
     stempel.style.top = ry+'%';
     stempel.style.transform = 'rotate('+(Math.random()*30-15)+'deg)';
@@ -1545,9 +1546,9 @@ function lsStopSleep(e){
       // Duw bestaand stempel terug naar een willekeurige plek rechts
       const oudeStempel = document.getElementById('ls-stempel-'+bestaand);
       oudeStempel.classList.remove('gesnapt');
-      // Vermijd wekkerradio-hoek bij terugplaatsen
+      // Vermijd wekkerradio-hoek en schelp-gebied bij terugplaatsen
       let terugX, terugY;
-      do { terugX = 65+Math.random()*18; terugY = 8+Math.random()*72; } while(terugX>76&&terugY>58);
+      do { terugX = 65+Math.random()*18; terugY = 8+Math.random()*72; } while((terugX>70&&terugY>52)||(terugX>76&&terugY>48));
       oudeStempel.style.left = terugX+'%';
       oudeStempel.style.top = terugY+'%';
       oudeStempel.style.transform = 'rotate('+(Math.random()*30-15)+'deg)';
@@ -1568,13 +1569,13 @@ function lsStopSleep(e){
     stempel.style.transform = 'rotate(0deg)';
     stempel.classList.add('gesnapt');
   } else {
-    // Niet gesnapt — check of stempel in wekkerradio-zone terecht is gekomen
+    // Niet gesnapt — check of stempel in wekkerradio/schelp-zone terecht is gekomen
     const dropLeft = parseFloat(stempel.style.left);
     const dropTop = parseFloat(stempel.style.top);
-    if(dropLeft > 74 && dropTop > 56){
+    if((dropLeft > 70 && dropTop > 52) || (dropLeft > 76 && dropTop > 48)){
       // Duw terug naar veilige zone
       let rx2, ry2;
-      do { rx2=65+Math.random()*18; ry2=8+Math.random()*72; } while(rx2>76&&ry2>58);
+      do { rx2=65+Math.random()*18; ry2=8+Math.random()*72; } while((rx2>70&&ry2>52)||(rx2>76&&ry2>48));
       stempel.style.left = rx2+'%';
       stempel.style.top = ry2+'%';
       stempel.style.transform = 'rotate('+(Math.random()*30-15)+'deg)';
