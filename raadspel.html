@@ -303,7 +303,14 @@
     aspect-ratio:3/2;
     background:url('images/landjeschuif-achtergrond.jpg') center/contain no-repeat;
     overflow:hidden;
+    transition:filter 0.6s ease;
   }
+  /* Tijdens het tonen van de start-pijl: de rest van het speelveld (incl.
+     achtergrond) even laag contrast/helderheid, zodat de pijl er extra
+     uitspringt. De pijl zelf compenseert dit met een tegengesteld filter
+     (zie #ls-start-pijl / de ls-pijl-oplichten animatie), zodat híj als
+     enige gewoon normaal blijft ogen. */
+  #ls-speelveld.pijl-toont { filter:contrast(0.55) brightness(0.7); }
 
   /* Cirkels met landnaam — gecentreerd via transform */
   .ls-cirkel {
@@ -348,11 +355,12 @@
     box-shadow:0 3px 10px rgba(0,0,0,0.4);
   }
 
-  /* Grote pijl die bij start van het spel even naar de groene knop wijst */
+  /* Grote pijl die bij start van het spel even naar de groene knop wijst,
+     en één keer oplicht om extra op te vallen tegen de drukke achtergrond */
   #ls-start-pijl {
     position:absolute;
-    right:24%; bottom:34%;
-    width:clamp(130px, 23vw, 260px);
+    right:20%; bottom:30%;
+    width:clamp(190px, 32vw, 360px);
     aspect-ratio:640/431;
     z-index:70;
     pointer-events:none;
@@ -360,7 +368,22 @@
     transition:opacity 0.6s ease;
     filter:drop-shadow(0 4px 10px rgba(0,0,0,0.5));
   }
-  #ls-start-pijl.zichtbaar { opacity:1; }
+  #ls-start-pijl.zichtbaar {
+    opacity:1;
+    animation:ls-pijl-oplichten 1.6s ease-out;
+    animation-fill-mode:forwards;
+  }
+  /* De contrast(1.818)/brightness(1.43)-factoren heffen precies op wat
+     #ls-speelveld.pijl-toont eronder dimt (contrast 0.55 x 1.818 = 1,
+     brightness 0.7 x 1.43 = 1) — zo blijft de pijl zelf normaal ogen
+     terwijl de rest van het speelveld gedimd is. animation-fill-mode:
+     forwards houdt dat vast na de eerste oplicht-flits (0-1,6s), voor de
+     hele periode dat de pijl daarna nog in beeld blijft. */
+  @keyframes ls-pijl-oplichten {
+    0%   { filter:drop-shadow(0 4px 10px rgba(0,0,0,0.5)) contrast(1.818) brightness(1.43); }
+    35%  { filter:drop-shadow(0 0 45px rgba(255,241,150,0.95)) contrast(1.818) brightness(2.43); }
+    100% { filter:drop-shadow(0 4px 10px rgba(0,0,0,0.5)) contrast(1.818) brightness(1.43); }
+  }
 
   /* Schelp + timer samen, rechtsonder — timer als platte tekst boven de schelp */
   #ls-schelp-tijd-groep {
@@ -435,35 +458,28 @@
   #ls-bordje-wrap {
     position:absolute; left:50%; top:-100%;
     transform:translateX(-50%);
-    width:clamp(260px, 48%, 480px);
+    width:clamp(312px, 57.6%, 576px);
     z-index:80; pointer-events:none;
     transition:top 0.8s cubic-bezier(0.22,1,0.36,1);
   }
   #ls-bordje-wrap.gevallen { top:24%; }
   #ls-bordje-wrap img { width:100%; display:block; }
+  /* Positie is afgestemd op het plankje in het nieuwe bordje.png (langere
+     touwen, plankje zelf staat rond 70-88% van de hoogte van de afbeelding) */
   #ls-bordje-tekst {
-    position:absolute; left:50%; top:50%;
+    position:absolute; left:50%; top:79%;
     transform:translate(-50%,-50%) rotate(-3deg);
     font-family:'Berkshire Swash',serif; font-weight:400;
     color:#3b2a18; font-size:clamp(0.8rem,1.8vw,1.3rem);
     text-align:center; white-space:pre-line;
-    width:70%; line-height:1.3;
+    width:60%; line-height:1.3;
   }
-
-  /* Klaar-knoppen (na winst) */
-  #ls-klaar-knoppen {
-    display:none; position:absolute; left:3%; bottom:5%;
-    flex-direction:column; gap:8px; z-index:70;
+  /* Tijd los en veel groter dan de naam erboven */
+  #ls-bordje-tijd {
+    display:inline-block;
+    font-size:clamp(1.8rem, 7.2vw, 4.2rem);
+    line-height:1.1;
   }
-  #ls-klaar-knoppen.actief { display:flex; }
-  #ls-klaar-knoppen button {
-    width:clamp(120px, 14vw, 220px); border:none; background:none;
-    padding:0; cursor:pointer; opacity:0.92;
-    filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5));
-    transition:opacity 0.15s, transform 0.15s;
-  }
-  #ls-klaar-knoppen button:hover { opacity:1; transform:scale(1.03); }
-  #ls-klaar-knoppen button img { width:100%; display:block; }
 
   /* Paspoort + Boek der Groten naast elkaar, in de plek waar de schelp-
      knop stond zodra het potje klaar is (zelfde rij als de timer erboven,
@@ -611,14 +627,6 @@
     <div id="ls-bordje-wrap">
       <img src="images/bordje.png" alt=""/>
       <div id="ls-bordje-tekst"></div>
-    </div>
-    <div id="ls-klaar-knoppen">
-      <button onclick="lsNaarMenu()">
-        <img src="images/terug-naar-start-knop.png" alt="Terug naar start"/>
-      </button>
-      <button onclick="lsNaarSpelkeuze()">
-        <img src="images/nog_een_ronde_raad_je_plaatje.png" alt="Nog een ronde"/>
-      </button>
     </div>
   </div>
 </div>
@@ -1456,8 +1464,7 @@ function startLandjeSchuif(){
   bordjeWrap.style.top = '';
   document.getElementById('ls-bordje-tekst').textContent = '';
 
-  // Reset klaar-knoppen en de paspoort/boek-iconen
-  document.getElementById('ls-klaar-knoppen').classList.remove('actief');
+  // Reset de paspoort/boek-iconen
   document.getElementById('ls-eind-iconen').classList.remove('actief');
 
   // Bouw cirkels en stempels
@@ -1471,14 +1478,20 @@ function startLandjeSchuif(){
 // ── Pijl die bij start even naar de groene knop wijst, en dan vervaagt ──
 function lsToonStartPijl(){
   const pijl = document.getElementById('ls-start-pijl');
+  const veld = document.getElementById('ls-speelveld');
   if(!pijl) return;
   clearTimeout(lsPijlTimer);
   pijl.classList.remove('zichtbaar');
-  // Force reflow, zodat de fade-in ook opnieuw start als de pijl van een
-  // vorig potje nog (deels) zichtbaar was
+  veld.classList.remove('pijl-toont');
+  // Force reflow, zodat de fade-in/dim ook opnieuw start als de pijl van
+  // een vorig potje nog (deels) zichtbaar was
   void pijl.offsetWidth;
   pijl.classList.add('zichtbaar');
-  lsPijlTimer = setTimeout(()=>{ pijl.classList.remove('zichtbaar'); }, 2200);
+  veld.classList.add('pijl-toont');
+  lsPijlTimer = setTimeout(()=>{
+    pijl.classList.remove('zichtbaar');
+    veld.classList.remove('pijl-toont');
+  }, 3200);
 }
 
 // ── Bouw de 9 cirkels met landnaam ──
@@ -1731,9 +1744,14 @@ function lsSchelpKlik(){
     document.getElementById('ls-schelp-wrap').classList.remove('gloed');
     const schelpTekst = document.getElementById('ls-schelp-tekst');
     if(schelpTekst) schelpTekst.style.opacity = '0';
-    // Pijl meteen wegvagen zodra er echt op de knop gedrukt is
+    // Pijl (en de dim eronder) meteen wegvagen zodra er echt op de knop
+    // gedrukt is
     const pijl = document.getElementById('ls-start-pijl');
-    if(pijl){ pijl.classList.remove('zichtbaar'); clearTimeout(lsPijlTimer); }
+    if(pijl){
+      pijl.classList.remove('zichtbaar');
+      document.getElementById('ls-speelveld').classList.remove('pijl-toont');
+      clearTimeout(lsPijlTimer);
+    }
     setTimeout(()=>{
       lsSchelpStatus = 'paars';
       document.getElementById('ls-schelp-img').src = 'images/schelp-paars.png';
@@ -1798,11 +1816,6 @@ function lsCheckAntwoorden(){
     setTimeout(()=>{
       document.getElementById('ls-bordje-wrap').classList.add('gevallen');
     }, 100);
-
-    // Klaar-knoppen tonen
-    setTimeout(()=>{
-      document.getElementById('ls-klaar-knoppen').classList.add('actief');
-    }, 900);
 
     // Ringen na 4 sec verbergen
     setTimeout(()=>{
