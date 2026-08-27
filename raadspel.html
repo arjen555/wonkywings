@@ -359,8 +359,8 @@
      en één keer oplicht om extra op te vallen tegen de drukke achtergrond */
   #ls-start-pijl {
     position:absolute;
-    right:14.6%; bottom:2.3%;
-    width:clamp(260px, 64vw, 720px);
+    right:17.5%; bottom:5.5%;
+    width:clamp(210px, 51vw, 580px);
     aspect-ratio:640/431;
     z-index:70;
     pointer-events:none;
@@ -447,11 +447,15 @@
      spelen (nieuwe 9 landen, geen paginaherlaad) */
   #ls-menu-groep {
     position:absolute; left:3%; top:3%;
+    /* Breedte hier vast zetten (i.p.v. op de knoppen zelf) — anders heeft
+       de 15% hieronder niets om tegenaan te schalen (deze groep zelf had
+       geen breedte), en valt de knop terug op een te kleine maat. */
+    width:clamp(120px, 15%, 220px);
     display:flex; flex-direction:column; gap:10px;
     z-index:60;
   }
   #ls-menu-knop, #ls-opnieuw-knop {
-    width:clamp(120px, 15%, 220px);
+    width:100%;
     border:none; background:none; padding:0; cursor:pointer;
     opacity:0.92;
     filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5));
@@ -1332,14 +1336,17 @@ const LS_SNAP_DREMPEL = LS_STEMPEL_GROOTTE / 2;
 // buurcirkels heen te vallen, ook bij een krap gekalibreerd rooster.
 const LS_RING_GROOTTE = 14;
 
-// Verboden zone rechtsonder: hier staat de schelp-knop + de timer erboven
-// (#ls-schelp-tijd-groep). Stempels mogen daar nooit los neergezet worden,
-// zodat ze de knop of de tijd nooit bedekken. Waardes zijn gemeten op het
-// echte schelp/tijd-blok (niet ruim geschat), zodat er zoveel mogelijk
+// Verboden band onderin: hier staat de schelp-knop + de timer erboven
+// (#ls-schelp-tijd-groep). Stempels mogen nooit op deze hoogte losstaan —
+// ook niet links van de knop — zodat álle losse stempels boven de tijd
+// blijven zweven en de knop nooit "in dezelfde rij" oogt. Vandaar dat dit
+// een volledige horizontale band is (elke x, vanaf yMin) en geen rechthoek
+// die alleen de rechterkant afschermt. yMin is gemeten op het echte
+// schelp/tijd-blok (niet ruim geschat), zodat er zoveel mogelijk
 // zandruimte overblijft om stempels neer te leggen.
-const LS_VERBODEN_ZONE = { xMin: 74, yMin: 64 };
+const LS_VERBODEN_ZONE = { yMin: 64 };
 function lsInVerbodenZone(x, y){
-  return x > LS_VERBODEN_ZONE.xMin && y > LS_VERBODEN_ZONE.yMin;
+  return y > LS_VERBODEN_ZONE.yMin;
 }
 
 // ── State ──
