@@ -270,13 +270,25 @@
     background:url('images/keuzescherm.jpg') center/contain no-repeat;
   }
   .spelkeuze-knop {
-    position:absolute; top:4%; height:90%; border:none; background:none;
+    position:absolute; top:23%; height:46%; border:none; background:none;
     cursor:pointer; border-radius:16px;
     transition:background 0.15s;
   }
   .spelkeuze-knop:hover { background:rgba(255,255,255,0.12); }
-  #btn-keuze-raadjeplaatje { left:4%;  width:44%; }
-  #btn-keuze-landjeschuif  { left:52%; width:44%; }
+  #btn-keuze-raadjeplaatje { left:21%; width:28%; }
+  #btn-keuze-landjeschuif  { left:51%; width:28%; }
+
+  /* Menu-knop linksboven op het keuzescherm — zelfde stijl als #ls-menu-knop */
+  #spelkeuze-menu-knop {
+    position:absolute; left:3%; top:3%;
+    width:clamp(100px, 12%, 180px);
+    border:none; background:none; padding:0; cursor:pointer;
+    z-index:60; opacity:0.92;
+    filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5));
+    transition:opacity 0.15s, transform 0.15s;
+  }
+  #spelkeuze-menu-knop:hover { opacity:1; transform:scale(1.03); }
+  #spelkeuze-menu-knop img { width:100%; display:block; }
 
   /* ── Landje Schuif ── */
   #landjeschuif-veld {
@@ -300,7 +312,7 @@
     text-align:center; pointer-events:none;
     font-family:'Baloo 2',sans-serif; font-weight:700;
     color:#3b2a18; font-size:clamp(0.7rem,1.7vw,1.15rem);
-    line-height:1.15; padding:10%;
+    line-height:1.15; padding:0.35em;
     word-break:break-word;
     transform:translate(-50%,-50%);
   }
@@ -331,11 +343,22 @@
     box-shadow:0 3px 10px rgba(0,0,0,0.4);
   }
 
-  /* Schelp-knop — groot, rechtsonder naast wekkerradio */
-  #ls-schelp-wrap {
-    position:absolute; right:18%; bottom:2%;
-    width:clamp(180px, 30%, 300px); cursor:pointer;
+  /* Schelp + timer samen, rechtsonder — timer als platte tekst boven de schelp */
+  #ls-schelp-tijd-groep {
+    position:absolute; right:3%; bottom:3%;
+    width:clamp(180px, 30%, 300px);
+    display:flex; flex-direction:column; align-items:center; gap:4%;
     z-index:65;
+  }
+  #ls-timer-vak {
+    font-family:'Baloo 2',sans-serif; font-weight:800;
+    color:#5dffd0; font-size:clamp(2rem,4vw,3.2rem);
+    text-shadow:0 0 8px rgba(93,255,208,0.6), 0 0 16px rgba(93,255,208,0.25);
+    pointer-events:none;
+  }
+  #ls-schelp-wrap {
+    position:relative;
+    width:100%; cursor:pointer;
     filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5));
     transition:transform 0.12s;
   }
@@ -372,24 +395,6 @@
     max-width:30%;
     text-align:center;
     word-break:break-word;
-  }
-
-  /* Wekkerradio rechtsonder met timer op het schermpje */
-  #ls-wekkerradio {
-    position:absolute; right:0; bottom:0;
-    width:clamp(180px, 30%, 320px);
-    z-index:55; pointer-events:none;
-  }
-  #ls-wekkerradio-img { width:100%; display:block; }
-  #ls-timer-vak {
-    position:absolute;
-    left:38%; top:26%; width:38%; height:30%;
-    display:flex; align-items:center; justify-content:center;
-    font-family:'Baloo 2',sans-serif; font-weight:800;
-    color:#5dffd0; font-size:clamp(1rem,2vw,1.6rem);
-    text-shadow:0 0 8px rgba(93,255,208,0.6), 0 0 16px rgba(93,255,208,0.25);
-    transform:rotate(-7deg);
-    pointer-events:none;
   }
 
   /* Menu-knop linksboven — afbeelding (terug-naar-start-knop) */
@@ -446,6 +451,32 @@
     transition:transform 0.15s;
   }
   #ls-paspoort-icoon:hover { transform:scale(1.06); }
+
+  /* K-kalibratie voor de 9 cirkelposities (alleen zichtbaar tijdens kalibreren) */
+  .ls-kalibratie-nummer {
+    position:absolute; transform:translate(-50%,-50%);
+    width:34px; height:34px; border-radius:50%;
+    background:rgba(224,83,83,0.9); border:2px solid #fff;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Baloo 2',sans-serif; font-weight:800; color:#fff;
+    font-size:1rem; z-index:90; pointer-events:none;
+  }
+  .ls-kalibratie-nummer.actief {
+    background:rgba(74,163,255,0.95);
+    box-shadow:0 0 0 4px rgba(74,163,255,0.35);
+  }
+  #ls-kalibratie-melding {
+    position:absolute; left:50%; bottom:2%; transform:translateX(-50%);
+    background:rgba(0,0,0,0.75); color:#fff; padding:8px 16px; border-radius:10px;
+    font-family:'Baloo 2',sans-serif; font-size:0.75rem; line-height:1.5;
+    text-align:center; max-width:92%; z-index:95; pointer-events:none;
+  }
+  #ls-kalibratie-feedback {
+    position:absolute; left:50%; top:8%; transform:translateX(-50%);
+    background:rgba(76,175,80,0.92); color:#fff; padding:6px 14px; border-radius:8px;
+    font-family:'Baloo 2',sans-serif; font-size:0.85rem; font-weight:700;
+    z-index:96; opacity:0; transition:opacity 0.3s; pointer-events:none;
+  }
 </style>
 </head>
 <body>
@@ -532,6 +563,9 @@
      rechterhelft van het boek. ── -->
 <div id="spelkeuze-veld">
   <div id="spelkeuze-wrap">
+    <button id="spelkeuze-menu-knop" onclick="ganNaarMenu()" aria-label="Menu">
+      <img src="images/terug-naar-start-knop.png" alt="Menu"/>
+    </button>
     <button class="spelkeuze-knop" id="btn-keuze-raadjeplaatje" onclick="kiesRaadJePlaatje()" aria-label="Raad je Plaatje"></button>
     <button class="spelkeuze-knop" id="btn-keuze-landjeschuif" onclick="kiesLandjeSchuif()" aria-label="Landje Schuif"></button>
   </div>
@@ -546,13 +580,12 @@
     <button id="ls-menu-knop" onclick="lsNaarMenu()">
       <img src="images/terug-naar-start-knop.png" alt="Menu"/>
     </button>
-    <div id="ls-schelp-wrap" onclick="lsSchelpKlik()">
-      <img id="ls-schelp-img" src="images/schelp-groen.png" alt="Start"/>
-      <div id="ls-schelp-tekst">Druk op de knop<br/>om te starten!</div>
-    </div>
-    <div id="ls-wekkerradio">
-      <img src="images/wekkerradio.png" alt="" id="ls-wekkerradio-img"/>
+    <div id="ls-schelp-tijd-groep">
       <div id="ls-timer-vak">0:00.0</div>
+      <div id="ls-schelp-wrap" onclick="lsSchelpKlik()">
+        <img id="ls-schelp-img" src="images/schelp-groen.png" alt="Start"/>
+        <div id="ls-schelp-tekst">Druk op de knop<br/>om te starten!</div>
+      </div>
     </div>
     <div id="ls-bordje-wrap">
       <img src="images/bordje.png" alt=""/>
@@ -1251,6 +1284,14 @@ const LS_CIRKEL_GROOTTE = 17.5;   // diameter als % van speelveld-breedte
 const LS_STEMPEL_GROOTTE = 14;    // stempel als % van speelveld-breedte
 const LS_SNAP_DREMPEL = 14;       // snap-afstand als % van speelveld-breedte (ruim magnetisch)
 
+// Verboden zone rechtsonder: hier staat de schelp-knop + de timer erboven
+// (#ls-schelp-tijd-groep). Stempels mogen daar nooit los neergezet worden,
+// zodat ze de knop of de tijd nooit bedekken.
+const LS_VERBODEN_ZONE = { xMin: 63, yMin: 33 };
+function lsInVerbodenZone(x, y){
+  return x > LS_VERBODEN_ZONE.xMin && y > LS_VERBODEN_ZONE.yMin;
+}
+
 // ── State ──
 let lsLanden = [];           // 9 gekozen PASPOORT_LANDEN-entries
 let lsKoppeling = [];        // cirkelindex → stempelindex (-1 = leeg)
@@ -1410,12 +1451,12 @@ function bouwLsStempels(){
     stempel.style.height = 'auto';
 
     // Willekeurige positie rechts (65-83% x, verspreid over de hoogte)
-    // Vermijd de wekkerradio-hoek rechtsonder EN het schelp-gebied
+    // Vermijd het schelp+tijd-gebied rechtsonder
     let rx, ry;
     do {
       rx = 65 + Math.random()*18;
       ry = 8 + Math.random()*72;
-    } while((rx > 70 && ry > 52) || (rx > 76 && ry > 48));
+    } while(lsInVerbodenZone(rx, ry));
     stempel.style.left = rx+'%';
     stempel.style.top = ry+'%';
     stempel.style.transform = 'rotate('+(Math.random()*30-15)+'deg)';
@@ -1546,9 +1587,9 @@ function lsStopSleep(e){
       // Duw bestaand stempel terug naar een willekeurige plek rechts
       const oudeStempel = document.getElementById('ls-stempel-'+bestaand);
       oudeStempel.classList.remove('gesnapt');
-      // Vermijd wekkerradio-hoek en schelp-gebied bij terugplaatsen
+      // Vermijd het schelp+tijd-gebied bij terugplaatsen
       let terugX, terugY;
-      do { terugX = 65+Math.random()*18; terugY = 8+Math.random()*72; } while((terugX>70&&terugY>52)||(terugX>76&&terugY>48));
+      do { terugX = 65+Math.random()*18; terugY = 8+Math.random()*72; } while(lsInVerbodenZone(terugX, terugY));
       oudeStempel.style.left = terugX+'%';
       oudeStempel.style.top = terugY+'%';
       oudeStempel.style.transform = 'rotate('+(Math.random()*30-15)+'deg)';
@@ -1569,13 +1610,13 @@ function lsStopSleep(e){
     stempel.style.transform = 'rotate(0deg)';
     stempel.classList.add('gesnapt');
   } else {
-    // Niet gesnapt — check of stempel in wekkerradio/schelp-zone terecht is gekomen
+    // Niet gesnapt — check of stempel in het schelp+tijd-gebied terecht is gekomen
     const dropLeft = parseFloat(stempel.style.left);
     const dropTop = parseFloat(stempel.style.top);
-    if((dropLeft > 70 && dropTop > 52) || (dropLeft > 76 && dropTop > 48)){
+    if(lsInVerbodenZone(dropLeft, dropTop)){
       // Duw terug naar veilige zone
       let rx2, ry2;
-      do { rx2=65+Math.random()*18; ry2=8+Math.random()*72; } while((rx2>70&&ry2>52)||(rx2>76&&ry2>48));
+      do { rx2=65+Math.random()*18; ry2=8+Math.random()*72; } while(lsInVerbodenZone(rx2, ry2));
       stempel.style.left = rx2+'%';
       stempel.style.top = ry2+'%';
       stempel.style.transform = 'rotate('+(Math.random()*30-15)+'deg)';
@@ -1720,11 +1761,167 @@ function lsNaarSpelkeuze(){
   toonSpelkeuze();
 }
 
+// ── K-kalibratie: de 9 cirkelposities live bijstellen ──
+// Zelfde bedieningsgevoel als de K-kalibratie in index.html (voor de
+// landillustraties), maar vereenvoudigd: hier zijn het gewoon 9 platte
+// x%/y%-punten in plaats van geo-kalibratie-hoeken.
+// K start, cijfers 1-9 kiezen welke cirkel, pijltjes verplaatsen 'm,
+// F wisselt fijn/grof, C kopieert de waarden, Enter bewaart, Esc annuleert.
+const LS_CIRKELS_OPSLAG_SLEUTEL = 'wonkywings_ls_cirkels_override';
+let lsKalibratieActief = false;
+let lsKalibratieIdx = 0;
+let lsKalibratieFijn = false;
+let lsKalibratieOrigineel = null;
+let lsKalibratieFeedbackTimer = null;
+
+function lsLaadCirkelsOverride(){
+  try{
+    const opgeslagen = JSON.parse(localStorage.getItem(LS_CIRKELS_OPSLAG_SLEUTEL));
+    if(Array.isArray(opgeslagen) && opgeslagen.length === LS_AANTAL){
+      opgeslagen.forEach((p,i)=>{ LS_CIRKELS[i].x = p.x; LS_CIRKELS[i].y = p.y; });
+    }
+  }catch(e){}
+}
+
+function lsStartKalibratie(){
+  if(!document.getElementById('landjeschuif-veld').classList.contains('actief')) return;
+  if(lsKalibratieActief) return;
+  lsKalibratieActief = true;
+  lsKalibratieIdx = 0;
+  lsKalibratieFijn = false;
+  lsKalibratieOrigineel = LS_CIRKELS.map(p=>({x:p.x, y:p.y}));
+  lsToonKalibratieOverlay();
+}
+
+function lsToonKalibratieOverlay(){
+  const veld = document.getElementById('ls-speelveld');
+  veld.querySelectorAll('.ls-kalibratie-nummer').forEach(el=>el.remove());
+  lsLanden.forEach((land,i)=>{
+    const nr = document.createElement('div');
+    nr.className = 'ls-kalibratie-nummer' + (i===lsKalibratieIdx ? ' actief' : '');
+    nr.id = 'ls-kalnr-'+i;
+    nr.textContent = (i+1);
+    nr.style.left = LS_CIRKELS[i].x+'%';
+    nr.style.top = LS_CIRKELS[i].y+'%';
+    veld.appendChild(nr);
+  });
+  lsUpdateKalibratieMelding();
+}
+
+function lsUpdateKalibratieMelding(){
+  let melding = document.getElementById('ls-kalibratie-melding');
+  if(!melding){
+    melding = document.createElement('div');
+    melding.id = 'ls-kalibratie-melding';
+    document.getElementById('ls-speelveld').appendChild(melding);
+  }
+  const p = LS_CIRKELS[lsKalibratieIdx];
+  const land = lsLanden[lsKalibratieIdx];
+  melding.innerHTML = 'K-KALIBRATIE — cirkel '+(lsKalibratieIdx+1)+'/'+LS_AANTAL+(land ? ' ('+land.naam+')' : '')+'<br/>'
+    + 'x:'+p.x.toFixed(1)+'  y:'+p.y.toFixed(1)+' — stap: '+(lsKalibratieFijn?'fijn (0,1%)':'grof (0,5%)')+'<br/>'
+    + 'Cijfers 1-9: kies cirkel · Pijltjes: verplaatsen · F: fijn/grof · C: kopieer · Enter: opslaan · Esc: annuleren';
+}
+
+function lsKalibratieVerplaatsHuidig(dx, dy){
+  const p = LS_CIRKELS[lsKalibratieIdx];
+  p.x = Math.max(0, Math.min(100, p.x + dx));
+  p.y = Math.max(0, Math.min(100, p.y + dy));
+  const nr = document.getElementById('ls-kalnr-'+lsKalibratieIdx);
+  if(nr){ nr.style.left = p.x+'%'; nr.style.top = p.y+'%'; }
+  const cirkelEl = document.getElementById('ls-cirkel-'+lsKalibratieIdx);
+  if(cirkelEl){ cirkelEl.style.left = p.x+'%'; cirkelEl.style.top = p.y+'%'; }
+  const ringEl = document.getElementById('ls-ring-'+lsKalibratieIdx);
+  if(ringEl){ ringEl.style.left = p.x+'%'; ringEl.style.top = p.y+'%'; }
+  lsUpdateKalibratieMelding();
+}
+
+function lsKalibratieFeedback(tekst){
+  let el = document.getElementById('ls-kalibratie-feedback');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'ls-kalibratie-feedback';
+    document.getElementById('ls-speelveld').appendChild(el);
+  }
+  el.textContent = tekst;
+  el.style.opacity = '1';
+  clearTimeout(lsKalibratieFeedbackTimer);
+  lsKalibratieFeedbackTimer = setTimeout(()=>{ el.style.opacity = '0'; }, 1800);
+}
+
+function lsKopieerCirkels(){
+  const tekst = 'const LS_CIRKELS = [\n' +
+    LS_CIRKELS.map(p => '  {x:'+p.x.toFixed(1)+', y:'+p.y.toFixed(1)+'}').join(',\n') +
+    '\n];';
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(tekst).then(()=>{
+      lsKalibratieFeedback('Gekopieerd naar klembord!');
+    }).catch(()=>{
+      console.log(tekst);
+      lsKalibratieFeedback('Kopiëren mislukt — zie console.');
+    });
+  } else {
+    console.log(tekst);
+    lsKalibratieFeedback('Zie console voor de waarden.');
+  }
+}
+
+function lsStopKalibratie(bewaar){
+  lsKalibratieActief = false;
+  if(bewaar){
+    localStorage.setItem(LS_CIRKELS_OPSLAG_SLEUTEL, JSON.stringify(LS_CIRKELS));
+  } else if(lsKalibratieOrigineel){
+    lsKalibratieOrigineel.forEach((p,i)=>{ LS_CIRKELS[i].x = p.x; LS_CIRKELS[i].y = p.y; });
+  }
+  document.querySelectorAll('.ls-kalibratie-nummer').forEach(el=>el.remove());
+  const melding = document.getElementById('ls-kalibratie-melding');
+  if(melding) melding.remove();
+  bouwLsCirkels();
+}
+
+document.addEventListener('keydown', (e)=>{
+  if(!document.getElementById('landjeschuif-veld').classList.contains('actief')) return;
+
+  if(!lsKalibratieActief){
+    if(e.key === 'k' || e.key === 'K'){ lsStartKalibratie(); }
+    return;
+  }
+
+  if(e.key >= '1' && e.key <= '9'){
+    const nieuweIdx = parseInt(e.key, 10) - 1;
+    if(nieuweIdx < LS_AANTAL){
+      const oudNr = document.getElementById('ls-kalnr-'+lsKalibratieIdx);
+      if(oudNr) oudNr.classList.remove('actief');
+      lsKalibratieIdx = nieuweIdx;
+      const nieuwNr = document.getElementById('ls-kalnr-'+lsKalibratieIdx);
+      if(nieuwNr) nieuwNr.classList.add('actief');
+      lsUpdateKalibratieMelding();
+    }
+  } else if(e.key === 'f' || e.key === 'F'){
+    lsKalibratieFijn = !lsKalibratieFijn;
+    lsUpdateKalibratieMelding();
+  } else if(e.key === 'ArrowLeft'){
+    e.preventDefault(); lsKalibratieVerplaatsHuidig(-(lsKalibratieFijn?0.1:0.5), 0);
+  } else if(e.key === 'ArrowRight'){
+    e.preventDefault(); lsKalibratieVerplaatsHuidig(lsKalibratieFijn?0.1:0.5, 0);
+  } else if(e.key === 'ArrowUp'){
+    e.preventDefault(); lsKalibratieVerplaatsHuidig(0, -(lsKalibratieFijn?0.1:0.5));
+  } else if(e.key === 'ArrowDown'){
+    e.preventDefault(); lsKalibratieVerplaatsHuidig(0, lsKalibratieFijn?0.1:0.5);
+  } else if(e.key === 'c' || e.key === 'C'){
+    lsKopieerCirkels();
+  } else if(e.key === 'Enter'){
+    lsStopKalibratie(true);
+  } else if(e.key === 'Escape'){
+    lsStopKalibratie(false);
+  }
+});
+
 // ── Init ──
 // Zelfde naam-sleutel als index.html: als de speler daar al een naam heeft
 // ingevuld (het normale pad), slaan we dit eigen naam-scherm gewoon over.
 // Alleen wie via een directe link hier terechtkomt zonder ooit index.html
 // bezocht te hebben, ziet dit scherm nog als vangnet.
+lsLaadCirkelsOverride();
 ladenSpelerNaam();
 document.getElementById('speler-waarde').textContent = huidigeSpelerNaam();
 bouwKiesScherm();
