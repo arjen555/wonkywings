@@ -230,6 +230,7 @@ body{
   <button class="nav-btn" data-sectie="hoofdsteden">Hoofdsteden</button>
   <button class="nav-btn" data-sectie="plekken">Iconische plekken</button>
   <button class="nav-btn" data-sectie="raadspel">Raad je plaatje</button>
+  <button class="nav-btn" data-sectie="landjeschuif">Landje Schuif</button>
 </nav>
 
 <!-- Twee boekpagina's -->
@@ -354,6 +355,15 @@ var RAAD_SECTIES = [
   ]},
 ];
 
+// Landje Schuif (raadspel.html → wonkywings_landjeschuif_scores, één
+// gezamenlijke lijst - geen categorieën, want elk potje is altijd
+// hetzelfde: 9 van de 9 goed, alleen de tijd verschilt).
+var LANDJESCHUIF_SECTIES = [
+  { groep:'Landje Schuif', levels:[
+    { id:'landjeschuif', naam:'Snelste tijden' },
+  ]},
+];
+
 // ── Scores laden ──────────────────────────────────────
 function laadScores(sleutel){
   try{ return JSON.parse(localStorage.getItem(sleutel)||'[]'); }
@@ -361,6 +371,9 @@ function laadScores(sleutel){
 }
 function topoScores(id){ return laadScores('wonkywings_scores_'+id); }
 function raadScores(id){ return laadScores('wonkywings_raadspel_scores_'+id); }
+// Landje Schuif heeft maar 1 sleutel voor alle scores samen (geen 'id'-
+// achtervoegsel per categorie, zie lsOpslaanScore() in raadspel.html).
+function landjeschuifScores(){ return laadScores('wonkywings_landjeschuif_scores'); }
 
 // ── Filteren & sorteren ───────────────────────────────
 function filterScores(lijst){
@@ -430,7 +443,7 @@ function maakTabel(rijen, startIndex, type){
   var thNr = document.createElement('th'); thNr.textContent = '#';
   var thNaam = document.createElement('th'); thNaam.textContent = 'Naam';
   var thScore = document.createElement('th');
-  thScore.textContent = type==='raad' ? 'Goed' : 'Afstand';
+  thScore.textContent = type==='raad' ? 'Goed' : type==='landjeschuif' ? 'Score' : 'Afstand';
   var thTijd = document.createElement('th'); thTijd.textContent = 'Tijd';
   hr.appendChild(thNr); hr.appendChild(thNaam);
   hr.appendChild(thScore); hr.appendChild(thTijd);
@@ -469,12 +482,17 @@ function maakTabel(rijen, startIndex, type){
       // die oudere scores. Zelfde getal als AANTAL_VRAGEN_MAX in raadspel.html.
       var totaal = run.totaal || AANTAL_VRAGEN_MAX_FALLBACK;
       tdScore.textContent = run.goed + '/' + totaal;
+    } else if(type==='landjeschuif'){
+      // Elk opgeslagen potje Landje Schuif is per definitie 9 van de 9 goed
+      // (zie lsOpslaanScore() - die wordt alleen bij een voltooid potje
+      // aangeroepen), dus dit staat vast.
+      tdScore.textContent = '9/9';
     } else {
       tdScore.textContent = (run.km != null ? run.km + ' km' : '-');
     }
 
     var tdTijd = document.createElement('td');
-    if(type==='raad'){
+    if(type==='raad' || type==='landjeschuif'){
       tdTijd.textContent = formatTijdMs(run.tijdMs);
     } else {
       tdTijd.textContent = formatTijd(run.tijd);
@@ -493,7 +511,9 @@ function maakTabel(rijen, startIndex, type){
  * kolommen laten dan gewoon elk hun eigen "Nog geen scores" zien - zie
  * bouwScoreTabel), in plaats van de kaart helemaal weg te laten. */
 function bouwSubsectie(naam, sleutel, type, altijdTonen){
-  var lijst = (type==='raad') ? raadScores(sleutel) : topoScores(sleutel);
+  var lijst = (type==='raad') ? raadScores(sleutel)
+            : (type==='landjeschuif') ? landjeschuifScores()
+            : topoScores(sleutel);
   var gefilterd = filterScores(lijst);
 
   if(gefilterd.length === 0 && !altijdTonen) return null;
@@ -531,12 +551,13 @@ function bouwSubsectie(naam, sleutel, type, altijdTonen){
 // ook zonder scores. De andere tabbladen blijven het oude, dynamische
 // gedrag houden (leeg = overgeslagen, verdeeld op basis van aantal).
 var SECTIES = {
-  landen:      { label:'Landen',            data:LANDEN_SECTIES, type:'topo',
-                 splitPerGroep:true, toonLegeCategorieen:true,
-                 titelLinks:'Europa Masters', titelRechts:'Wereld Masters' },
-  hoofdsteden: { label:'Hoofdsteden',       data:HOOFD_SECTIES,  type:'topo' },
-  plekken:     { label:'Iconische plekken', data:PLEK_SECTIES,   type:'topo' },
-  raadspel:    { label:'Raad je plaatje',   data:RAAD_SECTIES,   type:'raad' },
+  landen:       { label:'Landen',            data:LANDEN_SECTIES,       type:'topo',
+                  splitPerGroep:true, toonLegeCategorieen:true,
+                  titelLinks:'Europa Masters', titelRechts:'Wereld Masters' },
+  hoofdsteden:  { label:'Hoofdsteden',       data:HOOFD_SECTIES,        type:'topo' },
+  plekken:      { label:'Iconische plekken', data:PLEK_SECTIES,         type:'topo' },
+  raadspel:     { label:'Raad je plaatje',   data:RAAD_SECTIES,         type:'raad' },
+  landjeschuif: { label:'Landje Schuif',     data:LANDJESCHUIF_SECTIES, type:'landjeschuif' },
 };
 
 /** Bouw alle subsecties voor een sectie, retourneer als array van DOM-nodes */

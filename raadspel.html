@@ -319,7 +319,7 @@
   /* Feedback-ringen (goed/fout) — gecentreerd via transform */
   .ls-ring {
     position:absolute; border-radius:50%; pointer-events:none;
-    border:4px solid transparent; opacity:0;
+    border:7px solid transparent; opacity:0;
     transition:opacity 0.25s;
     transform:translate(-50%,-50%);
   }
@@ -414,13 +414,13 @@
 
   /* Bordje (valt naar beneden) */
   #ls-bordje-wrap {
-    position:absolute; left:50%; top:-60%;
+    position:absolute; left:50%; top:-100%;
     transform:translateX(-50%);
-    width:clamp(180px, 35%, 340px);
+    width:clamp(260px, 48%, 480px);
     z-index:80; pointer-events:none;
     transition:top 0.8s cubic-bezier(0.22,1,0.36,1);
   }
-  #ls-bordje-wrap.gevallen { top:8%; }
+  #ls-bordje-wrap.gevallen { top:24%; }
   #ls-bordje-wrap img { width:100%; display:block; }
   #ls-bordje-tekst {
     position:absolute; left:50%; top:50%;
@@ -446,14 +446,34 @@
   #ls-klaar-knoppen button:hover { opacity:1; transform:scale(1.03); }
   #ls-klaar-knoppen button img { width:100%; display:block; }
 
-  /* Paspoort-icoon voor Landje Schuif */
-  #ls-paspoort-icoon {
-    display:none; position:absolute; right:3%; bottom:5%;
-    width:clamp(50px, 10%, 100px); cursor:pointer; z-index:70;
+  /* Paspoort + Boek der Groten naast elkaar, in de plek waar de schelp-
+     knop stond zodra het potje klaar is (zelfde rij als de timer erboven,
+     zie #ls-schelp-tijd-groep) */
+  #ls-eind-iconen {
+    display:none; width:100%;
+    flex-direction:row; justify-content:center; align-items:center;
+    gap:8%;
+  }
+  #ls-eind-iconen.actief { display:flex; }
+  #ls-eind-iconen img {
+    width:44%; cursor:pointer;
     filter:drop-shadow(0 6px 20px rgba(0,0,0,0.55));
     transition:transform 0.15s;
   }
-  #ls-paspoort-icoon:hover { transform:scale(1.06); }
+  #ls-eind-iconen img:hover { transform:scale(1.06); }
+
+  /* Tekstkopie van de tijd die na een klik vanaf het bordje naar het
+     Boek der Groten-icoon vliegt (zie lsVliegTijdNaarBoek()) */
+  .ls-tijd-vlieg {
+    position:fixed; z-index:900; pointer-events:none;
+    font-family:'Baloo 2',sans-serif; font-weight:800;
+    color:#fff; text-align:center;
+    text-shadow:
+      -2px -2px 0 #1a1005, 2px -2px 0 #1a1005,
+      -2px 2px 0 #1a1005, 2px 2px 0 #1a1005,
+      0 4px 12px rgba(0,0,0,0.55);
+    font-size:clamp(0.8rem,1.8vw,1.3rem);
+  }
 </style>
 </head>
 <body>
@@ -563,6 +583,10 @@
         <img id="ls-schelp-img" src="images/schelp-groen.png" alt="Start"/>
         <div id="ls-schelp-tekst">Druk op de knop<br/>om te starten!</div>
       </div>
+      <div id="ls-eind-iconen">
+        <img id="ls-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="window.location.href='paspoort.html'"/>
+        <img id="ls-boek-icoon" src="images/boek-der-groten-icoon.png" alt="Boek der Groten" onclick="window.location.href='highscores.html'"/>
+      </div>
     </div>
     <div id="ls-bordje-wrap">
       <img src="images/bordje.png" alt=""/>
@@ -576,7 +600,6 @@
         <img src="images/nog_een_ronde_raad_je_plaatje.png" alt="Nog een ronde"/>
       </button>
     </div>
-    <img id="ls-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="window.location.href='paspoort.html'"/>
   </div>
 </div>
 
@@ -1260,12 +1283,20 @@ const LS_CIRKELS = [
 ];
 const LS_CIRKEL_GROOTTE = 17.5;   // diameter als % van speelveld-breedte
 const LS_STEMPEL_GROOTTE = 14;    // stempel als % van speelveld-breedte
-const LS_SNAP_DREMPEL = 14;       // snap-afstand als % van speelveld-breedte (ruim magnetisch)
+// Snap-drempel = halve stempelgrootte: de stempel moet dus met zijn eigen
+// rand minstens het middelpunt van een cirkel raken voor hij vastklikt.
+const LS_SNAP_DREMPEL = LS_STEMPEL_GROOTTE / 2;
+// Grootte van de goed/fout-controlecirkel: bewust los van LS_CIRKEL_GROOTTE
+// (dat is de onzichtbare tekstbox) en klein genoeg om niet over de
+// buurcirkels heen te vallen, ook bij een krap gekalibreerd rooster.
+const LS_RING_GROOTTE = 14;
 
 // Verboden zone rechtsonder: hier staat de schelp-knop + de timer erboven
 // (#ls-schelp-tijd-groep). Stempels mogen daar nooit los neergezet worden,
-// zodat ze de knop of de tijd nooit bedekken.
-const LS_VERBODEN_ZONE = { xMin: 63, yMin: 33 };
+// zodat ze de knop of de tijd nooit bedekken. Waardes zijn gemeten op het
+// echte schelp/tijd-blok (niet ruim geschat), zodat er zoveel mogelijk
+// zandruimte overblijft om stempels neer te leggen.
+const LS_VERBODEN_ZONE = { xMin: 74, yMin: 64 };
 function lsInVerbodenZone(x, y){
   return x > LS_VERBODEN_ZONE.xMin && y > LS_VERBODEN_ZONE.yMin;
 }
@@ -1282,6 +1313,8 @@ let lsTimerInterval = null;
 let lsSchelpStatus = 'groen'; // groen | paars | rood
 let lsSleepIdx = -1;
 let lsSleepOffset = {x:0, y:0};
+let lsGekozenBonusLanden = [];   // bonus-landen, meteen bij winst bepaald en bijgeschreven
+let lsEindAnimatieGestart = false; // voorkomt dat de klik-ergens-animatie 2x start
 
 // ── Continent-gebalanceerde landenselectie ──
 // Verdeling: EU 2-3, AF 1-3, AS 1-3, AM(NA+ZA) 1-3, OC/OV 0-1
@@ -1342,6 +1375,8 @@ function startLandjeSchuif(){
   lsTijdStart = null;
   lsSchelpStatus = 'groen';
   lsSleepIdx = -1;
+  lsGekozenBonusLanden = [];
+  lsEindAnimatieGestart = false;
 
   // Verberg #kader, toon landjeschuif-veld
   document.getElementById('kader').style.display = 'none';
@@ -1366,9 +1401,9 @@ function startLandjeSchuif(){
   bordjeWrap.style.top = '';
   document.getElementById('ls-bordje-tekst').textContent = '';
 
-  // Reset klaar-knoppen en paspoort-icoon
+  // Reset klaar-knoppen en de paspoort/boek-iconen
   document.getElementById('ls-klaar-knoppen').classList.remove('actief');
-  document.getElementById('ls-paspoort-icoon').style.display = 'none';
+  document.getElementById('ls-eind-iconen').classList.remove('actief');
 
   // Bouw cirkels en stempels
   bouwLsCirkels();
@@ -1388,7 +1423,7 @@ function bouwLsCirkels(){
     const ring = document.createElement('div');
     ring.className = 'ls-ring';
     ring.id = 'ls-ring-'+i;
-    ring.style.width = (LS_CIRKEL_GROOTTE+3)+'%';
+    ring.style.width = LS_RING_GROOTTE+'%';
     ring.style.height = 'auto';
     ring.style.aspectRatio = '1';
     ring.style.left = pos.x+'%';
@@ -1653,16 +1688,27 @@ function lsCheckAntwoorden(){
     lsStopTimer();
     lsSchelpStatus = 'groen';
     document.getElementById('ls-schelp-wrap').style.display = 'none';
+    // Paspoort + Boek der Groten nemen meteen de plek van de schelp-knop in
+    // (zelfde vak in #ls-schelp-tijd-groep), zodat de timer erboven niet
+    // verspringt.
+    document.getElementById('ls-eind-iconen').classList.add('actief');
 
     // Score opslaan
     lsOpslaanScore(huidigeSpelerNaam(), lsTijdVerstreken);
 
-    // Bonus stempels (altijd 2, want altijd 9/9 goed)
-    const gekozenLanden = kiesBonusLanden(2);
+    // Bonus-landenstempels: hoe sneller, hoe meer. Ze worden nu al écht
+    // toegekend (aan het paspoort toegevoegd) - alleen het "vliegen" ernaartoe
+    // wachten we uit, tot de speler ergens klikt (zie lsStartEindAnimatie()).
+    const aantalStempels =
+      lsTijdVerstreken < 60000  ? 3 :
+      lsTijdVerstreken < 90000  ? 2 :
+      lsTijdVerstreken < 180000 ? 1 : 0;
+    lsGekozenBonusLanden = kiesBonusLanden(aantalStempels);
 
-    // Bordje laten vallen
-    const tekst = huidigeSpelerNaam()+'\n'+formatTijdMs(lsTijdVerstreken);
-    document.getElementById('ls-bordje-tekst').textContent = tekst;
+    // Bordje laten vallen, met de tijd in een eigen <span> zodat die er
+    // straks precies vanaf kan "wegvliegen" (zie lsVliegTijdNaarBoek())
+    document.getElementById('ls-bordje-tekst').innerHTML =
+      huidigeSpelerNaam() + '<br/><span id="ls-bordje-tijd">' + formatTijdMs(lsTijdVerstreken) + '</span>';
     setTimeout(()=>{
       document.getElementById('ls-bordje-wrap').classList.add('gevallen');
     }, 100);
@@ -1670,16 +1716,14 @@ function lsCheckAntwoorden(){
     // Klaar-knoppen tonen
     setTimeout(()=>{
       document.getElementById('ls-klaar-knoppen').classList.add('actief');
-      document.getElementById('ls-paspoort-icoon').style.display = 'block';
-      toonVliegendeStempels(gekozenLanden, document.getElementById('ls-paspoort-icoon'));
     }, 900);
 
-    // Ringen na 3 sec verbergen
+    // Ringen na 4 sec verbergen
     setTimeout(()=>{
       for(let i=0;i<LS_AANTAL;i++){
         document.getElementById('ls-ring-'+i).className = 'ls-ring';
       }
-    }, 3000);
+    }, 4000);
 
   } else {
     // Fout: schelp wordt rood, na 2 seconden weer paars
@@ -1696,6 +1740,51 @@ function lsCheckAntwoorden(){
       document.getElementById('ls-schelp-img').src = 'images/schelp-paars.png';
     }, 2000);
   }
+}
+
+// ── Klik-ergens-na-afloop: de tijd vliegt van het bordje naar het Boek
+// der Groten-icoon, en (als er bonus-landenstempels gewonnen zijn) die
+// vliegen daarna naar het paspoort-icoon. Precies 1x per potje. ──
+function lsStartEindAnimatie(){
+  if(!lsKlaar || lsEindAnimatieGestart) return;
+  lsEindAnimatieGestart = true;
+
+  lsVliegTijdNaarBoek(
+    document.getElementById('ls-bordje-tijd'),
+    document.getElementById('ls-boek-icoon')
+  );
+
+  if(lsGekozenBonusLanden.length){
+    toonVliegendeStempels(lsGekozenBonusLanden, document.getElementById('ls-paspoort-icoon'));
+  }
+}
+document.getElementById('ls-speelveld').addEventListener('click', lsStartEindAnimatie);
+
+// Laat een kopie van de tijd wegvliegen vanaf het bordje naar het Boek der
+// Groten-icoon toe, kleiner wordend en vervagend - zelfde soort vlucht als
+// toonVliegendeStempels() hierboven, maar dan voor tekst i.p.v. een plaatje.
+function lsVliegTijdNaarBoek(startEl, doelEl){
+  if(!startEl || !doelEl) return;
+  const startRect = startEl.getBoundingClientRect();
+  const vlieg = document.createElement('div');
+  vlieg.className = 'ls-tijd-vlieg';
+  vlieg.textContent = startEl.textContent;
+  vlieg.style.left = startRect.left+'px';
+  vlieg.style.top = startRect.top+'px';
+  vlieg.style.width = startRect.width+'px';
+  document.body.appendChild(vlieg);
+  void vlieg.offsetWidth; // forceert reflow, zodat de transitie echt vanaf hier start
+
+  const doelRect = doelEl.getBoundingClientRect();
+  const doelX = doelRect.left + doelRect.width*0.5;
+  const doelY = doelRect.top + doelRect.height*0.5;
+  vlieg.style.transition = 'left 900ms cubic-bezier(.4,0,.6,1), top 900ms cubic-bezier(.4,0,.6,1), '
+    + 'font-size 900ms ease-in, opacity 900ms ease-in';
+  vlieg.style.left = (doelX-9)+'px';
+  vlieg.style.top = (doelY-9)+'px';
+  vlieg.style.fontSize = '8px';
+  vlieg.style.opacity = '0.15';
+  setTimeout(()=>{ vlieg.remove(); }, 960);
 }
 
 // ── Timer ──
