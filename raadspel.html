@@ -386,34 +386,24 @@
   }
 
   /* Uitlegkader linksboven de cirkels — zelfde intro-overlay als de pijl:
-     verschijnt bij start, blijft staan tot de eerste klik/tik. Simpel
-     doorschijnend vlak, geen nieuwe illustratie nodig. Krijgt dezelfde
-     contrast/brightness-compensatie als de pijl, anders wordt de tekst
-     door #ls-speelveld.pijl-toont zelf ook gedimd en minder leesbaar. */
+     verschijnt bij start, blijft staan tot de eerste klik/tik. Nu een kant-
+     en-klare illustratie (tekst zit in het plaatje gebakken), i.p.v. een
+     los CSS-vlak met een <ul>. Krijgt dezelfde contrast/brightness-
+     compensatie als de pijl, anders wordt het plaatje door
+     #ls-speelveld.pijl-toont zelf ook gedimd en minder leesbaar. */
   #ls-uitleg-kader {
     position:absolute;
-    left:4%; top:50%;
+    left:6.5%; top:50%;
     transform:translateY(-50%);
-    width:clamp(230px, 40%, 460px);
-    background:rgba(10,20,30,0.85);
-    border:2px solid rgba(255,255,255,0.3);
-    border-radius:16px;
-    padding:clamp(14px,2.2vw,26px) clamp(16px,2.6vw,30px);
-    color:#f5efe0;
-    font-family:'Baloo 2',sans-serif; font-weight:700;
-    font-size:clamp(0.8rem,1.5vw,1.1rem);
-    line-height:1.6;
+    width:clamp(280px, 50%, 620px);
+    aspect-ratio:640/420;
     z-index:69;
     opacity:0;
     pointer-events:none;
     transition:opacity 0.6s ease;
-    box-shadow:0 8px 30px rgba(0,0,0,0.5);
     filter:contrast(1.818) brightness(1.43);
   }
   #ls-uitleg-kader.zichtbaar { opacity:1; }
-  #ls-uitleg-kader ul { margin:0; padding-left:1.15em; }
-  #ls-uitleg-kader li { margin-bottom:0.55em; }
-  #ls-uitleg-kader li:last-child { margin-bottom:0; }
 
   /* Schelp + timer samen, rechtsonder — timer als platte tekst boven de schelp */
   #ls-schelp-tijd-groep {
@@ -660,16 +650,7 @@
       </button>
     </div>
     <img id="ls-start-pijl" src="images/start-pijl.png" alt=""/>
-    <div id="ls-uitleg-kader">
-      <ul>
-        <li>Druk op de groene knop om te beginnen</li>
-        <li>Leg de sticker op het juiste land</li>
-        <li>Beter zien? Twee keer erop drukken</li>
-        <li>Denk je dat het goed is, druk dan op de paarse knop</li>
-        <li>Nog een foutje? Ga snel verder!</li>
-        <li>Alle 9 goed? Stop de tijd!</li>
-      </ul>
-    </div>
+    <img id="ls-uitleg-kader" src="images/uitleg-kader.png" alt="Druk op de groene knop om te beginnen. Leg de sticker op het juiste land. Beter zien? Twee keer erop drukken. Denk je dat het goed is, druk dan op de paarse knop. Nog een foutje? Ga snel verder! Alle 9 goed? Stop de tijd!"/>
     <div id="ls-schelp-tijd-groep">
       <div id="ls-timer-vak">0:00.0</div>
       <div id="ls-schelp-wrap" onclick="lsSchelpKlik()">
@@ -1368,6 +1349,11 @@ const LS_CIRKELS = [
 ];
 const LS_CIRKEL_GROOTTE = 17.5;   // diameter als % van speelveld-breedte
 const LS_STEMPEL_GROOTTE = 14;    // stempel als % van speelveld-breedte
+// Stempels worden willekeurig een beetje gedraaid (±15°) neergelegd. Een
+// gedraaid vierkant heeft een grotere bounding box dan het vierkant zelf
+// (bij 15° zo'n 22% hoger) — deze marge zorgt dat de verboden-zone-check
+// ook bij de scheefste stand nog klopt.
+const LS_STEMPEL_ROTATIE_MARGE = 1.25;
 // Snap-drempel = halve stempelgrootte: de stempel moet dus met zijn eigen
 // rand minstens het middelpunt van een cirkel raken voor hij vastklikt.
 const LS_SNAP_DREMPEL = LS_STEMPEL_GROOTTE / 2;
@@ -1385,8 +1371,12 @@ const LS_RING_GROOTTE = 14;
 // schelp/tijd-blok (niet ruim geschat), zodat er zoveel mogelijk
 // zandruimte overblijft om stempels neer te leggen.
 const LS_VERBODEN_ZONE = { yMin: 64 };
-function lsInVerbodenZone(x, y){
-  return y > LS_VERBODEN_ZONE.yMin;
+// hoogte is de eigen hoogte van het stempel, in % van de speelveld-hoogte —
+// zonder dit meegewogen zou alleen de bovenkant van het stempel gecheckt
+// worden, terwijl de onderkant (het stempel is zelf best hoog) alsnog ver
+// het verboden gebied in kan steken. Vandaar: bovenkant + hoogte > yMin.
+function lsInVerbodenZone(x, y, hoogte){
+  return (y + (hoogte||0)) > LS_VERBODEN_ZONE.yMin;
 }
 
 // ── State ──
@@ -1610,6 +1600,11 @@ function bouwLsStempels(){
   const veld = document.getElementById('ls-speelveld');
   veld.querySelectorAll('.ls-stempel').forEach(el=>el.remove());
 
+  // Stempel-hoogte in % van de speelveld-hoogte (stempels zijn zelf
+  // vierkant, dus breedte-% omrekenen naar hoogte-% via de veld-aspectratio)
+  const veldRect = veld.getBoundingClientRect();
+  const lsStempelHoogtePct = LS_STEMPEL_GROOTTE * veldRect.width / veldRect.height * LS_STEMPEL_ROTATIE_MARGE;
+
   // Schud de volgorde zodat de stempels niet in dezelfde volgorde als de
   // cirkels liggen (maakt het lastiger om de koppeling te raden)
   const indices = shuffle([...Array(LS_AANTAL).keys()]);
@@ -1629,7 +1624,7 @@ function bouwLsStempels(){
     do {
       rx = 65 + Math.random()*18;
       ry = 8 + Math.random()*72;
-    } while(lsInVerbodenZone(rx, ry));
+    } while(lsInVerbodenZone(rx, ry, lsStempelHoogtePct));
     stempel.style.left = rx+'%';
     stempel.style.top = ry+'%';
     lsStempelTransform(stempel, landIdx, Math.random()*30-15);
@@ -1737,6 +1732,9 @@ function lsStopSleep(e){
   const stempelRect = stempel.getBoundingClientRect();
   const stempelCX = ((stempelRect.left + stempelRect.width/2 - veldRect.left) / veldRect.width) * 100;
   const stempelCY = ((stempelRect.top + stempelRect.height/2 - veldRect.top) / veldRect.height) * 100;
+  // Eigen hoogte van een (normaal formaat) stempel in % van de speelveld-hoogte,
+  // voor de verboden-zone-check hieronder (zie lsInVerbodenZone)
+  const lsStempelHoogtePct = LS_STEMPEL_GROOTTE * veldRect.width / veldRect.height * LS_STEMPEL_ROTATIE_MARGE;
 
   let dichtstbijIdx = -1;
   let dichtstbijAfst = Infinity;
@@ -1774,7 +1772,7 @@ function lsStopSleep(e){
       oudeStempel.classList.remove('gesnapt');
       // Vermijd het schelp+tijd-gebied bij terugplaatsen
       let terugX, terugY;
-      do { terugX = 65+Math.random()*18; terugY = 8+Math.random()*72; } while(lsInVerbodenZone(terugX, terugY));
+      do { terugX = 65+Math.random()*18; terugY = 8+Math.random()*72; } while(lsInVerbodenZone(terugX, terugY, lsStempelHoogtePct));
       oudeStempel.style.left = terugX+'%';
       oudeStempel.style.top = terugY+'%';
       lsStempelTransform(oudeStempel, bestaand, Math.random()*30-15);
@@ -1798,10 +1796,10 @@ function lsStopSleep(e){
     // Niet gesnapt — check of stempel in het schelp+tijd-gebied terecht is gekomen
     const dropLeft = parseFloat(stempel.style.left);
     const dropTop = parseFloat(stempel.style.top);
-    if(lsInVerbodenZone(dropLeft, dropTop)){
+    if(lsInVerbodenZone(dropLeft, dropTop, lsStempelHoogtePct)){
       // Duw terug naar veilige zone
       let rx2, ry2;
-      do { rx2=65+Math.random()*18; ry2=8+Math.random()*72; } while(lsInVerbodenZone(rx2, ry2));
+      do { rx2=65+Math.random()*18; ry2=8+Math.random()*72; } while(lsInVerbodenZone(rx2, ry2, lsStempelHoogtePct));
       stempel.style.left = rx2+'%';
       stempel.style.top = ry2+'%';
       lsStempelTransform(stempel, idx, Math.random()*30-15);
