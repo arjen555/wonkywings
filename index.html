@@ -103,11 +103,10 @@
       filter:drop-shadow(0 4px 16px rgba(0,0,0,0.5));
       transition:transform 0.15s;
     }
-    #boek-icoon-knop { height:clamp(140px, 19vw, 230px); }
-    /* Het paspoort-plaatje zelf heeft meer lege ruimte rondom het boekje
-       ingebakken dan het Boek der Groten-plaatje - bij gelijke elementhoogte
-       oogt het daardoor kleiner. Iets hogere klemwaarden compenseren dat. */
-    #paspoort-icoon-knop { height:clamp(175px, 24vw, 290px); }
+    /* Paspoort- en Boek der Groten-plaatje zijn nu (Arjen heeft het
+       paspoort-plaatje zelf strak bijgesneden) even krap bijgesneden op hun
+       eigen inhoud - dus weer gewoon dezelfde hoogte voor allebei. */
+    #paspoort-icoon-knop, #boek-icoon-knop { height:clamp(140px, 19vw, 230px); }
     #paspoort-icoon-knop:hover, #boek-icoon-knop:hover { transform:scale(1.04); }
     #startscherm {
       position:fixed; inset:0; z-index:100;
@@ -1282,7 +1281,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.9</div>
+  <div id="versie-label">v0.6.11</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1882,6 +1881,53 @@ const HOOFDSTEDEN = {
   "Australië":{naam:"Canberra",lon:149.128,lat:-35.282},
   "Nieuw-Zeeland":{naam:"Wellington",lon:174.776,lat:-41.286},
 };
+
+// ── Extra hoofdstad-namen, alleen voor het hoofdstad-label tijdens het
+// verkennen (zie hoofdstadNaamVoorHover) ────────────────────────────────
+// HOOFDSTEDEN hierboven bevat alleen de landen die in de Hoofdsteden-
+// speelmodus zelf gebruikt worden (met coördinaten, want daar wordt ook
+// naartoe gevlogen). Bij het vrij verkennen wil Arjen de hoofdstad ook
+// zien bij ALLE andere landen uit de Landen-modus - vandaar deze losse,
+// naam-only lijst (geen coördinaten nodig, dus geen risico voor de
+// vlucht-naar-hoofdstad-mechaniek van de echte Hoofdsteden-speelmodus).
+// Antarctica en Gibraltar hebben bewust geen entry (geen losstaande
+// hoofdstad) - daar toont het label dan gewoon alleen de naam.
+const HOOFDSTAD_NAAM_EXTRA = {
+  "Afghanistan":"Kabul", "Andorra":"Andorra la Vella", "Antigua en Barbuda":"Saint John's",
+  "Armenië":"Jerevan", "Azerbeidzjan":"Bakoe", "Bahrein":"Manama", "Bangladesh":"Dhaka",
+  "Barbados":"Bridgetown", "Benin":"Porto-Novo", "Bhutan":"Thimphu",
+  "Brunei":"Bandar Seri Begawan", "Burkina Faso":"Ouagadougou", "Burundi":"Gitega",
+  "Centraal-Afrikaanse Republiek":"Bangui", "Comoren":"Moroni", "Congo-Brazzaville":"Brazzaville",
+  "Cyprus":"Nicosia", "Djibouti":"Djibouti", "Dominica":"Roseau",
+  "Equatoriaal-Guinea":"Malabo", "Eritrea":"Asmara", "Faeröer":"Tórshavn",
+  "Falklandeilanden":"Stanley", "Fiji":"Suva", "Frans-Polynesië":"Papeete",
+  "Gabon":"Libreville", "Gambia":"Banjul", "Georgië":"Tbilisi", "Ghana":"Accra",
+  "Grenada":"Saint George's", "Groenland":"Nuuk", "Guinee":"Conakry",
+  "Guinee-Bissau":"Bissau", "Israël":"Jeruzalem", "Ivoorkust":"Yamoussoukro",
+  "Jamaica":"Kingston", "Jemen":"Sanaa", "Jordanië":"Amman", "Kaapverdië":"Praia",
+  "Kazachstan":"Astana", "Kirgizië":"Bisjkek", "Koeweit":"Koeweit",
+  "Lesotho":"Maseru", "Libanon":"Beiroet", "Liberia":"Monrovia", "Liechtenstein":"Vaduz",
+  "Malawi":"Lilongwe", "Maldiven":"Malé", "Mali":"Bamako", "Malta":"Valletta",
+  "Mauritanië":"Nouakchott", "Mauritius":"Port Louis", "Micronesia":"Palikir",
+  "Monaco":"Monaco", "Mongolië":"Ulaanbaatar", "Mozambique":"Maputo", "Myanmar":"Naypyidaw",
+  "Nauru":"Yaren", "Nepal":"Kathmandu", "Nieuw-Caledonië":"Nouméa", "Niger":"Niamey",
+  "Noord-Korea":"Pyongyang", "Oeganda":"Kampala", "Oezbekistan":"Tasjkent", "Oman":"Muscat",
+  "Oost-Timor":"Dili", "Palau":"Ngerulmud", "Palestina":"Ramallah",
+  "Papoea-Nieuw-Guinea":"Port Moresby", "Rwanda":"Kigali",
+  "Saint Kitts en Nevis":"Basseterre", "Saint Lucia":"Castries", "Salomonseilanden":"Honiara",
+  "Samoa":"Apia", "San Marino":"San Marino", "Sao Tomé en Principe":"São Tomé",
+  "Senegal":"Dakar", "Seychellen":"Victoria", "Sierra Leone":"Freetown",
+  "Somalië":"Mogadishu", "Sri Lanka":"Colombo", "Tadzjikistan":"Doesjanbe", "Taiwan":"Taipei",
+  "Togo":"Lomé", "Tonga":"Nuku'alofa", "Trinidad en Tobago":"Port of Spain",
+  "Tsjaad":"N'Djamena", "Tunesië":"Tunis", "Turkmenistan":"Asjchabad", "Tuvalu":"Funafuti",
+  "Vanuatu":"Port Vila", "Vaticaanstad":"Vaticaanstad", "Verenigde Arabische Emiraten":"Abu Dhabi",
+  "Westelijke Sahara":"Laâyoune", "Zambia":"Lusaka", "Zuid-Afrika":"Pretoria", "Zuid-Soedan":"Juba",
+};
+function hoofdstadNaamVoorHover(landNaam){
+  const uitHoofdstedenModus = HOOFDSTEDEN[landNaam];
+  if(uitHoofdstedenModus) return uitHoofdstedenModus.naam;
+  return HOOFDSTAD_NAAM_EXTRA[landNaam] || null;
+}
 
 // ── Iconische plekken (voor de Plekken-speelmodus) ────────────────────
 // Elke plek is een PUNT op de aardbol, geen land. De afwijking wordt dus
@@ -9148,11 +9194,12 @@ function updateSpel(){
   }
   if(hoverLand&&huidigModus==='verkennen'){
     const hoverLandNaam=hoverLand.properties.dutch||hoverLand.properties.name;
-    // Bij het verkennen van hoofdsteden: naast de landnaam ook de hoofdstad
-    // tonen (anders zie je tijdens 'hoofdsteden verkennen' alleen landen).
-    const hoverCap = (LEVELS[huidigLevel]&&LEVELS[huidigLevel].hoofdsteden) ? HOOFDSTEDEN[hoverLandNaam] : null;
-    if(hoverCap){
-      hoverEl.innerHTML = hoverLandNaam+': <span class="hover-hoofdstad">'+hoverCap.naam+'</span>';
+    // Bij het verkennen (landen én hoofdsteden) altijd ook de hoofdstad
+    // tonen, als die bekend is - niet alleen voor de landen uit de
+    // Hoofdsteden-speelmodus zelf.
+    const hoverCapNaam = hoofdstadNaamVoorHover(hoverLandNaam);
+    if(hoverCapNaam){
+      hoverEl.innerHTML = hoverLandNaam+': <span class="hover-hoofdstad">'+hoverCapNaam+'</span>';
     } else {
       hoverEl.textContent = hoverLandNaam;
     }
