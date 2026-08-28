@@ -90,7 +90,7 @@
       width:100%; margin:0 auto;
     }
     #paspoort-icoon-knop, #boek-icoon-knop {
-      height:clamp(140px, 19vw, 230px); width:auto;
+      width:auto;
       /* Grensbewaking: nooit breder dan ~46% van de zijbalk (met wat marge
          voor de tussenruimte) - op een breed scherm blijft de hoogte hierboven
          gewoon leidend (zoals goedgekeurd), maar op een smallere balk (laptop,
@@ -103,6 +103,11 @@
       filter:drop-shadow(0 4px 16px rgba(0,0,0,0.5));
       transition:transform 0.15s;
     }
+    #boek-icoon-knop { height:clamp(140px, 19vw, 230px); }
+    /* Het paspoort-plaatje zelf heeft meer lege ruimte rondom het boekje
+       ingebakken dan het Boek der Groten-plaatje - bij gelijke elementhoogte
+       oogt het daardoor kleiner. Iets hogere klemwaarden compenseren dat. */
+    #paspoort-icoon-knop { height:clamp(175px, 24vw, 290px); }
     #paspoort-icoon-knop:hover, #boek-icoon-knop:hover { transform:scale(1.04); }
     #startscherm {
       position:fixed; inset:0; z-index:100;
@@ -1053,9 +1058,9 @@
       color:#ffe9a8; font-size:0.95rem; font-weight:900;
       letter-spacing:0.02em; text-shadow:0 1px 3px rgba(0,0,0,0.65);
     }
-    /* ── Zoekbalk (verkenningsmodus), rechtsboven, zelfde steampunk-stijl als de zoom-indicator ── */
+    /* ── Zoekbalk (verkenningsmodus), bovenaan gecentreerd, zelfde steampunk-stijl als de zoom-indicator ── */
     #zoek-balk {
-      position:fixed; top:14px; right:24px; z-index:25;
+      position:fixed; top:14px; left:50%; transform:translateX(-50%); z-index:25;
       display:none; align-items:center; gap:6px;
       background:linear-gradient(180deg, rgba(64,42,20,0.85), rgba(28,16,7,0.85));
       border:1.5px solid rgba(255,215,0,0.45);
@@ -1066,7 +1071,7 @@
     #zoek-input {
       background:transparent; border:none; outline:none;
       color:#ffe9a8; font-family:'Baloo 2',sans-serif; font-weight:600; font-size:0.9rem;
-      width:150px; max-width:34vw;
+      width:220px; max-width:44vw;
     }
     #zoek-input::placeholder { color:rgba(255,233,168,0.5); }
     #zoek-knop {
@@ -1087,6 +1092,8 @@
     #opdracht .landnaam { color:#ffd700; font-size:2.2rem; font-weight:900; text-shadow:0 2px 16px rgba(0,0,0,0.6); }
     #hint { margin-top:6px; color:rgba(255,255,255,0.3); font-size:0.75rem; }
     #land-hover { position:fixed; background:rgba(0,0,0,0.7); color:#fff; font-size:0.9rem; font-weight:600; padding:4px 14px; border-radius:10px; pointer-events:none; white-space:nowrap; opacity:0; transition:opacity 0.2s; z-index:8; transform:translate(-50%,-100%); }
+    /* Hoofdstad-naam in het land-hover-label (verkennen bij hoofdsteden): iets andere kleur dan de landnaam ervoor. */
+    #land-hover .hover-hoofdstad { color:#ffd76b; }
     #correctie-land-naam { position:fixed; background:rgba(120,90,0,0.85); color:#fff9d6; font-size:1rem; font-weight:800; padding:5px 16px; border-radius:10px; pointer-events:none; white-space:nowrap; opacity:0; transition:opacity 0.2s; z-index:8; transform:translate(-50%,-100%); box-shadow:0 0 14px rgba(255,224,102,0.6); }
     #feedback { position:fixed; top:42%; left:50%; transform:translate(-50%,-50%); font-size:3rem; font-weight:900; pointer-events:none; opacity:0; text-shadow:0 4px 20px rgba(0,0,0,0.8); z-index:30; transition:opacity 0.3s; text-align:center; max-width:85vw; text-wrap:balance; }
     #punten-feedback { position:fixed; top:36%; left:50%; transform:translate(-50%,-50%); font-size:1.6rem; font-weight:900; pointer-events:none; opacity:0; color:#ffd700; text-shadow:0 4px 20px rgba(0,0,0,0.8); z-index:30; transition:opacity 0.3s; }
@@ -1275,7 +1282,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.7</div>
+  <div id="versie-label">v0.6.9</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -9140,7 +9147,15 @@ function updateSpel(){
     vorigEffectiefPseudoLand = (effNaamNu && effNaamNu!==ruweNaamNu) ? effNaamNu : null;
   }
   if(hoverLand&&huidigModus==='verkennen'){
-    hoverEl.textContent=hoverLand.properties.dutch||hoverLand.properties.name;
+    const hoverLandNaam=hoverLand.properties.dutch||hoverLand.properties.name;
+    // Bij het verkennen van hoofdsteden: naast de landnaam ook de hoofdstad
+    // tonen (anders zie je tijdens 'hoofdsteden verkennen' alleen landen).
+    const hoverCap = (LEVELS[huidigLevel]&&LEVELS[huidigLevel].hoofdsteden) ? HOOFDSTEDEN[hoverLandNaam] : null;
+    if(hoverCap){
+      hoverEl.innerHTML = hoverLandNaam+': <span class="hover-hoofdstad">'+hoverCap.naam+'</span>';
+    } else {
+      hoverEl.textContent = hoverLandNaam;
+    }
     hoverEl.style.opacity='1';
     hoverEl.style.left=focusSx+'px'; hoverEl.style.top=(focusSy-48)+'px';
   } else { hoverEl.style.opacity='0'; }
