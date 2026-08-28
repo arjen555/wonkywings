@@ -1275,7 +1275,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.3</div>
+  <div id="versie-label">v0.6.6</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -4161,7 +4161,7 @@ function ververfFiguurKeuze(){
     kiezerImg.classList.add('vergrendeld');
     laag.classList.add('toon');
     const nogNodig = fig.drempel - totaalAantalStempels();
-    tekst.textContent = nogNodig + ' paspoort-stempels';
+    tekst.textContent = 'nog ' + nogNodig + ' paspoort-stempels';
   }
   document.getElementById('figuur-pijl-terug').disabled = (figuurBrowseIndex === 0);
   document.getElementById('figuur-pijl-verder').disabled = (figuurBrowseIndex === VLIEGFIGUREN.length-1);
@@ -8083,7 +8083,13 @@ function updateSchurkVliegtuig(){
   if(t < SCHURK_PAUZE_MS){
     const [lon0, lat0] = schurkVliegtuig.pad[0];
     const scherm = lonLatNaarScherm(lon0, lat0);
-    if(scherm) positioneerSchurkEl(el, scherm[0], scherm[1], SCHURK_SPAWN_SCHAAL);
+    // scherm is null zodra dit punt net aan de onzichtbare achterkant van de
+    // bol ligt (t.o.v. Wonky's HUIDIGE camerahoek) - dan moet het vliegtuigje
+    // ook echt verborgen worden, anders blijft het plaatje "hangen" op zijn
+    // laatst bekende (inmiddels verouderde) plek en lijkt het onzichtbaar
+    // totdat de speler toevallig weer de goede kant op stuurt.
+    if(scherm){ el.style.display = 'block'; positioneerSchurkEl(el, scherm[0], scherm[1], SCHURK_SPAWN_SCHAAL); }
+    else { el.style.display = 'none'; }
     return;
   }
 
@@ -8101,6 +8107,10 @@ function updateSchurkVliegtuig(){
       el.style.display = 'none';
       schurkVliegtuig = null;
     } else {
+      // Kan uit een vorig frame nog op 'none' staan (zie de fase hiervoor,
+      // als het vliegtuigje toen tijdelijk aan de onzichtbare kant zat) -
+      // hier is scherm weer geldig, dus moet het ook weer zichtbaar worden.
+      el.style.display = 'block';
       positioneerSchurkEl(el, scherm[0], scherm[1], 1);
     }
     return;
@@ -8115,7 +8125,15 @@ function updateSchurkVliegtuig(){
   // SCHURK_KRIMP_MS na vertrek al terug op normale grootte, niet pas aan het einde.
   const krimpFractie = Math.min(1, tSindsVertrek / SCHURK_KRIMP_MS);
   const schaal = SCHURK_SPAWN_SCHAAL - (SCHURK_SPAWN_SCHAAL - 1) * krimpFractie;
-  if(scherm) positioneerSchurkEl(el, scherm[0], scherm[1], schaal);
+  // scherm is null zodra het vliegtuigje net aan de onzichtbare achterkant
+  // van de bol zit t.o.v. Wonky's HUIDIGE camerahoek (zijn route ligt vast
+  // op de kaart, niet aan het scherm - dus kan best tijdelijk "achterlangs"
+  // gaan als de speler zelf ook stuurt). Zonder dit bleef het plaatje op
+  // zijn laatst bekende plek staan i.p.v. te verdwijnen: het leek dan
+  // onzichtbaar, terwijl de al afgeschoten wolkjes gewoon zichtbaar konden
+  // blijven (die hebben hun eigen, onafhankelijke positie op de bol).
+  if(scherm){ el.style.display = 'block'; positioneerSchurkEl(el, scherm[0], scherm[1], schaal); }
+  else { el.style.display = 'none'; }
 
   // Wolkjes pas afschieten zodra het vliegtuigje normale grootte heeft (krimp
   // klaar), daarna 5 stuks verspreid over de resterende tijd dat het nog vliegt.

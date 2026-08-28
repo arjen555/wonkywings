@@ -13,6 +13,11 @@
     display:flex; align-items:center; justify-content:center;
     background:radial-gradient(ellipse at center, #0a2338 0%, #020d1a 75%);
   }
+  /* Alleen tijdens het kiezen van een werelddeel, het spelen van Raad je
+     Plaatje en het evalueren achteraf: zie toonScherm() in de JS. */
+  body.wereldkaart-achtergrond {
+    background:#0a2338 url('images/wereldkaart-achtergrond.jpg') center center / cover no-repeat;
+  }
 
   #kader {
     position:relative;
@@ -963,6 +968,9 @@ function toonScherm(id){
   document.querySelectorAll('.scherm').forEach(el=>el.classList.remove('actief'));
   document.getElementById(id).classList.add('actief');
   document.getElementById('antwoorden-grid').classList.toggle('actief', id==='scherm-spel');
+  // Wereldkaart-achtergrond alleen bij het kiezen van een werelddeel, tijdens
+  // het spel zelf, en bij het evalueren achteraf — niet bij naam/woordje.
+  document.body.classList.toggle('wereldkaart-achtergrond', id==='scherm-kies' || id==='scherm-spel' || id==='scherm-klaar');
   // #klaar-paspoort-icoon en #klaar-linksboven-knoppen staan buiten #kader
   // (zie de notitie bij hun HTML) en volgen dus niet vanzelf de
   // .scherm-cascade - hier expliciet meesturen.
