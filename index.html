@@ -1097,6 +1097,26 @@
     #feedback { position:fixed; top:42%; left:50%; transform:translate(-50%,-50%); font-size:3rem; font-weight:900; pointer-events:none; opacity:0; text-shadow:0 4px 20px rgba(0,0,0,0.8); z-index:30; transition:opacity 0.3s; text-align:center; max-width:85vw; text-wrap:balance; }
     #punten-feedback { position:fixed; top:36%; left:50%; transform:translate(-50%,-50%); font-size:1.6rem; font-weight:900; pointer-events:none; opacity:0; color:#ffd700; text-shadow:0 4px 20px rgba(0,0,0,0.8); z-index:30; transition:opacity 0.3s; }
     #muntje-feedback { position:fixed; left:0; top:0; transform:translate(-50%,-50%); font-weight:900; pointer-events:none; opacity:0; color:#ffe066; text-shadow:0 3px 4px rgba(0,0,0,0.6), 0 0 22px rgba(255,200,0,0.9); z-index:120; white-space:nowrap; }
+    /* Melding bij de noodstop op tragere systemen (zie checkNoodstop) - net
+       onder de zoekbalk, zodat ze elkaar nooit overlappen. */
+    #noodstop-melding {
+      position:fixed; top:64px; left:50%; transform:translateX(-50%);
+      max-width:min(88vw, 460px);
+      background:rgba(12,22,38,0.92);
+      color:#ffe4a8;
+      padding:10px 22px;
+      border-radius:14px;
+      font-size:0.95rem;
+      font-weight:700;
+      text-align:center;
+      line-height:1.35;
+      box-shadow:0 4px 18px rgba(0,0,0,0.45);
+      border:1px solid rgba(255,215,0,0.35);
+      opacity:0;
+      pointer-events:none;
+      z-index:26;
+      transition:opacity 0.6s;
+    }
     #ronde-display { font-size:1.2rem; font-weight:700; color:rgba(255,255,255,0.8); }
     #voortgang-bord {
       position:fixed; left:clamp(10px,2vmin,22px); bottom:clamp(10px,2vmin,22px); z-index:19;
@@ -1281,7 +1301,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.13</div>
+  <div id="versie-label">v0.6.14</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1609,6 +1629,7 @@
   <div id="correctie-land-naam"></div>
   <div id="feedback"></div>
   <div id="punten-feedback"></div>
+  <div id="noodstop-melding"></div>
   <div id="richting-rij">
     <div class="richting-knop" onclick="gebruikRichtingwijzer(0)"><img src="images/aanwijzer.png" alt="Richtingaanwijzer"/></div>
     <div class="richting-knop" onclick="gebruikRichtingwijzer(1)"><img src="images/aanwijzer.png" alt="Richtingaanwijzer"/></div>
@@ -4645,6 +4666,11 @@ function startSpel(levelId, modus) {
   wonkyLon=lv.start.lon; wonkyLat=lv.start.lat;
   lonSnelheid=0; latSnelheid=0;
   rotM=maakRotMatrix(wonkyLon,wonkyLat);
+  // Noodstop-bewaking weer vers bij elke nieuwe start - een eventuele
+  // noodstop uit een vorig potje mag niet blijven hangen in een nieuw potje.
+  frameTijdGemiddeld = 8;
+  noodstopActief = false;
+  document.getElementById('noodstop-melding').style.opacity = '0';
   if(modus==='verkennen'){
     spelLanden = [...lv.landen];
   } else if(lv.altijd_alle){
@@ -7027,6 +7053,48 @@ let sluipeffectCache = [];
 let sluipeffectTeller = 0;
 const SLUIPEFFECT_HERBEREKEN_ELKE = 4; // 1 op de 4 beeldjes opnieuw uitzoeken
 
+// ── Noodstop bij tragere systemen ───────────────────────────────────────
+// Houdt een voortschrijdend gemiddelde (EMA) bij van hoe lang het eigen
+// rekenwerk (updateSpel + drawGlobe, dus niet de wachttijd op het scherm
+// zelf) per beeldje kost - bewust NIET de volledige tijd tussen twee
+// beeldjes, want die hangt ook af van het beeldscherm/de browser zelf en is
+// dus geen betrouwbare maatstaf voor "is dít systeem het aan het zwaar
+// hebben". Twee vermenigvuldigingen en een optelling per beeldje, geen
+// array die moet groeien of schuiven, dus verwaarloosbare belasting op
+// zich. Bewust GETELD IN BEELDJES en niet in verstreken tijd, om dezelfde
+// denkfout te vermijden als bij het sluipeffect hierboven: op een traag
+// systeem duurt elk beeldje toch al lang, dus een tijd-gebaseerde drempel
+// zou daar juist nooit meer "aanslaan". Met NOODSTOP_EMA_ALPHA hieronder
+// duurt het zo'n 25-30 beeldjes aanhoudende traagheid voordat het gemiddelde
+// de drempel haalt - dus een kort eenmalig hikje (bijv. net na het laden van
+// een nieuw land) triggert de noodstop niet, aanhoudende traagheid wel.
+//
+// Eén individueel beeldje wordt bovendien afgekapt op NOODSTOP_MAX_SAMPLE_MS
+// vóór het meetellen - anders zou bijvoorbeeld het wisselen naar een andere
+// browsertab en terugkomen (het beeldje daarna kan zomaar minuten "geduurd"
+// hebben) in één klap de noodstop triggeren, ook al is er niets mis met de
+// snelheid van het systeem zelf.
+let frameTijdGemiddeld = 8; // startaanname: vlot rekenwerk
+let noodstopActief = false;
+const NOODSTOP_EMA_ALPHA = 0.05;
+const NOODSTOP_DREMPEL_MS = 50;      // rekenwerk gemiddeld trager dan 50ms/beeldje - bij zoveel eigen rekentijd zit je sowieso onder de 20 fps
+const NOODSTOP_MAX_SAMPLE_MS = 500;  // één beeldje telt nooit voor meer dan dit mee
+function checkNoodstop(frameTijd){
+  if(!spelActief || noodstopActief) return;
+  frameTijdGemiddeld = frameTijdGemiddeld*(1-NOODSTOP_EMA_ALPHA) + Math.min(frameTijd, NOODSTOP_MAX_SAMPLE_MS)*NOODSTOP_EMA_ALPHA;
+  if(frameTijdGemiddeld > NOODSTOP_DREMPEL_MS){
+    noodstopActief = true;
+    toonNoodstopMelding();
+  }
+}
+function toonNoodstopMelding(){
+  const el = document.getElementById('noodstop-melding');
+  if(!el) return;
+  el.textContent = 'Je computer heeft wat moeite met alles verwerken, daarom zetten we de kwaliteit iets terug.';
+  el.style.opacity = '1';
+  setTimeout(()=>{ el.style.opacity='0'; }, 5000);
+}
+
 // ── Landen aan de verkeerde kant van de bol overslaan ──────────────────
 // Elk beeldje werden tot nu toe de grenzen van ALLE ~260 landen/gebieden ter
 // wereld doorgerekend, ook die volledig aan de achterkant van de bol (dus
@@ -7213,7 +7281,15 @@ function drawGlobe(){
     // doorzicht), zodat de doorzichtHuidig-kant van de vervaging - die
     // afhangt van het zoomniveau, en verandert dus wél elk beeldje - hier
     // gewoon vers overheen blijft komen.
-    if(sluipeffectTeller % SLUIPEFFECT_HERBEREKEN_ELKE === 0){
+    if(noodstopActief){
+      // Bij de noodstop laten we het sluipeffect helemaal weg (geen enkele
+      // buurland-illustratie meer, alleen het land onder Wonky zelf) - dit
+      // is verreweg de grootste losse besparing die we gemeten hebben
+      // (zie de toelichting elders), dus dit is de eerste knop die om wordt
+      // gezet zodra een systeem het écht niet meer bijbeent.
+      sluipeffectCache = [];
+    }
+    else if(sluipeffectTeller % SLUIPEFFECT_HERBEREKEN_ELKE === 0){
       const nieuweCache = [];
       for(const naam in alleLandenFeatureMap){
         if(naam==='Alaska'||naam==='Hawaï'||naam==='Galápagos'||naam==='Canarische Eilanden'||naam==='Azoren'||naam==='Réunion'||naam==='Mayotte'||naam==='Oost-Maleisië'||naam==='West-China'||naam==='Buitenste Eilanden'||naam==='Kaliningrad') continue; // los pseudo-land, geen eigen sluipeffect
@@ -9567,7 +9643,9 @@ function toonReactie(type) {
 
 // ── Loop ──────────────────────────────────────────────
 function loop(){
+  const __loopStart = performance.now();
   toetsWaakhond(); pollGamepad(); updateSpel(); drawGlobe();
+  checkNoodstop(performance.now() - __loopStart);
   if(plekOnthullingActief) tekenPlekOnthulling();
   requestAnimationFrame(loop);
 }
