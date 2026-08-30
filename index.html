@@ -1281,7 +1281,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.12</div>
+  <div id="versie-label">v0.6.13</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -7027,6 +7027,33 @@ let sluipeffectCache = [];
 let sluipeffectTeller = 0;
 const SLUIPEFFECT_HERBEREKEN_ELKE = 4; // 1 op de 4 beeldjes opnieuw uitzoeken
 
+// ── Landen aan de verkeerde kant van de bol overslaan ──────────────────
+// Elk beeldje werden tot nu toe de grenzen van ALLE ~260 landen/gebieden ter
+// wereld doorgerekend, ook die volledig aan de achterkant van de bol (dus
+// gegarandeerd onzichtbaar). Deze check slaat zo'n land helemaal over, vóórdat
+// er iets voor uitgerekend wordt. We nemen 8 steekproefpunten van de al
+// bekende grove kader (bbox) van het land - de 4 hoekpunten plus de 4
+// zijkant-middens - en kijken of ze ALLEMAAL ruim (10°) voorbij de horizon
+// liggen. Zodra ook maar 1 steekpunt in de buurt van zichtbaar komt, wordt
+// het land gewoon normaal getekend - dus deze check durft nooit "te veel"
+// over te slaan. Voor landen zonder bbox in alleLandenFeatureMap (kleine
+// eilandjes/gebieden die niet in een level voorkomen) wordt nooit overgeslagen,
+// exact het oude gedrag.
+function bboxZekerOnzichtbaar(info, rotM){
+  if(info.kruistDatumgrens) return false; // datumgrens-landen: geen overslaan, blijft zoals het was
+  const {minLon,maxLon,minLat,maxLat} = info;
+  const punten = [
+    [minLon,minLat],[maxLon,minLat],[minLon,maxLat],[maxLon,maxLat],
+    [(minLon+maxLon)/2,minLat],[(minLon+maxLon)/2,maxLat],
+    [minLon,(minLat+maxLat)/2],[maxLon,(minLat+maxLat)/2],
+  ];
+  for(const [lo,la] of punten){
+    const p3 = roteerPunt(lonLatTo3D(lo,la), rotM);
+    if(p3[2] > -0.17) return false; // dit punt zit (bijna) aan de zichtbare kant
+  }
+  return true; // alle steekpunten ruim voorbij de horizon
+}
+
 // ── Globe tekenen ─────────────────────────────────────
 function drawGlobe(){
   if(!spelActief) return;
@@ -7047,6 +7074,8 @@ function drawGlobe(){
   let correctieLandScherm=null;
   for(const f of GEOJSON.features){
     const dutch=f.properties.dutch||f.properties.name;
+    const __bboxInfo = alleLandenFeatureMap[dutch];
+    if(__bboxInfo && bboxZekerOnzichtbaar(__bboxInfo, rotM)) continue;
     const isHover=f===hoverLand;
     const isCorrectieLand=f===correctieLand;
     const isLevelLand=levelSet.has(dutch);
