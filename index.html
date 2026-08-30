@@ -1281,7 +1281,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.11</div>
+  <div id="versie-label">v0.6.12</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -7007,6 +7007,26 @@ function vec3NaarLonLat(v){
 }
 function lonVerschil(a,b){ let d=b-a; while(d>180)d-=360; while(d<-180)d+=360; return d; }
 
+// ── Sluipeffect-cache (buurlanden die alvast doorschemeren bij het
+// naderen van een grens) ──────────────────────────────────────────
+// Welke landen dichtbij genoeg zijn om mee te gloeien, wordt niet meer
+// elk beeldje helemaal opnieuw uitgezocht (dat vergt voor ELK land ter
+// wereld een grensberekening) - de speler verschuift tussen twee
+// beeldjes toch maar een fractie, dus die lijst is prima een klein
+// tikje na te lopen zonder dat je het ziet. Het TEKENEN zelf gebeurt
+// nog gewoon elk beeldje (het canvas wordt elk beeldje leeggeveegd),
+// alleen dit uitzoekwerk wordt hergebruikt. Dit scheelt vooral in
+// grensrijke gebieden (Benelux, Balkan, ...) waar veel landen tegelijk
+// gecheckt moeten worden, en helpt dus juist op tragere systemen
+// (Chromebooks e.d.) het meest.
+// Geteld in beeldjes, NIET in verstreken tijd: op een traag systeem duurt
+// één beeldje toch al langer dan een tijd-drempel zou zijn, waardoor die
+// drempel daar juist nooit meer zou "aanslaan" en er alsnog elk beeldje
+// herberekend zou worden - precies waar dit net vanaf moet helpen.
+let sluipeffectCache = [];
+let sluipeffectTeller = 0;
+const SLUIPEFFECT_HERBEREKEN_ELKE = 4; // 1 op de 4 beeldjes opnieuw uitzoeken
+
 // ── Globe tekenen ─────────────────────────────────────
 function drawGlobe(){
   if(!spelActief) return;
@@ -7158,24 +7178,39 @@ function drawGlobe(){
     const latMargeGraden = VOORLAAD_AFSTAND_KM / 111;
     const lonMargeGraden = Math.min(90, latMargeGraden / Math.max(0.15, Math.cos(wonkyLat*Math.PI/180)));
 
-    for(const naam in alleLandenFeatureMap){
-      if(naam==='Alaska'||naam==='Hawaï'||naam==='Galápagos'||naam==='Canarische Eilanden'||naam==='Azoren'||naam==='Réunion'||naam==='Mayotte'||naam==='Oost-Maleisië'||naam==='West-China'||naam==='Buitenste Eilanden'||naam==='Kaliningrad') continue; // los pseudo-land, geen eigen sluipeffect
-      const info = alleLandenFeatureMap[naam];
-      if(hoverLand && info.feature===hoverLand) continue;
-      if(!info.kruistDatumgrens){
-        if(wonkyLat < info.minLat - latMargeGraden || wonkyLat > info.maxLat + latMargeGraden) continue;
-        if(wonkyLon < info.minLon - lonMargeGraden || wonkyLon > info.maxLon + lonMargeGraden) continue;
-      }
-      laadIllustratie(naam); // niet-geforceerd: als 'm al (aan het) laden is, gebeurt er niks
-      const ill = landIllustraties[naam];
-      if(!ill) continue;
+    // Het dure uitzoekwerk (welke landen zijn dichtbij, en hoe dichtbij)
+    // hoeft niet elk beeldje - zie de toelichting bij sluipeffectCache
+    // hierboven. Alleen 'nabijheid' wordt bewaard (niet de uiteindelijke
+    // doorzicht), zodat de doorzichtHuidig-kant van de vervaging - die
+    // afhangt van het zoomniveau, en verandert dus wél elk beeldje - hier
+    // gewoon vers overheen blijft komen.
+    if(sluipeffectTeller % SLUIPEFFECT_HERBEREKEN_ELKE === 0){
+      const nieuweCache = [];
+      for(const naam in alleLandenFeatureMap){
+        if(naam==='Alaska'||naam==='Hawaï'||naam==='Galápagos'||naam==='Canarische Eilanden'||naam==='Azoren'||naam==='Réunion'||naam==='Mayotte'||naam==='Oost-Maleisië'||naam==='West-China'||naam==='Buitenste Eilanden'||naam==='Kaliningrad') continue; // los pseudo-land, geen eigen sluipeffect
+        const info = alleLandenFeatureMap[naam];
+        if(hoverLand && info.feature===hoverLand) continue;
+        if(!info.kruistDatumgrens){
+          if(wonkyLat < info.minLat - latMargeGraden || wonkyLat > info.maxLat + latMargeGraden) continue;
+          if(wonkyLon < info.minLon - lonMargeGraden || wonkyLon > info.maxLon + lonMargeGraden) continue;
+        }
+        laadIllustratie(naam); // niet-geforceerd: als 'm al (aan het) laden is, gebeurt er niks
+        const ill = landIllustraties[naam];
+        if(!ill) continue;
 
-      const afwijking = berekenAfwijking(wonkyLon,wonkyLat,info.feature);
-      if(afwijking.km > GRENS_AFSTAND_KM) continue;
-      const nabijheid = 1 - (afwijking.km / GRENS_AFSTAND_KM);
-      const doorzicht = doorzichtHuidig * nabijheid;
+        const afwijking = berekenAfwijking(wonkyLon,wonkyLat,info.feature);
+        if(afwijking.km > GRENS_AFSTAND_KM) continue;
+        const nabijheid = 1 - (afwijking.km / GRENS_AFSTAND_KM);
+        nieuweCache.push({feature:info.feature, ill, nabijheid});
+      }
+      sluipeffectCache = nieuweCache;
+    }
+    sluipeffectTeller++;
+
+    for(const item of sluipeffectCache){
+      const doorzicht = doorzichtHuidig * item.nabijheid;
       if(doorzicht <= 0.01) continue;
-      tekenLandIllustratie(info.feature,ill,zoomNiveau,doorzicht);
+      tekenLandIllustratie(item.feature,item.ill,zoomNiveau,doorzicht);
     }
 
     // Het huidige land als allerlaatste: altijd bovenop al het andere.
