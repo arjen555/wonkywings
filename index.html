@@ -486,6 +486,13 @@
     }
     .kennisvraag-optie-goed { border-color:#4caf50; background:rgba(76,175,80,0.22); }
     .kennisvraag-optie-fout { border-color:#e05353; background:rgba(224,83,83,0.22); }
+    /* Welke optie op dit moment "geselecteerd" staat via het steuurkruis/de
+       stick van een gamepad (zie kennisvraagBeweegFocus in de JS) - blijft
+       leeg/onzichtbaar tot iemand daadwerkelijk met een gamepad navigeert,
+       anders lijkt de eerste optie al gekozen voor muis/touch-spelers. */
+    .kennisvraag-optie-focus:not(.kennisvraag-optie-fout):not(.kennisvraag-optie-goed) {
+      border-color:#ffd700; box-shadow:0 0 14px rgba(255,215,0,0.55); transform:translateY(-2px);
+    }
     #kennisvraag-verdergaan {
       display:none; font-family:'Baloo 2',sans-serif; font-size:1rem; font-weight:700;
       color:rgba(255,255,255,0.55); text-align:center; letter-spacing:0.3px;
@@ -685,6 +692,10 @@
       text-transform:uppercase; color:rgba(255,215,0,0.85);
       border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px;
       display:flex; align-items:center; gap:8px;
+    }
+    .help-gamepad-opmerking {
+      color:rgba(255,255,255,0.55); font-size:0.92rem;
+      font-style:italic; line-height:1.35; margin-top:-6px;
     }
     .help-rijen { display:flex; flex-direction:column; gap:12px; }
     .help-rij {
@@ -1379,7 +1390,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.19</div>
+  <div id="versie-label">v0.6.21</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1406,7 +1417,7 @@
       </button>
     </div>
     <button id="help-knop" class="startscherm-knop" onclick="openHulp()">
-      Zo werkt de besturing
+      Besturing
     </button>
     <div id="startscherm-icoontjes">
       <img id="paspoort-icoon-knop" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="window.location.href='paspoort.html'"/>
@@ -1515,7 +1526,7 @@
 
 <div id="help-popup" onclick="if(event.target===this)sluitHulp()">
   <div id="help-kaart">
-    <div id="help-titel">🎮 Bediening</div>
+    <div id="help-titel">🎮 Besturing</div>
 
     <div class="help-boven-rij">
     <div class="help-sectie">
@@ -1525,7 +1536,7 @@
           <div class="help-toetsen">
             <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd>
           </div>
-          <div class="help-uitleg">Wonky besturen</div>
+          <div class="help-uitleg">Besturen</div>
         </div>
         <div class="help-rij">
           <div class="help-toetsen"><kbd>Shift</kbd></div>
@@ -1560,10 +1571,11 @@
 
     <div class="help-sectie">
       <div class="help-sectie-kop">🕹️ Gamepad</div>
+      <div class="help-gamepad-opmerking">Raad je plaatje kan je niet met een gamepad bedienen.</div>
       <div class="help-rijen">
         <div class="help-rij">
           <div class="help-toetsen"><kbd>⬤ stick</kbd></div>
-          <div class="help-uitleg">Linker joystick (of D-pad) — Wonky besturen</div>
+          <div class="help-uitleg">Linker joystick (of D-pad) — besturen</div>
         </div>
         <div class="help-rij">
           <div class="help-toetsen"><kbd>RT</kbd></div>
@@ -1605,7 +1617,7 @@
       <div class="help-rijen">
         <div class="help-rij">
           <div class="help-toetsen"><kbd>👆 slepen</kbd></div>
-          <div class="help-uitleg">Vinger op het scherm zetten en verslepen — Wonky besturen</div>
+          <div class="help-uitleg">Vinger op het scherm zetten en verslepen — besturen</div>
         </div>
         <div class="help-rij">
           <div class="help-toetsen"><kbd>🤏 pinch</kbd></div>
@@ -8019,6 +8031,7 @@ let gamepadBKnopVorigeStand = false; // B = richtingpijl schieten
 let gamepadYKnopVorigeStand = false; // Y = joker inzetten
 let gamepadXKnopVorigeStand = false; // X = direct doorgaan na goed/fout
 let gamepadLbKnopVorigeStand = false; // LB = plekken-foto groot/klein (alleen als volledig uitgezoomd)
+let gamepadKennisvraagRichtingVorig = {x:0, y:0}; // voor edge-detectie bij het bladeren door kennisvraag-antwoorden
 const GAMEPAD_DODE_ZONE = 0.18; // kleine sticktrilling telt niet mee
 
 window.addEventListener('gamepadconnected', e=>{
@@ -8056,9 +8069,29 @@ function pollGamepad(){
   gamepadStuurDx = stuurDx;
   gamepadStuurDy = stuurDy;
 
-  // A-knop (buttons[0]): eenmalig droppen bij indrukken, niet elke frame opnieuw
+  // Tijdens een kennisvraag (het muntje met een ster): het vliegtuigje staat
+  // toch al stil zolang de pop-up open is (zie updateSpel()), dus dezelfde
+  // stick/het steuurkruis hergebruiken om door de 4 antwoorden te bladeren
+  // i.p.v. te sturen - edge-triggered, anders schiet de keuze 60x per
+  // seconde door terwijl de stick wordt vastgehouden.
+  if(kennisvraagActief && !kennisvraagWachtOpDoorgaan){
+    const KENNISVRAAG_NAV_DREMPEL = 0.6;
+    const richtingX = stuurDx > KENNISVRAAG_NAV_DREMPEL ? 1 : (stuurDx < -KENNISVRAAG_NAV_DREMPEL ? -1 : 0);
+    const richtingY = stuurDy > KENNISVRAAG_NAV_DREMPEL ? 1 : (stuurDy < -KENNISVRAAG_NAV_DREMPEL ? -1 : 0);
+    if(richtingX !== 0 && richtingX !== gamepadKennisvraagRichtingVorig.x) kennisvraagBeweegFocus(1); // links/rechts: andere kolom
+    if(richtingY !== 0 && richtingY !== gamepadKennisvraagRichtingVorig.y) kennisvraagBeweegFocus(2); // omhoog/omlaag: andere rij
+    gamepadKennisvraagRichtingVorig.x = richtingX;
+    gamepadKennisvraagRichtingVorig.y = richtingY;
+  }
+
+  // A-knop (buttons[0]): eenmalig droppen bij indrukken, niet elke frame
+  // opnieuw - of, tijdens een nog onbeantwoorde kennisvraag, de gemarkeerde
+  // optie kiezen i.p.v. een vlaggetje droppen.
   const aIngedrukt = !!(gp.buttons[0] && gp.buttons[0].pressed);
-  if(aIngedrukt && !gamepadAKnopVorigeStand) dropVlaggetje();
+  if(aIngedrukt && !gamepadAKnopVorigeStand){
+    if(kennisvraagActief){ if(!kennisvraagWachtOpDoorgaan) beantwoordKennisvraag(kennisvraagFocusIdx); }
+    else dropVlaggetje();
+  }
   gamepadAKnopVorigeStand = aIngedrukt;
 
   // B-knop (buttons[1]): richtingpijl schieten
@@ -8072,10 +8105,12 @@ function pollGamepad(){
   gamepadYKnopVorigeStand = yIngedrukt;
 
   // X-knop (buttons[2]): direct doorgaan na een goed/fout antwoord (of, tijdens
-  // een kennisvraag, nadat er een antwoord gekozen is)
+  // een kennisvraag, nadat er een antwoord gekozen is) - en, zolang de
+  // kennisvraag nog onbeantwoord is, net als A de gemarkeerde optie kiezen.
   const xIngedrukt = !!(gp.buttons[2] && gp.buttons[2].pressed);
   if(xIngedrukt && !gamepadXKnopVorigeStand){
     if(kennisvraagActief && kennisvraagWachtOpDoorgaan) kennisvraagDoorgaan();
+    else if(kennisvraagActief) beantwoordKennisvraag(kennisvraagFocusIdx);
     else if(radActief) radKlikHandler();
     else skipDoorgaan();
   }
@@ -8649,6 +8684,12 @@ function tekenSchurkWolken(){
 let kennisvraagOpenTijd = 0;         // voor het "tijd staat stil"-effect, zelfde principe als hulpOpenTijd
 let kennisvraagWachtOpDoorgaan = false; // true zodra er een antwoord gekozen is, wacht op klik/tik/toets om verder te gaan
 let kennisvraagLaatstGoed = false;   // was het zojuist beantwoorde antwoord goed?
+// Welke van de 4 opties (2x2-rooster, zie #kennisvraag-opties) op dit moment
+// via een gamepad "geselecteerd" staat, en of dat al zichtbaar gemaakt is -
+// pas na de eerste navigatie-druk, zodat optie 1 niet al gekozen líjkt voor
+// wie met muis of touch speelt. Zie kennisvraagBeweegFocus()/pollGamepad().
+let kennisvraagFocusIdx = 0;
+let kennisvraagFocusZichtbaar = false;
 
 function toonKennisvraag(){
   // Kies een willekeurige, nog niet gebruikte vraag deze ronde. Zijn ze
@@ -8667,6 +8708,9 @@ function toonKennisvraag(){
   kennisvraagActief = true;
   kennisvraagOpenTijd = performance.now();
   kennisvraagWachtOpDoorgaan = false;
+  kennisvraagFocusIdx = 0;
+  kennisvraagFocusZichtbaar = false;
+  gamepadKennisvraagRichtingVorig = {x:0, y:0};
 
   document.getElementById('kennisvraag-tekst').textContent = gekozen.vraag;
   const optiesEl = document.getElementById('kennisvraag-opties');
@@ -8682,6 +8726,23 @@ function toonKennisvraag(){
   document.getElementById('kennisvraag-popup').style.display = 'flex';
 }
 
+// Bladert met bitmask 1 (links/rechts, wisselt de kolom) of 2 (omhoog/omlaag,
+// wisselt de rij) door het 2x2-rooster met antwoorden - zie #kennisvraag-opties
+// (opties 0/1 boven, 2/3 onder). Wordt aangeroepen vanuit pollGamepad() zodra
+// de stick/het steuurkruis een richting indrukt tijdens een kennisvraag.
+function kennisvraagBeweegFocus(bitmask){
+  if(!kennisvraagActief || kennisvraagWachtOpDoorgaan) return;
+  kennisvraagFocusIdx = kennisvraagFocusZichtbaar ? (kennisvraagFocusIdx ^ bitmask) : 0;
+  kennisvraagFocusZichtbaar = true;
+  kennisvraagFocusBijwerken();
+}
+function kennisvraagFocusBijwerken(){
+  const optieEls = document.getElementById('kennisvraag-opties').children;
+  for(let i=0; i<optieEls.length; i++){
+    optieEls[i].classList.toggle('kennisvraag-optie-focus', kennisvraagFocusZichtbaar && i===kennisvraagFocusIdx);
+  }
+}
+
 function beantwoordKennisvraag(gekozenIdx){
   if(!kennisvraagActief || kennisvraagWachtOpDoorgaan || !huidigeKennisvraag) return;
   const optieEls = document.getElementById('kennisvraag-opties').children;
@@ -8690,6 +8751,8 @@ function beantwoordKennisvraag(gekozenIdx){
   if(gekozenIdx !== goedIdx){
     optieEls[gekozenIdx].classList.add('kennisvraag-optie-fout');
   }
+  kennisvraagFocusZichtbaar = false;
+  kennisvraagFocusBijwerken();
   kennisvraagLaatstGoed = (gekozenIdx === goedIdx);
   kennisvraagWachtOpDoorgaan = true;
   document.getElementById('kennisvraag-verdergaan').style.display = 'block';
