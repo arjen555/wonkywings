@@ -100,53 +100,49 @@
     }
     #opties-sectie-titel {
       font-family:'Baloo 2',sans-serif; font-weight:800;
-      font-size:clamp(0.8rem, 2.4vmin, 1.15rem);
+      font-size:clamp(1rem, 3vmin, 1.6rem);
       color:#4a2e10; text-align:center;
+      margin-top:clamp(2px, 1.2vmin, 14px); /* wat lucht t.o.v. de rand van het kader */
     }
     #opties-sectie-onderschrift {
       font-family:'Baloo 2',sans-serif; font-weight:600; font-style:italic;
-      font-size:clamp(0.5rem, 1.3vmin, 0.68rem);
-      color:#6b4a20; text-align:center; line-height:1.25;
+      font-size:clamp(0.65rem, 1.7vmin, 0.95rem);
+      color:#6b4a20; text-align:center; line-height:1.3;
       max-width:95%;
     }
-    #illustratie-standen-rij {
-      display:flex; justify-content:center; align-items:stretch;
-      gap:clamp(4px, 1.4vmin, 12px); width:100%; margin-top:2px;
+    /* ── Eén kaart tegelijk in beeld i.p.v. 3 naast elkaar - meer ruimte
+       voor een groter plaatje en grotere tekst. Pijlen (dezelfde als bij de
+       vliegfiguur-kiezer, .figuur-pijl-knop) bladeren ernaast doorheen;
+       klikken op de kaart zelf doet hetzelfde als de pijl naar rechts. De
+       getoonde kaart is meteen de actieve stand. ── */
+    #illustratie-carrousel {
+      display:flex; align-items:center; justify-content:center;
+      gap:clamp(6px, 2vw, 22px); width:100%;
+      flex:1 1 auto; min-height:0; margin-top:2px;
     }
-    .illustratie-stand-knop {
-      flex:1 1 0; min-width:0;
-      display:flex; flex-direction:column; align-items:center; gap:3px;
-      background:none; border:2px solid transparent; border-radius:10px;
-      padding:4px; cursor:pointer;
-      transition:border-color 0.18s, background 0.18s;
+    #illustratie-kaart {
+      flex:0 1 auto; min-width:0; max-width:min(58%, 440px);
+      display:flex; flex-direction:column; align-items:center; gap:clamp(4px, 1vmin, 10px);
+      background:none; border:2px solid #ffd700; border-radius:14px;
+      padding:clamp(6px, 1.3vmin, 16px); cursor:pointer;
+      box-shadow:0 0 12px rgba(255,215,0,0.45);
+      transition:background 0.18s;
     }
-    .illustratie-stand-knop:hover { background:rgba(255,215,0,0.12); }
-    .illustratie-stand-knop.actief {
-      border-color:#ffd700; background:rgba(255,215,0,0.18);
-      box-shadow:0 0 10px rgba(255,215,0,0.5);
-    }
+    #illustratie-kaart:hover { background:rgba(255,215,0,0.12); }
     .illustratie-stand-voorbeeld {
-      width:100%; aspect-ratio:4/3; border-radius:6px; overflow:hidden;
-      background:rgba(0,0,0,0.15); box-shadow:0 2px 6px rgba(0,0,0,0.3);
+      width:min(46vh, 100%); aspect-ratio:4/3; border-radius:8px; overflow:hidden;
+      background:rgba(0,0,0,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.3);
     }
     .illustratie-stand-voorbeeld img { width:100%; height:100%; object-fit:cover; display:block; }
-    /* Stand "beperkt" heeft nog geen echt voorbeeld (zie toelichting bij
-       zetIllustratieStand hieronder) - neutraal vak met een klein
-       vliegtuigje i.p.v. een foto, tot Arjen die zelf aanlevert. */
-    .illustratie-stand-voorbeeld-leeg {
-      display:flex; align-items:center; justify-content:center;
-      border:2px dashed rgba(74,46,16,0.35); box-shadow:none; opacity:0.55;
-      font-size:clamp(1rem, 3vmin, 1.6rem);
-    }
     .illustratie-stand-naam {
       font-family:'Baloo 2',sans-serif; font-weight:800;
-      font-size:clamp(0.42rem, 1.15vmin, 0.62rem);
-      color:#4a2e10; text-align:center; line-height:1.15;
+      font-size:clamp(0.7rem, 2vmin, 1.05rem);
+      color:#4a2e10; text-align:center; line-height:1.2;
     }
     .illustratie-stand-uitleg {
       font-family:'Baloo 2',sans-serif; font-weight:500;
-      font-size:clamp(0.36rem, 0.95vmin, 0.54rem);
-      color:#6b4a20; text-align:center; line-height:1.2;
+      font-size:clamp(0.6rem, 1.5vmin, 0.85rem);
+      color:#6b4a20; text-align:center; line-height:1.25;
     }
     #verander-speler-knop {
       margin-top:auto; justify-content:center;
@@ -1383,7 +1379,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.18</div>
+  <div id="versie-label">v0.6.19</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1425,22 +1421,14 @@
       <div id="opties-kader-inhoud">
       <div id="opties-sectie-titel">Uitzicht tijdens het vliegen</div>
       <div id="opties-sectie-onderschrift">Als je merkt dat het beeld schokt, helpt het om minder afbeeldingen te laden.</div>
-      <div id="illustratie-standen-rij">
-        <button class="illustratie-stand-knop" data-stand="geen" onclick="zetIllustratieStand('geen')">
-          <div class="illustratie-stand-voorbeeld"><img src="images/opties-voorbeeld-geen.jpg" alt="Voorbeeld: geen landenafbeeldingen"/></div>
-          <div class="illustratie-stand-naam">Geen landenafbeeldingen</div>
-          <div class="illustratie-stand-uitleg">Je ziet alleen de kaart, geen plaatjes van landen.</div>
+      <div id="illustratie-carrousel">
+        <button id="illustratie-pijl-terug" class="figuur-pijl-knop" onclick="bladeerIllustratieStand(-1)" aria-label="Vorige stand"><img src="images/paspoort-terug.png" alt="Vorige stand"/></button>
+        <button id="illustratie-kaart" onclick="bladeerIllustratieStand(1)">
+          <div class="illustratie-stand-voorbeeld" id="illustratie-stand-voorbeeld"></div>
+          <div class="illustratie-stand-naam" id="illustratie-stand-naam"></div>
+          <div class="illustratie-stand-uitleg" id="illustratie-stand-uitleg"></div>
         </button>
-        <button class="illustratie-stand-knop" data-stand="beperkt" onclick="zetIllustratieStand('beperkt')">
-          <div class="illustratie-stand-voorbeeld"><img src="images/opties-voorbeeld-beperkt.jpg" alt="Voorbeeld: alleen het land waar je op vliegt"/></div>
-          <div class="illustratie-stand-naam">Alleen het land waar je op vliegt</div>
-          <div class="illustratie-stand-uitleg">Je ziet een plaatje van het land waar je nu bent, maar de buurlanden niet.</div>
-        </button>
-        <button class="illustratie-stand-knop" data-stand="vol" onclick="zetIllustratieStand('vol')">
-          <div class="illustratie-stand-voorbeeld"><img src="images/opties-voorbeeld-vol.jpg" alt="Voorbeeld: overal landenafbeeldingen"/></div>
-          <div class="illustratie-stand-naam">Overal landenafbeeldingen</div>
-          <div class="illustratie-stand-uitleg">Je ziet ook de landen in de buurt oplichten als je een grens nadert.</div>
-        </button>
+        <button id="illustratie-pijl-verder" class="figuur-pijl-knop" onclick="bladeerIllustratieStand(1)" aria-label="Volgende stand"><img src="images/paspoort-verder.png" alt="Volgende stand"/></button>
       </div>
       <button id="verander-speler-knop" class="startscherm-knop opties-sub-knop" onclick="opentNaamOverlayVanuitOpties()">
         Verander van speler
@@ -1875,15 +1863,33 @@
 //              checkNoodstop - nu ook gewoon als eigen keuze aan te zetten).
 // - 'vol':     ook de buurlanden lichten geleidelijk op (het oude gedrag).
 let illustratieStand = localStorage.getItem('wonkywings_illustratie_stand') || 'vol';
+// Volgorde waarin de pijltjes bladeren, en de tekst/afbeelding per stand -
+// zie #illustratie-carrousel in de HTML: één kaart tegelijk in beeld, de
+// getoonde kaart IS meteen de actieve stand (geen aparte bevestigknop).
+const ILLUSTRATIE_STANDEN = ['geen','beperkt','vol'];
+const ILLUSTRATIE_STAND_INFO = {
+  geen:    { naam:'Geen landenafbeeldingen',          uitleg:'Je ziet alleen de kaart, geen plaatjes van landen.',                        img:'images/opties-voorbeeld-geen.jpg' },
+  beperkt: { naam:'Alleen het land waar je op vliegt', uitleg:'Je ziet een plaatje van het land waar je nu bent, maar de buurlanden niet.', img:'images/opties-voorbeeld-beperkt.jpg' },
+  vol:     { naam:'Overal landenafbeeldingen',         uitleg:'Je ziet ook de landen in de buurt oplichten als je een grens nadert.',        img:'images/opties-voorbeeld-vol.jpg' }
+};
 function zetIllustratieStand(stand){
   illustratieStand = stand;
   localStorage.setItem('wonkywings_illustratie_stand', stand);
-  illustratieStandKnoppenBijwerken();
+  toonIllustratieKaart();
 }
-function illustratieStandKnoppenBijwerken(){
-  document.querySelectorAll('.illustratie-stand-knop').forEach(knop=>{
-    knop.classList.toggle('actief', knop.dataset.stand===illustratieStand);
-  });
+// Bladert met richting -1 (terug) of +1 (verder, ook bij klikken op de kaart
+// zelf) naar de volgende stand in ILLUSTRATIE_STANDEN, en kiest die meteen.
+function bladeerIllustratieStand(richting){
+  const idx = ILLUSTRATIE_STANDEN.indexOf(illustratieStand);
+  const nieuweIdx = (idx + richting + ILLUSTRATIE_STANDEN.length) % ILLUSTRATIE_STANDEN.length;
+  zetIllustratieStand(ILLUSTRATIE_STANDEN[nieuweIdx]);
+}
+function toonIllustratieKaart(){
+  const info = ILLUSTRATIE_STAND_INFO[illustratieStand];
+  document.getElementById('illustratie-stand-voorbeeld').innerHTML =
+    '<img src="'+info.img+'" alt="Voorbeeld: '+info.naam+'"/>';
+  document.getElementById('illustratie-stand-naam').textContent = info.naam;
+  document.getElementById('illustratie-stand-uitleg').textContent = info.uitleg;
 }
 
 // ── Opties-overlay: verschijnt over het hele scherm, met de instellingen
@@ -1891,7 +1897,7 @@ function illustratieStandKnoppenBijwerken(){
 // de CSS/HTML). Dimt tegelijk de grote Timbo-achtergrondfoto links, zodat de
 // aandacht bij het opties-kader blijft. ──
 function openOptiesOverlay(){
-  illustratieStandKnoppenBijwerken();
+  toonIllustratieKaart();
   document.getElementById('opties-overlay').classList.add('tonen');
   document.getElementById('start-timbo').classList.add('gedimd');
 }
@@ -3129,7 +3135,7 @@ function heropenNaamOverlay(){
 })();
 
 bouwStartscherm();
-illustratieStandKnoppenBijwerken();
+toonIllustratieKaart();
 
 // ── Score-tickers (boven=Europa, onder=Wereld) ─────────
 // Bouwt per beschikbaar onderdeel van een werelddeel-groep maximaal twee
