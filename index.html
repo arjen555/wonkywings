@@ -1383,7 +1383,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.16</div>
+  <div id="versie-label">v0.6.18</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1432,7 +1432,7 @@
           <div class="illustratie-stand-uitleg">Je ziet alleen de kaart, geen plaatjes van landen.</div>
         </button>
         <button class="illustratie-stand-knop" data-stand="beperkt" onclick="zetIllustratieStand('beperkt')">
-          <div class="illustratie-stand-voorbeeld illustratie-stand-voorbeeld-leeg">✈️</div>
+          <div class="illustratie-stand-voorbeeld"><img src="images/opties-voorbeeld-beperkt.jpg" alt="Voorbeeld: alleen het land waar je op vliegt"/></div>
           <div class="illustratie-stand-naam">Alleen het land waar je op vliegt</div>
           <div class="illustratie-stand-uitleg">Je ziet een plaatje van het land waar je nu bent, maar de buurlanden niet.</div>
         </button>
@@ -4916,6 +4916,24 @@ function naarStart(){
   document.getElementById('scorebord-scherm').style.display='none';
   document.getElementById('hoofdsteden-resultaat-scherm').style.display='none';
   document.getElementById('startscherm').style.display='flex';
+  // Menu altijd fris terugzetten: was een continent-lijst (Europa/Wereld/
+  // Hoofdsteden) nog opengeklapt toen er een level gestart werd, dan bleef
+  // #start-rechts tot nu toe hangen in zijn 33%-bredere, over-de-Timbo-foto
+  // geschoven stand (zetMenuUitgeklapt(true)) - die reset gebeurde namelijk
+  // alleen bij het handmatig weer dichtklikken op het startscherm zelf, niet
+  // bij het starten van een level. Gevolg: de opties-overlay (die uitgaat
+  // van de normale 80/20-verdeling) kon zo over dat te brede menu heen komen.
+  // Daarom hier hetzelfde opruimwerk als zetMenuUitgeklapt(false), maar dan
+  // meteen (geen animatie nodig - het startscherm was toch al onzichtbaar).
+  document.querySelectorAll('.menu-groep-kop.open').forEach(kop=>{
+    kop.classList.remove('open');
+    kop.nextElementSibling.classList.remove('open');
+  });
+  if(menuUitgeklaptTimer){ clearTimeout(menuUitgeklaptTimer); menuUitgeklaptTimer=null; }
+  const startRechts = document.getElementById('start-rechts');
+  startRechts.style.position=''; startRechts.style.top=''; startRechts.style.right='';
+  startRechts.style.bottom=''; startRechts.style.width=''; startRechts.style.zIndex='';
+  toonFiguurKiezer(false);
   document.getElementById('joker-knop').style.display='none';
   document.getElementById('richting-rij').style.display='none';
   document.getElementById('richting-pijl').style.display='none';
