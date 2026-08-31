@@ -74,12 +74,22 @@
        de onclick op #opties-overlay zelf, in de HTML). ── */
     #opties-overlay {
       position:fixed; inset:0; z-index:210;
-      display:none; align-items:center; justify-content:center;
+      display:none;
       cursor:pointer;
     }
     #opties-overlay.tonen { display:flex; }
+    /* Zelfde 80%-zone als #naam-overlay-zone hierboven: het kader centreert
+       zich binnen het linker Timbo-vlak (#start-links), nooit over de
+       donkerblauwe menuzijbalk (#start-rechts, altijd de resterende 20%)
+       heen - zo kan het kader flink groter zonder ooit tegen het menu aan
+       te lopen, op elk schermformaat. */
+    #opties-overlay-zone {
+      position:absolute; left:0; top:0; width:80%; height:100%;
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer;
+    }
     #opties-kader {
-      position:relative; width:min(78vmin, 640px); aspect-ratio:1/1;
+      position:relative; width:min(90vmin, 84%, 980px); aspect-ratio:1/1;
       background:url('images/opties.png') center/contain no-repeat;
       cursor:default;
     }
@@ -1408,8 +1418,9 @@
 </div>
 
 <div id="opties-overlay" onclick="if(event.target===this) sluitOptiesOverlay()">
-  <div id="opties-kader">
-    <div id="opties-kader-inhoud">
+  <div id="opties-overlay-zone" onclick="if(event.target===this) sluitOptiesOverlay()">
+    <div id="opties-kader">
+      <div id="opties-kader-inhoud">
       <div id="opties-sectie-titel">Uitzicht tijdens het vliegen</div>
       <div id="opties-sectie-onderschrift">Als je merkt dat het beeld schokt, helpt het om minder afbeeldingen te laden.</div>
       <div id="illustratie-standen-rij">
@@ -1432,6 +1443,7 @@
       <button id="verander-speler-knop" class="startscherm-knop opties-sub-knop" onclick="opentNaamOverlayVanuitOpties()">
         Verander van speler
       </button>
+      </div>
     </div>
   </div>
 </div>
