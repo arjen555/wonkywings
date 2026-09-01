@@ -13,6 +13,11 @@
     display:flex; align-items:center; justify-content:center;
     background:radial-gradient(ellipse at center, #0a2338 0%, #020d1a 75%);
   }
+  /* Alleen tijdens het kiezen van een werelddeel, het spelen van Raad je
+     Plaatje en het evalueren achteraf: zie toonScherm() in de JS. */
+  body.wereldkaart-achtergrond {
+    background:#0a2338 url('images/wereldkaart-achtergrond.jpg') center center / cover no-repeat;
+  }
 
   #kader {
     position:relative;
@@ -359,8 +364,8 @@
      en één keer oplicht om extra op te vallen tegen de drukke achtergrond */
   #ls-start-pijl {
     position:absolute;
-    right:20%; bottom:30%;
-    width:clamp(190px, 32vw, 360px);
+    right:19%; bottom:5.5%;
+    width:clamp(210px, 51vw, 580px);
     aspect-ratio:640/431;
     z-index:70;
     pointer-events:none;
@@ -384,6 +389,26 @@
     35%  { filter:drop-shadow(0 0 45px rgba(255,241,150,0.95)) contrast(1.818) brightness(2.43); }
     100% { filter:drop-shadow(0 4px 10px rgba(0,0,0,0.5)) contrast(1.818) brightness(1.43); }
   }
+
+  /* Uitlegkader linksboven de cirkels — zelfde intro-overlay als de pijl:
+     verschijnt bij start, blijft staan tot de eerste klik/tik. Nu een kant-
+     en-klare illustratie (tekst zit in het plaatje gebakken), i.p.v. een
+     los CSS-vlak met een <ul>. Krijgt dezelfde contrast/brightness-
+     compensatie als de pijl, anders wordt het plaatje door
+     #ls-speelveld.pijl-toont zelf ook gedimd en minder leesbaar. */
+  #ls-uitleg-kader {
+    position:absolute;
+    left:6.5%; top:50%;
+    transform:translateY(-50%);
+    width:clamp(300px, 58%, 980px);
+    aspect-ratio:640/420;
+    z-index:69;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.6s ease;
+    filter:contrast(1.818) brightness(1.43);
+  }
+  #ls-uitleg-kader.zichtbaar { opacity:1; }
 
   /* Schelp + timer samen, rechtsonder — timer als platte tekst boven de schelp */
   #ls-schelp-tijd-groep {
@@ -442,17 +467,29 @@
     word-break:break-word;
   }
 
-  /* Menu-knop linksboven — afbeelding (terug-naar-start-knop) */
-  #ls-menu-knop {
+  /* Menu-knop linksboven (terug-naar-start-knop) +, pas zichtbaar zodra
+     een potje klaar is, de octopus-knop eronder om meteen opnieuw te
+     spelen (nieuwe 9 landen, geen paginaherlaad) */
+  #ls-menu-groep {
     position:absolute; left:3%; top:3%;
+    /* Breedte hier vast zetten (i.p.v. op de knoppen zelf) — anders heeft
+       de 15% hieronder niets om tegenaan te schalen (deze groep zelf had
+       geen breedte), en valt de knop terug op een te kleine maat. */
     width:clamp(120px, 15%, 220px);
+    display:flex; flex-direction:column; gap:10px;
+    z-index:60;
+  }
+  #ls-menu-knop, #ls-opnieuw-knop {
+    width:100%;
     border:none; background:none; padding:0; cursor:pointer;
-    z-index:60; opacity:0.92;
+    opacity:0.92;
     filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5));
     transition:opacity 0.15s, transform 0.15s;
   }
-  #ls-menu-knop:hover { opacity:1; transform:scale(1.03); }
-  #ls-menu-knop img { width:100%; display:block; }
+  #ls-menu-knop:hover, #ls-opnieuw-knop:hover { opacity:1; transform:scale(1.03); }
+  #ls-menu-knop img, #ls-opnieuw-knop img { width:100%; display:block; }
+  #ls-opnieuw-knop { display:none; }
+  #ls-opnieuw-knop.actief { display:block; }
 
   /* Bordje (valt naar beneden) */
   #ls-bordje-wrap {
@@ -609,10 +646,16 @@
 <div id="landjeschuif-veld">
   <div id="ls-speelveld">
     <div id="ls-speler-vak">Speler</div>
-    <button id="ls-menu-knop" onclick="lsNaarMenu()">
-      <img src="images/terug-naar-start-knop.png" alt="Menu"/>
-    </button>
+    <div id="ls-menu-groep">
+      <button id="ls-menu-knop" onclick="lsNaarMenu()">
+        <img src="images/terug-naar-start-knop.png" alt="Menu"/>
+      </button>
+      <button id="ls-opnieuw-knop" onclick="startLandjeSchuif()">
+        <img src="images/opnieuw-knop.png" alt="Nog een ronde"/>
+      </button>
+    </div>
     <img id="ls-start-pijl" src="images/start-pijl.png" alt=""/>
+    <img id="ls-uitleg-kader" src="images/uitleg-kader.png" alt="Druk op de groene knop om te beginnen. Leg de sticker op het juiste land. Beter zien? Twee keer erop drukken. Denk je dat het goed is, druk dan op de paarse knop. Nog een foutje? Ga snel verder! Alle 9 goed? Stop de tijd!"/>
     <div id="ls-schelp-tijd-groep">
       <div id="ls-timer-vak">0:00.0</div>
       <div id="ls-schelp-wrap" onclick="lsSchelpKlik()">
@@ -647,6 +690,70 @@ for(const p of PLEKKEN_DATA) PLEKKEN_BIJ_NAAM[p.naam] = p;
 const TEST_NAMEN = ['test1','test2'];
 function isTestNaam(n){ return TEST_NAMEN.includes((n||'').toLowerCase().trim()); }
 
+// ── Online scorebord (Firestore) — gedeelde helpers ─────────────────────
+// Zelfde opzet als in index.html, zie de toelichting daar. fsOpslaan() is
+// "fire-and-forget" (de speler wacht niet op de server); fsTopN() haalt de
+// beste 'aantal' runs op uit één collectie, gefilterd/gesorteerd, en
+// plakt de zojuist gespeelde ronde er lokaal bij als die er nog niet in
+// zit - zo is je eigen resultaat altijd meteen zichtbaar.
+async function fsOpslaan(collectieNaam, data){
+  try{
+    const fb = await window.wvwFirebaseGereed;
+    await fb.addDoc(fb.collection(fb.db, collectieNaam), data);
+  }catch(e){
+    console.warn('Kon score niet online opslaan ('+collectieNaam+'):', e);
+  }
+}
+async function fsTopN(collectieNaam, gelijkVeld, gelijkWaarde, orderVelden, vergelijker, aantal, nieuweRun){
+  let lijst = [];
+  try{
+    const fb = await window.wvwFirebaseGereed;
+    const orderClauses = orderVelden.map(([veld,richting])=>fb.orderBy(veld, richting));
+    const q = fb.query(fb.collection(fb.db, collectieNaam),
+      fb.where(gelijkVeld, '==', gelijkWaarde), ...orderClauses, fb.limit(aantal));
+    const snap = await fb.getDocs(q);
+    snap.forEach(doc=>lijst.push(doc.data()));
+  }catch(e){
+    console.warn('Kon scores niet online ophalen ('+collectieNaam+'):', e);
+  }
+  if(nieuweRun && !lijst.some(r=>r.naam===nieuweRun.naam && r.datum===nieuweRun.datum)){
+    lijst.push(nieuweRun);
+  }
+  lijst.sort(vergelijker);
+  return lijst;
+}
+// Aanvraag-ID: voorkomt dat een trage/oude scorebord-aanvraag een
+// inmiddels alweer nieuwer geopend scorebord overschrijft.
+let scorebordAanvraagId = 0;
+
+// ── Filter tegen kwetsende/aanstootgevende namen ────────────────────────
+// Geen waterdicht systeem (dat bestaat niet écht), maar houdt het gros
+// tegen. Normaliseert eerst (kleine letters, accenten weg, spaties/
+// leestekens weg, een paar bekende cijfer-voor-letter-trucjes zoals
+// "k4nker") en checkt daarna op een lijst met veelvoorkomende Nederlandse
+// (en een paar Engelse) grove/kwetsende woorden. Arjen kan deze lijst later
+// zelf uitbreiden of inkorten. Zelfde lijst/logica als in index.html.
+const ONGEPASTE_WOORDEN = [
+  'kanker','kut','klote','klootzak','lul','hoer','hoertje','slet',
+  'trut','tering','teringlijer','tyfus','pleuris','flikker','mongool',
+  'mongo','achterlijk','debiel','spast','spasti','nikker','neger',
+  'poepchinees','kutmarokkaan','kankerlijer','hitler','nazi','terrorist',
+  'fuck','shit','bitch','whore','slut','nigger','nigga','faggot','retard',
+  'cunt','asshole','bastard','penis','vagina','porno',
+];
+function normaliseerVoorFilter(tekst){
+  return (tekst||'')
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g,'') // accenten weg (bv. ë → e)
+    .replace(/0/g,'o').replace(/1/g,'i').replace(/3/g,'e').replace(/4/g,'a').replace(/5/g,'s').replace(/7/g,'t')
+    .replace(/[^a-z]/g,''); // spaties, cijfers, leestekens etc. weg
+}
+function bevatOngepasteTaal(naam){
+  const genormaliseerd = normaliseerVoorFilter(naam);
+  if(!genormaliseerd) return false;
+  return ONGEPASTE_WOORDEN.some(woord => genormaliseerd.includes(woord));
+}
+
 const CATEGORIEEN = [{"id":"eu-noord","naam":"Noord-Europa","groep":"Europa","landen":["IJsland","Noorwegen","Zweden","Finland","Estland","Letland","Litouwen","Wit-Rusland","Polen","Tsjechië","Slowakije","Oekraïne","Nederland","Duitsland","Luxemburg","Verenigd Koninkrijk","Ierland","België","Denemarken","Rusland","Groenland"]},{"id":"eu-zuid","naam":"Zuid-Europa","groep":"Europa","landen":["Frankrijk","Zwitserland","Oostenrijk","Hongarije","Roemenië","Moldavië","Spanje","Portugal","Italië","Griekenland","Bulgarije","Servië","Kroatië","Bosnië-Herzegovina","Slovenië","Albanië","Noord-Macedonië","Montenegro","Kosovo"]},{"id":"eu-alles","naam":"Heel Europa","groep":"Europa","landen":["Frankrijk","Zwitserland","Oostenrijk","Hongarije","Roemenië","Moldavië","Spanje","Portugal","Italië","Griekenland","Bulgarije","Servië","Kroatië","Bosnië-Herzegovina","Slovenië","Albanië","Noord-Macedonië","Montenegro","Kosovo","IJsland","Noorwegen","Zweden","Finland","Estland","Letland","Litouwen","Wit-Rusland","Polen","Tsjechië","Slowakije","Oekraïne","Nederland","Duitsland","Luxemburg","Verenigd Koninkrijk","Ierland","België","Denemarken","Rusland","Groenland"]},{"id":"w-alles","naam":"Alle landen","groep":"Wereld","landen":["Indonesië","Maleisië","Chili","Bolivia","Peru","Argentinië","Cyprus","India","China","Israël","Palestina","Libanon","Ethiopië","Zuid-Soedan","Somalië","Kenia","Malawi","Tanzania","Syrië","Frankrijk","Suriname","Guyana","Zuid-Korea","Noord-Korea","Marokko","Westelijke Sahara","Costa Rica","Nicaragua","Congo-Brazzaville","Congo-Kinshasa","Bhutan","Oekraïne","Wit-Rusland","Namibië","Zuid-Afrika","Oman","Oezbekistan","Kazachstan","Tadzjikistan","Litouwen","Brazilië","Uruguay","Mongolië","Rusland","Tsjechië","Duitsland","Estland","Letland","Noorwegen","Zweden","Finland","Vietnam","Cambodja","Luxemburg","Verenigde Arabische Emiraten","België","Georgië","Noord-Macedonië","Albanië","Azerbeidzjan","Kosovo","Turkije","Spanje","Laos","Kirgizië","Armenië","Denemarken","Libië","Tunesië","Roemenië","Hongarije","Slowakije","Polen","Ierland","Verenigd Koninkrijk","Griekenland","Zambia","Sierra Leone","Guinee","Liberia","Centraal-Afrikaanse Republiek","Soedan","Djibouti","Eritrea","Oostenrijk","Irak","Italië","Zwitserland","Iran","Nederland","Ivoorkust","Servië","Mali","Senegal","Nigeria","Benin","Angola","Kroatië","Slovenië","Qatar","Saoedi-Arabië","Botswana","Zimbabwe","Pakistan","Bulgarije","Thailand","Haïti","Dominicaanse Republiek","Tsjaad","Koeweit","El Salvador","Guatemala","Oost-Timor","Algerije","Mozambique","Burundi","Rwanda","Myanmar","Bangladesh","Afghanistan","Montenegro","Bosnië-Herzegovina","Oeganda","Cuba","Honduras","Ecuador","Colombia","Paraguay","Portugal","Moldavië","Jordanië","Nepal","Lesotho","Kameroen","Gabon","Niger","Burkina Faso","Togo","Ghana","Guinee-Bissau","Gibraltar","Verenigde Staten","Canada","Mexico","Belize","Panama","Venezuela","Papoea-Nieuw-Guinea","Egypte","Jemen","Mauritanië","Equatoriaal-Guinea","Gambia","Antarctica","Australië","Groenland","Fiji","Nieuw-Zeeland","Madagaskar","Filipijnen","Sri Lanka","Taiwan","Japan","IJsland","Jamaica","Singapore","Bahrein"]},{"id":"w-makkelijk","naam":"Makkelijke landen","groep":"Wereld","landen":["Frankrijk","Spanje","Nederland","Italië","Duitsland","Verenigd Koninkrijk","Turkije","Verenigde Staten","Canada","Mexico","Brazilië","China","India","Japan","Indonesië","Australië","Zuid-Afrika","Rusland"]},{"id":"w-amerika","naam":"Amerika","groep":"Wereld","landen":["Canada","Verenigde Staten","Mexico","Guatemala","Belize","Honduras","El Salvador","Nicaragua","Costa Rica","Panama","Cuba","Haïti","Dominicaanse Republiek","Jamaica","Colombia","Venezuela","Guyana","Suriname","Frans Guyana","Brazilië","Ecuador","Peru","Bolivia","Chili","Argentinië","Uruguay","Paraguay"]},{"id":"w-zuid-amerika","naam":"Zuid-Amerika","groep":"Wereld","landen":["Colombia","Venezuela","Guyana","Suriname","Frans Guyana","Brazilië","Ecuador","Peru","Bolivia","Chili","Argentinië","Uruguay","Paraguay"]},{"id":"w-azie","naam":"Azië & Oceanië","groep":"Wereld","landen":["Rusland","China","India","Japan","Zuid-Korea","Noord-Korea","Mongolië","Kazachstan","Oezbekistan","Turkmenistan","Kirgizië","Tadzjikistan","Afghanistan","Pakistan","Iran","Irak","Saoedi-Arabië","Jemen","Oman","Verenigde Arabische Emiraten","Qatar","Koeweit","Jordanië","Israël","Libanon","Syrië","Turkije","Azerbeidzjan","Georgië","Armenië","Nepal","Bhutan","Bangladesh","Myanmar","Thailand","Vietnam","Cambodja","Laos","Maleisië","Indonesië","Filipijnen","Taiwan","Singapore","Sri Lanka","Australië","Nieuw-Zeeland","Papoea-Nieuw-Guinea"]},{"id":"w-afrika","naam":"Afrika","groep":"Wereld","landen":["Marokko","Algerije","Tunesië","Libië","Egypte","Mauritanië","Mali","Niger","Tsjaad","Soedan","Ethiopië","Eritrea","Djibouti","Somalië","Kenia","Tanzania","Mozambique","Zimbabwe","Zuid-Afrika","Namibië","Botswana","Angola","Zambia","Malawi","Madagaskar","Congo-Kinshasa","Congo-Brazzaville","Gabon","Kameroen","Nigeria","Centraal-Afrikaanse Republiek","Zuid-Soedan","Oeganda","Rwanda","Burundi","Ghana","Ivoorkust","Senegal","Gambia","Guinee","Sierra Leone","Liberia","Burkina Faso","Benin","Togo","Equatoriaal-Guinea"]},{"id":"w-kleinmaarfijn","naam":"Klein maar fijn","groep":"Wereld","landen":["Tonga","Samoa","Salomonseilanden","Tuvalu","Nauru","Micronesia","Palau","Vanuatu","Nieuw-Caledonië","Frans-Polynesië","Trinidad en Tobago","Grenada","Barbados","Saint Lucia","Dominica","Antigua en Barbuda","Saint Kitts en Nevis","Seychellen","Comoren","Sao Tomé en Principe","Kaapverdië","Mauritius","Maldiven","San Marino","Vaticaanstad","Monaco","Andorra","Liechtenstein","Malta","Faeröer","Brunei","Falklandeilanden"]},{"id": "iconische-plekken", "naam": "Iconische plekken", "groep": "Iconische plekken", "landen": ["Eiffeltoren", "Colosseum", "Stonehenge", "Akropolis", "Sagrada Família", "Scheve toren van Pisa", "Geysir", "Geirangerfjord", "Pompeii", "Neuschwanstein", "Loch Ness", "Tower Bridge", "Kinderdijk", "Atomium", "Efteling", "Disneyland Paris", "Legoland Billund", "Walt Disney World", "Piramides van Gizeh", "Victoriawatervallen", "Kilimanjaro", "Tafelberg", "Taj Mahal", "Grote Muur van China", "Mount Everest", "Angkor Wat", "Petra", "Fuji", "Burj Khalifa", "Terracottaleger", "Plein van de Hemelse Vrede", "Kremlin", "Dode Zee", "Vrijheidsbeeld", "Grand Canyon", "Chichén Itzá", "Niagarawatervallen", "Golden Gate Bridge", "Mount Rushmore", "Machu Picchu", "Christus de Verlosser", "Nazca-lijnen", "Sydney Opera House", "Uluru", "Moai (Paaseiland)", "Great Barrier Reef"], "plekken": true}];
 
 // Zelfde bestandsnaam-regel als index.html (landNaarBestand): accenten eraf,
@@ -656,7 +763,7 @@ function landNaarBestand(naam) {
     .replace(/ë/g,'e').replace(/é/g,'e').replace(/è/g,'e').replace(/ê/g,'e')
     .replace(/ï/g,'i').replace(/í/g,'i').replace(/ö/g,'o').replace(/ü/g,'u')
     .replace(/á/g,'a').replace(/à/g,'a').replace(/â/g,'a').replace(/ä/g,'a')
-    .replace(/ñ/g,'n').replace(/ç/g,'c').replace(/['''']/g,'').replace(/\s+/g,'_');
+    .replace(/ñ/g,'n').replace(/ç/g,'c').replace(/[''']/g,'').replace(/\s+/g,'_');
 }
 
 
@@ -789,70 +896,6 @@ function toonVliegendeStempels(gekozenLanden, paspoortIconEl, containerEl){
     });
     setTimeout(()=>{ rij.remove(); }, plaatjes.length*220 + STEMPEL_VLIEG_DUUR_MS + 150);
   }, STEMPEL_VLIEG_PAUZE_MS);
-}
-
-// ── Online scorebord (Firestore) — gedeelde helpers ─────────────────────
-// Zelfde opzet als in index.html, zie de toelichting daar. fsOpslaan() is
-// "fire-and-forget" (de speler wacht niet op de server); fsTopN() haalt de
-// beste 'aantal' runs op uit één collectie, gefilterd/gesorteerd, en
-// plakt de zojuist gespeelde ronde er lokaal bij als die er nog niet in
-// zit - zo is je eigen resultaat altijd meteen zichtbaar.
-async function fsOpslaan(collectieNaam, data){
-  try{
-    const fb = await window.wvwFirebaseGereed;
-    await fb.addDoc(fb.collection(fb.db, collectieNaam), data);
-  }catch(e){
-    console.warn('Kon score niet online opslaan ('+collectieNaam+'):', e);
-  }
-}
-async function fsTopN(collectieNaam, gelijkVeld, gelijkWaarde, orderVelden, vergelijker, aantal, nieuweRun){
-  let lijst = [];
-  try{
-    const fb = await window.wvwFirebaseGereed;
-    const orderClauses = orderVelden.map(([veld,richting])=>fb.orderBy(veld, richting));
-    const q = fb.query(fb.collection(fb.db, collectieNaam),
-      fb.where(gelijkVeld, '==', gelijkWaarde), ...orderClauses, fb.limit(aantal));
-    const snap = await fb.getDocs(q);
-    snap.forEach(doc=>lijst.push(doc.data()));
-  }catch(e){
-    console.warn('Kon scores niet online ophalen ('+collectieNaam+'):', e);
-  }
-  if(nieuweRun && !lijst.some(r=>r.naam===nieuweRun.naam && r.datum===nieuweRun.datum)){
-    lijst.push(nieuweRun);
-  }
-  lijst.sort(vergelijker);
-  return lijst;
-}
-// Aanvraag-ID: voorkomt dat een trage/oude scorebord-aanvraag een
-// inmiddels alweer nieuwer geopend scorebord overschrijft.
-let scorebordAanvraagId = 0;
-
-// ── Filter tegen kwetsende/aanstootgevende namen ────────────────────────
-// Geen waterdicht systeem (dat bestaat niet écht), maar houdt het gros
-// tegen. Normaliseert eerst (kleine letters, accenten weg, spaties/
-// leestekens weg, een paar bekende cijfer-voor-letter-trucjes zoals
-// "k4nker") en checkt daarna op een lijst met veelvoorkomende Nederlandse
-// (en een paar Engelse) grove/kwetsende woorden. Arjen kan deze lijst later
-// zelf uitbreiden of inkorten. Zelfde lijst/logica als in index.html.
-const ONGEPASTE_WOORDEN = [
-  'kanker','kut','klote','klootzak','lul','hoer','hoertje','slet',
-  'trut','tering','teringlijer','tyfus','pleuris','flikker','mongool',
-  'mongo','achterlijk','debiel','spast','spasti','nikker','neger',
-  'poepchinees','kutmarokkaan','kankerlijer','hitler','nazi','terrorist',
-  'fuck','shit','bitch','whore','slut','nigger','nigga','faggot','retard',
-  'cunt','asshole','bastard','penis','vagina','porno',
-];
-function normaliseerVoorFilter(tekst){
-  return (tekst||'')
-    .toLowerCase()
-    .normalize('NFD').replace(/[̀-ͯ]/g,'') // accenten weg (bv. ë → e)
-    .replace(/0/g,'o').replace(/1/g,'i').replace(/3/g,'e').replace(/4/g,'a').replace(/5/g,'s').replace(/7/g,'t')
-    .replace(/[^a-z]/g,''); // spaties, cijfers, leestekens etc. weg
-}
-function bevatOngepasteTaal(naam){
-  const genormaliseerd = normaliseerVoorFilter(naam);
-  if(!genormaliseerd) return false;
-  return ONGEPASTE_WOORDEN.some(woord => genormaliseerd.includes(woord));
 }
 
 const AANTAL_VRAGEN_MAX = 10;
@@ -996,6 +1039,9 @@ function toonScherm(id){
   document.querySelectorAll('.scherm').forEach(el=>el.classList.remove('actief'));
   document.getElementById(id).classList.add('actief');
   document.getElementById('antwoorden-grid').classList.toggle('actief', id==='scherm-spel');
+  // Wereldkaart-achtergrond alleen bij het kiezen van een werelddeel, tijdens
+  // het spel zelf, en bij het evalueren achteraf — niet bij naam/woordje.
+  document.body.classList.toggle('wereldkaart-achtergrond', id==='scherm-kies' || id==='scherm-spel' || id==='scherm-klaar');
   // #klaar-paspoort-icoon en #klaar-linksboven-knoppen staan buiten #kader
   // (zie de notitie bij hun HTML) en volgen dus niet vanzelf de
   // .scherm-cascade - hier expliciet meesturen.
@@ -1265,7 +1311,8 @@ function formatTijdMs(ms){
 // ── Ronde klaar: opslaan + scorebord ──
 // 'totaal' = het werkelijke aantal vragen van déze ronde (vraagLijst.length),
 // zodat het scorebord (hier én in highscores.html) altijd "x van de y" kan
-// tonen zonder te hoeven gokken.
+// tonen zonder te hoeven gokken - eerder ontbrak dit veld, waardoor oudere
+// scores altijd op een noodgreep-schatting terugvielen.
 function opslaanRaadspelScoreOnline(catId, naam, goed, tijdMs, totaal){
   const nieuweRun = {naam, goed, tijdMs, totaal, datum:Date.now()};
   fsOpslaan('scores_raadspel', {catId, naam:nieuweRun.naam, goed:nieuweRun.goed, totaal:nieuweRun.totaal, tijdMs:nieuweRun.tijdMs, datum:nieuweRun.datum});
@@ -1385,6 +1432,11 @@ const LS_CIRKELS = [
 ];
 const LS_CIRKEL_GROOTTE = 17.5;   // diameter als % van speelveld-breedte
 const LS_STEMPEL_GROOTTE = 14;    // stempel als % van speelveld-breedte
+// Stempels worden willekeurig een beetje gedraaid (±15°) neergelegd. Een
+// gedraaid vierkant heeft een grotere bounding box dan het vierkant zelf
+// (bij 15° zo'n 22% hoger) — deze marge zorgt dat de verboden-zone-check
+// ook bij de scheefste stand nog klopt.
+const LS_STEMPEL_ROTATIE_MARGE = 1.25;
 // Snap-drempel = halve stempelgrootte: de stempel moet dus met zijn eigen
 // rand minstens het middelpunt van een cirkel raken voor hij vastklikt.
 const LS_SNAP_DREMPEL = LS_STEMPEL_GROOTTE / 2;
@@ -1393,14 +1445,31 @@ const LS_SNAP_DREMPEL = LS_STEMPEL_GROOTTE / 2;
 // buurcirkels heen te vallen, ook bij een krap gekalibreerd rooster.
 const LS_RING_GROOTTE = 14;
 
-// Verboden zone rechtsonder: hier staat de schelp-knop + de timer erboven
-// (#ls-schelp-tijd-groep). Stempels mogen daar nooit los neergezet worden,
-// zodat ze de knop of de tijd nooit bedekken. Waardes zijn gemeten op het
-// echte schelp/tijd-blok (niet ruim geschat), zodat er zoveel mogelijk
-// zandruimte overblijft om stempels neer te leggen.
-const LS_VERBODEN_ZONE = { xMin: 74, yMin: 64 };
-function lsInVerbodenZone(x, y){
-  return x > LS_VERBODEN_ZONE.xMin && y > LS_VERBODEN_ZONE.yMin;
+// Verboden band onderin: hier staat de schelp-knop + de timer erboven
+// (#ls-schelp-tijd-groep). Stempels mogen nooit op deze hoogte losstaan —
+// ook niet links van de knop — zodat álle losse stempels boven de tijd
+// blijven zweven en de knop nooit "in dezelfde rij" oogt. Vandaar dat dit
+// een volledige horizontale band is (elke x, vanaf yMin) en geen rechthoek
+// die alleen de rechterkant afschermt.
+//
+// yMin wordt LIVE gemeten aan #ls-schelp-tijd-groep (i.p.v. een vast
+// percentage), want die groep heeft zelf ook een clamp() met een
+// pixel-maximum — op een breed scherm valt die groep relatief kleiner uit
+// en zakt hij dus verder omlaag. Een vast yMin klopte dan niet meer met
+// waar de tijd/knop ECHT stonden, en bleef er onnodig veel zandruimte
+// onbenut. Door 'm elke keer opnieuw op te meten, klopt de grens altijd,
+// op elk schermformaat.
+function lsMeetVerbodenYMin(veldRect){
+  const groep = document.getElementById('ls-schelp-tijd-groep');
+  const groepRect = groep.getBoundingClientRect();
+  return (groepRect.top - veldRect.top) / veldRect.height * 100;
+}
+// hoogte is de eigen hoogte van het stempel, in % van de speelveld-hoogte —
+// zonder dit meegewogen zou alleen de bovenkant van het stempel gecheckt
+// worden, terwijl de onderkant (het stempel is zelf best hoog) alsnog ver
+// het verboden gebied in kan steken. Vandaar: bovenkant + hoogte > yMin.
+function lsInVerbodenZone(x, y, hoogte, yMin){
+  return (y + (hoogte||0)) > yMin;
 }
 
 // ── State ──
@@ -1417,7 +1486,6 @@ let lsSleepIdx = -1;
 let lsSleepOffset = {x:0, y:0};
 let lsGekozenBonusLanden = [];   // bonus-landen, meteen bij winst bepaald en bijgeschreven
 let lsEindAnimatieGestart = false; // voorkomt dat de klik-ergens-animatie 2x start
-let lsPijlTimer = null;          // timer die de start-pijl weer laat vervagen
 
 // ── Vergroten van stempels via dubbeltik/dubbelklik ──
 let lsLaatsteTik = {};              // stempelindex → tijdstip laatste tik (ms)
@@ -1538,34 +1606,51 @@ function startLandjeSchuif(){
   bordjeWrap.style.top = '';
   document.getElementById('ls-bordje-tekst').textContent = '';
 
-  // Reset de paspoort/boek-iconen
+  // Reset de paspoort/boek-iconen en de octopus-herstartknop
   document.getElementById('ls-eind-iconen').classList.remove('actief');
+  document.getElementById('ls-opnieuw-knop').classList.remove('actief');
 
   // Bouw cirkels en stempels
   bouwLsCirkels();
   bouwLsStempels();
 
-  // Grote pijl kort tonen die naar de groene startknop wijst
-  lsToonStartPijl();
+  // Pijl + uitlegkader tonen — blijven nu staan tot de speler ergens
+  // klikt/tikt (geen vaste tijd meer)
+  lsToonIntroOverlay();
 }
 
-// ── Pijl die bij start even naar de groene knop wijst, en dan vervaagt ──
-function lsToonStartPijl(){
+// ── Intro-overlay: pijl + uitlegkader bij start van het potje ──
+// Blijven allebei zichtbaar (met de dim eronder) totdat de speler ergens
+// op het speelveld klikt of tikt — niet meer na een vaste tijd.
+function lsVerbergIntroOverlay(){
   const pijl = document.getElementById('ls-start-pijl');
   const veld = document.getElementById('ls-speelveld');
-  if(!pijl) return;
-  clearTimeout(lsPijlTimer);
+  const uitleg = document.getElementById('ls-uitleg-kader');
+  if(pijl) pijl.classList.remove('zichtbaar');
+  if(veld) veld.classList.remove('pijl-toont');
+  if(uitleg) uitleg.classList.remove('zichtbaar');
+}
+function lsToonIntroOverlay(){
+  const pijl = document.getElementById('ls-start-pijl');
+  const veld = document.getElementById('ls-speelveld');
+  const uitleg = document.getElementById('ls-uitleg-kader');
+  if(!pijl || !veld) return;
+
   pijl.classList.remove('zichtbaar');
   veld.classList.remove('pijl-toont');
-  // Force reflow, zodat de fade-in/dim ook opnieuw start als de pijl van
-  // een vorig potje nog (deels) zichtbaar was
+  if(uitleg) uitleg.classList.remove('zichtbaar');
+  // Force reflow, zodat de fade-in/dim ook opnieuw start als een en ander
+  // van een vorig potje nog (deels) zichtbaar was
   void pijl.offsetWidth;
   pijl.classList.add('zichtbaar');
   veld.classList.add('pijl-toont');
-  lsPijlTimer = setTimeout(()=>{
-    pijl.classList.remove('zichtbaar');
-    veld.classList.remove('pijl-toont');
-  }, 3200);
+  if(uitleg) uitleg.classList.add('zichtbaar');
+
+  // Capture + once: dit vuurt altijd bij de allereerste klik/tik ergens
+  // op het speelveld — ook als het doelelement (bv. een stempel of de
+  // schelp-knop) de klik daarna zelf nog verder afhandelt.
+  veld.addEventListener('mousedown', lsVerbergIntroOverlay, { capture:true, once:true });
+  veld.addEventListener('touchstart', lsVerbergIntroOverlay, { capture:true, once:true, passive:true });
 }
 
 // ── Bouw de 9 cirkels met landnaam ──
@@ -1608,6 +1693,12 @@ function bouwLsStempels(){
   const veld = document.getElementById('ls-speelveld');
   veld.querySelectorAll('.ls-stempel').forEach(el=>el.remove());
 
+  // Stempel-hoogte in % van de speelveld-hoogte (stempels zijn zelf
+  // vierkant, dus breedte-% omrekenen naar hoogte-% via de veld-aspectratio)
+  const veldRect = veld.getBoundingClientRect();
+  const lsStempelHoogtePct = LS_STEMPEL_GROOTTE * veldRect.width / veldRect.height * LS_STEMPEL_ROTATIE_MARGE;
+  const lsYMin = lsMeetVerbodenYMin(veldRect);
+
   // Schud de volgorde zodat de stempels niet in dezelfde volgorde als de
   // cirkels liggen (maakt het lastiger om de koppeling te raden)
   const indices = shuffle([...Array(LS_AANTAL).keys()]);
@@ -1627,7 +1718,7 @@ function bouwLsStempels(){
     do {
       rx = 65 + Math.random()*18;
       ry = 8 + Math.random()*72;
-    } while(lsInVerbodenZone(rx, ry));
+    } while(lsInVerbodenZone(rx, ry, lsStempelHoogtePct, lsYMin));
     stempel.style.left = rx+'%';
     stempel.style.top = ry+'%';
     lsStempelTransform(stempel, landIdx, Math.random()*30-15);
@@ -1643,6 +1734,51 @@ function bouwLsStempels(){
     stempel.addEventListener('touchstart', lsStartSleep, {passive:false});
 
     veld.appendChild(stempel);
+  });
+
+  // lsMeetVerbodenYMin() hierboven leunt op de ECHTE, actuele afmeting van
+  // #ls-schelp-tijd-groep. Vlak bij de allereerste ronde (net na het laden
+  // van de pagina) kan het zijn dat de schelp-afbeelding of het lettertype
+  // nog niet klaar is — dan oogt die groep tijdelijk kleiner dan straks, en
+  // schat lsYMin de grens te ruim in. Zodra alles écht geladen is,
+  // controleren we daarom nog één keer of alle stempels boven de
+  // (dan pas definitieve) grens staan, en schuiven we de uitzonderingen bij.
+  lsHerstelStempelsNaLaden(veld);
+}
+
+function lsHerstelStempelsNaLaden(veld){
+  const schelpImg = document.getElementById('ls-schelp-img');
+  const imgKlaar = (schelpImg && !schelpImg.complete)
+    ? new Promise(res => {
+        schelpImg.addEventListener('load', res, {once:true});
+        schelpImg.addEventListener('error', res, {once:true});
+      })
+    : Promise.resolve();
+  const fontsKlaar = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+
+  Promise.all([imgKlaar, fontsKlaar]).then(() => {
+    // Nog één frame wachten: direct na het load/ready-event is de layout
+    // soms nog niet helemaal bijgewerkt.
+    requestAnimationFrame(() => {
+      const veldRect = veld.getBoundingClientRect();
+      const hoogte = LS_STEMPEL_GROOTTE * veldRect.width / veldRect.height * LS_STEMPEL_ROTATIE_MARGE;
+      const yMin = lsMeetVerbodenYMin(veldRect);
+      veld.querySelectorAll('.ls-stempel').forEach(st => {
+        // Niet aankomen als de speler 'm al beet heeft of al heeft neergelegd
+        if(st.classList.contains('gesnapt') || st.classList.contains('slepen')) return;
+        const curLeft = parseFloat(st.style.left);
+        const curTop = parseFloat(st.style.top);
+        if(lsInVerbodenZone(curLeft, curTop, hoogte, yMin)){
+          let rx, ry;
+          do {
+            rx = 65 + Math.random()*18;
+            ry = 8 + Math.random()*72;
+          } while(lsInVerbodenZone(rx, ry, hoogte, yMin));
+          st.style.left = rx+'%';
+          st.style.top = ry+'%';
+        }
+      });
+    });
   });
 }
 
@@ -1735,6 +1871,10 @@ function lsStopSleep(e){
   const stempelRect = stempel.getBoundingClientRect();
   const stempelCX = ((stempelRect.left + stempelRect.width/2 - veldRect.left) / veldRect.width) * 100;
   const stempelCY = ((stempelRect.top + stempelRect.height/2 - veldRect.top) / veldRect.height) * 100;
+  // Eigen hoogte van een (normaal formaat) stempel in % van de speelveld-hoogte,
+  // voor de verboden-zone-check hieronder (zie lsInVerbodenZone)
+  const lsStempelHoogtePct = LS_STEMPEL_GROOTTE * veldRect.width / veldRect.height * LS_STEMPEL_ROTATIE_MARGE;
+  const lsYMin = lsMeetVerbodenYMin(veldRect);
 
   let dichtstbijIdx = -1;
   let dichtstbijAfst = Infinity;
@@ -1772,7 +1912,7 @@ function lsStopSleep(e){
       oudeStempel.classList.remove('gesnapt');
       // Vermijd het schelp+tijd-gebied bij terugplaatsen
       let terugX, terugY;
-      do { terugX = 65+Math.random()*18; terugY = 8+Math.random()*72; } while(lsInVerbodenZone(terugX, terugY));
+      do { terugX = 65+Math.random()*18; terugY = 8+Math.random()*72; } while(lsInVerbodenZone(terugX, terugY, lsStempelHoogtePct, lsYMin));
       oudeStempel.style.left = terugX+'%';
       oudeStempel.style.top = terugY+'%';
       lsStempelTransform(oudeStempel, bestaand, Math.random()*30-15);
@@ -1796,10 +1936,10 @@ function lsStopSleep(e){
     // Niet gesnapt — check of stempel in het schelp+tijd-gebied terecht is gekomen
     const dropLeft = parseFloat(stempel.style.left);
     const dropTop = parseFloat(stempel.style.top);
-    if(lsInVerbodenZone(dropLeft, dropTop)){
+    if(lsInVerbodenZone(dropLeft, dropTop, lsStempelHoogtePct, lsYMin)){
       // Duw terug naar veilige zone
       let rx2, ry2;
-      do { rx2=65+Math.random()*18; ry2=8+Math.random()*72; } while(lsInVerbodenZone(rx2, ry2));
+      do { rx2=65+Math.random()*18; ry2=8+Math.random()*72; } while(lsInVerbodenZone(rx2, ry2, lsStempelHoogtePct, lsYMin));
       stempel.style.left = rx2+'%';
       stempel.style.top = ry2+'%';
       lsStempelTransform(stempel, idx, Math.random()*30-15);
@@ -1818,14 +1958,8 @@ function lsSchelpKlik(){
     document.getElementById('ls-schelp-wrap').classList.remove('gloed');
     const schelpTekst = document.getElementById('ls-schelp-tekst');
     if(schelpTekst) schelpTekst.style.opacity = '0';
-    // Pijl (en de dim eronder) meteen wegvagen zodra er echt op de knop
-    // gedrukt is
-    const pijl = document.getElementById('ls-start-pijl');
-    if(pijl){
-      pijl.classList.remove('zichtbaar');
-      document.getElementById('ls-speelveld').classList.remove('pijl-toont');
-      clearTimeout(lsPijlTimer);
-    }
+    // Pijl/uitlegkader/dim zijn al weggevaagd door de mousedown-capture-
+    // listener in lsToonIntroOverlay() (die vuurt eerder dan deze klik)
     setTimeout(()=>{
       lsSchelpStatus = 'paars';
       document.getElementById('ls-schelp-img').src = 'images/schelp-paars.png';
@@ -1870,6 +2004,7 @@ function lsCheckAntwoorden(){
     // (zelfde vak in #ls-schelp-tijd-groep), zodat de timer erboven niet
     // verspringt.
     document.getElementById('ls-eind-iconen').classList.add('actief');
+    document.getElementById('ls-opnieuw-knop').classList.add('actief');
 
     // Score opslaan
     lsOpslaanScore(huidigeSpelerNaam(), lsTijdVerstreken);
@@ -1976,12 +2111,6 @@ function lsUpdateTimer(){
 }
 
 // ── Score opslaan ──
-// Elk opgeslagen potje Landje Schuif is per definitie 9 van de 9 goed (deze
-// functie wordt alleen bij een voltooid potje aangeroepen) - dus alleen de
-// tijd is interessant om te bewaren. Simpel fire-and-forget, net als de
-// andere online scores; er is hier geen scorebord dat meteen ná dit potje
-// getoond wordt (dat gebeurt alleen via het Boek der Groten), dus geen
-// race-condition-gevoelig ophalen nodig.
 function lsOpslaanScore(naam, tijdMs){
   fsOpslaan('scores_landjeschuif', {naam, tijdMs, datum:Date.now()});
 }
@@ -2021,9 +2150,13 @@ if((localStorage.getItem(NAAM_SLEUTEL)||'').trim()){
   import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
   // ── Online scorebord (Firestore) ───────────────────────────────────────
-  // Zelfde project/config als index.html - zie de toelichting daar. Deze
-  // waarden zijn niet geheim: de beveiliging zit in de Firestore Security
-  // Rules, niet in het verbergen van deze configuratie.
+  // Alle vijf spelonderdelen bewaren hun scores niet meer per apparaat
+  // (localStorage), maar in één gedeelde, wereldwijde database - zodat
+  // spelers overal in Nederland (of daarbuiten) met en tegen elkaar kunnen
+  // spelen. Deze waarden komen uit Arjens eigen Firebase-project
+  // ("wereld-van-wonderen") en zijn niet geheim: de beveiliging zit in de
+  // Firestore Security Rules (ingesteld in de Firebase Console), niet in
+  // het verbergen van deze configuratie.
   const firebaseConfig = {
     apiKey: "AIzaSyCEnvURTGjQ7_JAeQ69Zx7wZsPSxf2gQeg",
     authDomain: "wereld-van-wonderen.firebaseapp.com",
@@ -2034,8 +2167,15 @@ if((localStorage.getItem(NAAM_SLEUTEL)||'').trim()){
   };
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
+
+  // De rest van dit bestand gebruikt gewone (niet-module) scripts, die niet
+  // rechtstreeks 'import' kunnen gebruiken. Die wachten daarom via
+  // window.wvwFirebaseGereed op dit object - zie fsOpslaan()/fsTopN()
+  // verderop in het grote scriptblok. Dit module-scriptje is (net als
+  // 'defer') pas klaar ná het inladen van de pagina, maar ruim voordat een
+  // speler een level uitspeelt, dus in de praktijk is er geen merkbare
+  // wachttijd.
   window._wvwFirebaseResolve({ db, collection, addDoc, getDocs, query, where, orderBy, limit });
 </script>
-
 </body>
 </html>
