@@ -47,7 +47,7 @@ body{
   margin-top:clamp(20px, 4vh, 40px);
 }
 .nav-btn{
-  width:clamp(66px, 6.4vw, 104px); aspect-ratio:1/1;
+  width:clamp(83px, 8vw, 130px); aspect-ratio:1/1;
   border:none; background:none; padding:0; cursor:pointer;
   opacity:0.82; filter:drop-shadow(0 3px 8px rgba(0,0,0,.4));
   transition:opacity .15s, transform .15s, filter .15s;
@@ -239,6 +239,9 @@ body{
   <div class="pagina" id="pagina-rechts"></div>
 </div>
 
+<script>
+  window.wvwFirebaseGereed = new Promise(resolve=>{ window._wvwFirebaseResolve = resolve; });
+</script>
 <script>
 /* ╔═══════════════════════════════════════════════════════╗
    ║  Boek der Groten — high-score-overzicht                ║
@@ -759,9 +762,6 @@ document.getElementById('nav-knoppen').addEventListener('click', function(e){
 bouwPagina();
 </script>
 
-<script>
-  window.wvwFirebaseGereed = new Promise(resolve=>{ window._wvwFirebaseResolve = resolve; });
-</script>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
   import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
