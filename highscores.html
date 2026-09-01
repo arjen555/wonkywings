@@ -21,9 +21,16 @@ body{
   background-attachment:fixed;
 }
 
+/* ── Linkernavigatie: terug-knop bovenaan, daaronder (met wat open
+   ruimte ertussen) de 5 tabblad-iconen als verticale rij. Eén vaste
+   container zodat alles samen linksboven blijft, ongeacht schermgrootte. */
+#linker-navigatie{
+  position:fixed; left:14px; top:14px; z-index:100;
+  display:flex; flex-direction:column; align-items:flex-start;
+}
+
 /* ── Terug-knop (zelfde grootte als in het spel) ───── */
 .terug-knop{
-  position:fixed; left:14px; top:14px; z-index:100;
   width:clamp(130px, 13vw, 210px);
   cursor:pointer; border:none; background:none; padding:0;
   opacity:0.92; filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5));
@@ -32,33 +39,24 @@ body{
 .terug-knop img{ width:100%; display:block; }
 .terug-knop:hover{ opacity:1; transform:scale(1.03); }
 
-/* ── Tabbladenstrip (menu): rijtje "register"-tabjes bovenaan het boek,
-   gecentreerd tussen de twee bladzijdes. Staat in de rand boven het boek,
-   dus nooit meer over de kaartjes heen - los van hoeveel scores er staan. */
+/* ── Tabbladenstrip (menu): de 5 eigen icoontjes van Arjen, verticaal
+   onder de terug-knop. Open ruimte erboven (margin-top) zodat het niet
+   tegen de terug-knop aan plakt. */
 .tabblad-strip{
-  position:fixed; left:50%; top:clamp(8px, 1.6vw, 18px);
-  transform:translateX(-50%);
-  z-index:100; display:flex; gap:3px;
+  display:flex; flex-direction:column; gap:9px;
+  margin-top:clamp(20px, 4vh, 40px);
 }
 .nav-btn{
-  font-family:'Baloo 2',cursive,sans-serif;
-  font-size:clamp(.72rem, 1.3vw, .9rem); font-weight:700;
-  padding:7px 16px 6px; border:1.5px solid rgba(90,68,32,.55); border-bottom:none;
-  border-radius:8px 8px 0 0; cursor:pointer;
-  background:linear-gradient(180deg,rgba(201,168,76,.55),rgba(168,132,26,.55));
-  color:#4a3818; white-space:nowrap;
-  box-shadow:0 -2px 6px rgba(0,0,0,.15);
-  transition:background .2s, color .2s, transform .15s, box-shadow .2s;
+  width:clamp(66px, 6.4vw, 104px); aspect-ratio:1/1;
+  border:none; background:none; padding:0; cursor:pointer;
+  opacity:0.82; filter:drop-shadow(0 3px 8px rgba(0,0,0,.4));
+  transition:opacity .15s, transform .15s, filter .15s;
 }
-.nav-btn:hover{
-  background:linear-gradient(180deg,rgba(201,168,76,.75),rgba(168,132,26,.7));
-  color:#2a1f0c;
-}
+.nav-btn img{ width:100%; height:100%; display:block; object-fit:contain; }
+.nav-btn:hover{ opacity:1; transform:scale(1.05); }
 .nav-btn.actief{
-  background:linear-gradient(180deg,#f4e8c1,#c9a84c);
-  color:#3a2c14; border-color:#8a6a24;
-  transform:translateY(-3px);
-  box-shadow:0 -4px 10px rgba(0,0,0,.3);
+  opacity:1; transform:scale(1.08);
+  filter:drop-shadow(0 0 9px rgba(255,215,110,.85)) drop-shadow(0 3px 8px rgba(0,0,0,.4));
 }
 
 /* ── Twee-pagina layout (linker- en rechterbladzijde) ─ */
@@ -201,37 +199,39 @@ body{
   .boek-paginas{
     grid-template-columns:1fr;
     gap:0;
-    padding:clamp(50px,15vw,100px) 16px 76px;
+    padding:clamp(190px,46vw,215px) 16px 76px;
     overflow-y:auto;
   }
+  .terug-knop{ width:clamp(90px, 24vw, 130px); }
   .tabblad-strip{
-    left:50%; top:auto; bottom:10px; transform:translateX(-50%);
-    flex-wrap:wrap; justify-content:center; max-width:94vw; gap:4px;
+    flex-direction:row; flex-wrap:wrap;
+    max-width:58vw; gap:6px;
+    margin-top:12px;
   }
-  .nav-btn{
-    font-size:.68rem; padding:5px 10px 4px;
-    border-radius:7px; border-bottom:1.5px solid rgba(90,68,32,.55);
-  }
-  .nav-btn.actief{ transform:none; }
+  .nav-btn{ width:clamp(44px, 13vw, 60px); }
 }
 </style>
 </head>
 <body>
 
-<!-- Terug naar start -->
-<button class="terug-knop" onclick="ganNaarStart()" title="Terug naar start">
-  <img src="images/terug-naar-start-knop.png" alt="Terug naar start"
-       onerror="this.parentElement.textContent='⬅ Terug'"/>
-</button>
+<!-- Linkernavigatie: terug-knop, daaronder (met open ruimte) de 5
+     tabblad-iconen van Arjen, verticaal onder elkaar. -->
+<div id="linker-navigatie">
+  <!-- Terug naar start -->
+  <button class="terug-knop" onclick="ganNaarStart()" title="Terug naar start">
+    <img src="images/terug-naar-start-knop.png" alt="Terug naar start"
+         onerror="this.parentElement.textContent='⬅ Terug'"/>
+  </button>
 
-<!-- Navigatie: tabbladen bovenaan het boek -->
-<nav class="tabblad-strip" id="nav-knoppen">
-  <button class="nav-btn actief" data-sectie="landen">Landen</button>
-  <button class="nav-btn" data-sectie="hoofdsteden">Hoofdsteden</button>
-  <button class="nav-btn" data-sectie="plekken">Iconische plekken</button>
-  <button class="nav-btn" data-sectie="raadspel">Raad je plaatje</button>
-  <button class="nav-btn" data-sectie="landjeschuif">Landje Schuif</button>
-</nav>
+  <!-- Navigatie: tabblad-iconen -->
+  <nav class="tabblad-strip" id="nav-knoppen">
+    <button class="nav-btn actief" data-sectie="landen"><img src="images/landen-icoon.png" alt="Landen"/></button>
+    <button class="nav-btn" data-sectie="hoofdsteden"><img src="images/hoofdsteden-icoon.png" alt="Hoofdsteden"/></button>
+    <button class="nav-btn" data-sectie="plekken"><img src="images/iconische-plekken-icoon.png" alt="Iconische plekken"/></button>
+    <button class="nav-btn" data-sectie="raadspel"><img src="images/raad-je-plaatje-icoon.png" alt="Raad je plaatje"/></button>
+    <button class="nav-btn" data-sectie="landjeschuif"><img src="images/landje-schuif-icoon.png" alt="Landje Schuif"/></button>
+  </nav>
+</div>
 
 <!-- Twee boekpagina's -->
 <div class="boek-paginas">
