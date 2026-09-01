@@ -1390,7 +1390,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.24</div>
+  <div id="versie-label">v0.6.25</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1864,6 +1864,9 @@
   </div>
 </div>
 
+<script>
+  window.wvwFirebaseGereed = new Promise(resolve=>{ window._wvwFirebaseResolve = resolve; });
+</script>
 <script>
 // Landenafbeeldingen: drie standen, per apparaat onthouden. Default: 'vol'
 // (het oude "aan"-gedrag). Staat helemaal bovenaan het script, want dit
@@ -9986,9 +9989,6 @@ function loop(){
 }
 </script>
 
-<script>
-  window.wvwFirebaseGereed = new Promise(resolve=>{ window._wvwFirebaseResolve = resolve; });
-</script>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
   import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
