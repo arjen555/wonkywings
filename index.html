@@ -1390,7 +1390,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.21</div>
+  <div id="versie-label">v0.6.24</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -2989,6 +2989,35 @@ document.getElementById('zoek-input').addEventListener('keydown', e=>{
 // ── Naam-overlay: verplicht in te vullen vóórdat het startscherm bruikbaar
 // is. Dezelfde localStorage-sleutel wordt ook door raadspel.html gebruikt,
 // zodat de naam overal in het spel hetzelfde is (zie de notitie daar ook).
+// ── Filter tegen kwetsende/aanstootgevende namen ────────────────────────
+// Geen waterdicht systeem (dat bestaat niet écht), maar houdt het gros
+// tegen. Normaliseert eerst (kleine letters, accenten weg, spaties/
+// leestekens weg, een paar bekende cijfer-voor-letter-trucjes zoals
+// "k4nker") en checkt daarna op een lijst met veelvoorkomende Nederlandse
+// (en een paar Engelse) grove/kwetsende woorden. Arjen kan deze lijst later
+// zelf uitbreiden of inkorten. Zelfde lijst/logica staat ook in raadspel.html
+// (dat heeft een eigen, onafhankelijk naamscherm).
+const ONGEPASTE_WOORDEN = [
+  'kanker','kut','klote','klootzak','lul','hoer','hoertje','slet',
+  'trut','tering','teringlijer','tyfus','pleuris','flikker','mongool',
+  'mongo','achterlijk','debiel','spast','spasti','nikker','neger',
+  'poepchinees','kutmarokkaan','kankerlijer','hitler','nazi','terrorist',
+  'fuck','shit','bitch','whore','slut','nigger','nigga','faggot','retard',
+  'cunt','asshole','bastard','penis','vagina','porno',
+];
+function normaliseerVoorFilter(tekst){
+  return (tekst||'')
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g,'') // accenten weg (bv. ë → e)
+    .replace(/0/g,'o').replace(/1/g,'i').replace(/3/g,'e').replace(/4/g,'a').replace(/5/g,'s').replace(/7/g,'t')
+    .replace(/[^a-z]/g,''); // spaties, cijfers, leestekens etc. weg
+}
+function bevatOngepasteTaal(naam){
+  const genormaliseerd = normaliseerVoorFilter(naam);
+  if(!genormaliseerd) return false;
+  return ONGEPASTE_WOORDEN.some(woord => genormaliseerd.includes(woord));
+}
+
 const SPELERNAAM_SLEUTEL = 'wonkywings_spelernaam';
 // Alleen tijdens de allereerste, verplichte naam-invoer mag Escape 'm niet
 // wegklikken - zodra er ooit een naam bevestigd is, mag "Verander je naam"
@@ -3000,10 +3029,18 @@ function bevestigSpelerNaam(){
   const foutEl = document.getElementById('naam-overlay-fout');
   const naam = input.value.trim();
   if(!naam){
+    foutEl.textContent = 'Vul eerst je naam in!';
     foutEl.classList.add('zichtbaar');
     input.focus();
     return;
   }
+  if(bevatOngepasteTaal(naam)){
+    foutEl.textContent = 'Kies een andere naam - deze mag niet.';
+    foutEl.classList.add('zichtbaar');
+    input.focus();
+    return;
+  }
+  foutEl.textContent = 'Vul eerst je naam in!';
   foutEl.classList.remove('zichtbaar');
   // Niet meteen inloggen: eerst het geheime woordje van deze naam checken
   // (of, bij een gloednieuwe of nog niet beveiligde naam, er eentje laten
@@ -3154,12 +3191,29 @@ toonIllustratieKaart();
 // kaartjes (Vandaag + All-time), elk met de top 3. Een onderdeel zonder
 // enige score wordt volledig overgeslagen; heeft een onderdeel wel all-time
 // scores maar nog geen van vandaag, dan verschijnt alleen het all-time-kaartje.
-function bouwTickerKaarten(groep){
+// De tickers draaien op elke pagina-load, voor meerdere levels tegelijk -
+// zonder cache zou dat bij drukte veel te vaak dezelfde data uit de
+// database ophalen (en zo aan het gratis quotum knagen). Tien minuten
+// hergebruik is voor dit sfeer-elementje ruim genoeg; het enige gevolg is
+// dat de balkjes soms een paar minuten "achterlopen" op de nieuwste score.
+const TICKER_CACHE_SLEUTEL = 'wonkywings_ticker_cache_v1';
+const TICKER_CACHE_GELDIG_MS = 10*60*1000;
+async function ophalenTickerRuns(levelId){
+  let cache = {};
+  try{ cache = JSON.parse(localStorage.getItem(TICKER_CACHE_SLEUTEL)||'{}'); }catch(e){ cache={}; }
+  const ingang = cache[levelId];
+  if(ingang && (Date.now()-ingang.opgehaald) < TICKER_CACHE_GELDIG_MS) return ingang.runs;
+  const runs = await fsTopN('scores_landen', 'levelId', levelId,
+    [['km','asc'],['tijd','asc']], (a,b)=>(a.km-b.km)||(a.tijd-b.tijd), 20, null);
+  cache[levelId] = { runs, opgehaald: Date.now() };
+  try{ localStorage.setItem(TICKER_CACHE_SLEUTEL, JSON.stringify(cache)); }catch(e){ /* opslag vol o.i.d. - dan gewoon niet cachen */ }
+  return runs;
+}
+async function bouwTickerKaarten(groep){
   const kaarten = [];
   for(const lv of groep.levels){
     if(!lv.beschikbaar) continue;
-    let lijst=[];
-    try{ lijst=JSON.parse(localStorage.getItem(scorebordSleutel(lv.id))||'[]'); }catch(e){ lijst=[]; }
+    let lijst = await ophalenTickerRuns(lv.id);
     lijst = lijst.filter(r=>!isTestNaam(r.naam)); // testaccounts uitsluiten
     if(lijst.length===0) continue;
     const naam = lv.kort || lv.naam;
@@ -3189,11 +3243,15 @@ function vulTickerTrack(wrapperId, trackId, kaarten){
   // Inhoud verdubbelen zodat de scroll-animatie (0% naar -50%) naadloos in een lus loopt.
   track.innerHTML = html + html;
 }
-function bouwScoreTickers(){
+async function bouwScoreTickers(){
   const europaGroep = MENU.find(g=>g.id==='europa');
   const wereldGroep = MENU.find(g=>g.id==='wereld');
-  vulTickerTrack('score-ticker-boven','score-ticker-boven-track', bouwTickerKaarten(europaGroep));
-  vulTickerTrack('score-ticker-onder','score-ticker-onder-track', bouwTickerKaarten(wereldGroep));
+  const [europaKaarten, wereldKaarten] = await Promise.all([
+    bouwTickerKaarten(europaGroep),
+    bouwTickerKaarten(wereldGroep),
+  ]);
+  vulTickerTrack('score-ticker-boven','score-ticker-boven-track', europaKaarten);
+  vulTickerTrack('score-ticker-onder','score-ticker-onder-track', wereldKaarten);
 }
 bouwScoreTickers();
 
@@ -3631,6 +3689,11 @@ window.addEventListener('resize', positioneerPlekScorebord);
 // Bouwt het eindoverzicht na de 10de plek: per plek de puntenopbouw, en
 // onderaan de eindscore.
 function toonPlekkenEindoverzicht(){
+  // Zelfde nieuwe registratie als bij Hoofdsteden hierboven: dit onderdeel
+  // sloeg voorheen nergens een score op - vanaf nu telt de eindscore
+  // (plekkenScore, al opgeteld tijdens het spelen) mee voor het Boek der
+  // Groten.
+  fsOpslaan('scores_plekken', {levelId:huidigLevel, naam:spelerNaam, punten:plekkenScore, tijd:laatsteLevelTijd, datum:Date.now()});
   let rijenHtml = '';
   for(const r of plekkenResultaten){
     rijenHtml += '<div class="plekken-eind-rij">'
@@ -5061,21 +5124,53 @@ function updateScorebordCijfers(){
   zetTijdCijfers();
 }
 
-// ── Scorebord (voorlopig lokaal, per level, op dit apparaat) ──
+// ── Scorebord (online, gedeeld via Firestore - zie het module-scriptje
+// onderaan de pagina voor de databasekoppeling) ──
 // Testaccounts: scores worden gewoon opgeslagen maar nooit getoond.
 
-function scorebordSleutel(levelId){ return 'wonkywings_scores_'+levelId; }
-function opslaanScore(levelNr, naam, km, tijdSec){
-  let lijst=[];
-  try{ lijst=JSON.parse(localStorage.getItem(scorebordSleutel(levelNr))||'[]'); }catch(e){ lijst=[]; }
-  const nieuweRun={naam, km, tijd:tijdSec, datum:Date.now()};
-  lijst.push(nieuweRun);
-  lijst.sort((a,b)=> (a.km-b.km) || (a.tijd-b.tijd) ); // laagste km bovenaan, bij gelijke km de snelste tijd
-  // Ruim hoger dan de top 20 die getoond wordt, zodat de scores van "vandaag"
-  // niet per ongeluk verdwijnen doordat er ooit betere all-time scores waren.
-  lijst=lijst.slice(0,300);
-  localStorage.setItem(scorebordSleutel(levelNr), JSON.stringify(lijst));
-  return {lijst, nieuweRun};
+// fsOpslaan(): "fire-and-forget" - de speler wacht niet op de server, en
+// eventuele fouten (geen internet, database plat) worden alleen gelogd,
+// nooit aan de speler getoond. fsTopN(): haalt de beste 'aantal' runs op
+// uit één collectie, gefilterd op één gelijkheidsveld (bv. het level) en
+// gesorteerd volgens 'vergelijker'. De zojuist gespeelde ronde (nieuweRun)
+// wordt er, als hij er niet al in zit, lokaal aan toegevoegd en
+// meegesorteerd - zo is je eigen resultaat altijd meteen zichtbaar, ook al
+// was fsOpslaan() voor die run misschien nog niet klaar op het moment van
+// ophalen.
+async function fsOpslaan(collectieNaam, data){
+  try{
+    const fb = await window.wvwFirebaseGereed;
+    await fb.addDoc(fb.collection(fb.db, collectieNaam), data);
+  }catch(e){
+    console.warn('Kon score niet online opslaan ('+collectieNaam+'):', e);
+  }
+}
+async function fsTopN(collectieNaam, gelijkVeld, gelijkWaarde, orderVelden, vergelijker, aantal, nieuweRun){
+  let lijst = [];
+  try{
+    const fb = await window.wvwFirebaseGereed;
+    const orderClauses = orderVelden.map(([veld,richting])=>fb.orderBy(veld, richting));
+    const q = fb.query(fb.collection(fb.db, collectieNaam),
+      fb.where(gelijkVeld, '==', gelijkWaarde), ...orderClauses, fb.limit(aantal));
+    const snap = await fb.getDocs(q);
+    snap.forEach(doc=>lijst.push(doc.data()));
+  }catch(e){
+    console.warn('Kon scores niet online ophalen ('+collectieNaam+'):', e);
+  }
+  if(nieuweRun && !lijst.some(r=>r.naam===nieuweRun.naam && r.datum===nieuweRun.datum)){
+    lijst.push(nieuweRun);
+  }
+  lijst.sort(vergelijker);
+  return lijst;
+}
+// Aanvraag-ID: voorkomt dat een trage/oude scorebord-aanvraag een
+// inmiddels alweer nieuwer geopend scorebord overschrijft.
+let scorebordAanvraagId = 0;
+
+function opslaanScoreOnline(levelId, naam, km, tijdSec){
+  const nieuweRun = {naam, km, tijd:tijdSec, datum:Date.now()};
+  fsOpslaan('scores_landen', {levelId, naam:nieuweRun.naam, km:nieuweRun.km, tijd:nieuweRun.tijd, datum:nieuweRun.datum});
+  return nieuweRun;
 }
 function formatTijd(sec){ const m=Math.floor(sec/60), s=sec%60; return m+':'+String(s).padStart(2,'0'); }
 
@@ -5156,6 +5251,11 @@ function bouwScorebordKolom(elId, runs, nieuweRun){
 // Rustig resultaatscherm na een potje hoofdsteden: geen automatische
 // terugkeer naar het menu, de speler bepaalt zelf wanneer via de knop.
 function toonHoofdstedenResultaat(goed, totaal){
+  // Hoofdsteden en Iconische plekken toonden voorheen nergens een eigen
+  // scorebord (alleen dit rustige goed/totaal-scherm) en sloegen dus ook
+  // nooit iets op - vanaf nu telt elk potje wél mee voor het Boek der
+  // Groten (highscores.html), fire-and-forget zoals overal elders.
+  fsOpslaan('scores_hoofdsteden', {levelId:huidigLevel, naam:spelerNaam, goed, totaal, tijd:laatsteLevelTijd, datum:Date.now()});
   document.getElementById('hoofdsteden-resultaat-score').textContent = goed+' van de '+totaal+' hoofdsteden goed!';
   // ── Landenpaspoort: 8 of 9 goed = 1 verrassingsstempel, alles goed = 2 ──
   let aantalStempels = 0;
@@ -5172,24 +5272,18 @@ function toonHoofdstedenResultaat(goed, totaal){
     goed, totaal, laatsteLevelTijd, hoofdstedenKmTotaal);
   toonVliegendeStempels(gekozenLanden, document.getElementById('hoofdsteden-resultaat-paspoort-icoon'), trofeeBlok);
 }
-function toonScorebord(levelId, nieuweRun){
+async function toonScorebord(levelId, nieuweRun){
   const lv=LEVELS[levelId];
-  let lijst=[];
-  try{ lijst=JSON.parse(localStorage.getItem(scorebordSleutel(levelId))||'[]'); }catch(e){ lijst=[]; }
 
   document.getElementById('scorebord-titel').textContent='Scorebord — '+lv.naam;
   // De losse "Jouw resultaat: ..."-regel is vervallen: die informatie staat
   // nu op het trofee-plaatje hierboven (zie toonTrofee() verderop).
   document.getElementById('scorebord-nieuwe-run').textContent = '';
-
-  // lijst is al gesorteerd op km (laagste/beste eerst) - dus gewoon de eerste
-  // 20 pakken voor all-time, en voor "vandaag" eerst filteren en dan top 20.
-  // Testaccounts (test1/test2) worden uitgefilterd zodat ze nooit zichtbaar zijn.
-  const zichtbaar = lijst.filter(r=>!isTestNaam(r.naam));
-  const alltime = zichtbaar.slice(0,20);
-  const vandaag = zichtbaar.filter(r=>isVandaag(r.datum)).slice(0,20);
-  bouwScorebordKolom('scorebord-lijst-alltime', alltime, nieuweRun);
-  bouwScorebordKolom('scorebord-lijst-vandaag', vandaag, nieuweRun);
+  // De lijst zelf komt online vandaan en mag dus even op zich laten wachten
+  // (zie de aanvraag-ID-check verderop) - meteen een laad-tekstje neerzetten
+  // i.p.v. de vorige (verkeerde) lijst te laten staan.
+  document.getElementById('scorebord-lijst-alltime').innerHTML = '<div class="scorebord-leeg-klein">Scores laden…</div>';
+  document.getElementById('scorebord-lijst-vandaag').innerHTML = '<div class="scorebord-leeg-klein">Scores laden…</div>';
 
   // ── Landenpaspoort: alleen tonen/laten vliegen als dit scorebord het
   // resultaat van een zojuist gespeeld potje toont (nieuweRun) - niet als
@@ -5210,6 +5304,18 @@ function toonScorebord(levelId, nieuweRun){
   document.getElementById('spelscherm').style.display='none';
   document.getElementById('scorebord-scherm').style.display='flex';
   toonVliegendeStempels(gekozenLanden, document.getElementById('scorebord-paspoort-icoon'), trofeeBlok);
+
+  // Testaccounts (test1/test2) worden uitgefilterd zodat ze nooit zichtbaar zijn.
+  const aanvraagId = ++scorebordAanvraagId;
+  const lijst = await fsTopN('scores_landen', 'levelId', levelId,
+    [['km','asc'],['tijd','asc']], (a,b)=>(a.km-b.km)||(a.tijd-b.tijd), 100, nieuweRun);
+  if(aanvraagId !== scorebordAanvraagId) return; // ondertussen een ander scorebord geopend
+
+  const zichtbaar = lijst.filter(r=>!isTestNaam(r.naam));
+  const alltime = zichtbaar.slice(0,20);
+  const vandaag = zichtbaar.filter(r=>isVandaag(r.datum)).slice(0,20);
+  bouwScorebordKolom('scorebord-lijst-alltime', alltime, nieuweRun);
+  bouwScorebordKolom('scorebord-lijst-vandaag', vandaag, nieuweRun);
 }
 
 // Vanaf het startmenu: scorebord bekijken zonder het level te spelen
@@ -5426,7 +5532,7 @@ function nieuwLand(){
       // plaats van de km-gebaseerde highscore-lijst van de andere modi.
       toonPlekkenEindoverzicht();
     } else if(huidigModus==='spelen' && !(LEVELS[huidigLevel] && LEVELS[huidigLevel].geenScorebord)){
-      const {nieuweRun} = opslaanScore(huidigLevel, spelerNaam, score, laatsteLevelTijd);
+      const nieuweRun = opslaanScoreOnline(huidigLevel, spelerNaam, score, laatsteLevelTijd);
       toonFeedback('🏆 Klaar! ('+laatsteLevelTijd+' sec)','#ffd700');
       setTimeout(()=>toonScorebord(huidigLevel, nieuweRun), 2000);
     } else {
@@ -5745,7 +5851,7 @@ function berekenLandBBoxGraden(feature){
 // VRIJ getekend: de afbeelding wordt NIET meer weggeknipt op de eigen
 // landgrens, dus zee, bootjes en de transparante rand blijven zichtbaar.
 // Wél wordt de afbeelding weggegumd waar hij over een ÁNDER land valt.
-// Waarden instelbaar in het spel zelf: vlieg boven het land en druk op K.
+// Waarden instelbaar in het spel zelf: vlieg boven het land en druk op Ctrl+Alt+K.
 const ILLUSTRATIE_KALIBRATIE = {
   "Afghanistan": {"minLon":60.494,"maxLon":74.892,"minLat":29.387,"maxLat":38.473,"zoomMax":7.07},
   "Alaska": {"minLon":-187.991,"maxLon":-125.947,"minLat":54.061,"maxLat":72.086,"zoomMax":2.65,"hoeken":{"lb":{"dLon":-23.89,"dLat":0.36},"rb":{"dLon":12.427,"dLat":0.18},"lo":{"dLon":-2.693,"dLat":-7.489},"ro":{"dLon":0.763,"dLat":-0.333}}},
@@ -5756,6 +5862,7 @@ const ILLUSTRATIE_KALIBRATIE = {
   "Armenië": {"minLon":43.425,"maxLon":46.682,"minLat":38.864,"maxLat":41.291,"zoomMax":26.46,"hoeken":{"rb":{"dLon":0.423,"dLat":0}}},
   "Australië": {"minLon":111.199,"maxLon":157.257,"minLat":-45.759,"maxLat":-8.158,"zoomMax":1.39},
   "Azerbeidzjan": {"minLon":44.26,"maxLon":50.778,"minLat":38.232,"maxLat":42.054,"zoomMax":21.94,"hoeken":{"rb":{"dLon":-0.06,"dLat":0.071},"lo":{"dLon":0.448,"dLat":-0.481},"ro":{"dLon":-0.298,"dLat":0.214}}},
+  "Azoren": {"minLon":-31.344,"maxLon":-24.964,"minLat":36.934,"maxLat":39.728,"zoomMax":40},
   "Bahama's": {"minLon":-78.988,"maxLon":-72.705,"minLat":20.624,"maxLat":26.862,"zoomMax":12.57,"hoeken":{"lb":{"dLon":-0.246,"dLat":0.062},"rb":{"dLon":-0.554,"dLat":0},"ro":{"dLon":0.246,"dLat":0.312}}},
   "Bangladesh": {"minLon":87.662,"maxLon":93.452,"minLat":20.028,"maxLat":26.722,"zoomMax":14.25,"hoeken":{"ro":{"dLon":-0.695,"dLat":0.067}}},
   "België": {"minLon":2.273,"maxLon":6.614,"minLat":49.384,"maxLat":51.611,"zoomMax":32.16},
@@ -5765,6 +5872,7 @@ const ILLUSTRATIE_KALIBRATIE = {
   "Botswana": {"minLon":19.978,"maxLon":29.35,"minLat":-26.892,"maxLat":-17.788,"zoomMax":8.67},
   "Brazilië": {"minLon":-74.071,"maxLon":-33.674,"minLat":-35.391,"maxLat":7.698,"zoomMax":1},
   "Brunei": {"minLon":113.957,"maxLon":115.332,"minLat":4.006,"maxLat":5.044,"zoomMax":40},
+  "Buitenste Eilanden": {"minLon":45.46,"maxLon":47.54,"minLat":-9.683,"maxLat":-8.546,"zoomMax":40},
   "Bulgarije": {"minLon":21.377,"maxLon":29.611,"minLat":41.029,"maxLat":44.429,"zoomMax":21.49},
   "Burkina Faso": {"minLon":-5.723,"maxLon":2.429,"minLat":9.335,"maxLat":15.138,"zoomMax":14.3},
   "Cambodja": {"minLon":101.772,"maxLon":107.793,"minLat":10.149,"maxLat":14.886,"zoomMax":17.87},
@@ -5773,12 +5881,12 @@ const ILLUSTRATIE_KALIBRATIE = {
   "Chili": {"minLon":-77.744,"maxLon":-65.062,"minLat":-57.272,"maxLat":-16.728,"zoomMax":1,"hoeken":{"rb":{"dLon":1.268,"dLat":-0.034},"ro":{"dLon":1.141,"dLat":-1.929}}},
   "China": {"minLon":83.554,"maxLon":135.107,"minLat":15.793,"maxLat":53.343,"zoomMax":1,"hoeken":{"lo":{"dLon":0,"dLat":-3.666}}},
   "Colombia": {"minLon":-80.656,"maxLon":-65.235,"minLat":-5.941,"maxLat":13.452,"zoomMax":3.84},
-  "Comoren": {"minLon":43.17,"maxLon":44.576,"minLat":-12.495,"maxLat":-11.333,"zoomMax":40},
+  "Comoren": {"minLon":43.17,"maxLon":44.576,"minLat":-12.495,"maxLat":-11.333,"zoomMax":49.19},
   "Congo-Brazzaville": {"minLon":11.039,"maxLon":18.701,"minLat":-5.372,"maxLat":3.711,"zoomMax":7.36},
   "Congo-Kinshasa": {"minLon":11.466,"maxLon":31.655,"minLat":-13.833,"maxLat":5.376,"zoomMax":5.47,"hoeken":{"lo":{"dLon":0.6,"dLat":0.942},"ro":{"dLon":-0.36,"dLat":0.565}}},
   "Costa Rica": {"minLon":-86.15,"maxLon":-82.63,"minLat":8.195,"maxLat":11.435,"zoomMax":20.22,"hoeken":{"ro":{"dLon":0.246,"dLat":-0.292}}},
   "Cuba": {"minLon":-84.841,"maxLon":-74.025,"minLat":19.931,"maxLat":23.314,"zoomMax":14.08,"hoeken":{"lb":{"dLon":0,"dLat":1.285},"lo":{"dLon":-0.108,"dLat":-0.778},"ro":{"dLon":-0.108,"dLat":-1.116}}},
-  "Cyprus": {"minLon":32.235,"maxLon":34.099,"minLat":34.438,"maxLat":35.399,"zoomMax":40},
+  "Cyprus": {"minLon":32.235,"maxLon":34.099,"minLat":34.438,"maxLat":35.399,"zoomMax":67.97},
   "Denemarken": {"minLon":6.796,"maxLon":15.353,"minLat":54.569,"maxLat":57.737,"zoomMax":21.87,"hoeken":{"lb":{"dLon":0.086,"dLat":0.095},"lo":{"dLon":0,"dLat":-0.222},"ro":{"dLon":0.513,"dLat":-0.412}}},
   "Djibouti": {"minLon":41.202,"maxLon":44.203,"minLat":10.23,"maxLat":13.334,"zoomMax":36.11,"hoeken":{"lb":{"dLon":-0.045,"dLat":0.043},"rb":{"dLon":0.128,"dLat":0.105},"ro":{"dLon":-0.204,"dLat":0.174}}},
   "Dominicaanse Republiek": {"minLon":-72.264,"maxLon":-68.204,"minLat":17.474,"maxLat":20.018,"zoomMax":27.52},
@@ -5791,13 +5899,15 @@ const ILLUSTRATIE_KALIBRATIE = {
   "Estland": {"minLon":21.173,"maxLon":28.623,"minLat":57.35,"maxLat":59.779,"zoomMax":29.79},
   "Eswatini": {"minLon":30.786,"maxLon":32.117,"minLat":-27.316,"maxLat":-25.736,"zoomMax":40},
   "Ethiopië": {"minLon":32.99,"maxLon":47.979,"minLat":3.403,"maxLat":14.88,"zoomMax":7.3},
-  "Faeröer": {"minLon":-7.686,"maxLon":-6.144,"minLat":61.386,"maxLat":62.409,"zoomMax":40},
+  "Europees Rusland": {"minLon":21.52,"maxLon":59.81,"minLat":41.821,"maxLat":76.919,"zoomMax":2.23,"hoeken":{"rb":{"dLon":6.509,"dLat":0},"lo":{"dLon":-9.807,"dLat":1.888}}},
+  "Faeröer": {"minLon":-7.686,"maxLon":-6.144,"minLat":61.386,"maxLat":62.409,"zoomMax":78.94},
   "Falklandeilanden": {"minLon":-61.591,"maxLon":-57.348,"minLat":-52.5,"maxLat":-50.967,"zoomMax":40},
   "Fiji": {"minLon":176.619,"maxLon":181.814,"minLat":-19.429,"maxLat":-15.831,"zoomMax":40},
   "Filipijnen": {"minLon":116.009,"maxLon":127.736,"minLat":4.909,"maxLat":19.935,"zoomMax":7.29},
   "Finland": {"minLon":19.137,"maxLon":32.095,"minLat":59.811,"maxLat":70.075,"zoomMax":9.47,"hoeken":{"rb":{"dLon":1.573,"dLat":0},"ro":{"dLon":0.259,"dLat":0}}},
   "Frankrijk": {"minLon":-5.286,"maxLon":9.619,"minLat":41.526,"maxLat":50.898,"zoomMax":10.46,"hoeken":{"lb":{"dLon":0,"dLat":0.281},"ro":{"dLon":0,"dLat":-0.187}}},
   "Frans Guyana": {"minLon":-54.77,"maxLon":-51.622,"minLat":1.739,"maxLat":5.83,"zoomMax":17.69},
+  "Franse Zuidelijke Gebieden": {"minLon":68.231,"maxLon":70.681,"minLat":-50.638,"maxLat":-48.345,"zoomMax":40},
   "Gabon": {"minLon":8.251,"maxLon":15.041,"minLat":-4.194,"maxLat":2.85,"zoomMax":10.27,"hoeken":{"ro":{"dLon":0.292,"dLat":-0.125}}},
   "Galápagos": {"minLon":-91.847,"maxLon":-89.038,"minLat":-1.53,"maxLat":0.938,"zoomMax":40},
   "Gambia": {"minLon":-16.971,"maxLon":-13.678,"minLat":13.142,"maxLat":13.81,"zoomMax":40,"hoeken":{"lo":{"dLon":0,"dLat":-0.08}}},
@@ -5813,11 +5923,11 @@ const ILLUSTRATIE_KALIBRATIE = {
   "Haïti": {"minLon":-74.759,"maxLon":-71.554,"minLat":17.82,"maxLat":20.231,"zoomMax":33.48},
   "Honduras": {"minLon":-89.643,"maxLon":-83.093,"minLat":12.784,"maxLat":16.658,"zoomMax":21.04},
   "Hongarije": {"minLon":15.208,"maxLon":23.15,"minLat":45.428,"maxLat":48.776,"zoomMax":22.71},
-  "IJsland": {"minLon":-24.594,"maxLon":-13.466,"minLat":63.365,"maxLat":66.505,"zoomMax":17.76},
+  "IJsland": {"minLon":-24.594,"maxLon":-13.466,"minLat":63.365,"maxLat":66.505,"zoomMax":14.35},
   "Ierland": {"minLon":-11.622,"maxLon":-5.295,"minLat":50.943,"maxLat":55.608,"zoomMax":16.29},
   "India": {"minLon":65.246,"maxLon":99.161,"minLat":6.392,"maxLat":36.083,"zoomMax":2.34,"hoeken":{"ro":{"dLon":0,"dLat":1.764}}},
-  "Indonesië": {"minLon":95.615,"maxLon":139.123,"minLat":-12.142,"maxLat":6.102,"zoomMax":1,"hoeken":{"lb":{"dLon":-0.87,"dLat":0.365},"rb":{"dLon":2.175,"dLat":0},"ro":{"dLon":1.74,"dLat":0}}},
-  "Irak": {"minLon":38.662,"maxLon":49.686,"minLat":28.583,"maxLat":37.367,"zoomMax":7.76},
+  "Indonesië": {"minLon":96.487,"maxLon":136.586,"minLat":-11.103,"maxLat":5.063,"zoomMax":1,"hoeken":{"lb":{"dLon":-4.199,"dLat":1.228},"rb":{"dLon":4.51,"dLat":0},"ro":{"dLon":4.464,"dLat":0}}},
+  "Irak": {"minLon":38.662,"maxLon":49.686,"minLat":28.583,"maxLat":37.367,"zoomMax":9.54},
   "Iran": {"minLon":42.354,"maxLon":65.437,"minLat":23.12,"maxLat":40.365,"zoomMax":6.05,"hoeken":{"lb":{"dLon":0.231,"dLat":0.344},"rb":{"dLon":0,"dLat":0.319},"lo":{"dLon":2.499,"dLat":1.638},"ro":{"dLon":-1.031,"dLat":-0.122}}},
   "Italië": {"minLon":7.082,"maxLon":18.99,"minLat":36.655,"maxLat":47.085,"zoomMax":11.6,"hoeken":{"lb":{"dLon":-1.429,"dLat":0.209},"lo":{"dLon":0.715,"dLat":-0.313},"ro":{"dLon":-0.715,"dLat":0}}},
   "Jamaica": {"minLon":-78.538,"maxLon":-76.025,"minLat":17.546,"maxLat":18.7,"zoomMax":40},
@@ -5825,10 +5935,11 @@ const ILLUSTRATIE_KALIBRATIE = {
   "Jemen": {"minLon":40.453,"maxLon":54.425,"minLat":11.736,"maxLat":20.023,"zoomMax":10.04},
   "Jordanië": {"minLon":35.037,"maxLon":39.462,"minLat":29.104,"maxLat":33.456,"zoomMax":15.36,"hoeken":{"lb":{"dLon":-0.089,"dLat":0},"ro":{"dLon":0,"dLat":-0.042}}},
   "Kaapverdië": {"minLon":-25.53,"maxLon":-22.572,"minLat":14.547,"maxLat":17.325,"zoomMax":33.32},
+  "Kaliningrad": {"minLon":19.61,"maxLon":22.844,"minLat":54.242,"maxLat":55.404,"zoomMax":40},
   "Kazachstan": {"minLon":43.202,"maxLon":88.321,"minLat":39.746,"maxLat":55.984,"zoomMax":3.88,"hoeken":{"lb":{"dLon":-4.061,"dLat":-0.812},"rb":{"dLon":1.354,"dLat":0.325},"lo":{"dLon":7.219,"dLat":-2.76}}},
   "Kenia": {"minLon":33.974,"maxLon":41.965,"minLat":-5.178,"maxLat":5.126,"zoomMax":6.61},
   "Kirgizië": {"minLon":69.227,"maxLon":80.231,"minLat":39.189,"maxLat":43.262,"zoomMax":15.77,"hoeken":{"lb":{"dLon":-0.33,"dLat":0.081},"lo":{"dLon":-0.55,"dLat":0}}},
-  "Koeweit": {"minLon":46.485,"maxLon":48.669,"minLat":28.274,"maxLat":30.239,"zoomMax":40,"hoeken":{"lb":{"dLon":0.044,"dLat":0},"ro":{"dLon":0,"dLat":0.04}}},
+  "Koeweit": {"minLon":46.485,"maxLon":48.669,"minLat":28.274,"maxLat":30.239,"zoomMax":57.03,"hoeken":{"lb":{"dLon":0.044,"dLat":0},"ro":{"dLon":0,"dLat":0.04}}},
   "Kroatië": {"minLon":12.947,"maxLon":20.005,"minLat":42.365,"maxLat":46.623,"zoomMax":27,"hoeken":{"lb":{"dLon":0,"dLat":0.085},"lo":{"dLon":0.282,"dLat":-0.426}}},
   "Laos": {"minLon":100.213,"maxLon":107.551,"minLat":13.917,"maxLat":22.491,"zoomMax":7.49},
   "Lesotho": {"minLon":26.904,"maxLon":29.437,"minLat":-30.638,"maxLat":-28.55,"zoomMax":21.34},
@@ -5843,6 +5954,7 @@ const ILLUSTRATIE_KALIBRATIE = {
   "Mali": {"minLon":-12.43,"maxLon":4.395,"minLat":9.685,"maxLat":25.451,"zoomMax":5.98,"hoeken":{"lb":{"dLon":-0.495,"dLat":0}}},
   "Marokko": {"minLon":-18.532,"maxLon":-2.723,"minLat":20.284,"maxLat":37.807,"zoomMax":6.31,"hoeken":{"rb":{"dLon":2.078,"dLat":0.591},"lo":{"dLon":-2.735,"dLat":0.467}}},
   "Mauritanië": {"minLon":-18.997,"maxLon":-2.993,"minLat":13.78,"maxLat":27.505,"zoomMax":7.08,"hoeken":{"rb":{"dLon":-0.48,"dLat":-0.412}}},
+  "Mauritius": {"minLon":54.893,"maxLon":58.297,"minLat":-21.653,"maxLat":-19.721,"zoomMax":40},
   "Mexico": {"minLon":-115.496,"maxLon":-83.62,"minLat":14.731,"maxLat":32.895,"zoomMax":3.54,"hoeken":{"lb":{"dLon":-1.697,"dLat":0},"rb":{"dLon":-0.566,"dLat":1.09},"ro":{"dLon":-1.984,"dLat":-1.272}}},
   "Moldavië": {"minLon":26.618,"maxLon":30.132,"minLat":45.462,"maxLat":48.484,"zoomMax":21.25},
   "Montenegro": {"minLon":18.433,"maxLon":20.354,"minLat":41.852,"maxLat":43.546,"zoomMax":37.91},
@@ -5854,9 +5966,9 @@ const ILLUSTRATIE_KALIBRATIE = {
   "Nicaragua": {"minLon":-87.98,"maxLon":-82.603,"minLat":10.651,"maxLat":15.165,"zoomMax":14.94,"hoeken":{"lo":{"dLon":-0.163,"dLat":-0.271}}},
   "Nieuw-Caledonië": {"minLon":163.316,"maxLon":168.684,"minLat":-22.796,"maxLat":-19.553,"zoomMax":27.77},
   "Nieuw-Zeeland": {"minLon":167.104,"maxLon":174.784,"minLat":-48.039,"maxLat":-34.752,"zoomMax":8.91,"hoeken":{"lb":{"dLon":-3.072,"dLat":0},"rb":{"dLon":7.123,"dLat":1.595},"lo":{"dLon":-0.691,"dLat":-0.664}}},
-  "Niger": {"minLon":0.153,"maxLon":15.97,"minLat":11.696,"maxLat":23.517,"zoomMax":6.11,"hoeken":{"lo":{"dLon":-0.633,"dLat":0}}},
+  "Niger": {"minLon":0.153,"maxLon":15.97,"minLat":11.696,"maxLat":23.517,"zoomMax":6.11,"hoeken":{"lo":{"dLon":-0.317,"dLat":-0.118}}},
   "Nigeria": {"minLon":1.279,"maxLon":16.209,"minLat":2.952,"maxLat":14.904,"zoomMax":10.1},
-  "Noord-Cyprus": {"minLon":32.635,"maxLon":34.632,"minLat":34.47,"maxLat":35.84,"zoomMax":40},
+  "Noord-Cyprus": {"minLon":32.635,"maxLon":34.632,"minLat":34.47,"maxLat":35.84,"zoomMax":68.1},
   "Noord-Korea": {"minLon":124.187,"maxLon":129.508,"minLat":37.303,"maxLat":42.624,"zoomMax":14.41,"hoeken":{"rb":{"dLon":1.81,"dLat":0.426},"lo":{"dLon":-0.3,"dLat":-0.053}}},
   "Noorwegen": {"minLon":2.606,"maxLon":22.49,"minLat":57.993,"maxLat":71.127,"zoomMax":8.84,"hoeken":{"lb":{"dLon":-0.963,"dLat":0},"rb":{"dLon":8.403,"dLat":0.131},"lo":{"dLon":1.524,"dLat":-0.394},"ro":{"dLon":1.927,"dLat":-0.263}}},
   "Oeganda": {"minLon":29.555,"maxLon":35.007,"minLat":-1.475,"maxLat":4.206,"zoomMax":11.3,"hoeken":{"lo":{"dLon":0,"dLat":-0.341}}},
@@ -5864,6 +5976,7 @@ const ILLUSTRATIE_KALIBRATIE = {
   "Oezbekistan": {"minLon":55.977,"maxLon":73.148,"minLat":37.227,"maxLat":45.515,"zoomMax":9.72,"hoeken":{"lb":{"dLon":-0.687,"dLat":0},"lo":{"dLon":0,"dLat":-0.746},"ro":{"dLon":0.859,"dLat":0.746}}},
   "Oman": {"minLon":50.933,"maxLon":61.096,"minLat":15.923,"maxLat":25.697,"zoomMax":10.66,"hoeken":{"lb":{"dLon":0.305,"dLat":0.586},"rb":{"dLon":0,"dLat":0.195},"ro":{"dLon":-0.813,"dLat":0.195}}},
   "Oost-Maleisië": {"minLon":107.812,"maxLon":119.695,"minLat":0.133,"maxLat":8.374,"zoomMax":10.4},
+  "Oost-Timor": {"minLon":124.632,"maxLon":127.66,"minLat":-9.458,"maxLat":-8.243,"zoomMax":40,"hoeken":{"rb":{"dLon":0,"dLat":0.142},"lo":{"dLon":0,"dLat":-0.307}}},
   "Oostenrijk": {"minLon":8.955,"maxLon":17.716,"minLat":46.13,"maxLat":49.433,"zoomMax":26.52,"hoeken":{"rb":{"dLon":0.085,"dLat":0}}},
   "Pakistan": {"minLon":59.913,"maxLon":77.285,"minLat":23.146,"maxLat":37.047,"zoomMax":6.85,"hoeken":{"rb":{"dLon":0.81,"dLat":0.802},"lo":{"dLon":-0.521,"dLat":0},"ro":{"dLon":-0.347,"dLat":-0.973}}},
   "Palestina": {"minLon":33.737,"maxLon":35.972,"minLat":31.119,"maxLat":32.635,"zoomMax":45.02,"hoeken":{"lo":{"dLon":0.191,"dLat":-0.013}}},
@@ -5872,9 +5985,9 @@ const ILLUSTRATIE_KALIBRATIE = {
   "Paraguay": {"minLon":-62.65,"maxLon":-54.245,"minLat":-27.587,"maxLat":-19.291,"zoomMax":8.21},
   "Peru": {"minLon":-84.123,"maxLon":-68.374,"minLat":-18.338,"maxLat":-0.029,"zoomMax":5.98},
   "Polen": {"minLon":13.73,"maxLon":24.902,"minLat":48.662,"maxLat":55.053,"zoomMax":13.51},
-  "Portugal": {"minLon":-10.672,"maxLon":-5.26,"minLat":36.626,"maxLat":42.431,"zoomMax":18.29,"hoeken":{"rb":{"dLon":0.166,"dLat":0.058}}},
+  "Portugal": {"minLon":-10.972,"maxLon":-5.284,"minLat":36.772,"maxLat":42.401,"zoomMax":18.29,"hoeken":{"lb":{"dLon":0.541,"dLat":0},"rb":{"dLon":0.166,"dLat":0.058}}},
   "Puerto Rico": {"minLon":-67.49,"maxLon":-65.057,"minLat":17.708,"maxLat":18.776,"zoomMax":40},
-  "Qatar": {"minLon":50.547,"maxLon":51.754,"minLat":24.576,"maxLat":26.217,"zoomMax":40,"hoeken":{"lb":{"dLon":-0.06,"dLat":0},"rb":{"dLon":0.157,"dLat":0}}},
+  "Qatar": {"minLon":50.547,"maxLon":51.754,"minLat":24.576,"maxLat":26.217,"zoomMax":67.91,"hoeken":{"lb":{"dLon":-0.06,"dLat":0},"rb":{"dLon":0.157,"dLat":0}}},
   "Roemenië": {"minLon":20.051,"maxLon":29.891,"minLat":43.65,"maxLat":48.275,"zoomMax":13.88},
   "Rwanda": {"minLon":28.859,"maxLon":30.888,"minLat":-2.826,"maxLat":-1.066,"zoomMax":36.48},
   "Samoa": {"minLon":-172.998,"maxLon":-171.344,"minLat":-14.223,"maxLat":-13.31,"zoomMax":70.14},
@@ -5914,7 +6027,7 @@ const ILLUSTRATIE_KALIBRATIE = {
   "Zambia": {"minLon":21.98,"maxLon":33.674,"minLat":-18.069,"maxLat":-8.194,"zoomMax":6.5,"hoeken":{"lb":{"dLon":0,"dLat":0.296}}},
   "Zimbabwe": {"minLon":25.099,"maxLon":33.043,"minLat":-22.396,"maxLat":-15.636,"zoomMax":11.34},
   "Zuid-Afrika": {"minLon":13.198,"maxLon":32.643,"minLat":-35.26,"maxLat":-22.442,"zoomMax":8.17,"hoeken":{"lb":{"dLon":-0.194,"dLat":0.128},"rb":{"dLon":1.359,"dLat":0.636},"ro":{"dLon":2.991,"dLat":-0.762}}},
-  "Zuid-Georgia en de Zuidelijke Sandwicheilanden": {"minLon":-38.111,"maxLon":-35.795,"minLat":-54.901,"maxLat":-53.895,"zoomMax":40},
+  "Zuid-Georgia en de Zuidelijke Sandwicheilanden": {"minLon":-38.111,"maxLon":-35.795,"minLat":-54.901,"maxLat":-53.895,"zoomMax":55.37},
   "Zuid-Korea": {"minLon":124.81,"maxLon":129.958,"minLat":33.077,"maxLat":38.972,"zoomMax":14.83},
   "Zuid-Soedan": {"minLon":24.138,"maxLon":36.156,"minLat":3.492,"maxLat":12.393,"zoomMax":7.36},
   "Zweden": {"minLon":11.585,"maxLon":23.483,"minLat":55.247,"maxLat":69.864,"zoomMax":9.02,"hoeken":{"lb":{"dLon":-2.296,"dLat":0},"rb":{"dLon":3.579,"dLat":0.152},"lo":{"dLon":-2.755,"dLat":-0.457},"ro":{"dLon":-4.476,"dLat":-1.523}}},
@@ -5946,8 +6059,8 @@ function getZoomMaxOverride(naam){
   return (bron && bron.zoomMax!==undefined) ? bron.zoomMax : null;
 }
 
-// ── Kalibratiemodus (toets K) ─────────────────────────
-// Vlieg boven een land en druk op K: de illustratie wordt vrij over het land
+// ── Kalibratiemodus (toets Ctrl+Alt+K) ─────────────────────────
+// Vlieg boven een land en druk op Ctrl+Alt+K: de illustratie wordt vrij over het land
 // gelegd, de echte landgrens verschijnt als rode lijn, en met de toetsen
 // schuif/rek je de afbeelding tot hij past. Enter = opslaan, Esc = annuleren.
 let kalibratieActief=false, kalibratieNaam=null, kalibratieFeature=null;
@@ -6130,8 +6243,21 @@ function kopieerKalibraties(){
 // zodat de pijltjes tijdens het kalibreren de afbeelding verschuiven en
 // Wonky netjes stil blijft hangen.
 document.addEventListener('keydown', e=>{
+  // Terwijl er in een tekstveld getypt wordt (naam, zoekbalk, geheimwoord, ...)
+  // mogen letters gewoon typen - niet ook nog de kalibratiemodus starten. Zonder
+  // deze check startte bijv. het typen van een naam met een 'k' erin (Kevin,
+  // Nikki, Erik) of het zoeken naar "Kenia"/"Koeweit" per ongeluk dit scherm.
+  const actiefEl=document.activeElement;
+  if(actiefEl && (actiefEl.tagName==='INPUT' || actiefEl.tagName==='TEXTAREA')) return;
   if(!kalibratieActief){
-    if((e.key==='k'||e.key==='K') && illustratieStand!=='geen') startKalibratie();
+    // Kalibratiemodus is een ontwikkelaars-tool, dus bewust een combinatie die
+    // niet per ongeluk tijdens het spelen wordt geraakt. Ctrl+Alt (i.p.v.
+    // Ctrl+Shift) omdat Ctrl+Shift+K in Firefox al de sneltoets is voor het
+    // ingebouwde devtools-console.
+    if(e.ctrlKey && e.altKey && (e.key==='k'||e.key==='K') && illustratieStand!=='geen'){
+      e.preventDefault();
+      startKalibratie();
+    }
     return;
   }
   const b=kalibratieBBox;
@@ -9540,10 +9666,13 @@ function updateSpel(){
   }
   if(hoverLand&&huidigModus==='verkennen'){
     const hoverLandNaam=hoverLand.properties.dutch||hoverLand.properties.name;
-    // Bij het verkennen (landen én hoofdsteden) altijd ook de hoofdstad
-    // tonen, als die bekend is - niet alleen voor de landen uit de
-    // Hoofdsteden-speelmodus zelf.
-    const hoverCapNaam = hoofdstadNaamVoorHover(hoverLandNaam);
+    // Hoofdstad bij het hover-label alleen tonen als er ook echt in een
+    // Hoofdsteden-level verkend wordt (LEVELS[...].hoofdsteden) - niet meer
+    // bij het verkennen van gewone Landen-levels. Binnen zo'n Hoofdsteden-
+    // verkenning wél voor ALLE landen, niet alleen de eigen curated lijst -
+    // vandaar nog steeds hoofdstadNaamVoorHover() i.p.v. alleen HOOFDSTEDEN.
+    const inHoofdstedenVerkenning = LEVELS[huidigLevel] && LEVELS[huidigLevel].hoofdsteden;
+    const hoverCapNaam = inHoofdstedenVerkenning ? hoofdstadNaamVoorHover(hoverLandNaam) : null;
     if(hoverCapNaam){
       hoverEl.innerHTML = hoverLandNaam+': <span class="hover-hoofdstad">'+hoverCapNaam+'</span>';
     } else {
@@ -9855,6 +9984,42 @@ function loop(){
   if(plekOnthullingActief) tekenPlekOnthulling();
   requestAnimationFrame(loop);
 }
+</script>
+
+<script>
+  window.wvwFirebaseGereed = new Promise(resolve=>{ window._wvwFirebaseResolve = resolve; });
+</script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+  // ── Online scorebord (Firestore) ───────────────────────────────────────
+  // Alle vijf spelonderdelen bewaren hun scores niet meer per apparaat
+  // (localStorage), maar in één gedeelde, wereldwijde database - zodat
+  // spelers overal in Nederland (of daarbuiten) met en tegen elkaar kunnen
+  // spelen. Deze waarden komen uit Arjens eigen Firebase-project
+  // ("wereld-van-wonderen") en zijn niet geheim: de beveiliging zit in de
+  // Firestore Security Rules (ingesteld in de Firebase Console), niet in
+  // het verbergen van deze configuratie.
+  const firebaseConfig = {
+    apiKey: "AIzaSyCEnvURTGjQ7_JAeQ69Zx7wZsPSxf2gQeg",
+    authDomain: "wereld-van-wonderen.firebaseapp.com",
+    projectId: "wereld-van-wonderen",
+    storageBucket: "wereld-van-wonderen.firebasestorage.app",
+    messagingSenderId: "814018141938",
+    appId: "1:814018141938:web:c70a664fcad93adfdf7a6b",
+  };
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // De rest van dit bestand gebruikt gewone (niet-module) scripts, die niet
+  // rechtstreeks 'import' kunnen gebruiken. Die wachten daarom via
+  // window.wvwFirebaseGereed op dit object - zie fsOpslaan()/fsTopN()
+  // verderop in het grote scriptblok. Dit module-scriptje is (net als
+  // 'defer') pas klaar ná het inladen van de pagina, maar ruim voordat een
+  // speler een level uitspeelt, dus in de praktijk is er geen merkbare
+  // wachttijd.
+  window._wvwFirebaseResolve({ db, collection, addDoc, getDocs, query, where, orderBy, limit });
 </script>
 </body>
 </html>

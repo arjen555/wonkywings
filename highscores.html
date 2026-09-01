@@ -21,16 +21,9 @@ body{
   background-attachment:fixed;
 }
 
-/* ── Linkernavigatie: terug-knop bovenaan, daaronder (met wat open
-   ruimte ertussen) de 5 tabblad-iconen als verticale rij. Eén vaste
-   container zodat alles samen linksboven blijft, ongeacht schermgrootte. */
-#linker-navigatie{
-  position:fixed; left:14px; top:14px; z-index:100;
-  display:flex; flex-direction:column; align-items:flex-start;
-}
-
 /* ── Terug-knop (zelfde grootte als in het spel) ───── */
 .terug-knop{
+  position:fixed; left:14px; top:14px; z-index:100;
   width:clamp(130px, 13vw, 210px);
   cursor:pointer; border:none; background:none; padding:0;
   opacity:0.92; filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5));
@@ -39,24 +32,33 @@ body{
 .terug-knop img{ width:100%; display:block; }
 .terug-knop:hover{ opacity:1; transform:scale(1.03); }
 
-/* ── Tabbladenstrip (menu): de 5 eigen icoontjes van Arjen, verticaal
-   onder de terug-knop. Open ruimte erboven (margin-top) zodat het niet
-   tegen de terug-knop aan plakt. */
+/* ── Tabbladenstrip (menu): rijtje "register"-tabjes bovenaan het boek,
+   gecentreerd tussen de twee bladzijdes. Staat in de rand boven het boek,
+   dus nooit meer over de kaartjes heen - los van hoeveel scores er staan. */
 .tabblad-strip{
-  display:flex; flex-direction:column; gap:9px;
-  margin-top:clamp(20px, 4vh, 40px);
+  position:fixed; left:50%; top:clamp(8px, 1.6vw, 18px);
+  transform:translateX(-50%);
+  z-index:100; display:flex; gap:3px;
 }
 .nav-btn{
-  width:clamp(66px, 6.4vw, 104px); aspect-ratio:1/1;
-  border:none; background:none; padding:0; cursor:pointer;
-  opacity:0.82; filter:drop-shadow(0 3px 8px rgba(0,0,0,.4));
-  transition:opacity .15s, transform .15s, filter .15s;
+  font-family:'Baloo 2',cursive,sans-serif;
+  font-size:clamp(.72rem, 1.3vw, .9rem); font-weight:700;
+  padding:7px 16px 6px; border:1.5px solid rgba(90,68,32,.55); border-bottom:none;
+  border-radius:8px 8px 0 0; cursor:pointer;
+  background:linear-gradient(180deg,rgba(201,168,76,.55),rgba(168,132,26,.55));
+  color:#4a3818; white-space:nowrap;
+  box-shadow:0 -2px 6px rgba(0,0,0,.15);
+  transition:background .2s, color .2s, transform .15s, box-shadow .2s;
 }
-.nav-btn img{ width:100%; height:100%; display:block; object-fit:contain; }
-.nav-btn:hover{ opacity:1; transform:scale(1.05); }
+.nav-btn:hover{
+  background:linear-gradient(180deg,rgba(201,168,76,.75),rgba(168,132,26,.7));
+  color:#2a1f0c;
+}
 .nav-btn.actief{
-  opacity:1; transform:scale(1.08);
-  filter:drop-shadow(0 0 9px rgba(255,215,110,.85)) drop-shadow(0 3px 8px rgba(0,0,0,.4));
+  background:linear-gradient(180deg,#f4e8c1,#c9a84c);
+  color:#3a2c14; border-color:#8a6a24;
+  transform:translateY(-3px);
+  box-shadow:0 -4px 10px rgba(0,0,0,.3);
 }
 
 /* ── Twee-pagina layout (linker- en rechterbladzijde) ─ */
@@ -199,39 +201,37 @@ body{
   .boek-paginas{
     grid-template-columns:1fr;
     gap:0;
-    padding:clamp(190px,46vw,215px) 16px 76px;
+    padding:clamp(50px,15vw,100px) 16px 76px;
     overflow-y:auto;
   }
-  .terug-knop{ width:clamp(90px, 24vw, 130px); }
   .tabblad-strip{
-    flex-direction:row; flex-wrap:wrap;
-    max-width:58vw; gap:6px;
-    margin-top:12px;
+    left:50%; top:auto; bottom:10px; transform:translateX(-50%);
+    flex-wrap:wrap; justify-content:center; max-width:94vw; gap:4px;
   }
-  .nav-btn{ width:clamp(44px, 13vw, 60px); }
+  .nav-btn{
+    font-size:.68rem; padding:5px 10px 4px;
+    border-radius:7px; border-bottom:1.5px solid rgba(90,68,32,.55);
+  }
+  .nav-btn.actief{ transform:none; }
 }
 </style>
 </head>
 <body>
 
-<!-- Linkernavigatie: terug-knop, daaronder (met open ruimte) de 5
-     tabblad-iconen van Arjen, verticaal onder elkaar. -->
-<div id="linker-navigatie">
-  <!-- Terug naar start -->
-  <button class="terug-knop" onclick="ganNaarStart()" title="Terug naar start">
-    <img src="images/terug-naar-start-knop.png" alt="Terug naar start"
-         onerror="this.parentElement.textContent='⬅ Terug'"/>
-  </button>
+<!-- Terug naar start -->
+<button class="terug-knop" onclick="ganNaarStart()" title="Terug naar start">
+  <img src="images/terug-naar-start-knop.png" alt="Terug naar start"
+       onerror="this.parentElement.textContent='⬅ Terug'"/>
+</button>
 
-  <!-- Navigatie: tabblad-iconen -->
-  <nav class="tabblad-strip" id="nav-knoppen">
-    <button class="nav-btn actief" data-sectie="landen"><img src="images/landen-icoon.png" alt="Landen"/></button>
-    <button class="nav-btn" data-sectie="hoofdsteden"><img src="images/hoofdsteden-icoon.png" alt="Hoofdsteden"/></button>
-    <button class="nav-btn" data-sectie="plekken"><img src="images/iconische-plekken-icoon.png" alt="Iconische plekken"/></button>
-    <button class="nav-btn" data-sectie="raadspel"><img src="images/raad-je-plaatje-icoon.png" alt="Raad je plaatje"/></button>
-    <button class="nav-btn" data-sectie="landjeschuif"><img src="images/landje-schuif-icoon.png" alt="Landje Schuif"/></button>
-  </nav>
-</div>
+<!-- Navigatie: tabbladen bovenaan het boek -->
+<nav class="tabblad-strip" id="nav-knoppen">
+  <button class="nav-btn actief" data-sectie="landen">Landen</button>
+  <button class="nav-btn" data-sectie="hoofdsteden">Hoofdsteden</button>
+  <button class="nav-btn" data-sectie="plekken">Iconische plekken</button>
+  <button class="nav-btn" data-sectie="raadspel">Raad je plaatje</button>
+  <button class="nav-btn" data-sectie="landjeschuif">Landje Schuif</button>
+</nav>
 
 <!-- Twee boekpagina's -->
 <div class="boek-paginas">
@@ -241,8 +241,8 @@ body{
 
 <script>
 /* ╔═══════════════════════════════════════════════════════╗
-   ║  Boek der Groten — high-score-overzicht               ║
-   ║  Leest localStorage van index.html en raadspel.html   ║
+   ║  Boek der Groten — high-score-overzicht                ║
+   ║  Leest de online scores uit Firestore (Cloud Firestore) ║
    ╚═══════════════════════════════════════════════════════╝ */
 
 // ── Testfilter ────────────────────────────────────────
@@ -296,7 +296,7 @@ function formatTijdMs(ms){
 
 // ── Level- en categorie-definities ────────────────────
 
-// Landen (index.html → wonkywings_scores_{id})
+// Landen (index.html → collectie scores_landen)
 var LANDEN_SECTIES = [
   { groep:'Europa', levels:[
     { id:'eu-alles',       naam:'Heel Europa' },
@@ -315,7 +315,7 @@ var LANDEN_SECTIES = [
   ]},
 ];
 
-// Hoofdsteden (index.html → wonkywings_scores_{id})
+// Hoofdsteden (index.html → collectie scores_hoofdsteden)
 var HOOFD_SECTIES = [
   { groep:'Hoofdsteden', levels:[
     { id:'hs-europa',       naam:'Europa' },
@@ -327,14 +327,14 @@ var HOOFD_SECTIES = [
   ]},
 ];
 
-// Iconische plekken (index.html → wonkywings_scores_{id})
+// Iconische plekken (index.html → collectie scores_plekken)
 var PLEK_SECTIES = [
   { groep:'Iconische plekken', levels:[
     { id:'pl-wereld', naam:'Alle plekken' },
   ]},
 ];
 
-// Raad je plaatje (raadspel.html → wonkywings_raadspel_scores_{id})
+// Raad je plaatje (raadspel.html → collectie scores_raadspel)
 var RAAD_SECTIES = [
   { groep:'Europa', cats:[
     { id:'eu-noord', naam:'Noord-Europa' },
@@ -355,7 +355,7 @@ var RAAD_SECTIES = [
   ]},
 ];
 
-// Landje Schuif (raadspel.html → wonkywings_landjeschuif_scores, één
+// Landje Schuif (raadspel.html → collectie scores_landjeschuif, één
 // gezamenlijke lijst - geen categorieën, want elk potje is altijd
 // hetzelfde: 9 van de 9 goed, alleen de tijd verschilt).
 var LANDJESCHUIF_SECTIES = [
@@ -364,16 +364,56 @@ var LANDJESCHUIF_SECTIES = [
   ]},
 ];
 
-// ── Scores laden ──────────────────────────────────────
-function laadScores(sleutel){
-  try{ return JSON.parse(localStorage.getItem(sleutel)||'[]'); }
-  catch(e){ return []; }
+// ── Online scorebord (Firestore) — ophalen ────────────
+// fsTopN(): haalt de beste 'aantal' runs op uit één collectie, gefilterd op
+// één gelijkheidsveld (het level/de categorie) en gesorteerd volgens
+// 'vergelijker'. Zelfde opzet als in index.html/raadspel.html; hier wordt
+// nooit een "nieuweRun" meegegeven, want dit scherm speelt zelf niets.
+async function fsTopN(collectieNaam, gelijkVeld, gelijkWaarde, orderVelden, vergelijker, aantal){
+  var lijst = [];
+  try{
+    var fb = await window.wvwFirebaseGereed;
+    var orderClauses = orderVelden.map(function(o){ return fb.orderBy(o[0], o[1]); });
+    var q = fb.query.apply(null, [fb.collection(fb.db, collectieNaam),
+      fb.where(gelijkVeld, '==', gelijkWaarde)].concat(orderClauses, [fb.limit(aantal)]));
+    var snap = await fb.getDocs(q);
+    snap.forEach(function(doc){ lijst.push(doc.data()); });
+  }catch(e){
+    console.warn('Kon scores niet online ophalen ('+collectieNaam+'):', e);
+  }
+  lijst.sort(vergelijker);
+  return lijst;
 }
-function topoScores(id){ return laadScores('wonkywings_scores_'+id); }
-function raadScores(id){ return laadScores('wonkywings_raadspel_scores_'+id); }
-// Landje Schuif heeft maar 1 sleutel voor alle scores samen (geen 'id'-
-// achtervoegsel per categorie, zie lsOpslaanScore() in raadspel.html).
-function landjeschuifScores(){ return laadScores('wonkywings_landjeschuif_scores'); }
+function landenScores(id){
+  return fsTopN('scores_landen', 'levelId', id, [['km','asc'],['tijd','asc']],
+    function(a,b){ return (a.km-b.km) || (a.tijd-b.tijd); }, 100);
+}
+function hoofdstedenScores(id){
+  return fsTopN('scores_hoofdsteden', 'levelId', id, [['goed','desc'],['tijd','asc']],
+    function(a,b){ return (b.goed-a.goed) || (a.tijd-b.tijd); }, 100);
+}
+function plekkenScores(id){
+  return fsTopN('scores_plekken', 'levelId', id, [['punten','desc'],['tijd','asc']],
+    function(a,b){ return (b.punten-a.punten) || (a.tijd-b.tijd); }, 100);
+}
+function raadScores(id){
+  return fsTopN('scores_raadspel', 'catId', id, [['goed','desc'],['tijdMs','asc']],
+    function(a,b){ return (b.goed-a.goed) || (a.tijdMs-b.tijdMs); }, 100);
+}
+// Landje Schuif heeft maar 1 lijst voor alle scores samen (geen 'id'-
+// achtervoegsel per categorie), dus geen where()-filter nodig.
+async function landjeschuifScores(){
+  var lijst = [];
+  try{
+    var fb = await window.wvwFirebaseGereed;
+    var q = fb.query(fb.collection(fb.db, 'scores_landjeschuif'), fb.orderBy('tijdMs','asc'), fb.limit(100));
+    var snap = await fb.getDocs(q);
+    snap.forEach(function(doc){ lijst.push(doc.data()); });
+  }catch(e){
+    console.warn('Kon Landje Schuif-scores niet online ophalen:', e);
+  }
+  return lijst;
+}
 
 // ── Filteren & sorteren ───────────────────────────────
 function filterScores(lijst){
@@ -443,7 +483,11 @@ function maakTabel(rijen, startIndex, type){
   var thNr = document.createElement('th'); thNr.textContent = '#';
   var thNaam = document.createElement('th'); thNaam.textContent = 'Naam';
   var thScore = document.createElement('th');
-  thScore.textContent = type==='raad' ? 'Goed' : type==='landjeschuif' ? 'Score' : 'Afstand';
+  thScore.textContent = type==='raad' ? 'Goed'
+    : type==='landjeschuif' ? 'Score'
+    : type==='hoofdsteden' ? 'Goed'
+    : type==='plekken' ? 'Punten'
+    : 'Afstand';
   var thTijd = document.createElement('th'); thTijd.textContent = 'Tijd';
   hr.appendChild(thNr); hr.appendChild(thNaam);
   hr.appendChild(thScore); hr.appendChild(thTijd);
@@ -484,9 +528,13 @@ function maakTabel(rijen, startIndex, type){
       tdScore.textContent = run.goed + '/' + totaal;
     } else if(type==='landjeschuif'){
       // Elk opgeslagen potje Landje Schuif is per definitie 9 van de 9 goed
-      // (zie lsOpslaanScore() - die wordt alleen bij een voltooid potje
-      // aangeroepen), dus dit staat vast.
+      // (zie lsOpslaanScore() in raadspel.html - die wordt alleen bij een
+      // voltooid potje aangeroepen), dus dit staat vast.
       tdScore.textContent = '9/9';
+    } else if(type==='hoofdsteden'){
+      tdScore.textContent = run.goed + '/' + run.totaal;
+    } else if(type==='plekken'){
+      tdScore.textContent = run.punten;
     } else {
       tdScore.textContent = (run.km != null ? run.km + ' km' : '-');
     }
@@ -509,11 +557,15 @@ function maakTabel(rijen, startIndex, type){
 /** Bouw een subsectie-kaart met All-time en Vandaag kolommen.
  * altijdTonen: als true, wordt de kaart ook zonder scores getoond (de twee
  * kolommen laten dan gewoon elk hun eigen "Nog geen scores" zien - zie
- * bouwScoreTabel), in plaats van de kaart helemaal weg te laten. */
-function bouwSubsectie(naam, sleutel, type, altijdTonen){
-  var lijst = (type==='raad') ? raadScores(sleutel)
-            : (type==='landjeschuif') ? landjeschuifScores()
-            : topoScores(sleutel);
+ * bouwScoreTabel), in plaats van de kaart helemaal weg te laten.
+ * Haalt de scores online op (Firestore), dus deze functie is async. */
+async function bouwSubsectie(naam, sleutel, type, altijdTonen){
+  var lijst;
+  if(type==='raad') lijst = await raadScores(sleutel);
+  else if(type==='landjeschuif') lijst = await landjeschuifScores();
+  else if(type==='hoofdsteden') lijst = await hoofdstedenScores(sleutel);
+  else if(type==='plekken') lijst = await plekkenScores(sleutel);
+  else lijst = await landenScores(sleutel);
   var gefilterd = filterScores(lijst);
 
   if(gefilterd.length === 0 && !altijdTonen) return null;
@@ -551,56 +603,67 @@ function bouwSubsectie(naam, sleutel, type, altijdTonen){
 // ook zonder scores. De andere tabbladen blijven het oude, dynamische
 // gedrag houden (leeg = overgeslagen, verdeeld op basis van aantal).
 var SECTIES = {
-  landen:       { label:'Landen',            data:LANDEN_SECTIES,       type:'topo',
+  landen:       { label:'Landen',            data:LANDEN_SECTIES,       type:'landen',
                   splitPerGroep:true, toonLegeCategorieen:true,
                   titelLinks:'Europa Masters', titelRechts:'Wereld Masters' },
-  hoofdsteden:  { label:'Hoofdsteden',       data:HOOFD_SECTIES,        type:'topo' },
-  plekken:      { label:'Iconische plekken', data:PLEK_SECTIES,         type:'topo' },
+  hoofdsteden:  { label:'Hoofdsteden',       data:HOOFD_SECTIES,        type:'hoofdsteden' },
+  plekken:      { label:'Iconische plekken', data:PLEK_SECTIES,         type:'plekken' },
   raadspel:     { label:'Raad je plaatje',   data:RAAD_SECTIES,         type:'raad' },
   landjeschuif: { label:'Landje Schuif',     data:LANDJESCHUIF_SECTIES, type:'landjeschuif' },
 };
 
-/** Bouw alle subsecties voor een sectie, retourneer als array van DOM-nodes */
-function bouwSubsecties(sectieId){
+/** Bouw alle subsecties voor een sectie, retourneer als array van DOM-nodes.
+ * Alle collecties worden gelijktijdig (Promise.all) opgehaald, niet na
+ * elkaar - anders zou een tabblad met veel categorieën traag aanvoelen. */
+async function bouwSubsecties(sectieId){
   var def = SECTIES[sectieId];
   if(!def) return [];
-  var nodes = [];
+  var taken = [];
   for(var g=0; g<def.data.length; g++){
     var groep = def.data[g];
     var items = groep.levels || groep.cats;
     for(var j=0; j<items.length; j++){
-      var sub = bouwSubsectie(items[j].naam, items[j].id, def.type, def.toonLegeCategorieen);
-      if(sub) nodes.push(sub);
+      taken.push(bouwSubsectie(items[j].naam, items[j].id, def.type, def.toonLegeCategorieen));
     }
   }
-  return nodes;
+  var resultaten = await Promise.all(taken);
+  return resultaten.filter(function(n){ return n!==null; });
 }
 
 /** Zelfde als bouwSubsecties(), maar per groep apart - voor secties met
  * splitPerGroep, waar groep 0 altijd links en groep 1 altijd rechts hoort. */
-function bouwSubsectiesPerGroep(sectieId){
+async function bouwSubsectiesPerGroep(sectieId){
   var def = SECTIES[sectieId];
   var uitkomst = { links:[], rechts:[] };
   if(!def) return uitkomst;
+  var takenLinks = [], takenRechts = [];
   for(var g=0; g<def.data.length; g++){
     var groep = def.data[g];
     var items = groep.levels || groep.cats;
-    var doel = (g===0) ? uitkomst.links : uitkomst.rechts;
+    var takenDoel = (g===0) ? takenLinks : takenRechts;
     for(var j=0; j<items.length; j++){
-      var sub = bouwSubsectie(items[j].naam, items[j].id, def.type, def.toonLegeCategorieen);
-      if(sub) doel.push(sub);
+      takenDoel.push(bouwSubsectie(items[j].naam, items[j].id, def.type, def.toonLegeCategorieen));
     }
   }
+  var linksResultaten = await Promise.all(takenLinks);
+  var rechtsResultaten = await Promise.all(takenRechts);
+  uitkomst.links = linksResultaten.filter(function(n){ return n!==null; });
+  uitkomst.rechts = rechtsResultaten.filter(function(n){ return n!==null; });
   return uitkomst;
 }
 
 // ── Pagina opbouwen ───────────────────────────────────
 var huidigeSectie = 'landen';
+// Aanvraag-ID: als iemand snel tussen tabbladen klikt terwijl de vorige
+// nog aan het laden was, mag dat trage antwoord het inmiddels alweer
+// nieuwer geopende tabblad niet meer overschrijven.
+var paginaAanvraagId = 0;
 
-function bouwPagina(){
+async function bouwPagina(){
   var links = document.getElementById('pagina-links');
   var rechts = document.getElementById('pagina-rechts');
-  links.innerHTML = '';
+  var aanvraagId = ++paginaAanvraagId;
+  links.innerHTML = '<div class="sectie-leeg">Scores laden…</div>';
   rechts.innerHTML = '';
 
   var def = SECTIES[huidigeSectie];
@@ -609,7 +672,10 @@ function bouwPagina(){
   // altijd rechts, in de volgorde uit LANDEN_SECTIES, elke categorie
   // altijd zichtbaar - geen automatische fifty-fifty verdeling.
   if(def.splitPerGroep){
-    var perGroep = bouwSubsectiesPerGroep(huidigeSectie);
+    var perGroep = await bouwSubsectiesPerGroep(huidigeSectie);
+    if(aanvraagId !== paginaAanvraagId) return; // ondertussen een ander tabblad geopend
+    links.innerHTML = '';
+    rechts.innerHTML = '';
 
     var titelL = document.createElement('div');
     titelL.className = 'pagina-titel';
@@ -626,7 +692,10 @@ function bouwPagina(){
     return;
   }
 
-  var subsecties = bouwSubsecties(huidigeSectie);
+  var subsecties = await bouwSubsecties(huidigeSectie);
+  if(aanvraagId !== paginaAanvraagId) return;
+  links.innerHTML = '';
+  rechts.innerHTML = '';
 
   if(subsecties.length === 0){
     // Lege-sectie-melding op de linkerpagina
@@ -634,10 +703,10 @@ function bouwPagina(){
     leeg.className = 'sectie-leeg';
     leeg.textContent = 'Nog geen scores voor ' + def.label + '.';
     // Titel linkerpagina
-    var titelL = document.createElement('div');
-    titelL.className = 'pagina-titel';
-    titelL.textContent = def.label;
-    links.appendChild(titelL);
+    var titelL2 = document.createElement('div');
+    titelL2.className = 'pagina-titel';
+    titelL2.textContent = def.label;
+    links.appendChild(titelL2);
     links.appendChild(leeg);
     return;
   }
@@ -688,6 +757,30 @@ document.getElementById('nav-knoppen').addEventListener('click', function(e){
 
 // ── Start ─────────────────────────────────────────────
 bouwPagina();
+</script>
+
+<script>
+  window.wvwFirebaseGereed = new Promise(resolve=>{ window._wvwFirebaseResolve = resolve; });
+</script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+  // ── Online scorebord (Firestore) ───────────────────────────────────────
+  // Zelfde project/config als index.html en raadspel.html - zie de
+  // toelichting daar. Deze waarden zijn niet geheim: de beveiliging zit in
+  // de Firestore Security Rules, niet in het verbergen van deze configuratie.
+  const firebaseConfig = {
+    apiKey: "AIzaSyCEnvURTGjQ7_JAeQ69Zx7wZsPSxf2gQeg",
+    authDomain: "wereld-van-wonderen.firebaseapp.com",
+    projectId: "wereld-van-wonderen",
+    storageBucket: "wereld-van-wonderen.firebasestorage.app",
+    messagingSenderId: "814018141938",
+    appId: "1:814018141938:web:c70a664fcad93adfdf7a6b",
+  };
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  window._wvwFirebaseResolve({ db, collection, addDoc, getDocs, query, where, orderBy, limit });
 </script>
 </body>
 </html>
