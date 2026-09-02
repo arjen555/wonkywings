@@ -118,7 +118,12 @@
     #illustratie-carrousel {
       display:flex; align-items:center; justify-content:center;
       gap:clamp(6px, 2vw, 22px); width:100%;
-      flex:1 1 auto; min-height:0; margin-top:2px;
+      flex:1 1 auto; min-height:0;
+      /* Ruimte boven de kaart, anders komt de gele rand van het gele kader
+         (#illustratie-kaart hieronder) te dicht bij/door het onderschrift
+         erboven heen te staan. Zelfde afstand als margin-bottom eronder,
+         voor een symmetrisch beeld. */
+      margin-top:clamp(10px, 2.2vmin, 22px);
       /* Extra ruimte onder de kaart, anders staat "Verander van speler"
          er bijna doorheen. */
       margin-bottom:clamp(10px, 2.2vmin, 22px);
@@ -148,9 +153,14 @@
       color:#6b4a20; text-align:center; line-height:1.25;
     }
     .opties-actie-knop {
-      /* Bewust géén width:auto meer - beide knoppen erven zo de
-         width:100% van .startscherm-knop en worden dus even breed,
-         ongeacht dat "Verander van speler" meer tekst heeft dan "Geluid". */
+      /* Bewust géén width:100% (van .startscherm-knop) meer: dat maakte de
+         knoppen zo breed als het hele beige middenvlak, veel breder dan het
+         gele kader van de landenillustratie erboven. Nu dezelfde breedte
+         als dat kader (#illustratie-kaart hierboven), zodat alles er even
+         breed uitziet - en de twee knoppen blijven ook zo weer precies even
+         breed aan elkaar, ongeacht dat "Verander van speler" meer tekst
+         heeft dan "Geluid". */
+      width:min(58%, 440px);
       justify-content:center;
       padding:0.75em 2.6em; font-size:0.95rem;
       background:rgba(74,46,16,0.38); border:2px solid rgba(74,46,16,0.7);
@@ -1413,7 +1423,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.29</div>
+  <div id="versie-label">v0.6.30</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
