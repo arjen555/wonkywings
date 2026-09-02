@@ -1423,7 +1423,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.30</div>
+  <div id="versie-label">v0.6.31</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -8150,6 +8150,7 @@ let vlagBezig=false;
 function dropVlag(sx,sy,ex,ey){
   const sG=80,eG=32,duur=1400,t0=performance.now();
   vlagValt.style.display='block'; vlagGrond.style.display='none'; vlagBezig=true;
+  speelGeluid('vlaggetjeValt');
   function stap(nu){
     const t=Math.min(1,(nu-t0)/duur),e=t*t;
     const g=sG-(sG-eG)*e, x=sx+(ex-sx)*e, y=sy+(ey-sy)*e+e*30;
@@ -8159,7 +8160,6 @@ function dropVlag(sx,sy,ex,ey){
     else{
       vlagValt.style.display='none'; vlagGrond.style.display='block';
       vlagGrond.style.width='36px'; vlagGrond.style.left=(ex-18)+'px'; vlagGrond.style.top=(ey-32)+'px';
-      speelGeluid('vlaggetjeValt');
       vlagBezig=false;
     }
   }
