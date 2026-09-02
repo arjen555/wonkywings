@@ -144,14 +144,31 @@
       font-size:clamp(0.6rem, 1.5vmin, 0.85rem);
       color:#6b4a20; text-align:center; line-height:1.25;
     }
-    #verander-speler-knop {
-      margin-top:auto; justify-content:center;
-      width:auto; padding:0.55em 2.4em;
+    .opties-actie-knop {
+      justify-content:center;
+      width:auto; padding:0.75em 2.6em; font-size:0.95rem;
       background:rgba(74,46,16,0.38); border:2px solid rgba(74,46,16,0.7);
       color:#fff3d6; text-shadow:0 1px 3px rgba(0,0,0,0.4);
       box-shadow:0 2px 6px rgba(0,0,0,0.3);
     }
-    #verander-speler-knop:hover { background:rgba(74,46,16,0.55); }
+    .opties-actie-knop:hover { background:rgba(74,46,16,0.55); }
+    #verander-speler-knop { margin-top:auto; }
+    #geluid-knop { margin-top:10px; }
+    /* ── Geluid aan/uit: eigen schakelaartje i.p.v. een systeem-checkbox,
+       past beter bij de rest van de stijl - een pil met een bolletje dat
+       links/rechts schuift, goud als 'aan'. ── */
+    .schakelaar {
+      position:relative; width:44px; height:24px; border-radius:14px;
+      background:rgba(0,0,0,0.35); border:1.5px solid rgba(255,255,255,0.3);
+      flex:0 0 auto; transition:background 0.2s, border-color 0.2s;
+    }
+    .schakelaar-bol {
+      position:absolute; top:2px; left:2px; width:17px; height:17px; border-radius:50%;
+      background:#fff3d6; box-shadow:0 1px 3px rgba(0,0,0,0.4);
+      transition:left 0.2s ease;
+    }
+    #geluid-schakelaar.aan { background:rgba(255,215,0,0.55); border-color:rgba(255,215,0,0.8); }
+    #geluid-schakelaar.aan .schakelaar-bol { left:23px; }
 
     /* ── Startscherm-achtergrond dimmen zolang de opties-overlay open is -
        zelfde vervaagformule als bij een nog niet vrijgespeeld personage
@@ -1390,7 +1407,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.25</div>
+  <div id="versie-label">v0.6.26</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1441,8 +1458,12 @@
         </button>
         <button id="illustratie-pijl-verder" class="figuur-pijl-knop" onclick="bladeerIllustratieStand(1)" aria-label="Volgende stand"><img src="images/paspoort-verder.png" alt="Volgende stand"/></button>
       </div>
-      <button id="verander-speler-knop" class="startscherm-knop opties-sub-knop" onclick="opentNaamOverlayVanuitOpties()">
+      <button id="verander-speler-knop" class="startscherm-knop opties-actie-knop" onclick="opentNaamOverlayVanuitOpties()">
         Verander van speler
+      </button>
+      <button id="geluid-knop" class="startscherm-knop opties-actie-knop" onclick="zetGeluidAan(!geluidAan)">
+        <span>Geluid</span>
+        <span id="geluid-schakelaar" class="schakelaar"><span class="schakelaar-bol"></span></span>
       </button>
       </div>
     </div>
@@ -2805,7 +2826,7 @@ function zetMenuUitgeklapt(open){
   toonFiguurKiezer(open);
 }
 // Testaccounts: scores worden gewoon opgeslagen maar nooit getoond.
-const TEST_NAMEN = ['test1','test2'];
+const TEST_NAMEN = ['test','test1','test2'];
 function isTestNaam(n){ return TEST_NAMEN.includes((n||'').toLowerCase().trim()); }
 
 function bouwStartscherm() {
@@ -4342,6 +4363,13 @@ function laadRookAfbeeldingen(fig){
 // continent) - simpel te tellen en werkt voor elke speelmodus die stempels
 // oplevert (Europa/Wereld, Hoofdsteden, Plekken, Raad je plaatje).
 function totaalAantalStempels(){
+  // Testaccount 'test1': altijd alles vrijgespeeld (personages, emblemen,
+  // alles wat op het aantal stempels afgaat) - handig om zonder urenlang
+  // spelen het eindstadium van het spel te kunnen testen. 'test'/'test2'
+  // (zie TEST_NAMEN) blijven gewoon normaal opbouwen, voor het testen van
+  // de gewone voortgang.
+  const naam = (localStorage.getItem(SPELERNAAM_SLEUTEL)||'').toLowerCase().trim();
+  if(naam === 'test1') return PASPOORT_LANDEN.length;
   return geefVerdiendeStempels().length;
 }
 function isVliegfiguurVrijgespeeld(fig){
@@ -4480,6 +4508,146 @@ function initialiseerVliegfiguurVoorSpeler(){
 // VLIEGFIGUREN-lijst hierboven staan, anders bestaat die lijst nog niet op
 // het moment dat deze regel uitgevoerd wordt.
 initialiseerVliegfiguurVoorSpeler();
+
+// ── Geluidseffecten ──────────────────────────────────────────────────────
+// Alle geluidsbestanden staan in de map 'geluid/', naast index.html. Motor-
+// en draaigeluid bestaan per personage - nu alleen voor Wonky (timbo) en
+// jet (meisje); andere personages hebben nog geen eigen geluid en blijven
+// tot die tijd gewoon stil (actievePersonagePrefix() geeft dan null).
+// GELUID_AAN_SLEUTEL is een instelling voor het hele apparaat (net als de
+// illustratie-stand hierboven), niet per speler.
+const GELUID_MAP = 'geluid/';
+const GELUID_PERSONAGE_PREFIX = { timbo:'wonky', meisje:'jet' };
+const GELUID_AAN_SLEUTEL = 'wonkywings_geluid_aan';
+let geluidAan = localStorage.getItem(GELUID_AAN_SLEUTEL) !== 'uit';
+
+function nieuwGeluid(bestand, loop){
+  const a = new Audio(GELUID_MAP + bestand);
+  a.loop = !!loop;
+  a.preload = 'auto';
+  return a;
+}
+
+// Eenmalige (niet-lussende) geluidjes: bij het afspelen een kopie gebruiken
+// (cloneNode) zodat twee snel na elkaar (bijv. twee muntjes) elkaar niet
+// afbreken - allebei klinken ze gewoon uit.
+const GELUID_EENMALIG = {
+  joker:          nieuwGeluid('joker.mp3'),
+  munt:           nieuwGeluid('munt.mp3'),
+  munt2:          nieuwGeluid('munt2.mp3'),
+  richtingpijl:   nieuwGeluid('richtingpijl.mp3'),
+  vlaggetjeValt:  nieuwGeluid('vlaggetje_valt.mp3'),
+  wonkyDraai:     nieuwGeluid('wonky_draaigeluid.mp3'),
+  jetDraai:       nieuwGeluid('jet_draaigeluid.mp3'),
+};
+function speelGeluid(naam){
+  if(!geluidAan) return;
+  const basis = GELUID_EENMALIG[naam];
+  if(!basis) return;
+  const kopie = basis.cloneNode();
+  kopie.play().catch(()=>{}); // negeer een geweigerde autoplay (bijv. vóór de eerste klik)
+}
+
+// Lussende geluiden (motor/turbo per personage, wind): altijd hetzelfde
+// audio-element pauzeren/hervatten, nooit een nieuw exemplaar - anders
+// stapelen meerdere kopieën van dezelfde lus zich op.
+const GELUID_LUS = {
+  wonkyMotor:  nieuwGeluid('wonky_motorgeluid.mp3', true),
+  wonkyTurbo:  nieuwGeluid('wonky_turbogeluid.mp3', true),
+  jetMotor:    nieuwGeluid('jet_motorgeluid.mp3', true),
+  jetTurbo:    nieuwGeluid('jet_turbogeluid.mp3', true),
+  wind:        nieuwGeluid('wind.mp3', true),
+};
+function startLus(naam){
+  const a = GELUID_LUS[naam];
+  if(!a || !geluidAan) return;
+  if(a.paused) a.play().catch(()=>{});
+}
+function stopLus(naam){
+  const a = GELUID_LUS[naam];
+  if(!a) return;
+  a.pause();
+  a.currentTime = 0;
+  a.volume = 1;
+}
+// Zachte fade-out (voor het windgeluid, zodra de correctie-vlucht stopt) -
+// klinkt prettiger dan abrupt stilvallen. Werkt ook als de lus toch al uit
+// stond (dan gebeurt er gewoon niets merkbaars).
+function stopLusMetFade(naam, duurMs){
+  const a = GELUID_LUS[naam];
+  if(!a) return;
+  if(a.paused){ a.currentTime = 0; a.volume = 1; return; }
+  const stapTijd = 30, stappen = Math.max(1, Math.round(duurMs/stapTijd));
+  const startVolume = a.volume;
+  let stap = 0;
+  const timer = setInterval(()=>{
+    stap++;
+    a.volume = Math.max(0, startVolume * (1 - stap/stappen));
+    if(stap >= stappen){
+      clearInterval(timer);
+      a.pause(); a.currentTime = 0; a.volume = 1;
+    }
+  }, stapTijd);
+}
+
+// Motor+turbo van het actieve personage.
+function actievePersonagePrefix(){
+  return GELUID_PERSONAGE_PREFIX[geefActiefVliegfiguurId()] || null;
+}
+function startMotorGeluid(){
+  const p = actievePersonagePrefix();
+  if(p) startLus(p+'Motor');
+}
+function stopMotorGeluid(){
+  stopLus('wonkyMotor'); stopLus('jetMotor');
+}
+let turboGeluidVorigeFrame = false;
+function updateTurboGeluid(turboActief){
+  if(turboActief === turboGeluidVorigeFrame) return;
+  turboGeluidVorigeFrame = turboActief;
+  const p = actievePersonagePrefix();
+  if(!p) return;
+  if(turboActief) startLus(p+'Turbo'); else stopLus(p+'Turbo');
+}
+function stopTurboGeluid(){
+  stopLus('wonkyTurbo'); stopLus('jetTurbo');
+  turboGeluidVorigeFrame = false;
+}
+function speelDraaiGeluid(){
+  const p = actievePersonagePrefix();
+  if(p === 'wonky') speelGeluid('wonkyDraai');
+  else if(p === 'jet') speelGeluid('jetDraai');
+}
+function startWindGeluid(){ startLus('wind'); }
+function stopWindGeluid(){ stopLusMetFade('wind', 250); }
+
+// Aan/uit-schakelaar (opties-scherm) - zet meteen alle lopende lussen stil
+// of weer aan, en onthoudt de keuze voor dit apparaat.
+function zetGeluidAan(aan){
+  geluidAan = aan;
+  localStorage.setItem(GELUID_AAN_SLEUTEL, aan ? 'aan' : 'uit');
+  if(!aan){
+    for(const naam in GELUID_LUS) stopLus(naam);
+  } else if(spelActief){
+    // Alleen de lussen die op dit moment eigenlijk aan zouden moeten staan
+    // weer starten - niet zomaar alles, anders klinkt bijvoorbeeld het
+    // windgeluid ineens ook buiten een correctie-vlucht.
+    startMotorGeluid();
+    if(turboGeluidVorigeFrame){ turboGeluidVorigeFrame=false; updateTurboGeluid(true); }
+    if(vluchtActief) startWindGeluid();
+  }
+  const schakelaar = document.getElementById('geluid-schakelaar');
+  if(schakelaar) schakelaar.classList.toggle('aan', aan);
+}
+// Schakelaartje bij het laden meteen in de juiste stand zetten (de knop
+// staat al in de HTML boven dit scriptblok, dus dit mag direct - zie ook
+// de toelichting bij de andere document.getElementById(...)-aanroepen
+// elders in dit bestand, die om dezelfde reden geen DOMContentLoaded nodig
+// hebben).
+{
+  const geluidSchakelaarInit = document.getElementById('geluid-schakelaar');
+  if(geluidSchakelaarInit) geluidSchakelaarInit.classList.toggle('aan', geluidAan);
+}
 
 // ── Topografie Master diploma ── Los van de korte embleem-melding
 // hierboven (die vaak al middenin het spel verschijnt, zodra het laatste
@@ -4975,6 +5143,7 @@ function startSpel(levelId, modus) {
   document.getElementById('schurk-vliegtuig').style.display = 'none';
   planSchurkenRonde(modus==='spelen' && !isHoofdsteden && !isPlekken);
   spelActief=true;
+  startMotorGeluid();
   W=window.innerWidth; H=window.innerHeight;
   canvas.width=W; canvas.height=H;
   // Eerste muntje-check pas ná spelActief=true, anders is de bol nog niet zichtbaar
@@ -4990,6 +5159,7 @@ function startSpel(levelId, modus) {
 
 function naarStart(){
   spelActief=false;
+  stopMotorGeluid(); stopTurboGeluid(); stopWindGeluid();
   tipActief = false;
   document.getElementById('bediening-spiek-knop').classList.remove('knop-tip-attentie');
   document.querySelectorAll('.richting-knop').forEach(el=>el.classList.remove('knop-tip-attentie'));
@@ -5400,6 +5570,7 @@ function gebruikJoker(){
   if(vluchtActief) return;               // vliegtuigje is al onderweg: niet onderbreken
   if(wachten && !correctieLand) return;  // vlaggetje valt nog, uitslag nog niet bekend
 
+  speelGeluid('joker');
   jokerBeschikbaar=false;
 
   if(correctieLand){
@@ -5465,6 +5636,7 @@ function gebruikRichtingwijzer(i){
   schietRichtingpijl(berekenMiddelpunt(doelLand));
 }
 function schietRichtingpijl(doelPunt){
+  speelGeluid('richtingpijl');
   const toRad=Math.PI/180, toDeg=180/Math.PI;
 
   // Start bij het vliegtuigje zelf (exact dezelfde formule als waar Wonky
@@ -7961,6 +8133,7 @@ function dropVlag(sx,sy,ex,ey){
     else{
       vlagValt.style.display='none'; vlagGrond.style.display='block';
       vlagGrond.style.width='36px'; vlagGrond.style.left=(ex-18)+'px'; vlagGrond.style.top=(ey-32)+'px';
+      speelGeluid('vlaggetjeValt');
       vlagBezig=false;
     }
   }
@@ -8458,9 +8631,11 @@ function checkMuntjeVangst(wx, wy){
 const MUNTJE_GEWOON_BEDRAGEN = [50, 100, 200];
 function verwerkMuntje(m, sx, sy){
   if(m.type === 'gewoon'){
+    speelGeluid('munt');
     const bedrag = MUNTJE_GEWOON_BEDRAGEN[Math.floor(Math.random()*MUNTJE_GEWOON_BEDRAGEN.length)];
     toonMuntjeBeloning(bedrag, sx, sy);
   } else {
+    speelGeluid('munt2');
     toonKennisvraag();
   }
 }
@@ -9292,6 +9467,7 @@ function updateSpel(){
 
   // Besturing
   const turbo = keys['Shift'] || touchTurboActief || gamepadTurboActief;
+  updateTurboGeluid(turbo);
   const s=(turbo?1.8:0.7)/zoomFactor;
   let dx=0,dy=0;
 
@@ -9332,6 +9508,7 @@ function updateSpel(){
 
     if(tRuw>=1){
       vluchtActief=false;
+      stopWindGeluid();
       if(vluchtIsHoofdstad){
         vluchtIsHoofdstad=false;
         // correctieLand/-StartTijd staan al vanaf het vertrek van de vlucht
@@ -9396,6 +9573,7 @@ function updateSpel(){
   // "omkeren" gezien worden.
   if(dx !== 0 && laatsteDx !== 0 && Math.sign(dx) !== Math.sign(laatsteDx) && !inOmbocht){
     inOmbocht = true;
+    speelDraaiGeluid();
     ombochtTimer = performance.now();
   }
   if(dx !== 0) laatsteDx = dx;
@@ -9823,6 +10001,7 @@ function dropVlaggetje(){
       zetZoomIndicator(zoomNiveau);
       setTimeout(()=>{
         vluchtActief=true;
+        startWindGeluid();
         vluchtIsHoofdstad=false;
         vluchtIsPlek=true;
         vluchtStartTijd=performance.now();
@@ -9859,6 +10038,7 @@ function dropVlaggetje(){
       zetZoomIndicator(zoomNiveau);
       setTimeout(()=>{
         vluchtActief=true;
+        startWindGeluid();
         vluchtIsHoofdstad=true;
         vluchtIsGoed=isGoed;
         vluchtHoofdstadNaam = cap ? cap.naam : huidigLand;
@@ -9903,6 +10083,7 @@ function dropVlaggetje(){
       zetZoomIndicator(zoomNiveau);
       setTimeout(()=>{
         vluchtActief=true;
+        startWindGeluid();
         vluchtIsHoofdstad=false;
         vluchtStartTijd=performance.now();
         vluchtDuur=Math.max(900, Math.min(3600, afwijkingKm*2.4)); // hoe verder ernaast, hoe langer de vlucht
