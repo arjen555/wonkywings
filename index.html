@@ -1413,7 +1413,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.27</div>
+  <div id="versie-label">v0.6.28</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -4563,7 +4563,14 @@ const GELUID_LUS = {
   jetMotor:    nieuwGeluid('jet_motorgeluid.mp3', true),
   jetTurbo:    nieuwGeluid('jet_turbogeluid.mp3', true),
   wind:        nieuwGeluid('wind.mp3', true),
+  schurk:      nieuwGeluid('schurk_geluid.mp3', true),
+  schurkRat:   nieuwGeluid('schurk_rat_geluid.mp3', true),
 };
+// Schurken-vliegtuig: de lach-lus en de los ernaast lopende rat-lus samen
+// starten/stoppen - ze spelen gelijktijdig, niet na elkaar (zie toelichting
+// bij startSchurkVliegtuig()/de opruimpunten hieronder).
+function startSchurkGeluid(){ startLus('schurk'); startLus('schurkRat'); }
+function stopSchurkGeluid(){ stopLusMetFade('schurk', 250); stopLusMetFade('schurkRat', 250); }
 function startLus(naam){
   const a = GELUID_LUS[naam];
   if(!a || !geluidAan) return;
@@ -4641,6 +4648,7 @@ function zetGeluidAan(aan){
     startMotorGeluid();
     if(turboGeluidVorigeFrame){ turboGeluidVorigeFrame=false; updateTurboGeluid(true); }
     if(vluchtActief) startWindGeluid();
+    if(schurkVliegtuig) startSchurkGeluid();
   }
   const schakelaar = document.getElementById('geluid-schakelaar');
   if(schakelaar) schakelaar.classList.toggle('aan', aan);
@@ -5146,6 +5154,7 @@ function startSpel(levelId, modus) {
   // Schurken-pestronde: alleen bij een gewone Landen-ronde (niet bij
   // Hoofdsteden, Plekken of Verkennen - die gebruiken een ander scorebord).
   schurkVliegtuig = null; schurkWolken = [];
+  stopSchurkGeluid();
   document.getElementById('schurk-vliegtuig').style.display = 'none';
   planSchurkenRonde(modus==='spelen' && !isHoofdsteden && !isPlekken);
   spelActief=true;
@@ -8699,6 +8708,7 @@ function startSchurkVliegtuig(){
   const el = document.getElementById('schurk-vliegtuig');
   el.style.transform = schurkVliegtuig.gespiegeld ? 'scaleX(-1)' : 'scaleX(1)';
   el.style.display = 'block';
+  startSchurkGeluid();
 }
 
 // schurkPadPunt(pad, te): geeft de lon/lat op fractie te (0..SCHURK_PAD_EXTRA_T_MAX)
@@ -8787,6 +8797,7 @@ function updateSchurkVliegtuig(){
     if(buitenBeeld || tUitvlieg >= SCHURK_UITVLIEG_MS){
       el.style.display = 'none';
       schurkVliegtuig = null;
+      stopSchurkGeluid();
     } else {
       // Kan uit een vorig frame nog op 'none' staan (zie de fase hiervoor,
       // als het vliegtuigje toen tijdelijk aan de onzichtbare kant zat) -
