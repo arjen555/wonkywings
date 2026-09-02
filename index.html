@@ -1413,7 +1413,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.28</div>
+  <div id="versie-label">v0.6.29</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -4545,6 +4545,7 @@ const GELUID_EENMALIG = {
   vlaggetjeValt:  nieuwGeluid('vlaggetje_valt.mp3'),
   wonkyDraai:     nieuwGeluid('wonky_draaigeluid.mp3'),
   jetDraai:       nieuwGeluid('jet_draaigeluid.mp3'),
+  bliksem:        nieuwGeluid('bliksem.mp3'),
 };
 function speelGeluid(naam){
   if(!geluidAan) return;
@@ -8957,6 +8958,7 @@ function checkSchurkWolkTreffer(wx, wy){
 function verwerkSchurkWolkTreffer(w, sx, sy){
   w.geraakt = true;
   w.geraaktTijd = performance.now();
+  speelGeluid('bliksem');
   const bedrag = w.type === '100' ? 100 : 200;
   vliegBeloningNaarDoel('+'+bedrag+' km', sx, sy, document.getElementById('scorebord-wrap'), ()=>{
     score += bedrag;
