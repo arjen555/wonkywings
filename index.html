@@ -1423,7 +1423,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.31</div>
+  <div id="versie-label">v0.6.32</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -4557,11 +4557,66 @@ const GELUID_EENMALIG = {
   jetDraai:       nieuwGeluid('jet_draaigeluid.mp3'),
   bliksem:        nieuwGeluid('bliksem.mp3'),
 };
+// Eén gedeelde Web Audio-context, lazy aangemaakt bij het eerste gebruik
+// (een AudioContext mag pas écht starten na een gebruikersactie - vóór die
+// tijd staat hij "suspended", vandaar de resume-poging in warmGeluidOp()).
+// Alleen nodig voor geluidjes die harder moeten dan hun eigen bronbestand
+// (zie GELUID_BOOST) - de rest speelt gewoon rechtstreeks af, zoals altijd.
+let geluidContext = null;
+function geefGeluidContext(){
+  if(!geluidContext){
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if(AC){ try{ geluidContext = new AC(); }catch(e){ geluidContext = null; } }
+  }
+  return geluidContext;
+}
+// Volumeboost per eenmalig geluidje - 1 (of ontbrekend) = gewoon het bronvolume,
+// hoger = luider dan het mp3-bestand zelf is gemixt. Nu alleen voor munt2 (het
+// geluidje bij het bijzondere muntje/kennisvraag), op verzoek van Arjen: dat
+// mocht net iets harder klinken. Voorzichtig omhoog te schroeven als het nog
+// niet genoeg is - te ver doordraaien geeft vervorming.
+const GELUID_BOOST = { munt2: 1.4 };
+
+// Eenmalige "opwarm"-truc tegen het wat late opstarten van een geluidje bij
+// de allereerste keer dat het speelt: de browser moet dan nog zijn hele
+// audio-pijplijn optuigen, en dat kost een fractie van een seconde. Door elk
+// eenmalig geluidje één keer stil (volume 0) af te spelen en meteen te
+// pauzeren zodra het spel écht gestart is (dus ná een gebruikersklik - eerder
+// weigert de browser het toch), is die opstartklap al gehad tegen de tijd dat
+// bijvoorbeeld het bijzondere muntje daadwerkelijk gevangen wordt.
+let geluidOpgewarmd = false;
+function warmGeluidOp(){
+  if(geluidOpgewarmd) return;
+  geluidOpgewarmd = true;
+  const ctx = geefGeluidContext();
+  if(ctx && ctx.state === 'suspended') ctx.resume().catch(()=>{});
+  for(const naam in GELUID_EENMALIG){
+    const a = GELUID_EENMALIG[naam];
+    const oudVolume = a.volume;
+    a.volume = 0;
+    a.play().then(()=>{
+      a.pause(); a.currentTime = 0; a.volume = oudVolume;
+    }).catch(()=>{ a.volume = oudVolume; });
+  }
+}
+
 function speelGeluid(naam){
   if(!geluidAan) return;
   const basis = GELUID_EENMALIG[naam];
   if(!basis) return;
   const kopie = basis.cloneNode();
+  const boost = GELUID_BOOST[naam];
+  if(boost && boost !== 1){
+    const ctx = geefGeluidContext();
+    if(ctx){
+      try{
+        const bron = ctx.createMediaElementSource(kopie);
+        const gain = ctx.createGain();
+        gain.gain.value = boost;
+        bron.connect(gain).connect(ctx.destination);
+      }catch(e){ /* boosten lukte niet (bijv. oude browser) - gewoon normaal afspelen */ }
+    }
+  }
   kopie.play().catch(()=>{}); // negeer een geweigerde autoplay (bijv. vóór de eerste klik)
 }
 
@@ -5170,6 +5225,7 @@ function startSpel(levelId, modus) {
   planSchurkenRonde(modus==='spelen' && !isHoofdsteden && !isPlekken);
   spelActief=true;
   startMotorGeluid();
+  warmGeluidOp();
   W=window.innerWidth; H=window.innerHeight;
   canvas.width=W; canvas.height=H;
   // Eerste muntje-check pas ná spelActief=true, anders is de bol nog niet zichtbaar
@@ -5725,6 +5781,12 @@ function nieuwLand(){
     wachten=false; // level is klaar: dit was de laatste return in de functie, dus
                     // zonder deze regel bleef 'wachten' hier op true staan
     laatsteLevelTijd = levelStartTijd ? Math.round((performance.now()-levelStartTijd)/1000) : 0;
+    // Het spel is klaar en er verschijnt zo een evaluatiescherm (scorebord,
+    // hoofdsteden-resultaat of plekken-eindoverzicht): het motor/turbo/wind-
+    // geluid hoorde tot nu toe pas te stoppen bij "terug naar start"
+    // (naarStart()), en bleef dus de hele tijd dat het evaluatiescherm in
+    // beeld stond onterecht doorlopen. Hier alvast stoppen, net als naarStart().
+    stopMotorGeluid(); stopTurboGeluid(); stopWindGeluid();
     if(LEVELS[huidigLevel] && LEVELS[huidigLevel].hoofdsteden){
       // Hoofdsteden-modus: geen km-highscore, gewoon een rustig goed/totaal-scherm
       toonHoofdstedenResultaat(hoofdstedenGoed, hoofdstedenTotaal);
