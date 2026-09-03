@@ -1423,7 +1423,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.32</div>
+  <div id="versie-label">v0.6.33</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -3419,6 +3419,11 @@ let schurkGeplandLandIdx = null; // welk land-nummer (0-indexed) deze ronde de p
 let schurkGespawnd = false;
 let schurkVliegtuig = null;      // actieve toestand {hoek, spawnTijd, wolkenGeschoten, gespiegeld}, of null
 let schurkWolken = [];           // actief afgeschoten wolkjes
+// Was er een schurken-vliegtuig actief toen de speler (via het bijzondere
+// muntje) in de kennisvraag/rad-van-fortuin-popup belandde? Dan staat hier
+// het performance.now()-tijdstip waarop dat pauzeren begon, anders 0. Zie
+// pauzeerSchurkVoorPopup()/hervatSchurkNaPopup() verderop.
+let schurkPauzeSindsTijd = 0;
 let schurkVliegtuigImg = null;
 let schurkWolk100Img = null, schurkWolk200Img = null;
 let schurkBliksem100Img = null, schurkBliksem200Img = null;
@@ -4174,11 +4179,11 @@ function stempelMeldingTekstVoorRonde(gekozenLanden){
     return 'Goed gedaan! Als prijs krijg je een landenstempel voor '+gekozenLanden[0].naam+' - kijk maar in je paspoort!';
   }
   if(gekozenLanden.length === 2){
-    return 'Wat een score!\nJe wint zelfs 2 landenstempels voor '+gekozenLanden[0].naam+' en '+gekozenLanden[1].naam+'!';
+    return 'Je wint zelfs 2 landenstempels voor '+gekozenLanden[0].naam+' en '+gekozenLanden[1].naam+'!';
   }
   const namen = gekozenLanden.map(l=>l.naam);
   const laatste = namen.pop();
-  return 'Wat een score!\nJe wint maar liefst '+gekozenLanden.length+' landenstempels: '+namen.join(', ')+' en '+laatste+'!';
+  return 'Je wint maar liefst '+gekozenLanden.length+' landenstempels: '+namen.join(', ')+' en '+laatste+'!';
 }
 
 // ── Landenpaspoort: werelddeel-emblemen ────────────────────────────────
@@ -4637,6 +4642,36 @@ const GELUID_LUS = {
 // bij startSchurkVliegtuig()/de opruimpunten hieronder).
 function startSchurkGeluid(){ startLus('schurk'); startLus('schurkRat'); }
 function stopSchurkGeluid(){ stopLusMetFade('schurk', 250); stopLusMetFade('schurkRat', 250); }
+
+// Pauzeert een actief schurken-vliegtuig zodra de speler (via het bijzondere
+// muntje) in de kennisvraag- of rad-van-fortuin-popup belandt: het geluid
+// stopt meteen, en de klok (schurkVliegtuig.spawnTijd) staat al "bevroren"
+// zolang kennisvraagActief/radActief aan staat - zie de guard bovenaan
+// updateSpel(), die updateSchurkVliegtuig() dan niet meer aanroept. Zonder
+// deze functie bleef het geluid dus gewoon doorlopen terwijl de schurk zelf
+// niet meer bewoog. Doet niets als er op dit moment geen schurk actief is.
+function pauzeerSchurkVoorPopup(){
+  if(!schurkVliegtuig || schurkPauzeSindsTijd) return;
+  schurkPauzeSindsTijd = performance.now();
+  stopSchurkGeluid();
+}
+// Hervat een gepauzeerd schurken-vliegtuig zodra de speler terug is in het
+// spel (kennisvraag fout beantwoord, of het rad is dichtgeklikt): de
+// spawnTijd schuift precies de gepauzeerde duur op, zodat de schurk verder
+// gaat waar hij gebleven was in plaats van in één klap te "verdwijnen" (wat
+// er zonder deze verschuiving gebeurde: zijn klok liep in het echt gewoon
+// door, dus was zijn geplande vluchttijd allang verstreken tegen de tijd dat
+// de popup dichtging). Geluid gaat weer aan, tenzij de schurk inmiddels toch
+// al weg is.
+function hervatSchurkNaPopup(){
+  if(!schurkPauzeSindsTijd) return;
+  const gepauzeerdeDuur = performance.now() - schurkPauzeSindsTijd;
+  schurkPauzeSindsTijd = 0;
+  if(schurkVliegtuig){
+    schurkVliegtuig.spawnTijd += gepauzeerdeDuur;
+    startSchurkGeluid();
+  }
+}
 function startLus(naam){
   const a = GELUID_LUS[naam];
   if(!a || !geluidAan) return;
@@ -9102,6 +9137,7 @@ function toonKennisvraag(){
 
   kennisvraagActief = true;
   kennisvraagOpenTijd = performance.now();
+  pauzeerSchurkVoorPopup();
   kennisvraagWachtOpDoorgaan = false;
   kennisvraagFocusIdx = 0;
   kennisvraagFocusZichtbaar = false;
@@ -9166,6 +9202,11 @@ function kennisvraagDoorgaan(){
   huidigeKennisvraag = null;
   if(wasGoed){
     toonRad();
+  } else {
+    // Bij een fout antwoord komt er geen rad - dus hier meteen de eventueel
+    // gepauzeerde schurk weer hervatten (bij een goed antwoord gebeurt dat
+    // pas in sluitRad(), zodra de speler ook daadwerkelijk klaar is).
+    hervatSchurkNaPopup();
   }
 }
 
@@ -9411,6 +9452,9 @@ function sluitRad(){
   radActief = false;
   radKlaarVoorDoorgaan = false;
   radUitkomstSegment = null;
+  // Speler is nu echt terug in het spel: een eventueel gepauzeerde schurk
+  // (zie pauzeerSchurkVoorPopup() in toonKennisvraag()) mag weer verder.
+  hervatSchurkNaPopup();
 }
 
 // vliegBeloningNaarDoel(): generieke vlucht-animatie - een tekst vliegt vanaf
