@@ -1423,7 +1423,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.37</div>
+  <div id="versie-label">v0.6.38</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1785,7 +1785,7 @@
     <div id="werelddeel-badge">
       <div id="werelddeel-wrap">
         <img id="werelddeel-img" src="images/werelddeel.png" alt=""/>
-        <button id="menu-knop-onzichtbaar" onclick="naarStart()" aria-label="Menu" style="left:7.32%;top:44.09%;width:13.57%;height:22.31%;"></button>
+        <button id="menu-knop-onzichtbaar" onclick="speelGeluid('bliksemknop');naarStart()" aria-label="Menu" style="left:7.32%;top:44.09%;width:13.57%;height:22.31%;"></button>
         <span class="badge-tekst" id="werelddeel-tekst" style="left:38.04%;top:64.25%;max-width:31.74%;"></span>
         <span class="badge-tekst" id="speler-tekst" style="left:66.46%;top:64.25%;max-width:25.10%;"></span>
       </div>
@@ -2865,7 +2865,7 @@ function bouwStartscherm() {
         <span class="menu-groep-label">${groep.label}</span>
         <span class="menu-groep-pijl">▶</span>
       </div>`;
-      plekEl.querySelector('.menu-groep-kop').onclick = () => { startSpel(lv.id,'spelen'); };
+      plekEl.querySelector('.menu-groep-kop').onclick = () => { speelGeluid('hoofdmenuknopOpen'); startSpel(lv.id,'spelen'); };
       lijst.appendChild(plekEl);
       continue;
     }
@@ -2879,6 +2879,7 @@ function bouwStartscherm() {
     kop.innerHTML = `<span class="menu-groep-icoon">${groep.icoon}</span><span class="menu-groep-label">${groep.label}</span><span class="menu-groep-pijl">▶</span>`;
     kop.onclick = () => {
       const gaatOpen = !kop.classList.contains('open');
+      speelGeluid(gaatOpen ? 'hoofdmenuknopOpen' : 'hoofdmenuknopDicht');
       // Accordion: sluit alle andere open balken zodra er een nieuwe opengaat
       if(gaatOpen){
         document.querySelectorAll('.menu-groep-kop.open').forEach(andereKop=>{
@@ -2908,9 +2909,9 @@ function bouwStartscherm() {
         rij.innerHTML = `
           <span class="menu-sub-naam">${lv.naam}</span>
           <span class="menu-sub-btns">
-            <button class="btn-speel"    onclick="startSpel('${lv.id}','spelen')">▶ Spelen</button>
-            <button class="btn-verken"  onclick="startSpel('${lv.id}','verkennen')">🔍 Verkennen</button>
-            ${lv.geenScorebord ? '' : `<button class="btn-scores"  onclick="bekijkScorebordVanuitMenu('${lv.id}')">🏆</button>`}
+            <button class="btn-speel"    onclick="speelGeluid('landenmenuknop');startSpel('${lv.id}','spelen')">▶ Spelen</button>
+            <button class="btn-verken"  onclick="speelGeluid('landenmenuknop');startSpel('${lv.id}','verkennen')">🔍 Verkennen</button>
+            ${lv.geenScorebord ? '' : `<button class="btn-scores"  onclick="speelGeluid('landenmenuknop');bekijkScorebordVanuitMenu('${lv.id}')">🏆</button>`}
           </span>`;
       }
       subLijst.appendChild(rij);
@@ -2930,7 +2931,7 @@ function bouwStartscherm() {
     <span class="menu-groep-label">Raad je plaatje</span>
     <span class="menu-groep-pijl">↗</span>
   </div>`;
-  raadspelEl.querySelector('.menu-groep-kop').onclick = () => { window.location.href = 'raadspel.html'; };
+  raadspelEl.querySelector('.menu-groep-kop').onclick = () => { speelGeluid('hoofdmenuknopOpen'); window.location.href = 'raadspel.html'; };
   lijst.appendChild(raadspelEl);
 }
 // ── Eilandengroepen: illustratie blijft staan zolang Wonky binnen het hele
@@ -4574,6 +4575,13 @@ const GELUID_EENMALIG = {
   tijderaf:       nieuwGeluid('tijderaf.mp3'),
   // Klinkt zodra het rad van fortuin begint te draaien - zie startRadDraaien().
   radvanfortuin:  nieuwGeluid('radvanfortuin.mp3'),
+  // Knopgeluiden voor het startmenu. hoofdmenuknopOpen/-Dicht zijn twee
+  // varianten van hetzelfde "klak-klik"-geluidje met omgewisselde volgorde
+  // (Klik-Klak i.p.v. Klak-Klik), niet de audio achterstevoren afgespeeld.
+  bliksemknop:        nieuwGeluid('bliksemknop.mp3'),
+  hoofdmenuknopOpen:  nieuwGeluid('hoofdmenuknop_open.mp3'),
+  hoofdmenuknopDicht: nieuwGeluid('hoofdmenuknop_dicht.mp3'),
+  landenmenuknop:     nieuwGeluid('landenmenuknop.mp3'),
 };
 // Eén gedeelde Web Audio-context, lazy aangemaakt bij het eerste gebruik
 // (een AudioContext mag pas écht starten na een gebruikersactie - vóór die
