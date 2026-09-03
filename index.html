@@ -1423,7 +1423,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.34</div>
+  <div id="versie-label">v0.6.35</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -3424,6 +3424,11 @@ let schurkWolken = [];           // actief afgeschoten wolkjes
 // het performance.now()-tijdstip waarop dat pauzeren begon, anders 0. Zie
 // pauzeerSchurkVoorPopup()/hervatSchurkNaPopup() verderop.
 let schurkPauzeSindsTijd = 0;
+// Zelfde soort pauze, maar dan voor het eigen vliegtuig-motorgeluid (dat
+// anders gewoon bleef doorlopen tijdens de kennisvraag/het rad van fortuin -
+// zie pauzeerMotorVoorPopup()/hervatMotorNaPopup() verderop).
+let motorGepauzeerdVoorPopup = false;
+let motorPauzeWasTurboActief = false;
 let schurkVliegtuigImg = null;
 let schurkWolk100Img = null, schurkWolk200Img = null;
 let schurkBliksem100Img = null, schurkBliksem200Img = null;
@@ -4678,6 +4683,24 @@ function hervatSchurkNaPopup(){
     schurkVliegtuig.spawnTijd += gepauzeerdeDuur;
     startSchurkGeluid();
   }
+}
+
+// Pauzeert het eigen vliegtuig-motor/turbogeluid tijdens de kennisvraag/het
+// rad van fortuin - dat bleef er tot nu toe (net als het schurken-geluid
+// hierboven) gewoon onder doorlopen. Onthoudt of turbo actief was, zodat
+// hervatMotorNaPopup() dat ook weer aanzet.
+function pauzeerMotorVoorPopup(){
+  if(motorGepauzeerdVoorPopup) return;
+  motorGepauzeerdVoorPopup = true;
+  motorPauzeWasTurboActief = turboGeluidVorigeFrame;
+  stopMotorGeluid();
+  stopTurboGeluid();
+}
+function hervatMotorNaPopup(){
+  if(!motorGepauzeerdVoorPopup) return;
+  motorGepauzeerdVoorPopup = false;
+  if(spelActief) startMotorGeluid();
+  if(motorPauzeWasTurboActief) updateTurboGeluid(true);
 }
 function startLus(naam){
   const a = GELUID_LUS[naam];
@@ -9145,6 +9168,7 @@ function toonKennisvraag(){
   kennisvraagActief = true;
   kennisvraagOpenTijd = performance.now();
   pauzeerSchurkVoorPopup();
+  pauzeerMotorVoorPopup();
   kennisvraagWachtOpDoorgaan = false;
   kennisvraagFocusIdx = 0;
   kennisvraagFocusZichtbaar = false;
@@ -9211,9 +9235,11 @@ function kennisvraagDoorgaan(){
     toonRad();
   } else {
     // Bij een fout antwoord komt er geen rad - dus hier meteen de eventueel
-    // gepauzeerde schurk weer hervatten (bij een goed antwoord gebeurt dat
-    // pas in sluitRad(), zodra de speler ook daadwerkelijk klaar is).
+    // gepauzeerde schurk en het motorgeluid weer hervatten (bij een goed
+    // antwoord gebeurt dat pas in sluitRad(), zodra de speler ook
+    // daadwerkelijk klaar is).
     hervatSchurkNaPopup();
+    hervatMotorNaPopup();
   }
 }
 
@@ -9464,9 +9490,11 @@ function sluitRad(){
   radActief = false;
   radKlaarVoorDoorgaan = false;
   radUitkomstSegment = null;
-  // Speler is nu echt terug in het spel: een eventueel gepauzeerde schurk
-  // (zie pauzeerSchurkVoorPopup() in toonKennisvraag()) mag weer verder.
+  // Speler is nu echt terug in het spel: een eventueel gepauzeerde schurk en
+  // het motorgeluid (zie pauzeerSchurkVoorPopup()/pauzeerMotorVoorPopup() in
+  // toonKennisvraag()) mogen weer verder.
   hervatSchurkNaPopup();
+  hervatMotorNaPopup();
 }
 
 // vliegBeloningNaarDoel(): generieke vlucht-animatie - een tekst vliegt vanaf
