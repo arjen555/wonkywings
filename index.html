@@ -1423,7 +1423,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.38</div>
+  <div id="versie-label">v0.6.41</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1709,7 +1709,7 @@
       </div>
     </div>
     <div id="scorebord-stempel" class="stempel-melding"></div>
-    <button id="scorebord-terug-btn" onclick="terugNaarStartMetStempels()"><img src="images/terug-naar-start-knop.png" alt="Terug naar menu"/></button>
+    <button id="scorebord-terug-btn" onclick="speelGeluid('bliksemknop');terugNaarStartMetStempels()"><img src="images/terug-naar-start-knop.png" alt="Terug naar menu"/></button>
     <img id="scorebord-paspoort-icoon" class="eindscherm-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="window.location.href='paspoort.html'"/>
   </div>
 </div>
@@ -1725,7 +1725,7 @@
     <div id="hoofdsteden-resultaat-titel">🏆 Klaar!</div>
     <div id="hoofdsteden-resultaat-score"></div>
     <div id="hoofdsteden-resultaat-stempel" class="stempel-melding"></div>
-    <button id="hoofdsteden-resultaat-terug-btn" onclick="terugNaarStartMetStempels()"><img src="images/terug-naar-start-knop.png" alt="Terug naar menu"/></button>
+    <button id="hoofdsteden-resultaat-terug-btn" onclick="speelGeluid('bliksemknop');terugNaarStartMetStempels()"><img src="images/terug-naar-start-knop.png" alt="Terug naar menu"/></button>
     <img id="hoofdsteden-resultaat-paspoort-icoon" class="eindscherm-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="window.location.href='paspoort.html'"/>
   </div>
 </div>
@@ -1895,7 +1895,7 @@
       <div id="plekken-eind-tabel"></div>
       <div id="plekken-eind-totaal"></div>
       <div id="plekken-eind-stempel" class="stempel-melding"></div>
-      <button id="plekken-eind-verder" onclick="terugNaarStartMetStempels()"><img src="images/terug-naar-start-knop.png" alt="Terug naar het menu"/></button>
+      <button id="plekken-eind-verder" onclick="speelGeluid('bliksemknop');terugNaarStartMetStempels()"><img src="images/terug-naar-start-knop.png" alt="Terug naar het menu"/></button>
       <img id="plekken-eind-paspoort-icoon" class="eindscherm-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="window.location.href='paspoort.html'"/>
     </div>
   </div>
@@ -4166,7 +4166,7 @@ function stempelMeldingTekst(drempelBereikt, gekozenLanden, bijnaTekst){
     return 'Wat een score!\nJe wint zelfs 2 landenstempels voor '+gekozenLanden[0].naam+' en '+gekozenLanden[1].naam+'!';
   }
   if(gekozenLanden.length === 1){
-    return 'Goed gedaan! Als prijs krijg je een landenstempel voor '+gekozenLanden[0].naam+' - kijk maar in je paspoort!';
+    return 'Je krijgt een landenstempel voor '+gekozenLanden[0].naam+' - kijk maar in je paspoort!';
   }
   if(drempelBereikt){
     return 'Je paspoort zit al helemaal vol - knap hoor! 🏆';
@@ -4182,7 +4182,7 @@ function stempelMeldingTekst(drempelBereikt, gekozenLanden, bijnaTekst){
 function stempelMeldingTekstVoorRonde(gekozenLanden){
   if(gekozenLanden.length === 0) return '';
   if(gekozenLanden.length === 1){
-    return 'Goed gedaan! Als prijs krijg je een landenstempel voor '+gekozenLanden[0].naam+' - kijk maar in je paspoort!';
+    return 'Je krijgt een landenstempel voor '+gekozenLanden[0].naam+' - kijk maar in je paspoort!';
   }
   if(gekozenLanden.length === 2){
     return 'Je wint zelfs 2 landenstempels voor '+gekozenLanden[0].naam+' en '+gekozenLanden[1].naam+'!';
@@ -4602,7 +4602,7 @@ function geefGeluidContext(){
 // scorebord raakt) stond juist duidelijk té zacht, dus die krijgt een fikse
 // boost. Voorzichtig verder omhoog te schroeven als het nog niet genoeg is -
 // te ver doordraaien geeft vervorming.
-const GELUID_BOOST = { munt2: 1.4, tijderaf: 2.0 };
+const GELUID_BOOST = { munt2: 1.4, tijderaf: 3.2 };
 
 // Eenmalige "opwarm"-truc tegen het wat late opstarten van een geluidje bij
 // de allereerste keer dat het speelt: de browser moet dan nog zijn hele
@@ -9370,9 +9370,12 @@ function startRadDraaien(){
   if(radDraait) return;
   radDraait = true;
   document.getElementById('rad-instructie').textContent = '';
-  // Het geluidje duurt zelf ~5,45s en is op maat geknipt/gelust voor de
-  // 5,5s-draaiing hieronder (transitie 'transform 5.5s ...') - zie de
-  // toelichting bij GELUID_EENMALIG.radvanfortuin.
+  // Draai- en wachttijd hieronder bewust korter dan de 5,5s/5,6s van
+  // voorheen: door de front-loaded easing-curve (cubic-bezier hieronder)
+  // staat het rad optisch al na zo'n 76% van de transitieduur stil, terwijl
+  // de uitslag toen pas na de volle 5,6s verscheen - dat gaf een rare stille
+  // pauze van ruim een seconde ná het geluid/de beweging, vóór de uitslag.
+  // Nu 4,4s/4,5s, zodat de uitslag vlak na het echte stilstaan verschijnt.
   speelGeluid('radvanfortuin');
 
   // Kies een willekeurig doelsegment (0 t/m RAD_AANTAL_SEGMENTEN-1)
@@ -9394,7 +9397,7 @@ function startRadDraaien(){
   const eindHoek = doelHoek + offset;
 
   const wrap = document.getElementById('rad-draai-wrap');
-  wrap.style.transition = 'transform 5.5s cubic-bezier(.12,.67,.08,1)';
+  wrap.style.transition = 'transform 4.4s cubic-bezier(.12,.67,.08,1)';
   wrap.style.transform = 'rotate('+eindHoek+'deg)';
   radHoek = eindHoek;
 
@@ -9402,7 +9405,7 @@ function startRadDraaien(){
   setTimeout(()=>{
     radDraait = false;
     toonRadUitslag();
-  }, 5600);
+  }, 4500);
 }
 
 function toonRadUitslag(){
