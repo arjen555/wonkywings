@@ -1423,7 +1423,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.33</div>
+  <div id="versie-label">v0.6.34</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -4561,6 +4561,13 @@ const GELUID_EENMALIG = {
   wonkyDraai:     nieuwGeluid('wonky_draaigeluid.mp3'),
   jetDraai:       nieuwGeluid('jet_draaigeluid.mp3'),
   bliksem:        nieuwGeluid('bliksem.mp3'),
+  // Klinkt op het moment dat een vliegend "−X km"-getal het scorebord raakt
+  // (dus alleen bij km eráf - niet bij de misser-straf, die juist optelt) -
+  // zowel bij een gewoon muntje als bij het km-segment van het rad van
+  // fortuin. Zie toonMuntjeBeloning() en verwerkRadBeloning().
+  tijderaf:       nieuwGeluid('tijderaf.mp3'),
+  // Klinkt zodra het rad van fortuin begint te draaien - zie startRadDraaien().
+  radvanfortuin:  nieuwGeluid('radvanfortuin.mp3'),
 };
 // Eén gedeelde Web Audio-context, lazy aangemaakt bij het eerste gebruik
 // (een AudioContext mag pas écht starten na een gebruikersactie - vóór die
@@ -9320,6 +9327,10 @@ function startRadDraaien(){
   if(radDraait) return;
   radDraait = true;
   document.getElementById('rad-instructie').textContent = '';
+  // Het geluidje duurt zelf ~5,45s en is op maat geknipt/gelust voor de
+  // 5,5s-draaiing hieronder (transitie 'transform 5.5s ...') - zie de
+  // toelichting bij GELUID_EENMALIG.radvanfortuin.
+  speelGeluid('radvanfortuin');
 
   // Kies een willekeurig doelsegment (0 t/m RAD_AANTAL_SEGMENTEN-1)
   const doelIdx = Math.floor(Math.random()*RAD_AANTAL_SEGMENTEN);
@@ -9422,6 +9433,7 @@ function verwerkRadBeloning(sx, sy){
       score = Math.max(0, score - seg.waarde);
       document.getElementById('score').textContent = score;
       updateScorebordCijfers();
+      speelGeluid('tijderaf');
     });
   } else if(seg.type === 'pijl'){
     vliegBeloningNaarDoel('+1 pijl', sx, sy, document.getElementById('richting-rij'), ()=>{
@@ -9502,6 +9514,7 @@ function toonMuntjeBeloning(bedrag, sx, sy){
     score = Math.max(0, score - bedrag);
     document.getElementById('score').textContent = score;
     updateScorebordCijfers();
+    speelGeluid('tijderaf');
   });
 }
 
