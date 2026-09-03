@@ -1423,7 +1423,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.35</div>
+  <div id="versie-label">v0.6.37</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -4543,7 +4543,7 @@ initialiseerVliegfiguurVoorSpeler();
 // GELUID_AAN_SLEUTEL is een instelling voor het hele apparaat (net als de
 // illustratie-stand hierboven), niet per speler.
 const GELUID_MAP = 'geluid/';
-const GELUID_PERSONAGE_PREFIX = { timbo:'wonky', meisje:'jet' };
+const GELUID_PERSONAGE_PREFIX = { timbo:'wonky', meisje:'jet', vogel:'vogel' };
 const GELUID_AAN_SLEUTEL = 'wonkywings_geluid_aan';
 let geluidAan = localStorage.getItem(GELUID_AAN_SLEUTEL) !== 'uit';
 
@@ -4565,6 +4565,7 @@ const GELUID_EENMALIG = {
   vlaggetjeValt:  nieuwGeluid('vlaggetje_valt.mp3'),
   wonkyDraai:     nieuwGeluid('wonky_draaigeluid.mp3'),
   jetDraai:       nieuwGeluid('jet_draaigeluid.mp3'),
+  vogelDraai:     nieuwGeluid('vogel_draaigeluid.mp3'),
   bliksem:        nieuwGeluid('bliksem.mp3'),
   // Klinkt op het moment dat een vliegend "−X km"-getal het scorebord raakt
   // (dus alleen bij km eráf - niet bij de misser-straf, die juist optelt) -
@@ -4588,11 +4589,12 @@ function geefGeluidContext(){
   return geluidContext;
 }
 // Volumeboost per eenmalig geluidje - 1 (of ontbrekend) = gewoon het bronvolume,
-// hoger = luider dan het mp3-bestand zelf is gemixt. Nu alleen voor munt2 (het
-// geluidje bij het bijzondere muntje/kennisvraag), op verzoek van Arjen: dat
-// mocht net iets harder klinken. Voorzichtig omhoog te schroeven als het nog
-// niet genoeg is - te ver doordraaien geeft vervorming.
-const GELUID_BOOST = { munt2: 1.4 };
+// hoger = luider dan het mp3-bestand zelf is gemixt. munt2 stond al iets
+// harder (verzoek van Arjen). tijderaf (het geluidje bij een "−X km" dat het
+// scorebord raakt) stond juist duidelijk té zacht, dus die krijgt een fikse
+// boost. Voorzichtig verder omhoog te schroeven als het nog niet genoeg is -
+// te ver doordraaien geeft vervorming.
+const GELUID_BOOST = { munt2: 1.4, tijderaf: 2.0 };
 
 // Eenmalige "opwarm"-truc tegen het wat late opstarten van een geluidje bij
 // de allereerste keer dat het speelt: de browser moet dan nog zijn hele
@@ -4645,6 +4647,8 @@ const GELUID_LUS = {
   wonkyTurbo:  nieuwGeluid('wonky_turbogeluid.mp3', true),
   jetMotor:    nieuwGeluid('jet_motorgeluid.mp3', true),
   jetTurbo:    nieuwGeluid('jet_turbogeluid.mp3', true),
+  vogelMotor:  nieuwGeluid('vogel_motorgeluid.mp3', true),
+  vogelTurbo:  nieuwGeluid('vogel_turbogeluid.mp3', true),
   wind:        nieuwGeluid('wind.mp3', true),
   schurk:      nieuwGeluid('schurk_geluid.mp3', true),
   schurkRat:   nieuwGeluid('schurk_rat_geluid.mp3', true),
@@ -4742,8 +4746,12 @@ function startMotorGeluid(){
   const p = actievePersonagePrefix();
   if(p) startLus(p+'Motor');
 }
+// Stopt het motor/turbogeluid van ALLE personages (niet alleen het actieve) -
+// zo hoeft dit niet telkens met de hand uitgebreid te worden zodra er een
+// nieuw personage (met eigen geluid) bijkomt: elk prefix uit
+// GELUID_PERSONAGE_PREFIX wordt hier automatisch meegenomen.
 function stopMotorGeluid(){
-  stopLus('wonkyMotor'); stopLus('jetMotor');
+  for(const prefix of Object.values(GELUID_PERSONAGE_PREFIX)) stopLus(prefix+'Motor');
 }
 let turboGeluidVorigeFrame = false;
 function updateTurboGeluid(turboActief){
@@ -4754,13 +4762,14 @@ function updateTurboGeluid(turboActief){
   if(turboActief) startLus(p+'Turbo'); else stopLus(p+'Turbo');
 }
 function stopTurboGeluid(){
-  stopLus('wonkyTurbo'); stopLus('jetTurbo');
+  for(const prefix of Object.values(GELUID_PERSONAGE_PREFIX)) stopLus(prefix+'Turbo');
   turboGeluidVorigeFrame = false;
 }
 function speelDraaiGeluid(){
   const p = actievePersonagePrefix();
   if(p === 'wonky') speelGeluid('wonkyDraai');
   else if(p === 'jet') speelGeluid('jetDraai');
+  else if(p === 'vogel') speelGeluid('vogelDraai');
 }
 function startWindGeluid(){ startLus('wind'); }
 function stopWindGeluid(){ stopLusMetFade('wind', 250); }
