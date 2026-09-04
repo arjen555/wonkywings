@@ -125,8 +125,8 @@
          voor een symmetrisch beeld. */
       margin-top:clamp(10px, 2.2vmin, 22px);
       /* Extra ruimte onder de kaart, anders staat "Verander van speler"
-         er bijna doorheen. */
-      margin-bottom:clamp(10px, 2.2vmin, 22px);
+         er bijna doorheen/tegenaan. */
+      margin-bottom:clamp(18px, 3.4vmin, 32px);
     }
     #illustratie-kaart {
       flex:0 1 auto; min-width:0; max-width:min(58%, 440px);
@@ -1423,7 +1423,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.41</div>
+  <div id="versie-label">v0.6.43</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1444,17 +1444,17 @@
     </div>
     <div id="level-lijst"></div>
     <div id="opties-groep">
-      <button id="opties-knop" class="startscherm-knop" onclick="openOptiesOverlay()">
+      <button id="opties-knop" class="startscherm-knop" onclick="speelGeluid('snelleWiew');openOptiesOverlay()">
         <span>Opties</span>
         <span class="opties-pijl">▶</span>
       </button>
     </div>
-    <button id="help-knop" class="startscherm-knop" onclick="openHulp()">
+    <button id="help-knop" class="startscherm-knop" onclick="speelGeluid('snelleWiew');openHulp()">
       Besturing
     </button>
     <div id="startscherm-icoontjes">
-      <img id="paspoort-icoon-knop" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="window.location.href='paspoort.html'"/>
-      <img id="boek-icoon-knop" src="images/boek-der-groten-icoon.png" alt="Boek der Groten" onclick="window.location.href='highscores.html'"/>
+      <img id="paspoort-icoon-knop" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="speelGeluid('boek');window.location.href='paspoort.html'"/>
+      <img id="boek-icoon-knop" src="images/boek-der-groten-icoon.png" alt="Boek der Groten" onclick="speelGeluid('boek');window.location.href='highscores.html'"/>
     </div>
   </div>
 </div>
@@ -2865,7 +2865,7 @@ function bouwStartscherm() {
         <span class="menu-groep-label">${groep.label}</span>
         <span class="menu-groep-pijl">▶</span>
       </div>`;
-      plekEl.querySelector('.menu-groep-kop').onclick = () => { speelGeluid('hoofdmenuknopOpen'); startSpel(lv.id,'spelen'); };
+      plekEl.querySelector('.menu-groep-kop').onclick = () => { speelGeluid('plekkenKnop'); startSpel(lv.id,'spelen'); };
       lijst.appendChild(plekEl);
       continue;
     }
@@ -2931,7 +2931,7 @@ function bouwStartscherm() {
     <span class="menu-groep-label">Raad je plaatje</span>
     <span class="menu-groep-pijl">↗</span>
   </div>`;
-  raadspelEl.querySelector('.menu-groep-kop').onclick = () => { speelGeluid('hoofdmenuknopOpen'); window.location.href = 'raadspel.html'; };
+  raadspelEl.querySelector('.menu-groep-kop').onclick = () => { speelGeluid('plekkenKnop'); window.location.href = 'raadspel.html'; };
   lijst.appendChild(raadspelEl);
 }
 // ── Eilandengroepen: illustratie blijft staan zolang Wonky binnen het hele
@@ -4582,6 +4582,9 @@ const GELUID_EENMALIG = {
   hoofdmenuknopOpen:  nieuwGeluid('hoofdmenuknop_open.mp3'),
   hoofdmenuknopDicht: nieuwGeluid('hoofdmenuknop_dicht.mp3'),
   landenmenuknop:     nieuwGeluid('landenmenuknop.mp3'),
+  snelleWiew:         nieuwGeluid('snelle_wiew2.mp3'),
+  boek:               nieuwGeluid('boek.mp3'),
+  plekkenKnop:        nieuwGeluid('knopdeze.mp3'),
 };
 // Eén gedeelde Web Audio-context, lazy aangemaakt bij het eerste gebruik
 // (een AudioContext mag pas écht starten na een gebruikersactie - vóór die
@@ -4602,7 +4605,9 @@ function geefGeluidContext(){
 // scorebord raakt) stond juist duidelijk té zacht, dus die krijgt een fikse
 // boost. Voorzichtig verder omhoog te schroeven als het nog niet genoeg is -
 // te ver doordraaien geeft vervorming.
-const GELUID_BOOST = { munt2: 1.4, tijderaf: 3.2 };
+// bliksemknop < 1 = iets zachter dan het bronbestand (verzoek van Arjen: een
+// klein tandje zachter dan de oorspronkelijke opname).
+const GELUID_BOOST = { munt2: 1.4, tijderaf: 3.2, bliksemknop: 0.82 };
 
 // Eenmalige "opwarm"-truc tegen het wat late opstarten van een geluidje bij
 // de allereerste keer dat het speelt: de browser moet dan nog zijn hele
@@ -4626,6 +4631,17 @@ function warmGeluidOp(){
     }).catch(()=>{ a.volume = oudVolume; });
   }
 }
+// Zo vroeg mogelijk opwarmen, niet pas bij het starten van een level
+// (startSpel() verderop roept warmGeluidOp() ook nog aan, maar dat is pas
+// ná Spelen/Verkennen). De startscherm-knoppen (Europa/Wereld/Hoofdsteden,
+// Opties, Besturing) spelen namelijk vaak al vóór dat moment hun eigen
+// geluidje, en zonder opwarming kwam dat de allereerste keer per bezoek
+// met een merkbare vertraging (tot ~2 sec) op gang - daarna niet meer,
+// vandaar het wisselende "soms wel, soms niet". Capture-fase + 'pointerdown'
+// (i.p.v. 'click') vuurt zo vroeg mogelijk, al vóórdat de knop waarop
+// geklikt wordt zijn eigen click-handler uitvoert - ook als die allereerste
+// aanraking van de pagina meteen op zo'n knop zelf is.
+document.addEventListener('pointerdown', warmGeluidOp, {capture:true, once:true});
 
 function speelGeluid(naam){
   if(!geluidAan) return;
