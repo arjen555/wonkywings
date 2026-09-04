@@ -1423,7 +1423,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.43</div>
+  <div id="versie-label">v0.6.44</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -4543,6 +4543,28 @@ initialiseerVliegfiguurVoorSpeler();
 // tot die tijd gewoon stil (actievePersonagePrefix() geeft dan null).
 // GELUID_AAN_SLEUTEL is een instelling voor het hele apparaat (net als de
 // illustratie-stand hierboven), niet per speler.
+//
+// OPZET VAN DE EENMALIGE GELUIDJES (v0.6.44) - waarom het zo werkt:
+// Vroeger was elk geluidje een <audio>-element en werd bij elke klik een
+// kopie (cloneNode) afgespeeld. Zo'n kopie kent alleen het ADRES van het
+// mp3-bestand, niet het al ingeladen geluid: de browser moest het bestand
+// dus telkens opnieuw ophalen en uitpakken. Dat kostte de eerste keren tot
+// een seconde of meer, en pas als de browsercache goed warm was ging het
+// vlot - vandaar het bekende "eerst een paar keer wachten, daarna werkt
+// alles". Nu wordt elk geluidje één keer opgehaald en uitgepakt naar een
+// AudioBuffer in het geheugen; afspelen is daarna alleen nog "speel deze
+// golfvorm af" en kost geen meetbare tijd meer, ook niet de honderdste keer.
+//
+// Het laden gebeurt in twee golven, zodat een groeiende geluidsmap het
+// startscherm niet gaat ophouden:
+//   golf 1 - de knopgeluidjes van het startscherm; start meteen, zijn dus
+//            al binnen terwijl de speler nog inlogt.
+//   golf 2 - de rest (spelgeluiden); start zodra golf 1 klaar is én de
+//            pagina verder geladen is, en loopt rustig op de achtergrond
+//            door terwijl de speler in het menu rondkijkt.
+// Een nieuw geluidje voeg je toe met één regel in GELUID_EENMALIG_BESTANDEN.
+// Hoort het bij het startscherm, zet de naam er dan ook bij in GELUID_GOLF1;
+// vergeet je dat, dan valt het vanzelf in golf 2 en werkt het gewoon.
 const GELUID_MAP = 'geluid/';
 const GELUID_PERSONAGE_PREFIX = { timbo:'wonky', meisje:'jet', vogel:'vogel' };
 const GELUID_AAN_SLEUTEL = 'wonkywings_geluid_aan';
@@ -4555,42 +4577,47 @@ function nieuwGeluid(bestand, loop){
   return a;
 }
 
-// Eenmalige (niet-lussende) geluidjes: bij het afspelen een kopie gebruiken
-// (cloneNode) zodat twee snel na elkaar (bijv. twee muntjes) elkaar niet
-// afbreken - allebei klinken ze gewoon uit.
-const GELUID_EENMALIG = {
-  joker:          nieuwGeluid('joker.mp3'),
-  munt:           nieuwGeluid('munt.mp3'),
-  munt2:          nieuwGeluid('munt2.mp3'),
-  richtingpijl:   nieuwGeluid('richtingpijl.mp3'),
-  vlaggetjeValt:  nieuwGeluid('vlaggetje_valt.mp3'),
-  wonkyDraai:     nieuwGeluid('wonky_draaigeluid.mp3'),
-  jetDraai:       nieuwGeluid('jet_draaigeluid.mp3'),
-  vogelDraai:     nieuwGeluid('vogel_draaigeluid.mp3'),
-  bliksem:        nieuwGeluid('bliksem.mp3'),
+// Eenmalige (niet-lussende) geluidjes: naam -> bestandsnaam. Dit is de enige
+// plek waar de bestandsnamen staan.
+const GELUID_EENMALIG_BESTANDEN = {
+  joker:          'joker.mp3',
+  munt:           'munt.mp3',
+  munt2:          'munt2.mp3',
+  richtingpijl:   'richtingpijl.mp3',
+  vlaggetjeValt:  'vlaggetje_valt.mp3',
+  wonkyDraai:     'wonky_draaigeluid.mp3',
+  jetDraai:       'jet_draaigeluid.mp3',
+  vogelDraai:     'vogel_draaigeluid.mp3',
+  bliksem:        'bliksem.mp3',
   // Klinkt op het moment dat een vliegend "−X km"-getal het scorebord raakt
   // (dus alleen bij km eráf - niet bij de misser-straf, die juist optelt) -
   // zowel bij een gewoon muntje als bij het km-segment van het rad van
   // fortuin. Zie toonMuntjeBeloning() en verwerkRadBeloning().
-  tijderaf:       nieuwGeluid('tijderaf.mp3'),
+  tijderaf:       'tijderaf.mp3',
   // Klinkt zodra het rad van fortuin begint te draaien - zie startRadDraaien().
-  radvanfortuin:  nieuwGeluid('radvanfortuin.mp3'),
+  radvanfortuin:  'radvanfortuin.mp3',
   // Knopgeluiden voor het startmenu. hoofdmenuknopOpen/-Dicht zijn twee
   // varianten van hetzelfde "klak-klik"-geluidje met omgewisselde volgorde
   // (Klik-Klak i.p.v. Klak-Klik), niet de audio achterstevoren afgespeeld.
-  bliksemknop:        nieuwGeluid('bliksemknop.mp3'),
-  hoofdmenuknopOpen:  nieuwGeluid('hoofdmenuknop_open.mp3'),
-  hoofdmenuknopDicht: nieuwGeluid('hoofdmenuknop_dicht.mp3'),
-  landenmenuknop:     nieuwGeluid('landenmenuknop.mp3'),
-  snelleWiew:         nieuwGeluid('snelle_wiew2.mp3'),
-  boek:               nieuwGeluid('boek.mp3'),
-  plekkenKnop:        nieuwGeluid('knopdeze.mp3'),
+  bliksemknop:        'bliksemknop.mp3',
+  hoofdmenuknopOpen:  'hoofdmenuknop_open.mp3',
+  hoofdmenuknopDicht: 'hoofdmenuknop_dicht.mp3',
+  landenmenuknop:     'landenmenuknop.mp3',
+  snelleWiew:         'snelle_wiew2.mp3',
+  boek:               'boek.mp3',
+  plekkenKnop:        'knopdeze.mp3',
 };
-// Eén gedeelde Web Audio-context, lazy aangemaakt bij het eerste gebruik
-// (een AudioContext mag pas écht starten na een gebruikersactie - vóór die
-// tijd staat hij "suspended", vandaar de resume-poging in warmGeluidOp()).
-// Alleen nodig voor geluidjes die harder moeten dan hun eigen bronbestand
-// (zie GELUID_BOOST) - de rest speelt gewoon rechtstreeks af, zoals altijd.
+// Golf 1: alles wat al op het startscherm kan klinken, vóórdat er ook maar
+// één level gestart is. Korte klakjes, samen een fractie van de geluidsmap.
+const GELUID_GOLF1 = new Set([
+  'bliksemknop','hoofdmenuknopOpen','hoofdmenuknopDicht',
+  'landenmenuknop','snelleWiew','boek','plekkenKnop',
+]);
+
+// Eén gedeelde Web Audio-context. Aanmaken mag gewoon vóór een klik; hij
+// start dan alleen in de stand "suspended" en wordt bij de eerste aanraking
+// gewekt (zie wekGeluidOp). Ophalen en uitpakken van geluid werkt in die
+// stand al wél - alleen daadwerkelijk hoorbaar afspelen niet.
 let geluidContext = null;
 function geefGeluidContext(){
   if(!geluidContext){
@@ -4609,58 +4636,104 @@ function geefGeluidContext(){
 // klein tandje zachter dan de oorspronkelijke opname).
 const GELUID_BOOST = { munt2: 1.4, tijderaf: 3.2, bliksemknop: 0.82 };
 
-// Eenmalige "opwarm"-truc tegen het wat late opstarten van een geluidje bij
-// de allereerste keer dat het speelt: de browser moet dan nog zijn hele
-// audio-pijplijn optuigen, en dat kost een fractie van een seconde. Door elk
-// eenmalig geluidje één keer stil (volume 0) af te spelen en meteen te
-// pauzeren zodra het spel écht gestart is (dus ná een gebruikersklik - eerder
-// weigert de browser het toch), is die opstartklap al gehad tegen de tijd dat
-// bijvoorbeeld het bijzondere muntje daadwerkelijk gevangen wordt.
-let geluidOpgewarmd = false;
-function warmGeluidOp(){
-  if(geluidOpgewarmd) return;
-  geluidOpgewarmd = true;
+// De uitgepakte geluiden (naam -> AudioBuffer) plus de nog lopende laadacties
+// (naam -> Promise, zodat hetzelfde bestand nooit twee keer tegelijk wordt
+// opgehaald) en de terugval-elementen (alleen aangemaakt als ze écht nodig
+// blijken - zie speelGeluid).
+const geluidBuffers = {};
+const geluidLaadt = {};
+const geluidTerugval = {};
+
+// Haalt één geluidsbestand op en pakt het uit naar een AudioBuffer.
+// decodeAudioData wordt in de oude callback-vorm aangeroepen; dat werkt ook
+// op oudere Safari-versies, die de Promise-vorm niet kennen.
+function laadGeluidBuffer(naam){
+  if(geluidBuffers[naam]) return Promise.resolve(geluidBuffers[naam]);
+  if(geluidLaadt[naam]) return geluidLaadt[naam];
+  const bestand = GELUID_EENMALIG_BESTANDEN[naam];
+  const ctx = geefGeluidContext();
+  if(!bestand || !ctx) return Promise.reject(new Error('geen geluid'));
+  const bezig = fetch(GELUID_MAP + bestand)
+    .then(r => { if(!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+    .then(ab => new Promise((klaar, mis) => ctx.decodeAudioData(ab, klaar, mis)))
+    .then(buffer => { geluidBuffers[naam] = buffer; return buffer; })
+    .catch(e => { delete geluidLaadt[naam]; throw e; });
+  geluidLaadt[naam] = bezig;
+  return bezig;
+}
+
+// Vult de geluidsvoorraad in twee golven (zie de toelichting bovenaan).
+// Doet niets als het geluid uitstaat - dan wordt er ook niets gedownload.
+// Wordt opnieuw geprobeerd zodra het geluid alsnog aangezet wordt.
+let geluidVoorraadGestart = false;
+function vulGeluidVoorraad(){
+  if(geluidVoorraadGestart || !geluidAan) return;
+  if(!geefGeluidContext()) return;
+  geluidVoorraadGestart = true;
+  const golf1 = [], golf2 = [];
+  for(const naam in GELUID_EENMALIG_BESTANDEN){
+    (GELUID_GOLF1.has(naam) ? golf1 : golf2).push(naam);
+  }
+  // Een mislukt geluidje mag de rest nooit ophouden, vandaar de lege catch
+  // per bestand: dan valt alleen dát geluidje terug op de oude weg.
+  const golf1Klaar = Promise.all(golf1.map(n => laadGeluidBuffer(n).catch(()=>{})));
+  const startGolf2 = () => { golf1Klaar.then(() => { golf2.forEach(n => laadGeluidBuffer(n).catch(()=>{})); }); };
+  if(document.readyState === 'complete') startGolf2();
+  else window.addEventListener('load', startGolf2, {once:true});
+}
+vulGeluidVoorraad();
+
+// Wekt de audio-context bij de eerste aanraking of toetsaanslag. Een browser
+// laat geluid pas écht klinken ná zo'n gebruikersactie; dit is verder een
+// piepklein klusje (alleen een standcontrole), dus het mag bij elke klik
+// langskomen. Niet met {once:true}: op mobiel kan de context na het wisselen
+// van tabblad opnieuw in slaap vallen. keydown zit erbij omdat de speler
+// begint met naam en wachtwoord typen - dan is de context al wakker vóór de
+// eerste muisklik.
+function wekGeluidOp(){
   const ctx = geefGeluidContext();
   if(ctx && ctx.state === 'suspended') ctx.resume().catch(()=>{});
-  for(const naam in GELUID_EENMALIG){
-    const a = GELUID_EENMALIG[naam];
-    const oudVolume = a.volume;
-    a.volume = 0;
-    a.play().then(()=>{
-      a.pause(); a.currentTime = 0; a.volume = oudVolume;
-    }).catch(()=>{ a.volume = oudVolume; });
-  }
+  vulGeluidVoorraad();
 }
-// Zo vroeg mogelijk opwarmen, niet pas bij het starten van een level
-// (startSpel() verderop roept warmGeluidOp() ook nog aan, maar dat is pas
-// ná Spelen/Verkennen). De startscherm-knoppen (Europa/Wereld/Hoofdsteden,
-// Opties, Besturing) spelen namelijk vaak al vóór dat moment hun eigen
-// geluidje, en zonder opwarming kwam dat de allereerste keer per bezoek
-// met een merkbare vertraging (tot ~2 sec) op gang - daarna niet meer,
-// vandaar het wisselende "soms wel, soms niet". Capture-fase + 'pointerdown'
-// (i.p.v. 'click') vuurt zo vroeg mogelijk, al vóórdat de knop waarop
-// geklikt wordt zijn eigen click-handler uitvoert - ook als die allereerste
-// aanraking van de pagina meteen op zo'n knop zelf is.
-document.addEventListener('pointerdown', warmGeluidOp, {capture:true, once:true});
+document.addEventListener('pointerdown', wekGeluidOp, {capture:true});
+document.addEventListener('keydown', wekGeluidOp, {capture:true});
 
 function speelGeluid(naam){
   if(!geluidAan) return;
-  const basis = GELUID_EENMALIG[naam];
-  if(!basis) return;
-  const kopie = basis.cloneNode();
-  const boost = GELUID_BOOST[naam];
-  if(boost && boost !== 1){
-    const ctx = geefGeluidContext();
-    if(ctx){
-      try{
-        const bron = ctx.createMediaElementSource(kopie);
+  const bestand = GELUID_EENMALIG_BESTANDEN[naam];
+  if(!bestand) return;
+  const ctx = geefGeluidContext();
+  const buffer = geluidBuffers[naam];
+  // De normale weg: het geluid staat al uitgepakt klaar in het geheugen.
+  // Elk afspeelmoment krijgt zijn eigen bronknoop, dus twee muntjes vlak na
+  // elkaar breken elkaar niet af - net als vroeger met de kopieën, maar nu
+  // zonder dat er iets opgehaald hoeft te worden. De knopen ruimen zichzelf
+  // op zodra ze uitgeklonken zijn.
+  if(ctx && buffer){
+    if(ctx.state === 'suspended') ctx.resume().catch(()=>{});
+    try{
+      const bron = ctx.createBufferSource();
+      bron.buffer = buffer;
+      const boost = GELUID_BOOST[naam];
+      if(boost && boost !== 1){
         const gain = ctx.createGain();
         gain.gain.value = boost;
         bron.connect(gain).connect(ctx.destination);
-      }catch(e){ /* boosten lukte niet (bijv. oude browser) - gewoon normaal afspelen */ }
-    }
+      } else {
+        bron.connect(ctx.destination);
+      }
+      bron.start(0);
+      return;
+    }catch(e){ /* onverwacht probleem - hieronder gewoon op de oude manier */ }
   }
+  // Terugval: dit geluidje is nog niet uitgepakt (of de browser kent geen
+  // Web Audio). Dan speelt het op de oude manier - hooguit die ene keer met
+  // de bekende vertraging, en zonder volumeboost, maar nooit stilte. Meteen
+  // daarna wordt het alsnog ingeladen, zodat het de volgende keer wél snel is.
+  if(!geluidTerugval[naam]) geluidTerugval[naam] = nieuwGeluid(bestand);
+  const kopie = geluidTerugval[naam].cloneNode();
   kopie.play().catch(()=>{}); // negeer een geweigerde autoplay (bijv. vóór de eerste klik)
+  laadGeluidBuffer(naam).catch(()=>{});
 }
 
 // Lussende geluiden (motor/turbo per personage, wind): altijd hetzelfde
@@ -4803,6 +4876,10 @@ function stopWindGeluid(){ stopLusMetFade('wind', 250); }
 function zetGeluidAan(aan){
   geluidAan = aan;
   localStorage.setItem(GELUID_AAN_SLEUTEL, aan ? 'aan' : 'uit');
+  // Stond het geluid bij het openen van de pagina uit, dan is er toen niets
+  // gedownload. Nu het aangezet wordt, alsnog de voorraad vullen - anders
+  // zouden de eerste geluidjes weer op de trage terugval-weg klinken.
+  if(aan) vulGeluidVoorraad();
   if(!aan){
     for(const naam in GELUID_LUS) stopLus(naam);
   } else if(spelActief){
@@ -5323,7 +5400,7 @@ function startSpel(levelId, modus) {
   planSchurkenRonde(modus==='spelen' && !isHoofdsteden && !isPlekken);
   spelActief=true;
   startMotorGeluid();
-  warmGeluidOp();
+  wekGeluidOp();
   W=window.innerWidth; H=window.innerHeight;
   canvas.width=W; canvas.height=H;
   // Eerste muntje-check pas ná spelActief=true, anders is de bol nog niet zichtbaar
