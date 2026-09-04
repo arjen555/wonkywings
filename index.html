@@ -1423,7 +1423,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.48</div>
+  <div id="versie-label">v0.6.49</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -3216,8 +3216,18 @@ function heropenNaamOverlay(){
     // meteen weer op het boek- of paspoort-icoontje klikt sneller zijn dan het
     // geluidssysteem, met een stille klik tot gevolg. wekGeluidOp() (verderop
     // gedefinieerd, maar als function-declaration al beschikbaar) geeft die
-    // opwarmtijd hier alsnog, meteen bij het laden.
-    wekGeluidOp();
+    // opwarmtijd hier alsnog.
+    // Let op: NIET rechtstreeks aanroepen. wekGeluidOp() gebruikt intern een
+    // paar "let"-variabelen (geluidContext, geluidVoorraadGestart) die pas
+    // veel verderop in dit script worden aangemaakt. Roep je de functie hier
+    // - middenin het laden van de pagina, ver vóór die regels - toch meteen
+    // aan, dan struikelt de browser daarover (variabele nog niet klaar) en
+    // stopt de rest van dit hele script met draaien. Gevolg: bouwStartscherm()
+    // en alles daarna wordt nooit meer uitgevoerd, dus het menu blijft leeg
+    // en de opmaak die scrollbalken voorkomt wordt nooit gezet. Vandaar met
+    // setTimeout(...,0) één ogenblik wachten: dan is de rest van het script
+    // al helemaal geladen en bestaan die variabelen wel.
+    setTimeout(wekGeluidOp, 0);
   } else {
     // Altijd leeg starten met de oplichtende hint, ook als er al een naam
     // bekend is (die blijft uiteraard gewoon bewaard en in gebruik voor
