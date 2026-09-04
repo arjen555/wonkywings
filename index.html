@@ -1423,7 +1423,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.46</div>
+  <div id="versie-label">v0.6.48</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1453,14 +1453,14 @@
       Besturing
     </button>
     <div id="startscherm-icoontjes">
-      <img id="paspoort-icoon-knop" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="speelGeluidDanNavigeer('boek', () => window.location.href='paspoort.html')"/>
+      <img id="paspoort-icoon-knop" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="speelGeluidDanNavigeer('boekPaspoort', () => window.location.href='paspoort.html')"/>
       <img id="boek-icoon-knop" src="images/boek-der-groten-icoon.png" alt="Boek der Groten" onclick="speelGeluidDanNavigeer('boek', () => window.location.href='highscores.html')"/>
     </div>
   </div>
 </div>
 
-<div id="opties-overlay" onclick="if(event.target===this) sluitOptiesOverlay()">
-  <div id="opties-overlay-zone" onclick="if(event.target===this) sluitOptiesOverlay()">
+<div id="opties-overlay" onclick="if(event.target===this){ speelGeluid('optiesSluiten'); sluitOptiesOverlay(); }">
+  <div id="opties-overlay-zone" onclick="if(event.target===this){ speelGeluid('optiesSluiten'); sluitOptiesOverlay(); }">
     <div id="opties-kader">
       <div id="opties-kader-inhoud">
       <div id="opties-sectie-titel">Uitzicht tijdens het vliegen</div>
@@ -1932,6 +1932,9 @@ function zetIllustratieStand(stand){
 // Bladert met richting -1 (terug) of +1 (verder, ook bij klikken op de kaart
 // zelf) naar de volgende stand in ILLUSTRATIE_STANDEN, en kiest die meteen.
 function bladeerIllustratieStand(richting){
+  // Klikken op de kaart zelf roept dit ook aan met richting 1 (zelfde als
+  // de pijl-verder-knop) - dus hetzelfde geluidje voor beide, automatisch.
+  speelGeluid(richting < 0 ? 'optiesVorige' : 'optiesVolgende');
   const idx = ILLUSTRATIE_STANDEN.indexOf(illustratieStand);
   const nieuweIdx = (idx + richting + ILLUSTRATIE_STANDEN.length) % ILLUSTRATIE_STANDEN.length;
   zetIllustratieStand(ILLUSTRATIE_STANDEN[nieuweIdx]);
@@ -1960,6 +1963,7 @@ function sluitOptiesOverlay(){
 // Vanuit "Verander van speler" binnen de opties-overlay: eerst de opties
 // zelf weg, dan de naam-banner erop (anders staan ze even over elkaar heen).
 function opentNaamOverlayVanuitOpties(){
+  speelGeluid('optiesSpeler');
   sluitOptiesOverlay();
   heropenNaamOverlay();
 }
@@ -2865,7 +2869,7 @@ function bouwStartscherm() {
         <span class="menu-groep-label">${groep.label}</span>
         <span class="menu-groep-pijl">▶</span>
       </div>`;
-      plekEl.querySelector('.menu-groep-kop').onclick = () => { speelGeluidDanNavigeer('plekkenKnop', () => startSpel(lv.id,'spelen')); };
+      plekEl.querySelector('.menu-groep-kop').onclick = () => { speelGeluidDanNavigeer('landenmenuknop', () => startSpel(lv.id,'spelen')); };
       lijst.appendChild(plekEl);
       continue;
     }
@@ -2931,7 +2935,9 @@ function bouwStartscherm() {
     <span class="menu-groep-label">Raad je plaatje</span>
     <span class="menu-groep-pijl">↗</span>
   </div>`;
-  raadspelEl.querySelector('.menu-groep-kop').onclick = () => { speelGeluidDanNavigeer('plekkenKnop', () => window.location.href = 'raadspel.html'); };
+  // Eigen, langere vertraging (700ms i.p.v. de standaard 220ms): dit geluidje
+  // mag helemaal uitklinken voordat index.html sluit (verzoek van Arjen).
+  raadspelEl.querySelector('.menu-groep-kop').onclick = () => { speelGeluidDanNavigeer('landenmenuknop', () => window.location.href = 'raadspel.html', 700); };
   lijst.appendChild(raadspelEl);
 }
 // ── Eilandengroepen: illustratie blijft staan zolang Wonky binnen het hele
@@ -3203,6 +3209,15 @@ function heropenNaamOverlay(){
     sessionStorage.removeItem('wonkywings_van_menu_navigatie');
     naamOverlayVerplicht = false;
     document.getElementById('level-lijst').classList.remove('vergrendeld');
+    // Bij terugkeer via een menu-knop wordt het naamscherm hierboven
+    // overgeslagen - normaal geeft dát scherm het geluidssysteem ruim de tijd
+    // om op te warmen (audiocontext wekken + eerste geluidjes ophalen) voordat
+    // er ergens op geklikt kan worden. Zonder dat scherm kan een speler die
+    // meteen weer op het boek- of paspoort-icoontje klikt sneller zijn dan het
+    // geluidssysteem, met een stille klik tot gevolg. wekGeluidOp() (verderop
+    // gedefinieerd, maar als function-declaration al beschikbaar) geeft die
+    // opwarmtijd hier alsnog, meteen bij het laden.
+    wekGeluidOp();
   } else {
     // Altijd leeg starten met de oplichtende hint, ook als er al een naam
     // bekend is (die blijft uiteraard gewoon bewaard en in gebruik voor
@@ -4605,13 +4620,26 @@ const GELUID_EENMALIG_BESTANDEN = {
   landenmenuknop:     'landenmenuknop.mp3',
   snelleWiew:         'snelle_wiew2.mp3',
   boek:               'boek.mp3',
+  // Alleen voor het paspoort-icoontje (Arjen wilde daar liever boek2.mp3
+  // voor - de "Boek der Groten"-icoon ernaast blijft gewoon 'boek' gebruiken).
+  boekPaspoort:       'boek2.mp3',
   plekkenKnop:        'knopdeze.mp3',
+  // Klinkt zodra geluid via de opties-schakelaar wordt aangezet.
+  dierenbrul:         'dierenbrul.mp3',
+  // Knopgeluidjes binnen de opties-overlay: 'Verander van speler', de
+  // pijltjes van het illustratie-carrousel (en het land zelf, dat hetzelfde
+  // als "verder" doet), en het sluiten door buiten het kader te klikken.
+  optiesSpeler:       'optiesSpeler.mp3',
+  optiesVorige:       'optiesVorige.mp3',
+  optiesVolgende:     'optiesVolgende.mp3',
+  optiesSluiten:      'optiesSluiten.mp3',
 };
 // Golf 1: alles wat al op het startscherm kan klinken, vóórdat er ook maar
 // één level gestart is. Korte klakjes, samen een fractie van de geluidsmap.
 const GELUID_GOLF1 = new Set([
   'bliksemknop','hoofdmenuknopOpen','hoofdmenuknopDicht',
-  'landenmenuknop','snelleWiew','boek','plekkenKnop',
+  'landenmenuknop','snelleWiew','boek','boekPaspoort','plekkenKnop',
+  'dierenbrul','optiesSpeler','optiesVorige','optiesVolgende','optiesSluiten',
 ]);
 
 // Eén gedeelde Web Audio-context. Aanmaken mag gewoon vóór een klik; hij
@@ -4632,9 +4660,9 @@ function geefGeluidContext(){
 // scorebord raakt) stond juist duidelijk té zacht, dus die krijgt een fikse
 // boost. Voorzichtig verder omhoog te schroeven als het nog niet genoeg is -
 // te ver doordraaien geeft vervorming.
-// bliksemknop < 1 = iets zachter dan het bronbestand (verzoek van Arjen: een
-// klein tandje zachter dan de oorspronkelijke opname).
-const GELUID_BOOST = { munt2: 1.4, tijderaf: 3.2, bliksemknop: 0.82 };
+// bliksemknop < 1 = zachter dan het bronbestand (verzoek van Arjen: eerst
+// naar 0.82, daarna nog eens duidelijk zachter naar 0.6).
+const GELUID_BOOST = { munt2: 1.4, tijderaf: 3.2, bliksemknop: 0.6 };
 
 // De uitgepakte geluiden (naam -> AudioBuffer) plus de nog lopende laadacties
 // (naam -> Promise, zodat hetzelfde bestand nooit twee keer tegelijk wordt
@@ -4745,9 +4773,12 @@ function speelGeluid(naam){
 // laat is. Deze vertraging geeft het geluidje die kans, zonder de knop traag
 // aan te laten voelen. Gebruikt bij "Iconische plekken" en "Raad je plaatje".
 const NAVIGATIEGELUID_VERTRAGING_MS = 220;
-function speelGeluidDanNavigeer(naam, callback){
+// Optionele derde parameter: eigen vertraging i.p.v. de standaard 220ms.
+// Gebruikt bij "Raad je plaatje" - dat geluidje mag helemaal uitklinken
+// voordat index.html sluit (zie de aanroep bij die knop).
+function speelGeluidDanNavigeer(naam, callback, vertragingMs){
   speelGeluid(naam);
-  setTimeout(callback, NAVIGATIEGELUID_VERTRAGING_MS);
+  setTimeout(callback, vertragingMs || NAVIGATIEGELUID_VERTRAGING_MS);
 }
 
 // Lussende geluiden (motor/turbo per personage, wind): altijd hetzelfde
@@ -4763,6 +4794,8 @@ const GELUID_LUS = {
   wind:        nieuwGeluid('wind.mp3', true),
   schurk:      nieuwGeluid('schurk_geluid.mp3', true),
   schurkRat:   nieuwGeluid('schurk_rat_geluid.mp3', true),
+  verrekijkerIn:  nieuwGeluid('verrekijker.mp3', true),
+  verrekijkerUit: nieuwGeluid('verrekijker2.mp3', true),
 };
 // Schurken-vliegtuig: de lach-lus en de los ernaast lopende rat-lus samen
 // starten/stoppen - ze spelen gelijktijdig, niet na elkaar (zie toelichting
@@ -4876,6 +4909,25 @@ function stopTurboGeluid(){
   for(const prefix of Object.values(GELUID_PERSONAGE_PREFIX)) stopLus(prefix+'Turbo');
   turboGeluidVorigeFrame = false;
 }
+// Verrekijker-geluid tijdens het in-/uitzoomen: klinkt precies zolang de
+// speler de knop ingedrukt houdt (toetsenbord Z/X, touch-knoppen of
+// gamepad-trigger - zie de aanroep in de spellus). Het muiswiel doet hier
+// bewust niet aan mee: dat zijn losse scroll-tikjes, geen ingedrukte knop.
+let verrekijkerInVorigeFrame = false, verrekijkerUitVorigeFrame = false;
+function updateVerrekijkerGeluid(inActief, uitActief){
+  if(inActief !== verrekijkerInVorigeFrame){
+    verrekijkerInVorigeFrame = inActief;
+    if(inActief) startLus('verrekijkerIn'); else stopLus('verrekijkerIn');
+  }
+  if(uitActief !== verrekijkerUitVorigeFrame){
+    verrekijkerUitVorigeFrame = uitActief;
+    if(uitActief) startLus('verrekijkerUit'); else stopLus('verrekijkerUit');
+  }
+}
+function stopVerrekijkerGeluid(){
+  stopLus('verrekijkerIn'); stopLus('verrekijkerUit');
+  verrekijkerInVorigeFrame = false; verrekijkerUitVorigeFrame = false;
+}
 function speelDraaiGeluid(){
   const p = actievePersonagePrefix();
   if(p === 'wonky') speelGeluid('wonkyDraai');
@@ -4894,6 +4946,8 @@ function zetGeluidAan(aan){
   // gedownload. Nu het aangezet wordt, alsnog de voorraad vullen - anders
   // zouden de eerste geluidjes weer op de trage terugval-weg klinken.
   if(aan) vulGeluidVoorraad();
+  // Even een vrolijk geluidje ter bevestiging dat het geluid nu aanstaat.
+  if(aan) speelGeluid('dierenbrul');
   if(!aan){
     for(const naam in GELUID_LUS) stopLus(naam);
   } else if(spelActief){
@@ -5430,7 +5484,7 @@ function startSpel(levelId, modus) {
 
 function naarStart(){
   spelActief=false;
-  stopMotorGeluid(); stopTurboGeluid(); stopWindGeluid();
+  stopMotorGeluid(); stopTurboGeluid(); stopWindGeluid(); stopVerrekijkerGeluid();
   tipActief = false;
   document.getElementById('bediening-spiek-knop').classList.remove('knop-tip-attentie');
   document.querySelectorAll('.richting-knop').forEach(el=>el.classList.remove('knop-tip-attentie'));
@@ -5975,7 +6029,7 @@ function nieuwLand(){
     // geluid hoorde tot nu toe pas te stoppen bij "terug naar start"
     // (naarStart()), en bleef dus de hele tijd dat het evaluatiescherm in
     // beeld stond onterecht doorlopen. Hier alvast stoppen, net als naarStart().
-    stopMotorGeluid(); stopTurboGeluid(); stopWindGeluid();
+    stopMotorGeluid(); stopTurboGeluid(); stopWindGeluid(); stopVerrekijkerGeluid();
     if(LEVELS[huidigLevel] && LEVELS[huidigLevel].hoofdsteden){
       // Hoofdsteden-modus: geen km-highscore, gewoon een rustig goed/totaal-scherm
       toonHoofdstedenResultaat(hoofdstedenGoed, hoofdstedenTotaal);
@@ -9740,6 +9794,10 @@ function updateSpel(){
     zoomNiveau = Math.max(0, zoomNiveau - ZOOM_STAP_BASIS*versnelling);
     zetZoomIndicator(zoomNiveau);
   } else { xHoudSinds = 0; }
+  updateVerrekijkerGeluid(
+    !!(keys['z']||touchZoomInActief||gamepadZoomInActief),
+    !!(keys['x']||touchZoomUitActief||gamepadZoomUitActief)
+  );
 
   // Zoomniveau (0-1) omzetten naar een echte zoomfactor, in twee stukken:
   // - 0 tot ZOOM_OMSLAGPUNT: altijd tussen wereld-zoom en de VASTE referentie,
