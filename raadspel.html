@@ -611,7 +611,7 @@
      fixed rechtsonder-hoek zich t.o.v. #kader in plaats van t.o.v. het
      scherm. Zichtbaarheid wordt in toonScherm() geregeld (alleen te zien op
      het "Klaar!"-scherm), in plaats van via de normale .scherm-cascade. -->
-<img id="klaar-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="window.location.href='paspoort.html'"/>
+<img id="klaar-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="speelGeluidDanNavigeer('boek.mp3', () => window.location.href='paspoort.html')"/>
 
 <!-- Zelfde reden als #klaar-paspoort-icoon: buiten #kader, en zichtbaarheid
      via toonScherm() geregeld (alleen op het "Klaar!"-scherm). De knop "nog
@@ -663,8 +663,8 @@
         <div id="ls-schelp-tekst">Druk op de knop<br/>om te starten!</div>
       </div>
       <div id="ls-eind-iconen">
-        <img id="ls-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="window.location.href='paspoort.html'"/>
-        <img id="ls-boek-icoon" src="images/boek-der-groten-icoon.png" alt="Boek der Groten" onclick="window.location.href='highscores.html'"/>
+        <img id="ls-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="speelGeluidDanNavigeer('boek.mp3', () => window.location.href='paspoort.html')"/>
+        <img id="ls-boek-icoon" src="images/boek-der-groten-icoon.png" alt="Boek der Groten" onclick="speelGeluidDanNavigeer('boek.mp3', () => window.location.href='highscores.html')"/>
       </div>
     </div>
     <div id="ls-bordje-wrap">
@@ -763,7 +763,7 @@ function landNaarBestand(naam) {
     .replace(/ë/g,'e').replace(/é/g,'e').replace(/è/g,'e').replace(/ê/g,'e')
     .replace(/ï/g,'i').replace(/í/g,'i').replace(/ö/g,'o').replace(/ü/g,'u')
     .replace(/á/g,'a').replace(/à/g,'a').replace(/â/g,'a').replace(/ä/g,'a')
-    .replace(/ñ/g,'n').replace(/ç/g,'c').replace(/[''']/g,'').replace(/\s+/g,'_');
+    .replace(/ñ/g,'n').replace(/ç/g,'c').replace(/['''']/g,'').replace(/\s+/g,'_');
 }
 
 
@@ -904,9 +904,39 @@ const NAAM_SLEUTEL = 'wonkywings_spelernaam'; // zelfde sleutel als index.html
 // via de MENU-knop terugkomen (dus niet opnieuw het verplichte naamscherm
 // tonen daar - de naam is hier al bekend en actief gebruikt).
 const VAN_MENU_NAVIGATIE_SLEUTEL = 'wonkywings_van_menu_navigatie';
+
+// ── Knopgeluid-vóór-navigatie ─────────────────────────────────────────────
+// raadspel.html had tot nu toe helemaal geen geluidjes - index.html wel,
+// via een uitgebreid Web Audio-systeem (zie daar). Voor de paar knopjes die
+// hier geluid nodig hebben (terug-naar-menu, paspoort-icoon, boek-icoon)
+// volstaat een simpele HTML5 Audio-afspeler; ze hoeven niet vooraf
+// ingeladen te worden zoals in index.html, want het zijn er maar een paar.
+// Zelfde geluiden en dezelfde aan/uit-sleutel als index.html gebruikt
+// (wonkywings_geluid_aan), zodat het overal consistent klinkt en de
+// instelling van het hoofdmenu hier ook geldt.
+const GELUID_AAN_SLEUTEL = 'wonkywings_geluid_aan';
+// Zelfde vertraging als NAVIGATIEGELUID_VERTRAGING_MS in index.html: het
+// afspelen van geluid ZET het geluid alleen in gang, het wacht niet tot het
+// is uitgeklonken voordat de volgende regel code draait. Navigeer je meteen
+// door naar een andere pagina, dan breekt die paginawissel het geluidje af
+// voordat het goed en wel te horen was. Deze korte pauze geeft het
+// geluidje eerst een eerlijke kans.
+const NAVIGATIEGELUID_VERTRAGING_MS = 220;
+function speelGeluidDanNavigeer(bestand, callback){
+  const geluidAan = localStorage.getItem(GELUID_AAN_SLEUTEL) !== 'uit';
+  if(geluidAan){
+    try{ new Audio('geluid/'+bestand).play().catch(()=>{}); }catch(e){}
+  }
+  setTimeout(callback, NAVIGATIEGELUID_VERTRAGING_MS);
+}
+function speelTerugGeluidDanNavigeer(callback){
+  speelGeluidDanNavigeer('bliksemknop.mp3', callback);
+}
 function ganNaarMenu(){
-  sessionStorage.setItem(VAN_MENU_NAVIGATIE_SLEUTEL, '1');
-  window.location.href = 'index.html';
+  speelTerugGeluidDanNavigeer(() => {
+    sessionStorage.setItem(VAN_MENU_NAVIGATIE_SLEUTEL, '1');
+    window.location.href = 'index.html';
+  });
 }
 
 let huidigeCategorie = null;
@@ -2120,8 +2150,10 @@ function lsNaarMenu(){
   lsStopTimer();
   document.getElementById('landjeschuif-veld').classList.remove('actief');
   document.getElementById('kader').style.display = '';
-  sessionStorage.setItem(VAN_MENU_NAVIGATIE_SLEUTEL, '1');
-  window.location.href = 'index.html';
+  speelTerugGeluidDanNavigeer(() => {
+    sessionStorage.setItem(VAN_MENU_NAVIGATIE_SLEUTEL, '1');
+    window.location.href = 'index.html';
+  });
 }
 function lsNaarSpelkeuze(){
   lsStopTimer();

@@ -1423,7 +1423,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.44</div>
+  <div id="versie-label">v0.6.46</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1453,8 +1453,8 @@
       Besturing
     </button>
     <div id="startscherm-icoontjes">
-      <img id="paspoort-icoon-knop" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="speelGeluid('boek');window.location.href='paspoort.html'"/>
-      <img id="boek-icoon-knop" src="images/boek-der-groten-icoon.png" alt="Boek der Groten" onclick="speelGeluid('boek');window.location.href='highscores.html'"/>
+      <img id="paspoort-icoon-knop" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="speelGeluidDanNavigeer('boek', () => window.location.href='paspoort.html')"/>
+      <img id="boek-icoon-knop" src="images/boek-der-groten-icoon.png" alt="Boek der Groten" onclick="speelGeluidDanNavigeer('boek', () => window.location.href='highscores.html')"/>
     </div>
   </div>
 </div>
@@ -2865,7 +2865,7 @@ function bouwStartscherm() {
         <span class="menu-groep-label">${groep.label}</span>
         <span class="menu-groep-pijl">▶</span>
       </div>`;
-      plekEl.querySelector('.menu-groep-kop').onclick = () => { speelGeluid('plekkenKnop'); startSpel(lv.id,'spelen'); };
+      plekEl.querySelector('.menu-groep-kop').onclick = () => { speelGeluidDanNavigeer('plekkenKnop', () => startSpel(lv.id,'spelen')); };
       lijst.appendChild(plekEl);
       continue;
     }
@@ -2931,7 +2931,7 @@ function bouwStartscherm() {
     <span class="menu-groep-label">Raad je plaatje</span>
     <span class="menu-groep-pijl">↗</span>
   </div>`;
-  raadspelEl.querySelector('.menu-groep-kop').onclick = () => { speelGeluid('plekkenKnop'); window.location.href = 'raadspel.html'; };
+  raadspelEl.querySelector('.menu-groep-kop').onclick = () => { speelGeluidDanNavigeer('plekkenKnop', () => window.location.href = 'raadspel.html'); };
   lijst.appendChild(raadspelEl);
 }
 // ── Eilandengroepen: illustratie blijft staan zolang Wonky binnen het hele
@@ -4734,6 +4734,20 @@ function speelGeluid(naam){
   const kopie = geluidTerugval[naam].cloneNode();
   kopie.play().catch(()=>{}); // negeer een geweigerde autoplay (bijv. vóór de eerste klik)
   laadGeluidBuffer(naam).catch(()=>{});
+}
+
+// Roept speelGeluid(naam) aan en voert daarna (na een korte pauze) callback
+// uit. speelGeluid() zelf ZET geluid alleen in gang - het wacht niet tot het
+// is afgespeeld voordat de volgende regel code draait. Gebeurt die volgende
+// regel iets ingrijpends (de pagina verlaten, of een spelscherm opbouwen dat
+// de browser even helemaal in beslag neemt), dan krijgt het geluidje geen
+// eerlijke kans: het wordt afgekapt of komt pas hoorbaar aan als het al te
+// laat is. Deze vertraging geeft het geluidje die kans, zonder de knop traag
+// aan te laten voelen. Gebruikt bij "Iconische plekken" en "Raad je plaatje".
+const NAVIGATIEGELUID_VERTRAGING_MS = 220;
+function speelGeluidDanNavigeer(naam, callback){
+  speelGeluid(naam);
+  setTimeout(callback, NAVIGATIEGELUID_VERTRAGING_MS);
 }
 
 // Lussende geluiden (motor/turbo per personage, wind): altijd hetzelfde
