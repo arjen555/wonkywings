@@ -265,6 +265,16 @@ function actieveSpelerNaamLC(){
   return (localStorage.getItem(SPELERNAAM_SLEUTEL) || '').trim().toLowerCase();
 }
 
+// ── Bladzijde-geluid: hetzelfde geluid (boek.mp3) als in het paspoort,
+// afgespeeld bij het wisselen van tabblad hier in het Boek der Groten -
+// zelfde geluid-aan/uit-sleutel als de rest van het spel gebruikt. ──
+var GELUID_AAN_SLEUTEL = 'wonkywings_geluid_aan';
+function speelBladGeluid(){
+  var geluidAan = localStorage.getItem(GELUID_AAN_SLEUTEL) !== 'uit';
+  if(!geluidAan) return;
+  try{ new Audio('geluid/boek.mp3').play().catch(function(){}); }catch(e){}
+}
+
 // Zelfde sessionStorage-sleutel als index.html/raadspel.html/paspoort.html
 // gebruiken: laat aan index.html weten dat we via een menu-knop terugkomen,
 // zodat het verplichte naamscherm daar wordt overgeslagen - de naam is al
@@ -745,6 +755,7 @@ async function bouwPagina(){
 
 // ── Tab-navigatie ─────────────────────────────────────
 function wisselSectie(naam){
+  speelBladGeluid();
   huidigeSectie = naam;
   document.querySelectorAll('.nav-btn').forEach(function(k){
     k.classList.toggle('actief', k.dataset.sectie === naam);
