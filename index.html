@@ -3216,18 +3216,8 @@ function heropenNaamOverlay(){
     // meteen weer op het boek- of paspoort-icoontje klikt sneller zijn dan het
     // geluidssysteem, met een stille klik tot gevolg. wekGeluidOp() (verderop
     // gedefinieerd, maar als function-declaration al beschikbaar) geeft die
-    // opwarmtijd hier alsnog.
-    // Let op: NIET rechtstreeks aanroepen. wekGeluidOp() gebruikt intern een
-    // paar "let"-variabelen (geluidContext, geluidVoorraadGestart) die pas
-    // veel verderop in dit script worden aangemaakt. Roep je de functie hier
-    // - middenin het laden van de pagina, ver vóór die regels - toch meteen
-    // aan, dan struikelt de browser daarover (variabele nog niet klaar) en
-    // stopt de rest van dit hele script met draaien. Gevolg: bouwStartscherm()
-    // en alles daarna wordt nooit meer uitgevoerd, dus het menu blijft leeg
-    // en de opmaak die scrollbalken voorkomt wordt nooit gezet. Vandaar met
-    // setTimeout(...,0) één ogenblik wachten: dan is de rest van het script
-    // al helemaal geladen en bestaan die variabelen wel.
-    setTimeout(wekGeluidOp, 0);
+    // opwarmtijd hier alsnog, meteen bij het laden.
+    wekGeluidOp();
   } else {
     // Altijd leeg starten met de oplichtende hint, ook als er al een naam
     // bekend is (die blijft uiteraard gewoon bewaard en in gebruik voor
@@ -4591,7 +4581,7 @@ initialiseerVliegfiguurVoorSpeler();
 // Hoort het bij het startscherm, zet de naam er dan ook bij in GELUID_GOLF1;
 // vergeet je dat, dan valt het vanzelf in golf 2 en werkt het gewoon.
 const GELUID_MAP = 'geluid/';
-const GELUID_PERSONAGE_PREFIX = { timbo:'wonky', meisje:'jet', vogel:'vogel' };
+const GELUID_PERSONAGE_PREFIX = { timbo:'wonky', meisje:'jet', vogel:'vogel', alien:'ufo' };
 const GELUID_AAN_SLEUTEL = 'wonkywings_geluid_aan';
 let geluidAan = localStorage.getItem(GELUID_AAN_SLEUTEL) !== 'uit';
 
@@ -4613,6 +4603,7 @@ const GELUID_EENMALIG_BESTANDEN = {
   wonkyDraai:     'wonky_draaigeluid.mp3',
   jetDraai:       'jet_draaigeluid.mp3',
   vogelDraai:     'vogel_draaigeluid.mp3',
+  ufoDraai:       'ufo_draaigeluid.mp3',
   bliksem:        'bliksem.mp3',
   // Klinkt op het moment dat een vliegend "−X km"-getal het scorebord raakt
   // (dus alleen bij km eráf - niet bij de misser-straf, die juist optelt) -
@@ -4643,6 +4634,12 @@ const GELUID_EENMALIG_BESTANDEN = {
   optiesVorige:       'optiesVorige.mp3',
   optiesVolgende:     'optiesVolgende.mp3',
   optiesSluiten:      'optiesSluiten.mp3',
+  // Verrekijker in-/uitzoomen: hier toegevoegd (i.p.v. in GELUID_LUS) zodat
+  // dit geluid via het Web Audio-systeem met GELUID_BOOST harder kan dan het
+  // bronbestand zelf toestaat (verzoek van Arjen) - zie startBoostedLus()/
+  // stopBoostedLus() verderop.
+  verrekijkerIn:      'verrekijker.mp3',
+  verrekijkerUit:     'verrekijker2.mp3',
 };
 // Golf 1: alles wat al op het startscherm kan klinken, vóórdat er ook maar
 // één level gestart is. Korte klakjes, samen een fractie van de geluidsmap.
@@ -4672,7 +4669,9 @@ function geefGeluidContext(){
 // te ver doordraaien geeft vervorming.
 // bliksemknop < 1 = zachter dan het bronbestand (verzoek van Arjen: eerst
 // naar 0.82, daarna nog eens duidelijk zachter naar 0.6).
-const GELUID_BOOST = { munt2: 1.4, tijderaf: 3.2, bliksemknop: 0.6 };
+// verrekijkerIn/verrekijkerUit: iets harder dan het bronbestand (verzoek
+// van Arjen) - zelfde voorzichtig-opschroeven-principe als hierboven.
+const GELUID_BOOST = { munt2: 1.4, tijderaf: 3.2, bliksemknop: 0.6, verrekijkerIn: 1.5, verrekijkerUit: 1.5 };
 
 // De uitgepakte geluiden (naam -> AudioBuffer) plus de nog lopende laadacties
 // (naam -> Promise, zodat hetzelfde bestand nooit twee keer tegelijk wordt
@@ -4801,11 +4800,11 @@ const GELUID_LUS = {
   jetTurbo:    nieuwGeluid('jet_turbogeluid.mp3', true),
   vogelMotor:  nieuwGeluid('vogel_motorgeluid.mp3', true),
   vogelTurbo:  nieuwGeluid('vogel_turbogeluid.mp3', true),
+  ufoMotor:    nieuwGeluid('ufo_motorgeluid.mp3', true),
+  ufoTurbo:    nieuwGeluid('ufo_turbogeluid.mp3', true),
   wind:        nieuwGeluid('wind.mp3', true),
   schurk:      nieuwGeluid('schurk_geluid.mp3', true),
   schurkRat:   nieuwGeluid('schurk_rat_geluid.mp3', true),
-  verrekijkerIn:  nieuwGeluid('verrekijker.mp3', true),
-  verrekijkerUit: nieuwGeluid('verrekijker2.mp3', true),
 };
 // Schurken-vliegtuig: de lach-lus en de los ernaast lopende rat-lus samen
 // starten/stoppen - ze spelen gelijktijdig, niet na elkaar (zie toelichting
@@ -4872,6 +4871,35 @@ function stopLus(naam){
   a.currentTime = 0;
   a.volume = 1;
 }
+// Lussend geluid via Web Audio (i.p.v. een gewoon <audio>-element uit
+// GELUID_LUS hierboven) - alleen voor lussen die harder moeten kunnen dan
+// hun bronbestand zelf toestaat (zie GELUID_BOOST). Een <audio>-element kan
+// nooit boven volume 1 (100%) uit; een Web Audio GainNode wel. Er wordt bij
+// elke start een nieuwe geluidsbron aangemaakt - zo werkt Web Audio nu
+// eenmaal (een gestopte bron is op), maar loop=true laat 'm daarna gewoon
+// zichzelf naadloos herhalen zolang hij niet weer gestopt wordt.
+const geluidLusBron = {}; // naam -> actieve AudioBufferSourceNode, of niets
+function startBoostedLus(naam){
+  if(!geluidAan || geluidLusBron[naam]) return;
+  const ctx = geefGeluidContext();
+  const buffer = geluidBuffers[naam];
+  if(!ctx || !buffer) return; // nog niet uitgepakt - deze ene keer dan maar geen geluid
+  if(ctx.state === 'suspended') ctx.resume().catch(()=>{});
+  const bron = ctx.createBufferSource();
+  bron.buffer = buffer;
+  bron.loop = true;
+  const gain = ctx.createGain();
+  gain.gain.value = GELUID_BOOST[naam] || 1;
+  bron.connect(gain).connect(ctx.destination);
+  bron.start(0);
+  geluidLusBron[naam] = bron;
+}
+function stopBoostedLus(naam){
+  const bron = geluidLusBron[naam];
+  if(!bron) return;
+  try{ bron.stop(); }catch(e){}
+  delete geluidLusBron[naam];
+}
 // Zachte fade-out (voor het windgeluid, zodra de correctie-vlucht stopt) -
 // klinkt prettiger dan abrupt stilvallen. Werkt ook als de lus toch al uit
 // stond (dan gebeurt er gewoon niets merkbaars).
@@ -4927,15 +4955,15 @@ let verrekijkerInVorigeFrame = false, verrekijkerUitVorigeFrame = false;
 function updateVerrekijkerGeluid(inActief, uitActief){
   if(inActief !== verrekijkerInVorigeFrame){
     verrekijkerInVorigeFrame = inActief;
-    if(inActief) startLus('verrekijkerIn'); else stopLus('verrekijkerIn');
+    if(inActief) startBoostedLus('verrekijkerIn'); else stopBoostedLus('verrekijkerIn');
   }
   if(uitActief !== verrekijkerUitVorigeFrame){
     verrekijkerUitVorigeFrame = uitActief;
-    if(uitActief) startLus('verrekijkerUit'); else stopLus('verrekijkerUit');
+    if(uitActief) startBoostedLus('verrekijkerUit'); else stopBoostedLus('verrekijkerUit');
   }
 }
 function stopVerrekijkerGeluid(){
-  stopLus('verrekijkerIn'); stopLus('verrekijkerUit');
+  stopBoostedLus('verrekijkerIn'); stopBoostedLus('verrekijkerUit');
   verrekijkerInVorigeFrame = false; verrekijkerUitVorigeFrame = false;
 }
 function speelDraaiGeluid(){
@@ -4943,6 +4971,7 @@ function speelDraaiGeluid(){
   if(p === 'wonky') speelGeluid('wonkyDraai');
   else if(p === 'jet') speelGeluid('jetDraai');
   else if(p === 'vogel') speelGeluid('vogelDraai');
+  else if(p === 'ufo') speelGeluid('ufoDraai');
 }
 function startWindGeluid(){ startLus('wind'); }
 function stopWindGeluid(){ stopLusMetFade('wind', 250); }
@@ -8492,6 +8521,9 @@ function normToets(e){ return e.key.length===1 ? e.key.toLowerCase() : e.key; }
 // Waakhond-administratie tegen gemiste keyup-events (zie toetsWaakhond hieronder)
 const toetsLaatstGezien={};   // per toets: tijdstip van het laatste keydown-event
 const toetsHerhaaldGezien={}; // per toets: is er tijdens deze druk een herhaal-event gezien?
+// Tijdstip van de laatste toetsenbord-activiteit, ongeacht welke toets -
+// zie de toelichting bij toetsWaakhond() hieronder (turbo-bugfix).
+let laatsteToetsActiviteitTijd = 0;
 
 document.addEventListener('keydown',e=>{
   // Terwijl er in een tekstveld getypt wordt (bijv. de zoekbalk), mag een
@@ -8502,13 +8534,17 @@ document.addEventListener('keydown',e=>{
   const k=normToets(e);
   keys[k]=true;
   toetsLaatstGezien[k]=performance.now();
+  laatsteToetsActiviteitTijd = toetsLaatstGezien[k];
   // e.repeat is true bij de automatische herhalingen die de browser stuurt
   // zolang een toets fysiek ingedrukt blijft. Bij een verse druk (repeat=false)
   // resetten we de markering, zodat de waakhond per druk opnieuw beslist.
   if(e.repeat) toetsHerhaaldGezien[k]=true; else toetsHerhaaldGezien[k]=false;
   if([' ','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
 });
-document.addEventListener('keyup',e=>{ keys[normToets(e)]=false; });
+document.addEventListener('keyup',e=>{
+  keys[normToets(e)]=false;
+  laatsteToetsActiviteitTijd = performance.now();
+});
 
 // ── Waakhond tegen "spooktoetsen" ─────────────────────
 // Soms mist de browser een keyup-event zónder dat het venster de focus
@@ -8520,9 +8556,22 @@ document.addEventListener('keyup',e=>{ keys[normToets(e)]=false; });
 // volgens ons nog "aan" staat? Dan is de keyup gemist en zetten we de
 // toets alsnog op los. (Alleen bij toetsen waarvan we herhalingen zagen,
 // zodat systemen zonder toetsherhaling nooit per ongeluk "loslaten".)
+//
+// Bugfix (turbo bleef na een tijdje opeens stilstaan): hield je twee
+// toetsen tegelijk ingedrukt (bijv. een pijltje sturen + Shift voor turbo),
+// dan stuurde de browser/het besturingssysteem vaak alleen nog
+// herhaal-keydowns voor de LAATST ingedrukte toets - de andere bleef
+// fysiek ingedrukt maar kreeg geen herhalingen meer. De waakhond zag dat
+// voorheen aan voor een gemiste keyup en liet die toets na 1,5s zelf los,
+// terwijl de speler hem nog gewoon vasthield. Daarom nu een extra
+// voorwaarde: is er ELDERS op het toetsenbord nog wél iets gebeurd binnen
+// de laatste 1,5s (bijv. de herhalingen van die andere ingedrukte toets)?
+// Dan is de verbinding met het toetsenbord duidelijk springlevend en grijpt
+// de waakhond niet in - ook al is déze ene toets zelf even stil.
 const TOETS_WAAKHOND_MS = 1500;
 function toetsWaakhond(){
   const nu=performance.now();
+  if(nu-laatsteToetsActiviteitTijd <= TOETS_WAAKHOND_MS) return;
   for(const k in keys){
     if(keys[k] && toetsHerhaaldGezien[k] && nu-toetsLaatstGezien[k] > TOETS_WAAKHOND_MS){
       keys[k]=false;
