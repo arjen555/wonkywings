@@ -1441,7 +1441,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.51</div>
+  <div id="versie-label">v0.6.52</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -4612,7 +4612,7 @@ initialiseerVliegfiguurVoorSpeler();
 // Hoort het bij het startscherm, zet de naam er dan ook bij in GELUID_GOLF1;
 // vergeet je dat, dan valt het vanzelf in golf 2 en werkt het gewoon.
 const GELUID_MAP = 'geluid/';
-const GELUID_PERSONAGE_PREFIX = { timbo:'wonky', meisje:'jet', vogel:'vogel', alien:'ufo' };
+const GELUID_PERSONAGE_PREFIX = { timbo:'wonky', meisje:'jet', vogel:'vogel', alien:'ufo', allen:'allen' };
 const GELUID_AAN_SLEUTEL = 'wonkywings_geluid_aan';
 let geluidAan = localStorage.getItem(GELUID_AAN_SLEUTEL) !== 'uit';
 
@@ -4635,6 +4635,7 @@ const GELUID_EENMALIG_BESTANDEN = {
   jetDraai:       'jet_draaigeluid.mp3',
   vogelDraai:     'vogel_draaigeluid.mp3',
   ufoDraai:       'ufo_draaigeluid.mp3',
+  allenDraai:     'allen_draaigeluid.mp3',
   bliksem:        'bliksem.mp3',
   // Klinkt op het moment dat een vliegend "−X km"-getal het scorebord raakt
   // (dus alleen bij km eráf - niet bij de misser-straf, die juist optelt) -
@@ -4833,6 +4834,8 @@ const GELUID_LUS = {
   vogelTurbo:  nieuwGeluid('vogel_turbogeluid.mp3', true),
   ufoMotor:    nieuwGeluid('ufo_motorgeluid.mp3', true),
   ufoTurbo:    nieuwGeluid('ufo_turbogeluid.mp3', true),
+  allenMotor:  nieuwGeluid('allen_motorgeluid.mp3', true),
+  allenTurbo:  nieuwGeluid('allen_turbogeluid.mp3', true),
   wind:        nieuwGeluid('wind.mp3', true),
   schurk:      nieuwGeluid('schurk_geluid.mp3', true),
   schurkRat:   nieuwGeluid('schurk_rat_geluid.mp3', true),
@@ -5003,6 +5006,7 @@ function speelDraaiGeluid(){
   else if(p === 'jet') speelGeluid('jetDraai');
   else if(p === 'vogel') speelGeluid('vogelDraai');
   else if(p === 'ufo') speelGeluid('ufoDraai');
+  else if(p === 'allen') speelGeluid('allenDraai');
 }
 function startWindGeluid(){ startLus('wind'); }
 function stopWindGeluid(){ stopLusMetFade('wind', 250); }
