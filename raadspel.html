@@ -1994,6 +1994,7 @@ function lsStopSleep(e){
     stempel.style.top = snapTop+'%';
     lsStempelTransform(stempel, idx, 0);
     stempel.classList.add('gesnapt');
+    speelGeluid('stempel-klik.mp3');
   } else {
     // Niet gesnapt — check of stempel in het schelp+tijd-gebied terecht is gekomen
     const dropLeft = parseFloat(stempel.style.left);
@@ -2027,6 +2028,7 @@ function lsSchelpKlik(){
       document.getElementById('ls-schelp-img').src = 'images/schelp-paars.png';
       lsActief = true;
       lsStartTimer();
+      speelGeluid('schelp-start.mp3');
     }, 200);
     return;
   }
@@ -2060,6 +2062,7 @@ function lsCheckAntwoorden(){
     // Gewonnen!
     lsKlaar = true;
     lsStopTimer();
+    speelGeluid(HOERA_BESTANDEN[Math.floor(Math.random()*HOERA_BESTANDEN.length)]);
     lsSchelpStatus = 'groen';
     document.getElementById('ls-schelp-wrap').style.display = 'none';
     // Paspoort + Boek der Groten nemen meteen de plek van de schelp-knop in
@@ -2099,6 +2102,7 @@ function lsCheckAntwoorden(){
     // Fout: schelp wordt rood, na 2 seconden weer paars
     lsSchelpStatus = 'rood';
     document.getElementById('ls-schelp-img').src = 'images/schelp-rood.png';
+    speelGeluid('rood.mp3');
 
     setTimeout(()=>{
       // Ringen weghalen
