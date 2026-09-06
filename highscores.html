@@ -275,6 +275,41 @@ function speelBladGeluid(){
   try{ new Audio('geluid/boek.mp3').play().catch(function(){}); }catch(e){}
 }
 
+// ── Victory-geluid: klinkt precies één keer bij het openen van deze
+// pagina. Een browser staat geluid met volume vaak pas toe nadat de
+// bezoeker zelf iets op DEZE pagina heeft aangeraakt/aangeklikt - de klik
+// die hierheen navigeerde telt daarvoor niet meer mee (bewust zo door
+// browsers ontworpen, anders zou elke site je via een tussenpagina alsnog
+// stiekem geluid kunnen laten horen). Dus: eerst gewoon proberen (bij
+// genoeg eerdere bezoekjes met geluid staat de browser dat vaak al toe),
+// en lukt dat niet, dan alsnog bij de eerste aanraking/klik/toetsaanslag
+// ergens op de pagina - maar hoe dan ook nooit vaker dan die ene keer
+// (dus niet opnieuw bij het wisselen van tabblad hierna).
+function speelVictoryGeluid(){
+  var geluidAan = localStorage.getItem(GELUID_AAN_SLEUTEL) !== 'uit';
+  if(!geluidAan) return;
+  var gespeeld = false;
+  var audio = new Audio('geluid/victory.mp3');
+  function speelAlsnogBijAanraking(){
+    if(gespeeld) return;
+    gespeeld = true;
+    audio.play().catch(function(){});
+    document.removeEventListener('pointerdown', speelAlsnogBijAanraking, true);
+    document.removeEventListener('keydown', speelAlsnogBijAanraking, true);
+  }
+  var poging = audio.play();
+  if(poging && poging.then){
+    poging.then(function(){ gespeeld = true; }).catch(function(){
+      document.addEventListener('pointerdown', speelAlsnogBijAanraking, true);
+      document.addEventListener('keydown', speelAlsnogBijAanraking, true);
+    });
+  } else {
+    // Zeer oude browser zonder Promise-teruggave van play(): geen manier
+    // om een mislukte poging te detecteren, dus dan maar geen terugvalweg.
+    gespeeld = true;
+  }
+}
+
 // Zelfde sessionStorage-sleutel als index.html/raadspel.html/paspoort.html
 // gebruiken: laat aan index.html weten dat we via een menu-knop terugkomen,
 // zodat het verplichte naamscherm daar wordt overgeslagen - de naam is al
@@ -771,6 +806,7 @@ document.getElementById('nav-knoppen').addEventListener('click', function(e){
 
 // ── Start ─────────────────────────────────────────────
 bouwPagina();
+speelVictoryGeluid();
 </script>
 
 <script type="module">
