@@ -1441,7 +1441,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.50</div>
+  <div id="versie-label">v0.6.51</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -3237,7 +3237,18 @@ function heropenNaamOverlay(){
     // geluidssysteem, met een stille klik tot gevolg. wekGeluidOp() (verderop
     // gedefinieerd, maar als function-declaration al beschikbaar) geeft die
     // opwarmtijd hier alsnog, meteen bij het laden.
-    wekGeluidOp();
+    // Let op: wekGeluidOp() zelf leunt op een aantal const/let-variabelen
+    // (geluidContext, GELUID_EENMALIG_BESTANDEN, GELUID_GOLF1, geluidAan...)
+    // die pas veel verderop in dit scriptblok gedefinieerd worden. Riepen we
+    // 'm hier rechtstreeks aan, dan crashte dat op zo'n nog-niet-bestaande
+    // variabele (JavaScript "temporal dead zone") - en omdat heel dit bestand
+    // in feite één lopend scriptblok is, stopte de browser dan meteen met de
+    // rest van het script, inclusief bouwStartscherm() hieronder. Gevolg: alle
+    // menu-knoppen (Landen, Hoofdsteden, ...) bleven leeg na terugkeer vanuit
+    // Paspoort/Boek der Groten. Met setTimeout(...,0) wachten we tot de rest
+    // van het script klaar is met laden voordat wekGeluidOp() echt draait -
+    // onmerkbaar voor de speler, maar zonder de crash.
+    setTimeout(wekGeluidOp, 0);
   } else {
     // Altijd leeg starten met de oplichtende hint, ook als er al een naam
     // bekend is (die blijft uiteraard gewoon bewaard en in gebruik voor
