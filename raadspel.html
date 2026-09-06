@@ -922,10 +922,39 @@ const GELUID_AAN_SLEUTEL = 'wonkywings_geluid_aan';
 // voordat het goed en wel te horen was. Deze korte pauze geeft het
 // geluidje eerst een eerlijke kans.
 const NAVIGATIEGELUID_VERTRAGING_MS = 220;
+// Volumedemping per bestand, alleen waar nodig - bliksemknop.mp3 speelt hier
+// (anders dan de andere geluidjes op deze pagina) niet op volle sterkte,
+// zodat het overal even zacht klinkt als de gedempte versie in index.html
+// (verzoek van Arjen).
+const GELUID_VOLUME = { 'bliksemknop.mp3': 0.6 };
+// ── Willekeurige goed-antwoord-geluiden bij Raad je plaatje: bij een juist
+// antwoord klinkt telkens willekeurig één van deze vijf, bij een fout
+// antwoord altijd fout.mp3 (zie beantwoord() verderop). ──
+const HOERA_BESTANDEN = ['hoera.mp3','hoera2.mp3','hoera3.mp3','hoera4.mp3','hoera5.mp3'];
+// ── Geluid zonder aansluitende navigatie: voor gebeurtenissen die niet naar
+// een andere pagina gaan (een categorie kiezen, een antwoord goed/fout) -
+// dezelfde eenvoudige HTML5 Audio-aanpak en dezelfde aan/uit-sleutel als
+// speelGeluidDanNavigeer hieronder, maar zonder de vertraging-vóór-navigatie
+// (die is hier niet nodig, want de pagina wordt niet verlaten).
+function speelGeluid(bestand){
+  const geluidAan = localStorage.getItem(GELUID_AAN_SLEUTEL) !== 'uit';
+  if(!geluidAan) return;
+  try{
+    const audio = new Audio('geluid/'+bestand);
+    const volume = GELUID_VOLUME[bestand];
+    if(volume !== undefined) audio.volume = volume;
+    audio.play().catch(()=>{});
+  }catch(e){}
+}
 function speelGeluidDanNavigeer(bestand, callback){
   const geluidAan = localStorage.getItem(GELUID_AAN_SLEUTEL) !== 'uit';
   if(geluidAan){
-    try{ new Audio('geluid/'+bestand).play().catch(()=>{}); }catch(e){}
+    try{
+      const audio = new Audio('geluid/'+bestand);
+      const volume = GELUID_VOLUME[bestand];
+      if(volume !== undefined) audio.volume = volume;
+      audio.play().catch(()=>{});
+    }catch(e){}
   }
   setTimeout(callback, NAVIGATIEGELUID_VERTRAGING_MS);
 }
@@ -1132,7 +1161,7 @@ function bouwKiesScherm(){
       const rij = document.createElement('div');
       rij.className = 'kies-rij';
       rij.innerHTML = '<span class="kies-naam">'+cat.naam+'</span>\n        <button class="kies-scores-btn" title="Scores bekijken">🏆</button>';
-      rij.querySelector('.kies-naam').onclick = () => startCategorie(cat.id);
+      rij.querySelector('.kies-naam').onclick = () => { speelGeluid('landenmenuknop.mp3'); startCategorie(cat.id); };
       rij.querySelector('.kies-scores-btn').onclick = (e) => { e.stopPropagation(); toonScorebordAlleen(cat.id); };
       lijst.appendChild(rij);
     }
@@ -1296,6 +1325,9 @@ function beantwoord(gekozen, correct, btnEl){
   if(gekozen===correct){
     aantalGoed++;
     updateGoedWeergave();
+    speelGeluid(HOERA_BESTANDEN[Math.floor(Math.random()*HOERA_BESTANDEN.length)]);
+  } else {
+    speelGeluid('fout.mp3');
   }
 
   setTimeout(()=>{

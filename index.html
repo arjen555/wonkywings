@@ -1441,7 +1441,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.53</div>
+  <div id="versie-label">v0.6.54</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -4774,16 +4774,13 @@ function speelGeluid(naam){
   if(!bestand) return;
   const ctx = geefGeluidContext();
   const buffer = geluidBuffers[naam];
-  // De normale weg: het geluid staat al uitgepakt klaar in het geheugen.
-  // Elk afspeelmoment krijgt zijn eigen bronknoop, dus twee muntjes vlak na
-  // elkaar breken elkaar niet af - net als vroeger met de kopieën, maar nu
-  // zonder dat er iets opgehaald hoeft te worden. De knopen ruimen zichzelf
-  // op zodra ze uitgeklonken zijn.
-  if(ctx && buffer){
-    if(ctx.state === 'suspended') ctx.resume().catch(()=>{});
+  function speelViaWebAudio(buf){
+    // Elk afspeelmoment krijgt zijn eigen bronknoop, dus twee muntjes vlak na
+    // elkaar breken elkaar niet af. De knopen ruimen zichzelf op zodra ze
+    // uitgeklonken zijn.
     try{
       const bron = ctx.createBufferSource();
-      bron.buffer = buffer;
+      bron.buffer = buf;
       const boost = GELUID_BOOST[naam];
       if(boost && boost !== 1){
         const gain = ctx.createGain();
@@ -4793,13 +4790,36 @@ function speelGeluid(naam){
         bron.connect(ctx.destination);
       }
       bron.start(0);
-      return;
-    }catch(e){ /* onverwacht probleem - hieronder gewoon op de oude manier */ }
+      return true;
+    }catch(e){ return false; /* onverwacht probleem - dan de noodweg hieronder */ }
   }
-  // Terugval: dit geluidje is nog niet uitgepakt (of de browser kent geen
-  // Web Audio). Dan speelt het op de oude manier - hooguit die ene keer met
-  // de bekende vertraging, en zonder volumeboost, maar nooit stilte. Meteen
-  // daarna wordt het alsnog ingeladen, zodat het de volgende keer wél snel is.
+  // De normale weg: het geluid staat al uitgepakt klaar in het geheugen.
+  if(ctx && buffer){
+    if(ctx.state === 'suspended') ctx.resume().catch(()=>{});
+    if(speelViaWebAudio(buffer)) return;
+  }
+  // Bijna-klaar-weg: het geluidje is nog niet uitgepakt, maar wordt op dit
+  // moment al opgehaald en ontpakt (bijv. vlak na terugkeer via het menu,
+  // wanneer de naam-schermpauze is overgeslagen en er dus geen tijd was om
+  // vooraf in te laden). Dan wachten we die ene keer op het resultaat in
+  // plaats van meteen op de onbetrouwbare HTML5-terugval te springen - zo
+  // hoor je het geluidje altijd, ook al komt het een fractie later.
+  if(ctx && geluidLaadt[naam]){
+    geluidLaadt[naam].then(buf => {
+      if(ctx.state === 'suspended') ctx.resume().catch(()=>{});
+      if(!speelViaWebAudio(buf)) speelGeluidNoodweg(naam, bestand);
+    }).catch(() => speelGeluidNoodweg(naam, bestand));
+    return;
+  }
+  speelGeluidNoodweg(naam, bestand);
+}
+
+// Terugval: er is geen Web Audio-buffer en er loopt ook geen inlaadpoging
+// (of de browser kent geen Web Audio). Dan speelt het op de oude manier -
+// hooguit die ene keer met de bekende vertraging, en zonder volumeboost,
+// maar nooit stilte. Meteen daarna wordt het alsnog ingeladen, zodat het de
+// volgende keer wél snel is.
+function speelGeluidNoodweg(naam, bestand){
   if(!geluidTerugval[naam]) geluidTerugval[naam] = nieuwGeluid(bestand);
   const kopie = geluidTerugval[naam].cloneNode();
   kopie.play().catch(()=>{}); // negeer een geweigerde autoplay (bijv. vóór de eerste klik)
@@ -10362,6 +10382,10 @@ function openHulp(){
   hulpActief = true;
   hulpOpenTijd = performance.now();
   document.getElementById('help-popup').style.display='flex';
+  // Geluid stil zolang het besturingsschermpje open staat - net als de tijd,
+  // die via hulpOpenTijd hieronder ook niet meetelt.
+  stopMotorGeluid();
+  stopTurboGeluid();
 }
 function sluitHulp(){
   if(hulpActief && levelStartTijd){
@@ -10371,6 +10395,7 @@ function sluitHulp(){
   }
   hulpActief = false;
   document.getElementById('help-popup').style.display='none';
+  if(spelActief) startMotorGeluid();
 }
 // ── Feedback & punten ─────────────────────────────────
 function zetZoomIndicator(niveau){
