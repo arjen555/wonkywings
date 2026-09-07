@@ -1495,7 +1495,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-    <div id="versie-label">v0.6.58</div>
+    <div id="versie-label">v0.6.59</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -3895,6 +3895,12 @@ function toonPlekUitslag(naam, punten){
 function sluitPlekUitslag(){
   clearTimeout(plekUitslagTimer); plekUitslagTimer = null;
   document.getElementById('plek-uitslag-overlay').style.display = 'none';
+  // Gamepad-cooldown: A/B/Y mogen dit scherm ook wegklikken (zie
+  // pollGamepad hieronder), maar hun eigen actie (vlaggetje droppen /
+  // hint gebruiken / joker inzetten) blokkeren we nog even - anders kan een
+  // speler die enthousiast doordrukt om verder te gaan, met diezelfde druk
+  // per ongeluk meteen iets verspelen in de kersverse ronde die hierna start.
+  gamepadPlekUitslagCooldownTot = performance.now() + GAMEPAD_PLEK_UITSLAG_COOLDOWN_MS;
   // Pas nú, terwijl het spel weer gaat lopen, telt dit bedrag mee bij de
   // lopende score linksboven - niet al tijdens het opbouwschermpje zelf.
   if(plekLaatstePunten){
@@ -5637,6 +5643,11 @@ function startSpel(levelId, modus) {
 
   document.getElementById('startscherm').style.display='none';
   document.getElementById('spelscherm').style.display='block';
+  // Top-of-tip-knopje: staat bewust los van #startscherm (zie CSS-comment),
+  // dus verbergt zichzelf niet automatisch zodra een level begint - dat
+  // hoort alleen op de startpagina, niet tijdens het spelen (zie naarStart()
+  // voor het weer terugzetten).
+  document.getElementById('top-tip-knop').style.display='none';
   if(isPlekken){
     // Pas nú het scherm echt zichtbaar is (en de badge dus zijn echte
     // afmetingen heeft) de scorebord-positie opnieuw berekenen - eerder
@@ -5731,6 +5742,7 @@ function naarStart(){
   document.getElementById('scorebord-scherm').style.display='none';
   document.getElementById('hoofdsteden-resultaat-scherm').style.display='none';
   document.getElementById('startscherm').style.display='flex';
+  document.getElementById('top-tip-knop').style.display='';
   // Menu altijd fris terugzetten: was een continent-lijst (Europa/Wereld/
   // Hoofdsteden) nog opengeklapt toen er een level gestart werd, dan bleef
   // #start-rechts tot nu toe hangen in zijn 33%-bredere, over-de-Timbo-foto
@@ -8919,6 +8931,8 @@ let gamepadAKnopVorigeStand = false; // voor eenmalige (edge-triggered) drop, i.
 let gamepadBKnopVorigeStand = false; // B = richtingpijl schieten
 let gamepadYKnopVorigeStand = false; // Y = joker inzetten
 let gamepadXKnopVorigeStand = false; // X = direct doorgaan na goed/fout
+const GAMEPAD_PLEK_UITSLAG_COOLDOWN_MS = 1000; // ná het wegklikken van het plek-uitslagscherm via A/B/X/Y: zo lang blokkeren we de eigen actie van A/B/Y nog (zie sluitPlekUitslag)
+let gamepadPlekUitslagCooldownTot = 0;
 let gamepadLbKnopVorigeStand = false; // LB = plekken-foto groot/klein (alleen als volledig uitgezoomd)
 let gamepadKennisvraagRichtingVorig = {x:0, y:0}; // voor edge-detectie bij het bladeren door kennisvraag-antwoorden
 const GAMEPAD_DODE_ZONE = 0.18; // kleine sticktrilling telt niet mee
@@ -8975,22 +8989,38 @@ function pollGamepad(){
 
   // A-knop (buttons[0]): eenmalig droppen bij indrukken, niet elke frame
   // opnieuw - of, tijdens een nog onbeantwoorde kennisvraag, de gemarkeerde
-  // optie kiezen i.p.v. een vlaggetje droppen.
+  // optie kiezen i.p.v. een vlaggetje droppen. Staat het plek-uitslagscherm
+  // (de puntenopbouw na een plek) open, dan doet deze knop hetzelfde als X:
+  // meteen doorgaan - dat scherm mag met alle vier de knoppen weg. Direct ná
+  // zo'n doorgaan-druk blokkeert de cooldown hieronder nog heel even het
+  // echte droppen, voor het geval iemand fanatiek doordrukt (zie
+  // sluitPlekUitslag).
   const aIngedrukt = !!(gp.buttons[0] && gp.buttons[0].pressed);
   if(aIngedrukt && !gamepadAKnopVorigeStand){
     if(kennisvraagActief){ if(!kennisvraagWachtOpDoorgaan) beantwoordKennisvraag(kennisvraagFocusIdx); }
-    else dropVlaggetje();
+    else if(plekUitslagTimer) skipDoorgaan();
+    else if(performance.now() >= gamepadPlekUitslagCooldownTot) dropVlaggetje();
   }
   gamepadAKnopVorigeStand = aIngedrukt;
 
-  // B-knop (buttons[1]): richtingpijl schieten
+  // B-knop (buttons[1]): richtingpijl schieten - en, net als A hierboven,
+  // het plek-uitslagscherm wegklikken (met dezelfde cooldown erna) als dat
+  // openstaat.
   const bIngedrukt = !!(gp.buttons[1] && gp.buttons[1].pressed);
-  if(bIngedrukt && !gamepadBKnopVorigeStand) gebruikRichtingwijzer(2-hintenBeschikbaar);
+  if(bIngedrukt && !gamepadBKnopVorigeStand){
+    if(plekUitslagTimer) skipDoorgaan();
+    else if(performance.now() >= gamepadPlekUitslagCooldownTot) gebruikRichtingwijzer(2-hintenBeschikbaar);
+  }
   gamepadBKnopVorigeStand = bIngedrukt;
 
-  // Y-knop (buttons[3]): joker inzetten
+  // Y-knop (buttons[3]): joker inzetten - en, net als A/B hierboven, het
+  // plek-uitslagscherm wegklikken (met dezelfde cooldown erna) als dat
+  // openstaat.
   const yIngedrukt = !!(gp.buttons[3] && gp.buttons[3].pressed);
-  if(yIngedrukt && !gamepadYKnopVorigeStand) gebruikJoker();
+  if(yIngedrukt && !gamepadYKnopVorigeStand){
+    if(plekUitslagTimer) skipDoorgaan();
+    else if(performance.now() >= gamepadPlekUitslagCooldownTot) gebruikJoker();
+  }
   gamepadYKnopVorigeStand = yIngedrukt;
 
   // X-knop (buttons[2]): direct doorgaan na een goed/fout antwoord (of, tijdens
