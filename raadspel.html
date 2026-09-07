@@ -501,6 +501,16 @@
   }
   #ls-bordje-wrap.gevallen { top:24%; }
   #ls-bordje-wrap img { width:100%; display:block; }
+  /* Bij het winnen: achtergrond + stempels wat lichter/vlakker maken zodat
+     het bordje en de linkerknoppen opvallen. Zelfde omkeer-truc als bij
+     #ls-speelveld.pijl-toont hierboven (contrast x contrast-omgekeerd = 1,
+     brightness x brightness-omgekeerd = 1) - #ls-menu-groep en
+     #ls-bordje-wrap krijgen de tegengestelde factoren zodat zij zelf gewoon
+     normaal blijven ogen terwijl de rest vervaagt. */
+  #ls-speelveld.eind-toont { filter:contrast(0.6) brightness(1.3); }
+  #ls-menu-groep, #ls-bordje-wrap { transition:filter 0.6s ease; }
+  #ls-speelveld.eind-toont #ls-menu-groep,
+  #ls-speelveld.eind-toont #ls-bordje-wrap { filter:contrast(1.667) brightness(0.769); }
   /* Positie is afgestemd op het plankje in het nieuwe bordje.png (langere
      touwen, plankje zelf staat rond 70-88% van de hoogte van de afbeelding) */
   #ls-bordje-tekst {
@@ -1667,6 +1677,7 @@ function startLandjeSchuif(){
   bordjeWrap.classList.remove('gevallen');
   bordjeWrap.style.top = '';
   document.getElementById('ls-bordje-tekst').textContent = '';
+  document.getElementById('ls-speelveld').classList.remove('eind-toont');
 
   // Reset de paspoort/boek-iconen en de octopus-herstartknop
   document.getElementById('ls-eind-iconen').classList.remove('actief');
@@ -2089,6 +2100,7 @@ function lsCheckAntwoorden(){
       huidigeSpelerNaam() + '<br/><span id="ls-bordje-tijd">' + formatTijdMs(lsTijdVerstreken) + '</span>';
     setTimeout(()=>{
       document.getElementById('ls-bordje-wrap').classList.add('gevallen');
+      document.getElementById('ls-speelveld').classList.add('eind-toont');
     }, 100);
 
     // Ringen na 4 sec verbergen
