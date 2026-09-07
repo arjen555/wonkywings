@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-  <title>Wereld van Wonderen</title>
+  <title>Wonderlijke Wereld</title>
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Berkshire+Swash&display=swap" rel="stylesheet"/>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
@@ -1491,13 +1491,13 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.56</div>
+    <div id="versie-label">v0.6.57</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
   <div id="start-rechts">
     <div id="start-logo-blok">
-      <img id="start-titel-logo" src="images/Ohmooiewereld.png" alt="Oh mooie wereld!"/>
+      <img id="start-titel-logo" src="images/Ohmooiewereld.png" alt="Wonderlijke Wereld"/>
       <div id="start-subtitel">✈ Vliegenderwijs topografie leren ✈</div>
     </div>
     <div id="figuur-kiezer-blok">
@@ -3296,7 +3296,7 @@ async function verstuurTopTip(){
   data.append('name', document.getElementById('top-tip-naam').value.trim() || '(geen naam ingevuld)');
   data.append('email', document.getElementById('top-tip-email').value.trim());
   data.append('message', tekst);
-  data.append('_subject', 'Nieuwe tip - Wereld van Wonderen');
+  data.append('_subject', 'Nieuwe tip - Wonderlijke Wereld');
   data.append('_gotcha', document.getElementById('top-tip-gotcha').value);
 
   try{
