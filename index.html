@@ -240,6 +240,18 @@
       color:rgba(255,255,255,0.35); font-size:0.75rem; font-family:monospace;
       pointer-events:none; user-select:none;
     }
+    /* ── Top-of-tip-knopje: klein en onopvallend linksonder op het
+       startscherm - opent #top-tip-popup (zie verderop) met een kort
+       formuliertje dat via Formspree naar Arjen wordt gemaild. ── */
+    #top-tip-knop {
+      position:absolute; bottom:10px; left:12px; z-index:103;
+      border:none; background:transparent; padding:0; cursor:pointer;
+      width:clamp(90px, 9vw, 130px);
+      transition:transform 0.15s;
+    }
+    #top-tip-knop:hover { transform:scale(1.06); }
+    #top-tip-knop:active { transform:scale(0.95); }
+    #top-tip-knop img { width:100%; display:block; filter:drop-shadow(0 3px 10px rgba(0,0,0,0.5)); }
     #intro-titel {
       /* Bewust niet exact op 50% (schermmidden): daar zit ook het personage-
          groepje bij levelstart, en die twee overlapten elkaar anders. */
@@ -478,6 +490,39 @@
     }
     .geheimwoord-knop:hover { background:rgba(255,255,255,0.2); }
     .geheimwoord-knop.secundair { opacity:0.7; }
+
+    /* ── Tip/suggestie-popup (via het top-tip-knopje) ── */
+    #top-tip-popup {
+      display:none; position:fixed; inset:0; z-index:997;
+      background:rgba(0,0,0,0.72); backdrop-filter:blur(4px);
+      align-items:center; justify-content:center;
+    }
+    #top-tip-popup.tonen { display:flex; }
+    #top-tip-kaart {
+      background:linear-gradient(145deg,#3a2408,#1c1204);
+      border:2px solid rgba(255,215,0,0.55);
+      border-radius:24px; padding:36px 42px; width:min(520px,90vw);
+      box-shadow:0 20px 70px rgba(0,0,0,0.8), inset 0 0 30px rgba(255,215,0,0.06);
+      display:flex; flex-direction:column; gap:14px; align-items:stretch;
+    }
+    #top-tip-titel {
+      font-family:'Baloo 2',sans-serif; font-size:1.3rem; font-weight:800;
+      color:#ffe9a8; text-align:center; line-height:1.35;
+      text-shadow:0 2px 8px rgba(0,0,0,0.5);
+    }
+    #top-tip-naam, #top-tip-email, #top-tip-tekst {
+      font-family:'Baloo 2',sans-serif; font-weight:600; font-size:1rem;
+      border:2px solid rgba(255,215,0,0.4); border-radius:10px; padding:10px 14px;
+      background:#fffaf0; color:#3b2a18;
+    }
+    #top-tip-tekst { resize:vertical; min-height:90px; font-family:inherit; }
+    #top-tip-naam::placeholder, #top-tip-email::placeholder, #top-tip-tekst::placeholder { color:#9c8460; }
+    #top-tip-status {
+      font-family:'Baloo 2',sans-serif; font-weight:700; text-align:center;
+      font-size:0.95rem; min-height:1.2em; color:#ffe9a8;
+    }
+    #top-tip-status.fout { color:#ff8a70; }
+    #top-tip-knoppen { display:flex; gap:12px; justify-content:center; }
 
     /* Zolang de naam-banner in beeld is, zien de categorie-tegels er
        duidelijk ontoegankelijk uit (los van de functionele blokkade die de
@@ -1441,7 +1486,8 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.54</div>
+  <div id="versie-label">v0.6.55</div>
+  <button id="top-tip-knop" onclick="openTopTip()" aria-label="Tip of suggestie doorgeven"><img src="images/top_tip.png" alt="Top of tip?"/></button>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1528,6 +1574,23 @@
     <div id="geheimwoord-knoppen">
       <button class="geheimwoord-knop secundair" onclick="terugNaarNaamOverlay()">◀ Andere naam</button>
       <button class="geheimwoord-knop" onclick="bevestigGeheimwoord()">Doorgaan ▶</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tip/suggestie-popup: zie openTopTip()/sluitTopTip()/verstuurTopTip()
+     verderop. Stuurt het formuliertje via Formspree naar Arjens mailbox. -->
+<div id="top-tip-popup" onclick="if(event.target===this)sluitTopTip()">
+  <div id="top-tip-kaart">
+    <div id="top-tip-titel">Heb je een tip of suggestie?<br/>We horen het graag!</div>
+    <input type="text" id="top-tip-naam" maxlength="40" autocomplete="off" placeholder="Je naam (niet verplicht)"/>
+    <input type="email" id="top-tip-email" maxlength="80" autocomplete="off" placeholder="Je e-mailadres (niet verplicht)"/>
+    <textarea id="top-tip-tekst" maxlength="1000" placeholder="Vertel het ons..."></textarea>
+    <input type="text" name="_gotcha" id="top-tip-gotcha" style="display:none" tabindex="-1" autocomplete="off"/>
+    <div id="top-tip-status"></div>
+    <div id="top-tip-knoppen">
+      <button class="geheimwoord-knop secundair" onclick="sluitTopTip()">Annuleren</button>
+      <button class="geheimwoord-knop" id="top-tip-verstuur-knop" onclick="verstuurTopTip()">Versturen ▶</button>
     </div>
   </div>
 </div>
@@ -3188,6 +3251,68 @@ document.getElementById('geheimwoord-input').addEventListener('keydown', e=>{
   if(e.key==='Enter'){ e.preventDefault(); bevestigGeheimwoord(); }
   else if(e.key==='Escape'){ e.preventDefault(); terugNaarNaamOverlay(); }
 });
+
+// ── Tip/suggestie-formulier (top-tip-knopje linksonder op het startscherm) ──
+// Stuurt het formuliertje via Formspree (gratis dienst, geen eigen server
+// nodig - past bij GitHub Pages) rechtstreeks naar Arjens mailbox. Het
+// verborgen '_gotcha'-veld is Formspree's eigen spam-val: een bot vult
+// meestal alle velden in, een echte bezoeker ziet dit veld nooit.
+const TOP_TIP_ENDPOINT = 'https://formspree.io/f/mljewvjq';
+
+function openTopTip(){
+  const statusEl = document.getElementById('top-tip-status');
+  statusEl.textContent = '';
+  statusEl.classList.remove('fout');
+  document.getElementById('top-tip-popup').classList.add('tonen');
+}
+function sluitTopTip(){
+  document.getElementById('top-tip-popup').classList.remove('tonen');
+}
+
+async function verstuurTopTip(){
+  const tekstEl = document.getElementById('top-tip-tekst');
+  const statusEl = document.getElementById('top-tip-status');
+  const tekst = tekstEl.value.trim();
+  if(!tekst){
+    statusEl.textContent = 'Vul eerst je tip of suggestie in.';
+    statusEl.classList.add('fout');
+    return;
+  }
+  const knop = document.getElementById('top-tip-verstuur-knop');
+  knop.disabled = true;
+  statusEl.classList.remove('fout');
+  statusEl.textContent = 'Versturen...';
+
+  const data = new FormData();
+  data.append('name', document.getElementById('top-tip-naam').value.trim() || '(geen naam ingevuld)');
+  data.append('email', document.getElementById('top-tip-email').value.trim());
+  data.append('message', tekst);
+  data.append('_subject', 'Nieuwe tip - Wereld van Wonderen');
+  data.append('_gotcha', document.getElementById('top-tip-gotcha').value);
+
+  try{
+    const resp = await fetch(TOP_TIP_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Accept': 'application/json' },
+      body: data
+    });
+    if(resp.ok){
+      statusEl.textContent = 'Bedankt voor je tip! 🎉';
+      document.getElementById('top-tip-naam').value = '';
+      document.getElementById('top-tip-email').value = '';
+      tekstEl.value = '';
+      setTimeout(sluitTopTip, 1800);
+    } else {
+      statusEl.textContent = 'Er ging iets mis. Probeer het later nog eens.';
+      statusEl.classList.add('fout');
+    }
+  }catch(e){
+    statusEl.textContent = 'Er ging iets mis. Probeer het later nog eens.';
+    statusEl.classList.add('fout');
+  }
+  knop.disabled = false;
+}
+
 // Sluit de banner zonder wijzigingen - alleen toegestaan als er al eerder
 // een geldige naam is bevestigd (dus nooit bij de allereerste, verplichte
 // keer). Gebruikt door zowel Escape als het sluiten via de knop hieronder.
