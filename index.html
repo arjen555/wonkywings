@@ -4,6 +4,10 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title>Wonderlijke Wereld</title>
+  <link rel="icon" href="favicon.ico" sizes="any"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32x32.png"/>
+  <link rel="icon" type="image/png" sizes="16x16" href="images/favicon-16x16.png"/>
+  <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png"/>
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Berkshire+Swash&display=swap" rel="stylesheet"/>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
@@ -1491,9 +1495,9 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-    <div id="versie-label">v0.6.59</div>
+    <div id="versie-label">v0.6.58</div>
   <div id="start-links">
-    <img id="start-timbo" src="images/Timbo.jpg" alt="Timbo"/>
+    <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
   <div id="start-rechts">
     <div id="start-logo-blok">
@@ -4684,8 +4688,6 @@ function ververfFiguurKeuze(){
 function blaaderVliegfiguur(delta){
   figuurBrowseIndex = Math.max(0, Math.min(VLIEGFIGUREN.length-1, figuurBrowseIndex+delta));
   ververfFiguurKeuze();
-  const fig = VLIEGFIGUREN[figuurBrowseIndex];
-  if(isVliegfiguurVrijgespeeld(fig)) speelFiguurGoGeluid(fig.id);
 }
 
 // Wisselt tussen het logo+ondertitel en de vliegfiguur-kiezer, op de
@@ -4809,13 +4811,6 @@ const GELUID_EENMALIG_BESTANDEN = {
   // stopBoostedLus() verderop.
   verrekijkerIn:      'verrekijker.mp3',
   verrekijkerUit:     'verrekijker2.mp3',
-  // "Hallo"-stemgeluidjes bij het kiezen van een vliegtuigje in de
-  // personage-kiezer op het startscherm (zie VLIEGFIGUUR_GO_GELUID en
-  // speelFiguurGoGeluid verderop) - alleen voor personages die al een eigen
-  // stem hebben.
-  wonkyGo:            'wonkygo.mp3',
-  meisjeGo:           'meisjego.mp3',
-  vogelGo:            'vogelgo.mp3',
 };
 // Golf 1: alles wat al op het startscherm kan klinken, vóórdat er ook maar
 // één level gestart is. Korte klakjes, samen een fractie van de geluidsmap.
@@ -4823,7 +4818,6 @@ const GELUID_GOLF1 = new Set([
   'bliksemknop','hoofdmenuknopOpen','hoofdmenuknopDicht',
   'landenmenuknop','snelleWiew','boek','boekPaspoort','plekkenKnop',
   'dierenbrul','optiesSpeler','optiesVorige','optiesVolgende','optiesSluiten',
-  'wonkyGo','meisjeGo','vogelGo',
 ]);
 
 // Eén gedeelde Web Audio-context. Aanmaken mag gewoon vóór een klik; hij
@@ -4985,49 +4979,6 @@ const NAVIGATIEGELUID_VERTRAGING_MS = 220;
 function speelGeluidDanNavigeer(naam, callback, vertragingMs){
   speelGeluid(naam);
   setTimeout(callback, vertragingMs || NAVIGATIEGELUID_VERTRAGING_MS);
-}
-
-// ── Personage-kiezer: "hallo"-stemgeluidje bij het wisselen van vliegtuigje
-// (v0.6.59) ─────────────────────────────────────────────────────────────
-// Alleen voor personages die al een eigen stemgeluidje hebben - momenteel
-// Timbo, het meisje en de vogel; alien/allen/kip blijven voorlopig stil
-// (geen entry hier = geen geluid, precies zoals rookBestanden:null hierboven
-// voor "geen rookspoor"). Gebruikt dezelfde AudioBuffer-voorraad als de
-// andere geluidjes hierboven (golf 1, dus al klaar voordat de speler ooit
-// klikt) en klinkt daardoor zonder vertraging.
-//
-// Dit geluidje wijkt op één punt af van de rest: normaal mogen geluidjes
-// gewoon over elkaar heen klinken (zie speelGeluid hierboven, elke knoop
-// ruimt zichzelf vanzelf op). Voor korte tikjes en muntjes is dat prima,
-// maar dit zijn stemfragmentjes van ruim een seconde - klikt iemand sneller
-// door de personages dan zo'n fragment duurt, dan zou je anders meerdere
-// stemmen door elkaar horen. Daarom breekt een nieuw fragment hier het
-// vorige (nog lopende) fragment eerst af.
-const VLIEGFIGUUR_GO_GELUID = { timbo:'wonkyGo', meisje:'meisjeGo', vogel:'vogelGo' };
-let figuurGoBron = null;
-function speelFiguurGoGeluid(figId){
-  if(!geluidAan) return;
-  const naam = VLIEGFIGUUR_GO_GELUID[figId];
-  if(!naam) return; // dit personage heeft nog geen eigen stem
-  const ctx = geefGeluidContext();
-  if(!ctx) return;
-  if(figuurGoBron){ try{ figuurGoBron.stop(); }catch(e){} figuurGoBron = null; }
-  function speel(buf){
-    try{
-      if(ctx.state === 'suspended') ctx.resume().catch(()=>{});
-      const bron = ctx.createBufferSource();
-      bron.buffer = buf;
-      bron.connect(ctx.destination);
-      bron.onended = () => { if(figuurGoBron === bron) figuurGoBron = null; };
-      bron.start(0);
-      figuurGoBron = bron;
-    }catch(e){}
-  }
-  const buffer = geluidBuffers[naam];
-  if(buffer){ speel(buffer); return; }
-  // Nog niet uitgepakt (bijv. vlak na het laden van de pagina): dan wachten
-  // we die ene keer op het resultaat, net als de noodweg in speelGeluid.
-  (geluidLaadt[naam] || laadGeluidBuffer(naam)).then(speel).catch(()=>{});
 }
 
 // Lussende geluiden (motor/turbo per personage, wind): altijd hetzelfde
