@@ -941,6 +941,38 @@ const GELUID_VOLUME = { 'bliksemknop.mp3': 0.6 };
 // antwoord klinkt telkens willekeurig één van deze vijf, bij een fout
 // antwoord altijd fout.mp3 (zie beantwoord() verderop). ──
 const HOERA_BESTANDEN = ['hoera.mp3','hoera2.mp3','hoera3.mp3','hoera4.mp3','hoera5.mp3'];
+// ── Geluidjes vooraf opwarmen (v0.6.1) ────────────────────────────────────
+// speelGeluid()/speelGeluidDanNavigeer() hierboven en hieronder maken bij
+// elke aanroep gewoon een NIEUW Audio-element aan (de eenvoudige aanpak die
+// deze pagina altijd al had, zie de toelichting eerder in dit blok) - prima
+// voor de meeste knopjes, maar een paar geluidjes zijn juist precies op een
+// spannend/tijdkritisch moment nodig: het startsein bij Landje Schuif
+// (schelp-start.mp3, waar de speler een directe reactie op de klik
+// verwacht) en de meteen-hoorbare feedback bij een goed/fout antwoord in
+// Raad je plaatje (fout.mp3, de hoera-varianten). Zonder opwarming moet de
+// browser zo'n bestand bij de EERSTE keer alsnog over het netwerk ophalen
+// en decoderen voordat er iets te horen is - precies de trage-eerste-keer-
+// vertraging die index.html's eigen geluidssysteem indertijd juist heeft
+// laten verdwijnen (zie de toelichting daar, v0.6.44).
+//
+// Deze bestanden hier dus alvast bij het laden van de pagina aanvragen
+// (zonder ze af te spelen): daarna staan ze warm in de cache van de browser,
+// zodat de latere ECHTE speelGeluid()-aanroep alleen nog de reeds-opgehaalde
+// bytes hoeft te decoderen - geen netwerk-wachttijd meer op het moment dat
+// het er echt toe doet. Verandert verder niets aan hoe speelGeluid() zelf
+// werkt.
+const GELUID_VOORAF_OPWARMEN = ['schelp-start.mp3', 'fout.mp3', ...HOERA_BESTANDEN];
+function warmGeluidenOp(){
+  const geluidAan = localStorage.getItem(GELUID_AAN_SLEUTEL) !== 'uit';
+  if(!geluidAan) return;
+  GELUID_VOORAF_OPWARMEN.forEach(bestand=>{
+    try{
+      const a = new Audio('geluid/'+bestand);
+      a.preload = 'auto';
+    }catch(e){}
+  });
+}
+warmGeluidenOp();
 // ── Geluid zonder aansluitende navigatie: voor gebeurtenissen die niet naar
 // een andere pagina gaan (een categorie kiezen, een antwoord goed/fout) -
 // dezelfde eenvoudige HTML5 Audio-aanpak en dezelfde aan/uit-sleutel als
