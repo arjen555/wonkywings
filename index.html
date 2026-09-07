@@ -244,7 +244,12 @@
        startscherm - opent #top-tip-popup (zie verderop) met een kort
        formuliertje dat via Formspree naar Arjen wordt gemaild. ── */
     #top-tip-knop {
-      position:absolute; bottom:10px; left:12px; z-index:103;
+      /* position:fixed (i.p.v. absolute) en een hoog z-index, want dit
+         knopje staat inmiddels los van #startscherm (zie HTML verderop) -
+         zo blijft het ook aanklikbaar boven het verplichte naam-scherm
+         (z-index 200) en het geheimwoord-schermpje (z-index 201), i.p.v.
+         daar per ongeluk onder te verdwijnen. */
+      position:fixed; bottom:10px; left:12px; z-index:210;
       border:none; background:transparent; padding:0; cursor:pointer;
       width:clamp(90px, 9vw, 130px);
       transition:transform 0.15s;
@@ -1486,8 +1491,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-  <div id="versie-label">v0.6.55</div>
-  <button id="top-tip-knop" onclick="openTopTip()" aria-label="Tip of suggestie doorgeven"><img src="images/top_tip.png" alt="Top of tip?"/></button>
+  <div id="versie-label">v0.6.56</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
   </div>
@@ -1522,6 +1526,11 @@
     </div>
   </div>
 </div>
+
+<!-- Top-of-tip-knopje: bewust los van #startscherm gezet (zie CSS-comment bij
+     #top-tip-knop) zodat het altijd aanklikbaar blijft, ook boven het
+     verplichte naam-scherm en het geheimwoord-schermpje. -->
+<button id="top-tip-knop" onclick="openTopTip()" aria-label="Tip of suggestie doorgeven"><img src="images/top_tip.png" alt="Top of tip?"/></button>
 
 <div id="opties-overlay" onclick="if(event.target===this){ speelGeluid('optiesSluiten'); sluitOptiesOverlay(); }">
   <div id="opties-overlay-zone" onclick="if(event.target===this){ speelGeluid('optiesSluiten'); sluitOptiesOverlay(); }">
