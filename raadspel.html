@@ -23,7 +23,7 @@
     position:relative;
     width:min(96vw, 96vh*1.2475);
     aspect-ratio:1401/1123;
-    background:url('images/interface.jpg') center/contain no-repeat;
+    background:url('images/interface.png') center/contain no-repeat;
     filter:drop-shadow(0 10px 40px rgba(0,0,0,0.6));
   }
 
@@ -223,14 +223,29 @@
 
   /* ── Landenpaspoort-icoontje bij het "Klaar!"-scherm: los van het kader
      gepositioneerd (position:fixed, rechtsonder in het hele scherm), zelfde
-     opzet en grootte als in index.html, zodat het overal consistent is. ── */
+     opzet en grootte als in index.html, zodat het overal consistent is.
+     Staat nu een treetje BOVEN het Boek der Groten-icoontje hieronder (dat
+     heeft de oorspronkelijke onderste plek overgenomen) - zelfde breedte,
+     gestapeld i.p.v. naast elkaar. ── */
   #klaar-paspoort-icoon {
-    display:none; position:fixed; right:clamp(16px, 3vw, 40px); bottom:clamp(16px, 3vw, 40px);
+    display:none; position:fixed; right:clamp(16px, 3vw, 40px);
+    bottom:calc(clamp(16px, 3vw, 40px) + min(252px, 24vw) + clamp(10px, 2.5vw, 20px));
     width:min(252px, 24vw); cursor:pointer; z-index:150;
     filter:drop-shadow(0 6px 20px rgba(0,0,0,0.55));
     transition:transform 0.15s;
   }
   #klaar-paspoort-icoon:hover { transform:scale(1.06); }
+
+  /* ── Boek der Groten-icoontje: exact de plek die het paspoort hierboven
+     vroeger had (helemaal rechtsonder), zelfde grootte - opent het
+     highscoreboek op het tabblad 'Raad je landje' (?sectie=raadspel). ── */
+  #klaar-boek-icoon {
+    display:none; position:fixed; right:clamp(16px, 3vw, 40px); bottom:clamp(16px, 3vw, 40px);
+    width:min(252px, 24vw); cursor:pointer; z-index:150;
+    filter:drop-shadow(0 6px 20px rgba(0,0,0,0.55));
+    transition:transform 0.15s;
+  }
+  #klaar-boek-icoon:hover { transform:scale(1.06); }
 
   /* ── Landenpaspoort: rijtje met net verdiende stempels, bovenaan het
      scherm, dat na een korte pauze naar het paspoort-icoontje toe vliegt
@@ -622,6 +637,7 @@
      scherm. Zichtbaarheid wordt in toonScherm() geregeld (alleen te zien op
      het "Klaar!"-scherm), in plaats van via de normale .scherm-cascade. -->
 <img id="klaar-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="speelGeluidDanNavigeer('boek.mp3', () => window.location.href='paspoort.html')"/>
+<img id="klaar-boek-icoon" src="images/boek-der-groten-icoon.png" alt="Boek der Groten" onclick="speelGeluidDanNavigeer('boek.mp3', () => window.location.href='highscores.html?sectie=raadspel')"/>
 
 <!-- Zelfde reden als #klaar-paspoort-icoon: buiten #kader, en zichtbaarheid
      via toonScherm() geregeld (alleen op het "Klaar!"-scherm). De knop "nog
@@ -1071,6 +1087,7 @@ function toonSpelkeuze(){
   document.querySelectorAll('.scherm').forEach(el=>el.classList.remove('actief'));
   document.getElementById('antwoorden-grid').classList.remove('actief');
   document.getElementById('klaar-paspoort-icoon').style.display = 'none';
+  document.getElementById('klaar-boek-icoon').style.display = 'none';
   document.getElementById('klaar-linksboven-knoppen').style.display = 'none';
   document.getElementById('landjeschuif-veld').classList.remove('actief');
   document.getElementById('kader').style.display = 'none';
@@ -1143,10 +1160,11 @@ function toonScherm(id){
   // Wereldkaart-achtergrond alleen bij het kiezen van een werelddeel, tijdens
   // het spel zelf, en bij het evalueren achteraf — niet bij naam/woordje.
   document.body.classList.toggle('wereldkaart-achtergrond', id==='scherm-kies' || id==='scherm-spel' || id==='scherm-klaar');
-  // #klaar-paspoort-icoon en #klaar-linksboven-knoppen staan buiten #kader
-  // (zie de notitie bij hun HTML) en volgen dus niet vanzelf de
-  // .scherm-cascade - hier expliciet meesturen.
+  // #klaar-paspoort-icoon, #klaar-boek-icoon en #klaar-linksboven-knoppen
+  // staan buiten #kader (zie de notitie bij hun HTML) en volgen dus niet
+  // vanzelf de .scherm-cascade - hier expliciet meesturen.
   document.getElementById('klaar-paspoort-icoon').style.display = (id==='scherm-klaar') ? 'block' : 'none';
+  document.getElementById('klaar-boek-icoon').style.display = (id==='scherm-klaar') ? 'block' : 'none';
   document.getElementById('klaar-linksboven-knoppen').style.display = (id==='scherm-klaar') ? 'flex' : 'none';
   // Spelkeuze en Landje Schuif hebben eigen fullscreen containers buiten
   // #kader; bij elke "normale" schermwissel moeten die dicht en #kader
