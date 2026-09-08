@@ -318,10 +318,10 @@
        instelling bij Opties - dat scheelt flink in laadtijd van alle
        landillustraties. Geen kadertje: gloeiende gele tekst, licht schuin
        (volgt de helling van de vleugel), alles op één regel. Verschijnt
-       helder in beeld en vervaagt na 2 seconden vanzelf weer. ── */
+       helder in beeld en vervaagt na 3 seconden vanzelf weer. ── */
     #prestatie-tip {
       position:absolute; left:50%; top:60%;
-      transform:translate(-50%,-50%) rotate(9deg);
+      transform:translate(-50%,-50%) rotate(-9deg);
       max-width:92%;
       color:#ffd700; font-family:'Baloo 2',sans-serif; font-weight:800;
       font-size:clamp(1.3rem, 2.7vw, 2.4rem); white-space:nowrap; text-align:center;
@@ -1530,7 +1530,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-    <div id="versie-label">v0.6.63</div>
+    <div id="versie-label">v0.6.65</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
     <div id="prestatie-tip">Trage computer? Kies voor minder detail bij opties</div>
@@ -1842,7 +1842,7 @@
     </div>
     <div id="scorebord-stempel" class="stempel-melding"></div>
     <button id="scorebord-terug-btn" onclick="speelGeluid('bliksemknop');terugNaarStartMetStempels()"><img src="images/terug-naar-start-knop.png" alt="Terug naar menu"/></button>
-    <img id="scorebord-boek-icoon" class="eindscherm-boek-icoon" src="images/boek-der-groten-icoon.png" alt="Boek der Groten" onclick="speelGeluidDanNavigeer('boek', () => window.location.href='highscores.html')"/>
+    <img id="scorebord-boek-icoon" class="eindscherm-boek-icoon" src="images/boek-der-groten-icoon.png" alt="Boek der Groten" onclick="speelGeluidDanNavigeer('boek', () => window.location.href='highscores.html?sectie=landen')"/>
     <img id="scorebord-paspoort-icoon" class="eindscherm-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="speelGeluidDanNavigeer('boekPaspoort', () => window.location.href='paspoort.html')"/>
   </div>
 </div>
@@ -1859,7 +1859,7 @@
     <div id="hoofdsteden-resultaat-score"></div>
     <div id="hoofdsteden-resultaat-stempel" class="stempel-melding"></div>
     <button id="hoofdsteden-resultaat-terug-btn" onclick="speelGeluid('bliksemknop');terugNaarStartMetStempels()"><img src="images/terug-naar-start-knop.png" alt="Terug naar menu"/></button>
-    <img id="hoofdsteden-resultaat-boek-icoon" class="eindscherm-boek-icoon" src="images/boek-der-groten-icoon.png" alt="Boek der Groten" onclick="speelGeluidDanNavigeer('boek', () => window.location.href='highscores.html')"/>
+    <img id="hoofdsteden-resultaat-boek-icoon" class="eindscherm-boek-icoon" src="images/boek-der-groten-icoon.png" alt="Boek der Groten" onclick="speelGeluidDanNavigeer('boek', () => window.location.href='highscores.html?sectie=hoofdsteden')"/>
     <img id="hoofdsteden-resultaat-paspoort-icoon" class="eindscherm-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="speelGeluidDanNavigeer('boekPaspoort', () => window.location.href='paspoort.html')"/>
   </div>
 </div>
@@ -2030,7 +2030,7 @@
       <div id="plekken-eind-totaal"></div>
       <div id="plekken-eind-stempel" class="stempel-melding"></div>
       <button id="plekken-eind-verder" onclick="speelGeluid('bliksemknop');terugNaarStartMetStempels()"><img src="images/terug-naar-start-knop.png" alt="Terug naar het menu"/></button>
-      <img id="plekken-eind-boek-icoon" class="eindscherm-boek-icoon" src="images/boek-der-groten-icoon.png" alt="Boek der Groten" onclick="speelGeluidDanNavigeer('boek', () => window.location.href='highscores.html')"/>
+      <img id="plekken-eind-boek-icoon" class="eindscherm-boek-icoon" src="images/boek-der-groten-icoon.png" alt="Boek der Groten" onclick="speelGeluidDanNavigeer('boek', () => window.location.href='highscores.html?sectie=plekken')"/>
       <img id="plekken-eind-paspoort-icoon" class="eindscherm-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="speelGeluidDanNavigeer('boekPaspoort', () => window.location.href='paspoort.html')"/>
     </div>
   </div>
@@ -3248,11 +3248,11 @@ function rondNaamAfMet(naam){
 // Kort tekstballonnetje op het startscherm dat wijst op de detail-instelling
 // bij Opties - handig voor tragere computers (bijv. op school), waar het
 // laden van alle landillustraties duidelijk merkbaar trager gaat. Verschijnt
-// meteen helder in beeld en vervaagt na 2 seconden vanzelf weer.
+// meteen helder in beeld en vervaagt na 3 seconden vanzelf weer.
 function toonPrestatieTip(){
   const el = document.getElementById('prestatie-tip');
   el.classList.add('zichtbaar');
-  setTimeout(()=>{ el.classList.remove('zichtbaar'); }, 2000);
+  setTimeout(()=>{ el.classList.remove('zichtbaar'); }, 3000);
 }
 
 // ── Geheim woordje: voorkomt dat iemand een bestaande naam kan "stelen" ──

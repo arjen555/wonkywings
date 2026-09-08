@@ -805,6 +805,17 @@ document.getElementById('nav-knoppen').addEventListener('click', function(e){
 });
 
 // ── Start ─────────────────────────────────────────────
+// Diep koppelen vanuit het spel: een `?sectie=...`-parameter in de URL zet
+// meteen het juiste tabblad open (bijv. vanuit het Hoofdsteden- of
+// Iconische plekken-eindscherm in index.html, via het Boek der Groten-
+// icoontje daar), i.p.v. altijd op Landen te beginnen. Een onbekende of
+// ontbrekende waarde valt terug op de standaard ('landen') - precies zoals
+// vanuit de startpagina van index.html.
+var gevraagdeSectie = new URLSearchParams(window.location.search).get('sectie');
+if(gevraagdeSectie && SECTIES[gevraagdeSectie]) huidigeSectie = gevraagdeSectie;
+document.querySelectorAll('.nav-btn').forEach(function(k){
+  k.classList.toggle('actief', k.dataset.sectie === huidigeSectie);
+});
 bouwPagina();
 speelVictoryGeluid();
 </script>
