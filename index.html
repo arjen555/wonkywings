@@ -312,6 +312,26 @@
       background:linear-gradient(to right, transparent 60%, #051e30 100%);
       pointer-events:none;
     }
+    /* ── Prestatie-tip: verschijnt kort nadat naam + geheim woordje zijn
+       ingevuld (zie toonPrestatieTip()/rondNaamAfMet()) om spelers op een
+       trage computer (bijv. op school) meteen te wijzen op de detail-
+       instelling bij Opties - dat scheelt flink in laadtijd van alle
+       landillustraties. Verschijnt helder in beeld, boven het open water
+       onder het vliegtuigje, en vervaagt na 2 seconden vanzelf weer. ── */
+    #prestatie-tip {
+      position:absolute; left:50%; top:60%; transform:translate(-50%,-50%);
+      width:min(480px, 42%);
+      background:rgba(5,30,48,0.88); border:2px solid rgba(255,215,0,0.55);
+      border-radius:16px; padding:16px 26px;
+      color:#ffe9a8; font-family:'Baloo 2',sans-serif; font-weight:800;
+      font-size:clamp(0.95rem, 1.6vw, 1.25rem); text-align:center; line-height:1.35;
+      text-shadow:0 1px 4px rgba(0,0,0,0.5);
+      box-shadow:0 10px 30px rgba(0,0,0,0.5);
+      opacity:0; pointer-events:none;
+      transition:opacity 0.6s ease;
+      z-index:20;
+    }
+    #prestatie-tip.zichtbaar { opacity:1; }
     #start-rechts {
       flex:1;
       display:flex; flex-direction:column;
@@ -951,6 +971,22 @@
       transition:transform 0.15s;
     }
     .eindscherm-paspoort-icoon:hover { transform:scale(1.06); }
+    /* ── Boek der Groten-icoon naast het Paspoort-icoon op de eindschermen -
+       zelfde opzet (vaste positie, zelfde afmeting, zelfde hover) als
+       .eindscherm-paspoort-icoon hierboven, maar dan de tussenruimte van de
+       startpagina (#startscherm-icoontjes) ernaast: het paspoort-icoontje
+       blijft op zijn vertrouwde plek rechtsonder, dit staat er meteen links
+       naast. ── */
+    .eindscherm-boek-icoon {
+      position:fixed;
+      right:calc(clamp(16px, 3vw, 40px) + min(252px, 24vw) + clamp(10px, 2.5vw, 20px));
+      bottom:clamp(16px, 3vw, 40px);
+      width:min(252px, 24vw); cursor:pointer;
+      z-index:1001;
+      filter:drop-shadow(0 6px 20px rgba(0,0,0,0.55));
+      transition:transform 0.15s;
+    }
+    .eindscherm-boek-icoon:hover { transform:scale(1.06); }
     /* ── Landenpaspoort: rijtje met net verdiende stempels, bovenaan het
        scherm, dat na een korte pauze naar het paspoort-icoontje toe vliegt
        (zie toonVliegendeStempels()). Los van de eindscherm-kaarten zelf
@@ -1495,9 +1531,10 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-    <div id="versie-label">v0.6.59</div>
+    <div id="versie-label">v0.6.62</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
+    <div id="prestatie-tip">Trage computer? Kies voor minder detail bij opties</div>
   </div>
   <div id="start-rechts">
     <div id="start-logo-blok">
@@ -1806,7 +1843,8 @@
     </div>
     <div id="scorebord-stempel" class="stempel-melding"></div>
     <button id="scorebord-terug-btn" onclick="speelGeluid('bliksemknop');terugNaarStartMetStempels()"><img src="images/terug-naar-start-knop.png" alt="Terug naar menu"/></button>
-    <img id="scorebord-paspoort-icoon" class="eindscherm-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="window.location.href='paspoort.html'"/>
+    <img id="scorebord-boek-icoon" class="eindscherm-boek-icoon" src="images/boek-der-groten-icoon.png" alt="Boek der Groten" onclick="speelGeluidDanNavigeer('boek', () => window.location.href='highscores.html')"/>
+    <img id="scorebord-paspoort-icoon" class="eindscherm-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="speelGeluidDanNavigeer('boekPaspoort', () => window.location.href='paspoort.html')"/>
   </div>
 </div>
 
@@ -1822,7 +1860,8 @@
     <div id="hoofdsteden-resultaat-score"></div>
     <div id="hoofdsteden-resultaat-stempel" class="stempel-melding"></div>
     <button id="hoofdsteden-resultaat-terug-btn" onclick="speelGeluid('bliksemknop');terugNaarStartMetStempels()"><img src="images/terug-naar-start-knop.png" alt="Terug naar menu"/></button>
-    <img id="hoofdsteden-resultaat-paspoort-icoon" class="eindscherm-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="window.location.href='paspoort.html'"/>
+    <img id="hoofdsteden-resultaat-boek-icoon" class="eindscherm-boek-icoon" src="images/boek-der-groten-icoon.png" alt="Boek der Groten" onclick="speelGeluidDanNavigeer('boek', () => window.location.href='highscores.html')"/>
+    <img id="hoofdsteden-resultaat-paspoort-icoon" class="eindscherm-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="speelGeluidDanNavigeer('boekPaspoort', () => window.location.href='paspoort.html')"/>
   </div>
 </div>
 
@@ -1992,7 +2031,8 @@
       <div id="plekken-eind-totaal"></div>
       <div id="plekken-eind-stempel" class="stempel-melding"></div>
       <button id="plekken-eind-verder" onclick="speelGeluid('bliksemknop');terugNaarStartMetStempels()"><img src="images/terug-naar-start-knop.png" alt="Terug naar het menu"/></button>
-      <img id="plekken-eind-paspoort-icoon" class="eindscherm-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="window.location.href='paspoort.html'"/>
+      <img id="plekken-eind-boek-icoon" class="eindscherm-boek-icoon" src="images/boek-der-groten-icoon.png" alt="Boek der Groten" onclick="speelGeluidDanNavigeer('boek', () => window.location.href='highscores.html')"/>
+      <img id="plekken-eind-paspoort-icoon" class="eindscherm-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="speelGeluidDanNavigeer('boekPaspoort', () => window.location.href='paspoort.html')"/>
     </div>
   </div>
 </div>
@@ -3204,6 +3244,16 @@ function rondNaamAfMet(naam){
   // meteen bijwerken, in plaats van pas zodra er toevallig doorgebladerd
   // wordt in de kiezer.
   initialiseerVliegfiguurVoorSpeler();
+  toonPrestatieTip();
+}
+// Kort tekstballonnetje op het startscherm dat wijst op de detail-instelling
+// bij Opties - handig voor tragere computers (bijv. op school), waar het
+// laden van alle landillustraties duidelijk merkbaar trager gaat. Verschijnt
+// meteen helder in beeld en vervaagt na 2 seconden vanzelf weer.
+function toonPrestatieTip(){
+  const el = document.getElementById('prestatie-tip');
+  el.classList.add('zichtbaar');
+  setTimeout(()=>{ el.classList.remove('zichtbaar'); }, 2000);
 }
 
 // ── Geheim woordje: voorkomt dat iemand een bestaande naam kan "stelen" ──
@@ -5928,25 +5978,11 @@ function formatTijd(sec){ const m=Math.floor(sec/60), s=sec%60; return m+':'+Str
 // (afgerond naar een getal 0-10) en niet van het kale aantal - zo klopt het
 // ook bij een potje dat niet uit precies 10 landen bestaat.
 //
-// Elk plaatje is apart getekend, dus het "TIJD"- en "KM UIT DE
-// RICHTING"-bordje staat niet overal even hoog of breed - vandaar deze
-// losse positietabel (in % van de afbeelding, gemeten op de vierkante
-// bronbestanden). Plaatje 10 (het feestende leeuwtje) is een ander soort
-// tekening dan de rest en is met het oog geschat; mocht die tekst daar niet
-// mooi op het bordje vallen, geef de juiste %-waardes door dan stel ik ze bij.
-const TROFEE_TEKST_POSITIE = {
-  0:  { tijd:[30.5,79.4], km:[66.3,81.6] },
-  1:  { tijd:[31.2,79.4], km:[70.1,80.2] },
-  2:  { tijd:[32.3,79.4], km:[68.3,82.7] },
-  3:  { tijd:[33.9,80.8], km:[70.1,81.9] },
-  4:  { tijd:[32.3,81.7], km:[68.0,79.4] },
-  5:  { tijd:[33.5,81.3], km:[70.0,82.1] },
-  6:  { tijd:[34.6,79.9], km:[70.1,80.9] },
-  7:  { tijd:[34.8,81.0], km:[69.5,82.2] },
-  8:  { tijd:[35.2,83.2], km:[69.5,82.9] },
-  9:  { tijd:[35.5,84.1], km:[67.7,85.1] },
-  10: { tijd:[24,  90  ], km:[78,  90  ] },
-};
+// Het "TIJD"- en "KM UIT DE RICHTING"-bordje staan op alle elf plaatjes op
+// exact dezelfde plek (bevestigd door Arjen) - dus één gedeelde positie (in
+// % van de vierkante afbeelding) voor alle plaatjes samen, i.p.v. een aparte
+// regel per plaatje zoals voorheen.
+const TROFEE_TEKST_POSITIE = { tijd:[32.3,79.4], km:[68.3,79.4] };
 function kiesTrofeeIndex(goed, totaal){
   if(!totaal || totaal<=0) return 0;
   return Math.max(0, Math.min(10, Math.round((goed/totaal)*10)));
@@ -5957,7 +5993,7 @@ function kiesTrofeeIndex(goed, totaal){
 // als ankerpunt voor de net-verdiende-stempels-rij.
 function toonTrofee(blokId, imgId, tijdId, kmId, goed, totaal, tijdSec, km){
   const idx = kiesTrofeeIndex(goed, totaal);
-  const pos = TROFEE_TEKST_POSITIE[idx];
+  const pos = TROFEE_TEKST_POSITIE;
   const img = document.getElementById(imgId);
   img.src = 'images/trofee/'+idx+'van10.png';
   img.alt = idx+' van de 10 landen goed';
