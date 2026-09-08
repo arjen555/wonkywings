@@ -1530,7 +1530,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-    <div id="versie-label">v0.6.65</div>
+    <div id="versie-label">v0.6.67</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
     <div id="prestatie-tip">Trage computer? Kies voor minder detail bij opties</div>
@@ -4709,6 +4709,7 @@ let figuurBrowseIndex = 0;
 
 function ververfFiguurKeuze(){
   const fig = VLIEGFIGUREN[figuurBrowseIndex];
+  speelFiguurGoGeluid(fig.id);
   const vrij = isVliegfiguurVrijgespeeld(fig);
   const kiezerImg = document.getElementById('figuur-kiezer-img');
   const laag = document.getElementById('figuur-vergrendeld-laag');
@@ -4770,10 +4771,11 @@ function initialiseerVliegfiguurVoorSpeler(){
   figuurBrowseIndex = start;
   ververfFiguurKeuze();
 }
-// Eén keer meteen aanroepen bij het laden van de pagina - dit moet ná de
-// VLIEGFIGUREN-lijst hierboven staan, anders bestaat die lijst nog niet op
-// het moment dat deze regel uitgevoerd wordt.
-initialiseerVliegfiguurVoorSpeler();
+// De eerste, meteen-bij-het-laden-aanroep staat NIET hier, maar verderop
+// (na de geluidssectie hieronder) - ververfFiguurKeuze() speelt daar
+// namelijk ook het "go"-geluidje van het personage, en dat geluidssysteem
+// (nieuwGeluid, geluidAan, GELUID_FIGUUR_GO) bestaat nog niet op dit punt
+// in het bestand. Zie de aanroep bij "Eén keer meteen aanroepen..." verderop.
 
 // ── Geluidseffecten ──────────────────────────────────────────────────────
 // Alle geluidsbestanden staan in de map 'geluid/', naast index.html. Motor-
@@ -5056,6 +5058,46 @@ const GELUID_LUS = {
   schurk:      nieuwGeluid('schurk_geluid.mp3', true),
   schurkRat:   nieuwGeluid('schurk_rat_geluid.mp3', true),
 };
+
+// ── "Go"-geluidje bij de vliegfiguur-kiezer op het startscherm ──────────
+// Klinkt zodra een vliegfiguur in de kiezer verschijnt (rechtsboven,
+// naast Europa/Wereld/Hoofdsteden) - zowel bij het allereerste laden van
+// de pagina als bij elke klik op de pijltjes. Alleen daar, nergens anders
+// in het spel (dus niet te verwarren met speelDraaiGeluid(), het
+// bochtgeluid tijdens het vliegen zelf). Net als GELUID_LUS hierboven een
+// gewoon <audio>-element per geluidje (geen eenmalige Web Audio-buffer):
+// zo kan een nog spelend "go"-geluidje met pause()/currentTime=0 meteen
+// worden afgebroken zodra er alwéér verder of terug geklikt wordt, in
+// plaats van dat twee geluidjes door elkaar heen gaan lopen.
+// Nog geen bestand voor kip (kipgo moet Arjen nog maken) - die blijft
+// voorlopig gewoon stil, zoals wel vaker bij personages zonder eigen
+// geluid.
+const GELUID_FIGUUR_GO = {
+  timbo:  nieuwGeluid('wonkygo.mp3'),
+  meisje: nieuwGeluid('meisjego.mp3'),
+  vogel:  nieuwGeluid('vogelgo.mp3'),
+  alien:  nieuwGeluid('ufogo.mp3'),
+  allen:  nieuwGeluid('allengo.mp3'),
+};
+let figuurGoSpeeltNu = null;
+function speelFiguurGoGeluid(id){
+  if(figuurGoSpeeltNu){
+    figuurGoSpeeltNu.pause();
+    figuurGoSpeeltNu.currentTime = 0;
+    figuurGoSpeeltNu = null;
+  }
+  if(!geluidAan) return;
+  const a = GELUID_FIGUUR_GO[id];
+  if(!a) return;
+  a.currentTime = 0;
+  a.play().catch(()=>{});
+  figuurGoSpeeltNu = a;
+}
+// Eén keer meteen aanroepen bij het laden van de pagina - dit moet ná de
+// VLIEGFIGUREN-lijst en ná GELUID_FIGUUR_GO hierboven staan, anders
+// bestaan die nog niet op het moment dat deze regel uitgevoerd wordt.
+initialiseerVliegfiguurVoorSpeler();
+
 // Schurken-vliegtuig: de lach-lus en de los ernaast lopende rat-lus samen
 // starten/stoppen - ze spelen gelijktijdig, niet na elkaar (zie toelichting
 // bij startSchurkVliegtuig()/de opruimpunten hieronder).
