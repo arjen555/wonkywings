@@ -3951,14 +3951,19 @@ function kiesPlekBericht(km, juisteLand){
 // ── Puntentelling Iconische plekken ────────────────────────────────────
 // Per plek maximaal 1000 punten, opgebouwd uit drie onderdelen:
 //  - Juiste land geraden:  400 punten (alles-of-niets)
-//  - Afstand tot de plek:  300 punten bij 0 km, lineair naar 0 bij 3000+ km
-//  - Snelheid van droppen: 300 punten bij 0 sec, lineair naar 0 bij 30+ sec
+//  - Afstand tot de plek:  400 punten bij 0 km, lineair naar 0 bij 3000+ km
+//  - Snelheid van droppen: 200 punten bij 0 sec, lineair naar 0 bij 30+ sec
 //    (geteld vanaf het moment dat de onthulling start - wie er vroeg,
 //    ingezoomd op een detail, al uit is, wordt beloond voor dat risico)
+// Tijd woog eerst voor 30% mee (300 punten); dat is teruggebracht naar 20%
+// (200 punten) - de vrijgekomen 100 punten zijn bij Afstand opgeteld, dat
+// weegt nu even zwaar als Land (elk 40%). Bestaande scores in het
+// highscoreboek zijn niet aangepast/gereset - die blijven staan zoals ze
+// met de oude verdeling tot stand kwamen.
 const PLEK_PUNTEN_LAND = 400;
-const PLEK_PUNTEN_AFSTAND_MAX = 300;
+const PLEK_PUNTEN_AFSTAND_MAX = 400;
 const PLEK_PUNTEN_AFSTAND_NULPUNT_KM = 3000;
-const PLEK_PUNTEN_SNELHEID_MAX = 300;
+const PLEK_PUNTEN_SNELHEID_MAX = 200;
 const PLEK_PUNTEN_SNELHEID_NULPUNT_SEC = 30;
 function berekenPlekPunten(km, juisteLand, seconden){
   const land = juisteLand ? PLEK_PUNTEN_LAND : 0;
