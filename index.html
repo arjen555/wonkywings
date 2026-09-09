@@ -38,14 +38,21 @@
     .score-ticker-kop { color:#ffd700; font-weight:800; }
     .score-ticker-namen { color:rgba(255,255,255,0.8); }
     /* ── STARTSCHERM ── */
-    #hoofdsteden-teller {
-      background:linear-gradient(180deg, rgba(64,42,20,0.85), rgba(28,16,7,0.85));
-      border:1.5px solid rgba(255,215,0,0.45);
-      color:#ffe9a8; font-size:1rem; font-weight:800;
-      padding:8px 18px; border-radius:14px;
-      box-shadow:0 3px 12px rgba(0,0,0,0.4), inset 0 0 10px rgba(255,215,0,0.1);
-      text-shadow:0 1px 3px rgba(0,0,0,0.65);
+    /* Score/tijd-plaatje voor Hoofdsteden (steampunk plaat met "Score:" en
+       "Tijd:"-vakken) - vervangt de vroegere kale #hoofdsteden-teller, die
+       nergens de tijd liet zien terwijl die intern allang meetelde. */
+    #hoofdsteden-scorebord {
+      position:relative; width:clamp(210px,17vw,400px);
+      pointer-events:none;
     }
+    #hoofdsteden-scorebord-img { width:100%; height:auto; display:block; }
+    .hoofdsteden-scorebord-tekst {
+      position:absolute; transform:translate(-50%,-50%);
+      font-family:'Baloo 2',sans-serif; font-weight:800; line-height:1;
+      color:#181310; white-space:nowrap;
+    }
+    #hoofdsteden-scorebord-score { left:64%; top:25%; font-size:1.3rem; }
+    #hoofdsteden-scorebord-tijd  { left:64%; top:73%; font-size:1.05rem; }
     /* ── Startscherm-knoppen (help + illustratie-toggle) ── */
     .startscherm-knop {
       margin-top:4px; padding:7px 18px;
@@ -1530,7 +1537,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-    <div id="versie-label">v0.6.69</div>
+    <div id="versie-label">v0.6.70</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
     <div id="prestatie-tip">Trage computer? Kies voor minder detail bij opties</div>
@@ -1960,7 +1967,11 @@
       </div>
       <span id="tijd-display" style="display:none">⏱ 0:00</span>
       <span id="score" style="display:none">0</span>
-      <div id="hoofdsteden-teller" style="display:none">🏛️ 0 / 0 goed</div>
+      <div id="hoofdsteden-scorebord" style="display:none">
+        <img id="hoofdsteden-scorebord-img" src="images/scoretijd.png" alt="Score en tijd"/>
+        <span id="hoofdsteden-scorebord-score" class="hoofdsteden-scorebord-tekst"></span>
+        <span id="hoofdsteden-scorebord-tijd" class="hoofdsteden-scorebord-tekst"></span>
+      </div>
     </div>
   </div>
   <div id="hud-bottom">
@@ -3563,7 +3574,7 @@ let tipActief=false, tipStartTijd=0;
 const TIP_DUUR = 12600; // ms - 3x zo lang als voorheen (was 4200), op verzoek van Arjen
 const KNOP_LABELS = ['tip-besturing','tip-hint','tip-joker'];
 let huidigLandIdx=0, huidigLand='', score=0, spelerNaam='';
-let levelStartTijd=0, laatsteLevelTijd=0;
+let levelStartTijd=0, laatsteLevelTijd=0, laatsteLevelTijdPrecies=0;
 // Vlucht-animatie bij een misser: vliegtuigje volgt automatisch een gloeiende lijn naar het juiste land
 let vluchtActief=false, vluchtStartTijd=0, vluchtDuur=0;
 // ── Hoofdsteden-modus: geen km-score/highscore, wel een goed/totaal-teller ──
@@ -5635,8 +5646,21 @@ function laadIllustratie(naam, forceHerlaad) {
 // Toont de opdrachttekst: gewoon de landnaam, of "Hoofdstad van X" in de
 // hoofdsteden-modus.
 function updateHoofdstedenTeller(){
-  document.getElementById('hoofdsteden-teller').textContent =
-    '🏛️ ' + hoofdstedenGoed + ' / ' + hoofdstedenTotaal + ' goed';
+  document.getElementById('hoofdsteden-scorebord-score').textContent = hoofdstedenGoed + ' goed';
+}
+// Live tijd-weergave op de Hoofdsteden-plaat, met honderdsten (0:47,32) - de
+// tijd telde al mee voor de highscore, maar was tot nu toe nergens in beeld
+// tijdens het spelen. Wordt elke frame bijgewerkt vanuit updateSpel().
+function updateHoofdstedenTijdWeergave(){
+  if(!levelStartTijd) return;
+  const ms = performance.now() - levelStartTijd;
+  document.getElementById('hoofdsteden-scorebord-tijd').textContent = formatTijdHonderdsten(ms);
+}
+function formatTijdHonderdsten(ms){
+  const totaalSec = Math.max(0, ms) / 1000;
+  const m = Math.floor(totaalSec / 60);
+  const s = totaalSec - m * 60;
+  return m + ':' + s.toFixed(2).padStart(5, '0').replace('.', ',');
 }
 function zetOpdrachtTekst(){
   const el = document.getElementById('land-naam');
@@ -5667,9 +5691,12 @@ function startSpel(levelId, modus) {
   const isHoofdsteden = !!lv.hoofdsteden;
   const isPlekken = !!lv.plekken;
   document.getElementById('scorebord-wrap').style.display = (isHoofdsteden||isPlekken) ? 'none' : '';
-  document.getElementById('hoofdsteden-teller').style.display = isHoofdsteden ? 'block' : 'none';
+  document.getElementById('hoofdsteden-scorebord').style.display = isHoofdsteden ? 'block' : 'none';
   document.getElementById('plek-scorebord').style.display = isPlekken ? 'block' : 'none';
-  if(isHoofdsteden) updateHoofdstedenTeller();
+  if(isHoofdsteden){
+    updateHoofdstedenTeller();
+    document.getElementById('hoofdsteden-scorebord-tijd').textContent = '0:00,00';
+  }
   if(isPlekken){
     // Eigen puntentelling voor dit onderdeel: bij elke nieuwe start weer bij 0.
     plekkenScore = 0;
@@ -6081,7 +6108,7 @@ function toonHoofdstedenResultaat(goed, totaal){
   // scorebord (alleen dit rustige goed/totaal-scherm) en sloegen dus ook
   // nooit iets op - vanaf nu telt elk potje wél mee voor het Boek der
   // Groten (highscores.html), fire-and-forget zoals overal elders.
-  fsOpslaan('scores_hoofdsteden', {levelId:huidigLevel, naam:spelerNaam, goed, totaal, tijd:laatsteLevelTijd, datum:Date.now()});
+  fsOpslaan('scores_hoofdsteden', {levelId:huidigLevel, naam:spelerNaam, goed, totaal, tijd:laatsteLevelTijdPrecies, datum:Date.now()});
   document.getElementById('hoofdsteden-resultaat-score').textContent = goed+' van de '+totaal+' hoofdsteden goed!';
   // ── Landenpaspoort: 8 of 9 goed = 1 verrassingsstempel, alles goed = 2 ──
   let aantalStempels = 0;
@@ -6352,6 +6379,9 @@ function nieuwLand(){
     wachten=false; // level is klaar: dit was de laatste return in de functie, dus
                     // zonder deze regel bleef 'wachten' hier op true staan
     laatsteLevelTijd = levelStartTijd ? Math.round((performance.now()-levelStartTijd)/1000) : 0;
+    // Precisere variant (honderdsten) - alleen gebruikt voor de Hoofdsteden-
+    // highscore, de rest (Landen/Plekken) blijft op hele seconden zoals altijd.
+    laatsteLevelTijdPrecies = levelStartTijd ? Math.round((performance.now()-levelStartTijd)/10)/100 : 0;
     // Het spel is klaar en er verschijnt zo een evaluatiescherm (scorebord,
     // hoofdsteden-resultaat of plekken-eindoverzicht): het motor/turbo/wind-
     // geluid hoorde tot nu toe pas te stoppen bij "terug naar start"
@@ -10106,6 +10136,7 @@ function updateSpel(){
     const mm=Math.floor(verstrekenSec/60), ss=verstrekenSec%60;
     document.getElementById('tijd-display').textContent='⏱ '+mm+':'+String(ss).padStart(2,'0');
     updateScorebordCijfers();
+    if(LEVELS[huidigLevel] && LEVELS[huidigLevel].hoofdsteden) updateHoofdstedenTijdWeergave();
   }
 
   // Intro-titel: faded in/uit op dezelfde curve als het gloweffect op de landen
