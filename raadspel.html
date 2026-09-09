@@ -1016,8 +1016,33 @@ function speelGeluidDanNavigeer(bestand, callback){
   }
   setTimeout(callback, NAVIGATIEGELUID_VERTRAGING_MS);
 }
+// Terug-naar-menu-geluid: kiest willekeurig één van deze zeven fragmenten
+// (i.p.v. altijd bliksemknop.mp3) en wacht - met een noodrem - tot het
+// helemaal is uitgeklonken voordat er wordt weggenavigeerd. Zelfde aanpak
+// als in paspoort.html/highscores.html: een vaste vertraging zou het
+// fragment kunnen afkappen, want niet elk toedeledokie-bestand duurt even
+// lang. Gebruikt door alle drie de "terug naar start"-knoppen op deze
+// pagina: het spelkeuze-scherm, het "Klaar!"-scherm en Landje Schuif.
+const TERUG_GELUIDEN = [
+  'toedeledokie.mp3','toedeledokie2.mp3','toedeledokie3.mp3','toedeledokie4.mp3',
+  'toedeledokie5.mp3','toedeledokie6.mp3','toedeledokie7.mp3',
+];
 function speelTerugGeluidDanNavigeer(callback){
-  speelGeluidDanNavigeer('bliksemknop.mp3', callback);
+  const geluidAan = localStorage.getItem(GELUID_AAN_SLEUTEL) !== 'uit';
+  if(!geluidAan){ callback(); return; }
+  const bestand = TERUG_GELUIDEN[Math.floor(Math.random()*TERUG_GELUIDEN.length)];
+  let gegaan = false;
+  function ga(){
+    if(gegaan) return;
+    gegaan = true;
+    callback();
+  }
+  try{
+    const audio = new Audio('geluid/'+bestand);
+    audio.addEventListener('ended', ga);
+    audio.play().catch(ga);
+  }catch(e){ ga(); return; }
+  setTimeout(ga, 4000); // noodrem: nooit langer dan 4s blijven wachten, ook als afspelen om wat voor reden dan ook mislukt
 }
 function ganNaarMenu(){
   speelTerugGeluidDanNavigeer(() => {

@@ -1530,7 +1530,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-    <div id="versie-label">v0.6.67</div>
+    <div id="versie-label">v0.6.68</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
     <div id="prestatie-tip">Trage computer? Kies voor minder detail bij opties</div>
@@ -4709,7 +4709,6 @@ let figuurBrowseIndex = 0;
 
 function ververfFiguurKeuze(){
   const fig = VLIEGFIGUREN[figuurBrowseIndex];
-  speelFiguurGoGeluid(fig.id);
   const vrij = isVliegfiguurVrijgespeeld(fig);
   const kiezerImg = document.getElementById('figuur-kiezer-img');
   const laag = document.getElementById('figuur-vergrendeld-laag');
@@ -4740,10 +4739,16 @@ function ververfFiguurKeuze(){
 }
 
 // Aangeroepen door de pijltjes-knoppen (delta -1 of +1). Stopt gewoon aan
-// de uiteinden van de lijst (Timbo respectievelijk Kip) - geen rondje.
+// de uiteinden van de lijst (Timbo respectievelijk Kip) - geen rondje. Het
+// "go"-geluidje van het personage klinkt bewust alleen hier (een echte
+// blader-actie van de speler), niet vanuit ververfFiguurKeuze() zelf - die
+// wordt namelijk ook automatisch aangeroepen bij het laden van de pagina en
+// vlak na het bevestigen van de spelernaam, terwijl de kiezer op dat moment
+// nog niet eens in beeld staat.
 function blaaderVliegfiguur(delta){
   figuurBrowseIndex = Math.max(0, Math.min(VLIEGFIGUREN.length-1, figuurBrowseIndex+delta));
   ververfFiguurKeuze();
+  speelFiguurGoGeluid(VLIEGFIGUREN[figuurBrowseIndex].id);
 }
 
 // Wisselt tussen het logo+ondertitel en de vliegfiguur-kiezer, op de
