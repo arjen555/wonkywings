@@ -1563,7 +1563,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-    <div id="versie-label">v0.6.72</div>
+    <div id="versie-label">v0.6.73</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
     <div id="prestatie-tip">Trage computer? Kies voor minder detail bij opties</div>
@@ -6158,7 +6158,27 @@ function bouwScorebordKolom(elId, runs, nieuweRun){
     const isEigen = nieuweRun && run.datum===nieuweRun.datum && run.naam===nieuweRun.naam;
     const rij=document.createElement('div');
     rij.className='scorebord-rij'+(isEigen?' is-eigen':'');
-    rij.innerHTML=`<div class="scorebord-plek">${i+1}</div><div class="scorebord-naam">${run.naam}</div><div class="scorebord-km">${run.km} km</div><div class="scorebord-tijd">${formatTijd(run.tijd)}</div>`;
+    // Let op: de spelernaam komt uit de gedeelde database en kan door om het
+    // even wie zijn ingevuld - dus NOOIT via innerHTML/template-string in de
+    // pagina plakken (dat zou toelaten dat iemand HTML/JavaScript als "naam"
+    // laat draaien bij iedereen die dit scorebord bekijkt). textContent zet
+    // de naam altijd als platte tekst neer, ongeacht wat erin staat.
+    const divPlek = document.createElement('div');
+    divPlek.className = 'scorebord-plek';
+    divPlek.textContent = i+1;
+    const divNaam = document.createElement('div');
+    divNaam.className = 'scorebord-naam';
+    divNaam.textContent = run.naam;
+    const divKm = document.createElement('div');
+    divKm.className = 'scorebord-km';
+    divKm.textContent = run.km+' km';
+    const divTijd = document.createElement('div');
+    divTijd.className = 'scorebord-tijd';
+    divTijd.textContent = formatTijd(run.tijd);
+    rij.appendChild(divPlek);
+    rij.appendChild(divNaam);
+    rij.appendChild(divKm);
+    rij.appendChild(divTijd);
     el.appendChild(rij);
   });
 }
