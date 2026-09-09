@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-<title>Landenpaspoort — Wonderlijke Wereld</title>
+<title>Landenpaspoort — Wereld van Wonderen</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&display=swap" rel="stylesheet"/>
 <style>
@@ -351,9 +351,33 @@ const STEMPEL_AFBEELDINGEN = [
 // via een menu-knop (hier: het stempelboek) terugkomen, zodat daar niet
 // opnieuw het verplichte naamscherm wordt getoond - de naam is al bekend.
 const VAN_MENU_NAVIGATIE_SLEUTEL = 'wonkywings_van_menu_navigatie';
+
+// ── Terug-naar-start-geluid: bij een klik op de terug-knop wordt willekeurig
+// één van deze geluidjes gekozen. In plaats van met een gegokte vertraging
+// te werken, wacht de navigatie naar index.html netjes tot het gekozen
+// fragment vanzelf is afgelopen (het 'ended'-moment) - zo klinkt elk
+// geluidje altijd helemaal, ongeacht de eigen lengte. Een noodrem van een
+// paar seconden voorkomt dat de knop vast blijft zitten als een
+// geluidsbestand om wat voor reden dan ook niet wil afspelen.
+const TERUG_GELUIDEN = [
+  'toedeledokie.mp3','toedeledokie2.mp3','toedeledokie3.mp3','toedeledokie4.mp3',
+  'toedeledokie5.mp3','toedeledokie6.mp3','toedeledokie7.mp3',
+];
 function ganNaarStart(){
   sessionStorage.setItem(VAN_MENU_NAVIGATIE_SLEUTEL, '1');
-  window.location.href = 'index.html';
+  const geluidAan = localStorage.getItem(GELUID_AAN_SLEUTEL) !== 'uit';
+  if(!geluidAan){ window.location.href = 'index.html'; return; }
+  const bestand = TERUG_GELUIDEN[Math.floor(Math.random()*TERUG_GELUIDEN.length)];
+  const audio = new Audio('geluid/' + bestand);
+  let gegaan = false;
+  function ga(){
+    if(gegaan) return;
+    gegaan = true;
+    window.location.href = 'index.html';
+  }
+  audio.addEventListener('ended', ga);
+  audio.play().catch(ga);
+  setTimeout(ga, 4000); // noodrem: nooit langer dan 4s blijven wachten, ook als afspelen om wat voor reden dan ook mislukt
 }
 
 // ── Bladzijde-geluid: klinkt bij elke manier waarop je door het paspoort
