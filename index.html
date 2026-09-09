@@ -89,13 +89,15 @@
       cursor:pointer;
     }
     #opties-overlay.tonen { display:flex; }
-    /* Zelfde 80%-zone als #naam-overlay-zone hierboven: het kader centreert
-       zich binnen het linker Timbo-vlak (#start-links), nooit over de
-       donkerblauwe menuzijbalk (#start-rechts, altijd de resterende 20%)
-       heen - zo kan het kader flink groter zonder ooit tegen het menu aan
-       te lopen, op elk schermformaat. */
+    /* Zelfde zone-breedte als #naam-overlay-zone hierboven: het kader
+       centreert zich binnen het linker Timbo-vlak (#start-links), nooit over
+       de donkerblauwe menuzijbalk (#start-rechts) heen - zo kan het kader
+       flink groter zonder ooit tegen het menu aan te lopen, op elk
+       schermformaat. Rekent (net als #start-links zelf) de breedte van
+       #start-rechts eraf i.p.v. een vaste 80%, want die balk is sinds kort
+       zelf ook breedte-afhankelijk (breder op een smal/tablet-scherm). */
     #opties-overlay-zone {
-      position:absolute; left:0; top:0; width:80%; height:100%;
+      position:absolute; left:0; top:0; width:calc(100% - clamp(360px, 20vw, 460px)); height:100%;
       display:flex; align-items:center; justify-content:center;
       cursor:pointer;
     }
@@ -306,7 +308,12 @@
       50% { filter:drop-shadow(0 3px 8px rgba(0,0,0,0.5)) drop-shadow(0 0 14px rgba(255,215,0,0.9)); transform:scale(1.12); }
     }
     #start-links {
-      flex: 0 0 80%;
+      /* Was flex:0 0 80% (vaste 80%) - nu vult dit de ruimte die #start-rechts
+         overlaat. Op een breed scherm komt dat op exact hetzelfde neer (zie
+         de clamp() hieronder), maar op een smaller scherm (tablet) krijgt
+         #start-rechts daardoor automatisch meer ruimte, in plaats van een
+         starre 20% die daar te weinig voor de menuknoppen overlaat. */
+      flex: 1 1 auto; min-width:0;
       position:relative; overflow:hidden;
     }
     #start-timbo {
@@ -339,7 +346,13 @@
     }
     #prestatie-tip.zichtbaar { opacity:1; }
     #start-rechts {
-      flex:1;
+      /* Was flex:1 (vult de resterende 20% naast #start-links' vaste 80%).
+         Nu een eigen breedte die met het scherm meebeweegt: op een breed
+         scherm (>~1800px) komt 20vw op hetzelfde neer als vroeger, maar
+         onder de 360px-ondergrens (ongeveer tablet-breedte) blijft de balk
+         breed genoeg voor de "▶ Spelen"/"🔍 Verkennen"-knoppen naast elkaar,
+         in plaats van dat die onder de naam van de regio doorschuiven. */
+      flex: 0 0 clamp(360px, 20vw, 460px);
       display:flex; flex-direction:column;
       align-items:center; justify-content:flex-start;
       padding:44px 18px 24px; gap:14px;
@@ -438,7 +451,9 @@
     }
     #naam-overlay.tonen { display:flex; }
     #naam-overlay-zone {
-      position:absolute; left:0; top:0; width:80%; height:100%;
+      /* Zelfde breedte-berekening als #opties-overlay-zone hieronder - zie
+         de toelichting daar. */
+      position:absolute; left:0; top:0; width:calc(100% - clamp(360px, 20vw, 460px)); height:100%;
       display:flex; align-items:center; justify-content:center;
     }
     #naam-banner-wrap {
@@ -1024,7 +1039,7 @@
        icoontje boven alle pop-ups (rad/help/diploma, die op 997-999 zitten). */
     #hoofdsteden-resultaat-terug-btn, #scorebord-terug-btn, #plekken-eind-verder {
       position:fixed; left:14px; top:14px; z-index:1001;
-      width:clamp(130px, 13vw, 210px); border:none; background:none; padding:0;
+      width:clamp(160px, 16vw, 260px); border:none; background:none; padding:0;
       cursor:pointer; opacity:0.92; transition:opacity 0.15s, transform 0.15s;
       filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5));
     }
@@ -1358,6 +1373,17 @@
       position:fixed; left:clamp(10px,2vmin,22px); bottom:clamp(10px,2vmin,22px); z-index:19;
       width:clamp(180px, 25.9vmin, 320px); pointer-events:none; display:none;
     }
+    /* Op een touchscreen (tablet/telefoon) staan hier linksonder ook de
+       vlieg-knoppen (#touch-vliegknoppen) overheen - op een gewoon scherm
+       met muis staan die knoppen niet eens in beeld, dus daar mag dit bord
+       gewoon op zijn oude plek blijven. (pointer:coarse) i.p.v. een
+       schermbreedte-grens, want het gaat om het besturingstype, niet om
+       hoe breed het scherm toevallig is. */
+    @media (pointer:coarse) {
+      #voortgang-bord {
+        bottom: calc(clamp(12px,2vmin,24px) + env(safe-area-inset-bottom, 0px) + clamp(58px,9vmin,92px) + 14px);
+      }
+    }
     #voortgang-bord img.bord-achtergrond { width:100%; display:block; }
     .bord-cijfers {
       position:absolute; height:32%;
@@ -1537,7 +1563,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-    <div id="versie-label">v0.6.70</div>
+    <div id="versie-label">v0.6.72</div>
   <div id="start-links">
     <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
     <div id="prestatie-tip">Trage computer? Kies voor minder detail bij opties</div>
@@ -1848,7 +1874,7 @@
       </div>
     </div>
     <div id="scorebord-stempel" class="stempel-melding"></div>
-    <button id="scorebord-terug-btn" onclick="speelGeluid('bliksemknop');terugNaarStartMetStempels()"><img src="images/terug-naar-start-knop.png" alt="Terug naar menu"/></button>
+    <button id="scorebord-terug-btn" onclick="speelToedeledokie();terugNaarStartMetStempels()"><img src="images/terug-naar-start-knop.png" alt="Terug naar menu"/></button>
     <img id="scorebord-boek-icoon" class="eindscherm-boek-icoon" src="images/boek-der-groten-icoon.png" alt="Boek der Groten" onclick="speelGeluidDanNavigeer('boek', () => window.location.href='highscores.html?sectie=landen')"/>
     <img id="scorebord-paspoort-icoon" class="eindscherm-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="speelGeluidDanNavigeer('boekPaspoort', () => window.location.href='paspoort.html')"/>
   </div>
@@ -1865,7 +1891,7 @@
     <div id="hoofdsteden-resultaat-titel">🏆 Klaar!</div>
     <div id="hoofdsteden-resultaat-score"></div>
     <div id="hoofdsteden-resultaat-stempel" class="stempel-melding"></div>
-    <button id="hoofdsteden-resultaat-terug-btn" onclick="speelGeluid('bliksemknop');terugNaarStartMetStempels()"><img src="images/terug-naar-start-knop.png" alt="Terug naar menu"/></button>
+    <button id="hoofdsteden-resultaat-terug-btn" onclick="speelToedeledokie();terugNaarStartMetStempels()"><img src="images/terug-naar-start-knop.png" alt="Terug naar menu"/></button>
     <img id="hoofdsteden-resultaat-boek-icoon" class="eindscherm-boek-icoon" src="images/boek-der-groten-icoon.png" alt="Boek der Groten" onclick="speelGeluidDanNavigeer('boek', () => window.location.href='highscores.html?sectie=hoofdsteden')"/>
     <img id="hoofdsteden-resultaat-paspoort-icoon" class="eindscherm-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="speelGeluidDanNavigeer('boekPaspoort', () => window.location.href='paspoort.html')"/>
   </div>
@@ -2040,7 +2066,7 @@
       <div id="plekken-eind-tabel"></div>
       <div id="plekken-eind-totaal"></div>
       <div id="plekken-eind-stempel" class="stempel-melding"></div>
-      <button id="plekken-eind-verder" onclick="speelGeluid('bliksemknop');terugNaarStartMetStempels()"><img src="images/terug-naar-start-knop.png" alt="Terug naar het menu"/></button>
+      <button id="plekken-eind-verder" onclick="speelToedeledokie();terugNaarStartMetStempels()"><img src="images/terug-naar-start-knop.png" alt="Terug naar het menu"/></button>
       <img id="plekken-eind-boek-icoon" class="eindscherm-boek-icoon" src="images/boek-der-groten-icoon.png" alt="Boek der Groten" onclick="speelGeluidDanNavigeer('boek', () => window.location.href='highscores.html?sectie=plekken')"/>
       <img id="plekken-eind-paspoort-icoon" class="eindscherm-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="speelGeluidDanNavigeer('boekPaspoort', () => window.location.href='paspoort.html')"/>
     </div>
@@ -4884,7 +4910,23 @@ const GELUID_EENMALIG_BESTANDEN = {
   // stopBoostedLus() verderop.
   verrekijkerIn:      'verrekijker.mp3',
   verrekijkerUit:     'verrekijker2.mp3',
+  // Zeven varianten van hetzelfde "toedeledokie"-afscheidsgeluidje - zelfde
+  // bestanden als TERUG_GELUIDEN in highscores.html. Klinkt (willekeurig
+  // gekozen, zie speelToedeledokie()) bij de terug-naar-start-knop op de
+  // evaluatieschermen (Landen-scorebord, Hoofdsteden, Plekken), in plaats
+  // van steeds hetzelfde bliksemknop.mp3 - verzoek van Arjen.
+  toedeledokie1:      'toedeledokie.mp3',
+  toedeledokie2:      'toedeledokie2.mp3',
+  toedeledokie3:      'toedeledokie3.mp3',
+  toedeledokie4:      'toedeledokie4.mp3',
+  toedeledokie5:      'toedeledokie5.mp3',
+  toedeledokie6:      'toedeledokie6.mp3',
+  toedeledokie7:      'toedeledokie7.mp3',
 };
+const TOEDELEDOKIE_GELUIDEN = ['toedeledokie1','toedeledokie2','toedeledokie3','toedeledokie4','toedeledokie5','toedeledokie6','toedeledokie7'];
+function speelToedeledokie(){
+  speelGeluid(TOEDELEDOKIE_GELUIDEN[Math.floor(Math.random()*TOEDELEDOKIE_GELUIDEN.length)]);
+}
 // Golf 1: alles wat al op het startscherm kan klinken, vóórdat er ook maar
 // één level gestart is. Korte klakjes, samen een fractie van de geluidsmap.
 const GELUID_GOLF1 = new Set([
@@ -5318,6 +5360,25 @@ function zetGeluidAan(aan){
   const geluidSchakelaarInit = document.getElementById('geluid-schakelaar');
   if(geluidSchakelaarInit) geluidSchakelaarInit.classList.toggle('aan', geluidAan);
 }
+
+// ── Geluid stilzetten als het spel naar de achtergrond gaat ──────────────
+// Op een tablet/telefoon pauzeert de browser het spel zelf niet automatisch
+// zodra je wisselt naar een andere app (alleen de tab/pagina wordt
+// "verborgen") - zonder deze listener bleef bijvoorbeeld het motorgeluid
+// dus vrolijk doorspelen terwijl de speler allang iets anders aan het doen
+// was. Zelfde aanpak als het geluid-uit-schakelaartje (zetGeluidAan(false)):
+// alle lopende <audio>-lussen stoppen, plus de losse Web Audio-lussen van de
+// verrekijker. Bij terugkomst het motorgeluid weer starten, maar alleen als
+// het spel op dat moment ook echt actief was (niet tijdens hulp/kennisvraag/
+// het rad, want dan hoort er sowieso geen motorgeluid te klinken).
+document.addEventListener('visibilitychange', () => {
+  if(document.hidden){
+    for(const naam in GELUID_LUS) stopLus(naam);
+    stopVerrekijkerGeluid();
+  } else if(spelActief && !hulpActief && !kennisvraagActief && !radActief){
+    startMotorGeluid();
+  }
+});
 
 // ── Topografie Master diploma ── Los van de korte embleem-melding
 // hierboven (die vaak al middenin het spel verschijnt, zodra het laatste
