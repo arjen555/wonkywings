@@ -89,15 +89,14 @@
       cursor:pointer;
     }
     #opties-overlay.tonen { display:flex; }
-    /* Zelfde zone-breedte als #naam-overlay-zone hierboven: het kader
-       centreert zich binnen het linker Timbo-vlak (#start-links), nooit over
-       de donkerblauwe menuzijbalk (#start-rechts) heen - zo kan het kader
-       flink groter zonder ooit tegen het menu aan te lopen, op elk
-       schermformaat. Rekent (net als #start-links zelf) de breedte van
-       #start-rechts eraf i.p.v. een vaste 80%, want die balk is sinds kort
-       zelf ook breedte-afhankelijk (breder op een smal/tablet-scherm). */
+    /* Zelfde 80%-zone als #naam-overlay-zone hierboven: het kader centreert
+       zich binnen het linker Timbo-vlak (#start-links), nooit over de
+       donkerblauwe menuzijbalk (#start-rechts, altijd de resterende 20% op
+       pc/laptop) heen - zo kan het kader flink groter zonder ooit tegen het
+       menu aan te lopen. Op tablet-formaat wordt dit meegerekend met de
+       breedte-afhankelijke menubalk, zie media query bij #start-rechts. */
     #opties-overlay-zone {
-      position:absolute; left:0; top:0; width:calc(100% - clamp(360px, 20vw, 460px)); height:100%;
+      position:absolute; left:0; top:0; width:80%; height:100%;
       display:flex; align-items:center; justify-content:center;
       cursor:pointer;
     }
@@ -308,12 +307,11 @@
       50% { filter:drop-shadow(0 3px 8px rgba(0,0,0,0.5)) drop-shadow(0 0 14px rgba(255,215,0,0.9)); transform:scale(1.12); }
     }
     #start-links {
-      /* Was flex:0 0 80% (vaste 80%) - nu vult dit de ruimte die #start-rechts
-         overlaat. Op een breed scherm komt dat op exact hetzelfde neer (zie
-         de clamp() hieronder), maar op een smaller scherm (tablet) krijgt
-         #start-rechts daardoor automatisch meer ruimte, in plaats van een
-         starre 20% die daar te weinig voor de menuknoppen overlaat. */
-      flex: 1 1 auto; min-width:0;
+      /* Vaste 80% op pc/laptop (de oude, beproefde verhouding). Op tablet-
+         formaat (zie media query bij #start-rechts hieronder) krijgt deze
+         balk automatisch meer ruimte via dezelfde flex-truc, zodat de
+         "▶ Spelen"/"🔍 Verkennen"-knoppen daar naast elkaar blijven passen. */
+      flex: 0 0 80%;
       position:relative; overflow:hidden;
     }
     #start-timbo {
@@ -346,13 +344,9 @@
     }
     #prestatie-tip.zichtbaar { opacity:1; }
     #start-rechts {
-      /* Was flex:1 (vult de resterende 20% naast #start-links' vaste 80%).
-         Nu een eigen breedte die met het scherm meebeweegt: op een breed
-         scherm (>~1800px) komt 20vw op hetzelfde neer als vroeger, maar
-         onder de 360px-ondergrens (ongeveer tablet-breedte) blijft de balk
-         breed genoeg voor de "▶ Spelen"/"🔍 Verkennen"-knoppen naast elkaar,
-         in plaats van dat die onder de naam van de regio doorschuiven. */
-      flex: 0 0 clamp(360px, 20vw, 460px);
+      /* Vult op pc/laptop gewoon de resterende 20% naast #start-links'
+         vaste 80% (de oude, beproefde verhouding - zie hierboven). */
+      flex: 1;
       display:flex; flex-direction:column;
       align-items:center; justify-content:flex-start;
       padding:44px 18px 24px; gap:14px;
@@ -360,6 +354,17 @@
       position:relative; overflow-y:auto;
       zoom:1.4;
       transition:width 0.35s ease;
+    }
+    /* Op tablet-formaat krijgt de menubalk een eigen, met het scherm mee-
+       bewegende breedte i.p.v. de vaste 20%, zodat de "▶ Spelen"/
+       "🔍 Verkennen"-knoppen naast elkaar blijven passen in plaats van dat
+       die onder de naam van de regio doorschuiven. Beperkt tot touch-
+       schermen tot ~1024px breed, zodat een smal pc/laptop-venster hier
+       geen last van heeft. */
+    @media (max-width:1024px) and (pointer:coarse) {
+      #start-links { flex: 1 1 auto; min-width:0; }
+      #start-rechts { flex: 0 0 clamp(360px, 20vw, 460px); }
+      #opties-overlay-zone, #naam-overlay-zone { width:calc(100% - clamp(360px, 20vw, 460px)); }
     }
     #start-rechts::before {
       content:''; position:absolute; inset:0;
@@ -451,9 +456,9 @@
     }
     #naam-overlay.tonen { display:flex; }
     #naam-overlay-zone {
-      /* Zelfde breedte-berekening als #opties-overlay-zone hieronder - zie
-         de toelichting daar. */
-      position:absolute; left:0; top:0; width:calc(100% - clamp(360px, 20vw, 460px)); height:100%;
+      /* Zelfde breedte als #opties-overlay-zone hieronder - zie de
+         toelichting daar. */
+      position:absolute; left:0; top:0; width:80%; height:100%;
       display:flex; align-items:center; justify-content:center;
     }
     #naam-banner-wrap {
@@ -1563,9 +1568,9 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-    <div id="versie-label">v0.6.73</div>
+    <div id="versie-label">V1.0</div>
   <div id="start-links">
-    <img id="start-timbo" src="images/Timbo.png" alt="Timbo"/>
+    <img id="start-timbo" src="Timbo.jpg" alt="Timbo"/>
     <div id="prestatie-tip">Trage computer? Kies voor minder detail bij opties</div>
   </div>
   <div id="start-rechts">
