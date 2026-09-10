@@ -1529,7 +1529,27 @@ function bouwScorebordLijst(lijst, nieuweRun){
     const isEigen = nieuweRun && run.datum===nieuweRun.datum && run.naam===nieuweRun.naam;
     const rij = document.createElement('div');
     rij.className = 'score-rij' + (isEigen ? ' eigen' : '');
-    rij.innerHTML = '<span class="score-plek">'+(i+1)+'</span><span class="score-naam">'+run.naam+'</span><span class="score-goed">'+run.goed+'/'+vraagAantalVoorWeergave(run)+'</span><span class="score-tijd">'+formatTijdMs(run.tijdMs)+'</span>';
+    // Let op: de spelernaam komt uit de gedeelde database en kan door om het
+    // even wie zijn ingevuld - dus NOOIT via innerHTML/string-plakken in de
+    // pagina zetten (dat zou toelaten dat iemand HTML/JavaScript als "naam"
+    // laat draaien bij iedereen die dit scorebord bekijkt). textContent zet
+    // de naam altijd als platte tekst neer, ongeacht wat erin staat.
+    const spanPlek = document.createElement('span');
+    spanPlek.className = 'score-plek';
+    spanPlek.textContent = i+1;
+    const spanNaam = document.createElement('span');
+    spanNaam.className = 'score-naam';
+    spanNaam.textContent = run.naam;
+    const spanGoed = document.createElement('span');
+    spanGoed.className = 'score-goed';
+    spanGoed.textContent = run.goed+'/'+vraagAantalVoorWeergave(run);
+    const spanTijd = document.createElement('span');
+    spanTijd.className = 'score-tijd';
+    spanTijd.textContent = formatTijdMs(run.tijdMs);
+    rij.appendChild(spanPlek);
+    rij.appendChild(spanNaam);
+    rij.appendChild(spanGoed);
+    rij.appendChild(spanTijd);
     el.appendChild(rij);
   });
 }
@@ -1557,12 +1577,14 @@ function terugNaarKiezen(){
 
 // ── Spelkeuze-scherm: de twee knoppen ──
 function kiesRaadJePlaatje(){
+  speelGeluid('raadjelandje.mp3');
   // Verberg spelkeuze, toon #kader weer, ga naar categorie-keuze
   document.getElementById('spelkeuze-veld').classList.remove('actief');
   document.getElementById('kader').style.display = '';
   toonScherm('scherm-kies');
 }
 function kiesLandjeSchuif(){
+  speelGeluid('schuifjelandje.mp3');
   document.getElementById('spelkeuze-veld').classList.remove('actief');
   startLandjeSchuif();
 }
