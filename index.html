@@ -10763,6 +10763,12 @@ function sluitHulp(){
     // tijd niet meetelt in de zichtbare speeltijd.
     levelStartTijd += (performance.now() - hulpOpenTijd);
   }
+  if(hulpActief && plekOnthullingActief){
+    // Zelfde truc voor de plekken-onthulling: die liep tot nu toe gewoon door
+    // terwijl het besturingsschermpje open stond (zichtbaar verder uitzoomend
+    // plaatje) - zie ook de guard in loop() hieronder.
+    plekOnthullingStart += (performance.now() - hulpOpenTijd);
+  }
   hulpActief = false;
   document.getElementById('help-popup').style.display='none';
   if(spelActief) startMotorGeluid();
@@ -11019,7 +11025,7 @@ function loop(){
   const __loopStart = performance.now();
   toetsWaakhond(); pollGamepad(); updateSpel(); drawGlobe();
   checkNoodstop(performance.now() - __loopStart);
-  if(plekOnthullingActief) tekenPlekOnthulling();
+  if(plekOnthullingActief && !hulpActief) tekenPlekOnthulling();
   requestAnimationFrame(loop);
 }
 </script>
