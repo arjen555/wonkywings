@@ -1568,7 +1568,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-    <div id="versie-label">V1.0</div>
+    <div id="versie-label">V1.2</div>
   <div id="start-links">
     <img id="start-timbo" src="Timbo.jpg" alt="Timbo"/>
     <div id="prestatie-tip">Trage computer? Kies voor minder detail bij opties</div>
@@ -4932,6 +4932,20 @@ const GELUID_EENMALIG_BESTANDEN = {
   toedeledokie5:      'toedeledokie5.mp3',
   toedeledokie6:      'toedeledokie6.mp3',
   toedeledokie7:      'toedeledokie7.mp3',
+  // Klinkt op de evaluatieschermen (Landen-scorebord, Hoofdsteden, Plekken)
+  // zodra het totaal aantal goed op 0, 1 of 2 uitkomt - zie toonTrofee().
+  mislukt:            'mislukt.mp3',
+  // Zelfde soort trigger als mislukt hierboven, maar dan voor een totaal
+  // van 3, 4 of 5 goed - zie toonTrofee().
+  evaluatie345:       'evaluatie345.mp3',
+  // Zelfde soort trigger, voor 6 of 7 goed - zie toonTrofee().
+  evaluatie67:        'evaluatie67.mp3',
+  // Zelfde soort trigger, voor 8 of 9 goed - zie toonTrofee().
+  evaluatie89:        'evaluatie89.mp3',
+  // Zelfde soort trigger, maar dan wanneer alles goed was (dus goed===totaal,
+  // niet per se precies 10 - dat klopt ook bij een potje met een ander
+  // totaal aantal vragen) - zie toonTrofee().
+  evaluatie10:        'evaluatie10.mp3',
 };
 const TOEDELEDOKIE_GELUIDEN = ['toedeledokie1','toedeledokie2','toedeledokie3','toedeledokie4','toedeledokie5','toedeledokie6','toedeledokie7'];
 function speelToedeledokie(){
@@ -6135,6 +6149,17 @@ function kiesTrofeeIndex(goed, totaal){
 // als ankerpunt voor de net-verdiende-stempels-rij.
 function toonTrofee(blokId, imgId, tijdId, kmId, goed, totaal, tijdSec, km){
   const idx = kiesTrofeeIndex(goed, totaal);
+  // Bij elk totaaltje klinkt er een toepasselijk geluidje - op elk van de
+  // drie evaluatieschermen die deze functie gebruiken (Landen-scorebord,
+  // Hoofdsteden, Plekken), want ze tonen allemaal dezelfde inktvis-reactie.
+  // "Alles goed" (goed===totaal) gaat vóór de aantal-bandjes hieronder, want
+  // die zouden anders bij een potje met minder dan 10 vragen (bijv. een korte
+  // Hoofdsteden-ronde) een topscore verkeerd als "bijna" kunnen labelen.
+  if(totaal > 0 && goed === totaal) speelGeluid('evaluatie10');
+  else if(goed <= 2) speelGeluid('mislukt');
+  else if(goed <= 5) speelGeluid('evaluatie345');
+  else if(goed <= 7) speelGeluid('evaluatie67');
+  else if(goed <= 9) speelGeluid('evaluatie89');
   const pos = TROFEE_TEKST_POSITIE;
   const img = document.getElementById(imgId);
   img.src = 'images/trofee/'+idx+'van10.png';
