@@ -1641,6 +1641,25 @@ function lsInVerbodenZone(x, y, hoogte, yMin){
   return (y + (hoogte||0)) > yMin;
 }
 
+// ── Begrenzing: een stempel mag nooit meer dan de helft buiten het
+// speelveld verdwijnen. Zowel het slepen als het 3x uitvergroten (dubbel-
+// klik/-tik) laten een stempel altijd rond zíjn eigen MIDDELPUNT groeien of
+// bewegen — dus zolang dat middelpunt binnen het speelveld (0-100%) blijft,
+// kan er per definitie nooit meer dan de helft van de stempel (ongeacht
+// zijn actuele grootte of scheve stand) buiten beeld vallen. We begrenzen
+// daarom simpelweg het middelpunt van de normale (ongeschaalde) stempel-
+// doos tot het speelveld, en rekenen daarna terug naar de linkerbovenhoek
+// die style.left/top verwachten.
+function lsBegrensStempelPositie(links, boven, veldRect){
+  const breedtePct = LS_STEMPEL_GROOTTE;
+  const hoogtePct = LS_STEMPEL_GROOTTE * veldRect.width / veldRect.height;
+  let cx = links + breedtePct/2;
+  let cy = boven + hoogtePct/2;
+  cx = Math.min(100, Math.max(0, cx));
+  cy = Math.min(100, Math.max(0, cy));
+  return { links: cx - breedtePct/2, boven: cy - hoogtePct/2 };
+}
+
 // ── State ──
 let lsLanden = [];           // 9 gekozen PASPOORT_LANDEN-entries
 let lsKoppeling = [];        // cirkelindex → stempelindex (-1 = leeg)
@@ -1957,6 +1976,20 @@ function lsGetPointerPos(e){
   const t = e.touches ? e.touches[0] : e;
   return {clientX:t.clientX, clientY:t.clientY};
 }
+
+// Breekt een sleepactie die nog "aan staat" netjes af, zonder de stempel
+// te verplaatsen — nodig wanneer een dubbelklik/-tik de sleepactie van
+// zijn eigen eerste klik moet overrulen (zie de toelichting in
+// lsStartSleep hieronder).
+function lsAnnuleerSleep(){
+  document.removeEventListener('mousemove', lsBeweegSleep);
+  document.removeEventListener('mouseup', lsStopSleep);
+  document.removeEventListener('touchmove', lsBeweegSleep);
+  document.removeEventListener('touchend', lsStopSleep);
+  const stempel = document.getElementById('ls-stempel-'+lsSleepIdx);
+  if(stempel) stempel.classList.remove('slepen');
+  lsSleepIdx = -1;
+}
 function lsStartSleep(e){
   if(lsKlaar) return;
   // Alleen slepen als het spel actief is (paars/rood status) of als de
@@ -1973,6 +2006,13 @@ function lsStartSleep(e){
   lsLaatsteTik[idx] = nu;
   if(nu - vorigeTik < LS_DUBBELTIK_MS){
     lsLaatsteTik[idx] = 0;
+    // De EERSTE klik van deze dubbelklik werd hieronder, vóórdat bekend was
+    // dat het een dubbelklik zou worden, al als gewone sleepactie gestart.
+    // Die maken we nu eerst netjes ongedaan — anders bleef er een sleep-
+    // actie "hangen" met een muis-/vingeroffset die nog van vóór het
+    // vergroten/verkleinen stamde, en kon de stempel bij de eerstvolgende
+    // beweging in één klap ver wegspringen.
+    if(lsSleepIdx === idx) lsAnnuleerSleep();
     lsToggleStempelVergroting(idx);
     return;
   }
@@ -2014,10 +2054,11 @@ function lsBeweegSleep(e){
   const veldRect = veld.getBoundingClientRect();
 
   const stempel = document.getElementById('ls-stempel-'+lsSleepIdx);
-  const nieuwLeft = ((pos.clientX - lsSleepOffset.x - veldRect.left) / veldRect.width) * 100;
-  const nieuwTop = ((pos.clientY - lsSleepOffset.y - veldRect.top) / veldRect.height) * 100;
-  stempel.style.left = nieuwLeft+'%';
-  stempel.style.top = nieuwTop+'%';
+  const ruweLeft = ((pos.clientX - lsSleepOffset.x - veldRect.left) / veldRect.width) * 100;
+  const ruweTop = ((pos.clientY - lsSleepOffset.y - veldRect.top) / veldRect.height) * 100;
+  const begrensd = lsBegrensStempelPositie(ruweLeft, ruweTop, veldRect);
+  stempel.style.left = begrensd.links+'%';
+  stempel.style.top = begrensd.boven+'%';
   lsStempelTransform(stempel, lsSleepIdx, 0);
 }
 
