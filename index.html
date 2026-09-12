@@ -1568,7 +1568,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-    <div id="versie-label">V1.3</div>
+    <div id="versie-label">V1.1</div>
   <div id="start-links">
     <img id="start-timbo" src="Timbo.jpg" alt="Timbo"/>
     <div id="prestatie-tip">Trage computer? Kies voor minder detail bij opties</div>
@@ -4932,20 +4932,6 @@ const GELUID_EENMALIG_BESTANDEN = {
   toedeledokie5:      'toedeledokie5.mp3',
   toedeledokie6:      'toedeledokie6.mp3',
   toedeledokie7:      'toedeledokie7.mp3',
-  // Klinkt op de evaluatieschermen (Landen-scorebord, Hoofdsteden, Plekken)
-  // zodra het totaal aantal goed op 0, 1 of 2 uitkomt - zie toonTrofee().
-  mislukt:            'mislukt.mp3',
-  // Zelfde soort trigger als mislukt hierboven, maar dan voor een totaal
-  // van 3, 4 of 5 goed - zie toonTrofee().
-  evaluatie345:       'evaluatie345.mp3',
-  // Zelfde soort trigger, voor 6 of 7 goed - zie toonTrofee().
-  evaluatie67:        'evaluatie67.mp3',
-  // Zelfde soort trigger, voor 8 of 9 goed - zie toonTrofee().
-  evaluatie89:        'evaluatie89.mp3',
-  // Zelfde soort trigger, maar dan wanneer alles goed was (dus goed===totaal,
-  // niet per se precies 10 - dat klopt ook bij een potje met een ander
-  // totaal aantal vragen) - zie toonTrofee().
-  evaluatie10:        'evaluatie10.mp3',
 };
 const TOEDELEDOKIE_GELUIDEN = ['toedeledokie1','toedeledokie2','toedeledokie3','toedeledokie4','toedeledokie5','toedeledokie6','toedeledokie7'];
 function speelToedeledokie(){
@@ -6149,17 +6135,6 @@ function kiesTrofeeIndex(goed, totaal){
 // als ankerpunt voor de net-verdiende-stempels-rij.
 function toonTrofee(blokId, imgId, tijdId, kmId, goed, totaal, tijdSec, km){
   const idx = kiesTrofeeIndex(goed, totaal);
-  // Bij elk totaaltje klinkt er een toepasselijk geluidje - op elk van de
-  // drie evaluatieschermen die deze functie gebruiken (Landen-scorebord,
-  // Hoofdsteden, Plekken), want ze tonen allemaal dezelfde inktvis-reactie.
-  // "Alles goed" (goed===totaal) gaat vóór de aantal-bandjes hieronder, want
-  // die zouden anders bij een potje met minder dan 10 vragen (bijv. een korte
-  // Hoofdsteden-ronde) een topscore verkeerd als "bijna" kunnen labelen.
-  if(totaal > 0 && goed === totaal) speelGeluid('evaluatie10');
-  else if(goed <= 2) speelGeluid('mislukt');
-  else if(goed <= 5) speelGeluid('evaluatie345');
-  else if(goed <= 7) speelGeluid('evaluatie67');
-  else if(goed <= 9) speelGeluid('evaluatie89');
   const pos = TROFEE_TEKST_POSITIE;
   const img = document.getElementById(imgId);
   img.src = 'images/trofee/'+idx+'van10.png';
@@ -6909,7 +6884,7 @@ const ILLUSTRATIE_KALIBRATIE = {
   "Indonesië": {"minLon":96.487,"maxLon":136.586,"minLat":-11.103,"maxLat":5.063,"zoomMax":1,"hoeken":{"lb":{"dLon":-4.199,"dLat":1.228},"rb":{"dLon":4.51,"dLat":0},"ro":{"dLon":4.464,"dLat":0}}},
   "Irak": {"minLon":38.662,"maxLon":49.686,"minLat":28.583,"maxLat":37.367,"zoomMax":9.54},
   "Iran": {"minLon":42.354,"maxLon":65.437,"minLat":23.12,"maxLat":40.365,"zoomMax":6.05,"hoeken":{"lb":{"dLon":0.231,"dLat":0.344},"rb":{"dLon":0,"dLat":0.319},"lo":{"dLon":2.499,"dLat":1.638},"ro":{"dLon":-1.031,"dLat":-0.122}}},
-  "Israël": {"minLon":34.088,"maxLon":36.129,"minLat":29.431,"maxLat":33.387,"zoomMax":36.41},
+  "Israël": {"minLon":33.955,"maxLon":36.1,"minLat":29.371,"maxLat":33.367,"zoomMax":47.17},
   "Italië": {"minLon":7.082,"maxLon":18.99,"minLat":36.655,"maxLat":47.085,"zoomMax":11.6,"hoeken":{"lb":{"dLon":-1.429,"dLat":0.209},"lo":{"dLon":0.715,"dLat":-0.313},"ro":{"dLon":-0.715,"dLat":0}}},
   "Jamaica": {"minLon":-78.538,"maxLon":-76.025,"minLat":17.546,"maxLat":18.7,"zoomMax":40},
   "Japan": {"minLon":128.936,"maxLon":146.158,"minLat":28.382,"maxLat":46.088,"zoomMax":6.4},
@@ -6960,7 +6935,7 @@ const ILLUSTRATIE_KALIBRATIE = {
   "Oost-Timor": {"minLon":124.632,"maxLon":127.66,"minLat":-9.458,"maxLat":-8.243,"zoomMax":40,"hoeken":{"rb":{"dLon":0,"dLat":0.142},"lo":{"dLon":0,"dLat":-0.307}}},
   "Oostenrijk": {"minLon":8.955,"maxLon":17.716,"minLat":46.13,"maxLat":49.433,"zoomMax":26.52,"hoeken":{"rb":{"dLon":0.085,"dLat":0}}},
   "Pakistan": {"minLon":59.913,"maxLon":77.285,"minLat":23.146,"maxLat":37.047,"zoomMax":6.85,"hoeken":{"rb":{"dLon":0.81,"dLat":0.802},"lo":{"dLon":-0.521,"dLat":0},"ro":{"dLon":-0.347,"dLat":-0.973}}},
-  "Palestina": {"minLon":33.737,"maxLon":35.972,"minLat":31.119,"maxLat":32.635,"zoomMax":45.02,"hoeken":{"lo":{"dLon":0.191,"dLat":-0.013}}},
+  "Palestina": {"minLon":33.634,"maxLon":36.029,"minLat":31.073,"maxLat":32.651,"zoomMax":45.02,"hoeken":{"lo":{"dLon":0.191,"dLat":-0.013}}},
   "Panama": {"minLon":-83.533,"maxLon":-77.029,"minLat":7.014,"maxLat":10.282,"zoomMax":21.53},
   "Papoea-Nieuw-Guinea": {"minLon":139.368,"maxLon":156.413,"minLat":-13.305,"maxLat":0.553,"zoomMax":7.93},
   "Paraguay": {"minLon":-62.65,"maxLon":-54.245,"minLat":-27.587,"maxLat":-19.291,"zoomMax":8.21},
@@ -10789,12 +10764,6 @@ function sluitHulp(){
     // tijd niet meetelt in de zichtbare speeltijd.
     levelStartTijd += (performance.now() - hulpOpenTijd);
   }
-  if(hulpActief && plekOnthullingActief){
-    // Zelfde truc voor de plekken-onthulling: die liep tot nu toe gewoon door
-    // terwijl het besturingsschermpje open stond (zichtbaar verder uitzoomend
-    // plaatje) - zie ook de guard in loop() hieronder.
-    plekOnthullingStart += (performance.now() - hulpOpenTijd);
-  }
   hulpActief = false;
   document.getElementById('help-popup').style.display='none';
   if(spelActief) startMotorGeluid();
@@ -11051,7 +11020,7 @@ function loop(){
   const __loopStart = performance.now();
   toetsWaakhond(); pollGamepad(); updateSpel(); drawGlobe();
   checkNoodstop(performance.now() - __loopStart);
-  if(plekOnthullingActief && !hulpActief) tekenPlekOnthulling();
+  if(plekOnthullingActief) tekenPlekOnthulling();
   requestAnimationFrame(loop);
 }
 </script>
