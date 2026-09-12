@@ -145,6 +145,13 @@ body{
 .score-tabel th:nth-child(2), .score-tabel td:nth-child(2){ width:38%; }
 .score-tabel th:nth-child(3), .score-tabel td:nth-child(3){ width:26%; }
 .score-tabel th:nth-child(4), .score-tabel td:nth-child(4){ width:23%; }
+/* Schuif je landje heeft geen zinvolle score-kolom (elk potje is altijd
+   9 van de 9 goed) - die tabel heeft dus maar 3 kolommen (#, Naam, Tijd)
+   i.p.v. 4. Eigen kolombreedtes zodat Naam en Tijd de vrijgekomen ruimte
+   van de weggelaten Score-kolom eerlijk verdelen. */
+.score-tabel.geen-score-kolom th:nth-child(1), .score-tabel.geen-score-kolom td:nth-child(1){ width:13%; }
+.score-tabel.geen-score-kolom th:nth-child(2), .score-tabel.geen-score-kolom td:nth-child(2){ width:57%; }
+.score-tabel.geen-score-kolom th:nth-child(3), .score-tabel.geen-score-kolom td:nth-child(3){ width:30%; }
 .score-tabel td{
   padding:2px 4px; border-bottom:1px solid rgba(201,168,76,.2);
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
@@ -365,6 +372,18 @@ function formatTijdMs(ms){
   var m=Math.floor(sec/60), s=sec%60;
   return m>0 ? m+'m '+s+'s' : s+'s';
 }
+// Preciezere variant (honderdsten van seconden) voor Landje Schuif: daar
+// tellen alleen de tijden mee (elk potje is per definitie 9 van de 9
+// goed), dus verdient de tijd hier meer precisie dan de afgeronde
+// hele-seconden-weergave van formatTijdMs() hierboven - dat voorkomt
+// onnodig veel gelijke tijden bovenaan het scorebord. Zelfde klok-stijl
+// (m:ss) als de teller die je tijdens het spelen zelf al ziet.
+function formatTijdMsPrecies(ms){
+  if(ms==null) return '-';
+  var totaalSec = ms/1000;
+  var m = Math.floor(totaalSec/60), s = totaalSec - m*60;
+  return m + ':' + s.toFixed(2).padStart(5,'0');
+}
 
 // ── Level- en categorie-definities ────────────────────
 
@@ -549,20 +568,27 @@ function bouwScoreTabel(lijst, type, kolomTitel){
 function maakTabel(rijen, startIndex, type){
   var tabel = document.createElement('table');
   tabel.className = 'score-tabel';
+  // Schuif je landje: geen zinvolle score-kolom (zie de toelichting bij
+  // LANDJESCHUIF_SECTIES hierboven) - die kolom wordt hieronder simpelweg
+  // niet aangemaakt, en deze class zorgt voor de passende kolombreedtes.
+  var toonScoreKolom = (type !== 'landjeschuif');
+  if(!toonScoreKolom) tabel.classList.add('geen-score-kolom');
 
   var thead = document.createElement('thead');
   var hr = document.createElement('tr');
   var thNr = document.createElement('th'); thNr.textContent = '#';
   var thNaam = document.createElement('th'); thNaam.textContent = 'Naam';
-  var thScore = document.createElement('th');
-  thScore.textContent = type==='raad' ? 'Goed'
-    : type==='landjeschuif' ? 'Score'
-    : type==='hoofdsteden' ? 'Goed'
-    : type==='plekken' ? 'Punten'
-    : 'Afstand';
-  var thTijd = document.createElement('th'); thTijd.textContent = 'Tijd';
   hr.appendChild(thNr); hr.appendChild(thNaam);
-  hr.appendChild(thScore); hr.appendChild(thTijd);
+  if(toonScoreKolom){
+    var thScore = document.createElement('th');
+    thScore.textContent = type==='raad' ? 'Goed'
+      : type==='hoofdsteden' ? 'Goed'
+      : type==='plekken' ? 'Punten'
+      : 'Afstand';
+    hr.appendChild(thScore);
+  }
+  var thTijd = document.createElement('th'); thTijd.textContent = 'Tijd';
+  hr.appendChild(thTijd);
   thead.appendChild(hr);
   tabel.appendChild(thead);
 
@@ -590,36 +616,37 @@ function maakTabel(rijen, startIndex, type){
       tdNaam.classList.add('eigen-naam-cel');
     }
 
-    var tdScore = document.createElement('td');
-    if(type==='raad'){
-      // Oudere scores (van vóór raadspel.html het totaal zelf opsloeg)
-      // kennen run.totaal niet - elke categorie telt inmiddels minstens
-      // AANTAL_VRAGEN_MAX vragen per ronde, dus die waarde klopt ook voor
-      // die oudere scores. Zelfde getal als AANTAL_VRAGEN_MAX in raadspel.html.
-      var totaal = run.totaal || AANTAL_VRAGEN_MAX_FALLBACK;
-      tdScore.textContent = run.goed + '/' + totaal;
-    } else if(type==='landjeschuif'){
-      // Elk opgeslagen potje Landje Schuif is per definitie 9 van de 9 goed
-      // (zie lsOpslaanScore() in raadspel.html - die wordt alleen bij een
-      // voltooid potje aangeroepen), dus dit staat vast.
-      tdScore.textContent = '9/9';
-    } else if(type==='hoofdsteden'){
-      tdScore.textContent = run.goed + '/' + run.totaal;
-    } else if(type==='plekken'){
-      tdScore.textContent = run.punten;
-    } else {
-      tdScore.textContent = (run.km != null ? run.km + ' km' : '-');
+    tr.appendChild(tdPos); tr.appendChild(tdNaam);
+
+    if(toonScoreKolom){
+      var tdScore = document.createElement('td');
+      if(type==='raad'){
+        // Oudere scores (van vóór raadspel.html het totaal zelf opsloeg)
+        // kennen run.totaal niet - elke categorie telt inmiddels minstens
+        // AANTAL_VRAGEN_MAX vragen per ronde, dus die waarde klopt ook voor
+        // die oudere scores. Zelfde getal als AANTAL_VRAGEN_MAX in raadspel.html.
+        var totaal = run.totaal || AANTAL_VRAGEN_MAX_FALLBACK;
+        tdScore.textContent = run.goed + '/' + totaal;
+      } else if(type==='hoofdsteden'){
+        tdScore.textContent = run.goed + '/' + run.totaal;
+      } else if(type==='plekken'){
+        tdScore.textContent = run.punten;
+      } else {
+        tdScore.textContent = (run.km != null ? run.km + ' km' : '-');
+      }
+      tr.appendChild(tdScore);
     }
 
     var tdTijd = document.createElement('td');
-    if(type==='raad' || type==='landjeschuif'){
+    if(type==='landjeschuif'){
+      tdTijd.textContent = formatTijdMsPrecies(run.tijdMs);
+    } else if(type==='raad'){
       tdTijd.textContent = formatTijdMs(run.tijdMs);
     } else {
       tdTijd.textContent = formatTijd(run.tijd);
     }
+    tr.appendChild(tdTijd);
 
-    tr.appendChild(tdPos); tr.appendChild(tdNaam);
-    tr.appendChild(tdScore); tr.appendChild(tdTijd);
     tbody.appendChild(tr);
   }
   tabel.appendChild(tbody);

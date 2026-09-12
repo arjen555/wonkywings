@@ -343,6 +343,26 @@
       z-index:20;
     }
     #prestatie-tip.zichtbaar { opacity:1; }
+    /* ── Besturing-tip: zelfde soort gloeiende gele tekst als #prestatie-tip
+       hierboven, maar kleiner en vlak boven de "Besturing"-knop, zodat
+       nieuwe spelers meteen zien waar ze kunnen leren hoe de besturing werkt.
+       Verschijnt op hetzelfde moment als #prestatie-tip (zie toonPrestatieTip()
+       -> toonBesturingTip() in de JS) en vervaagt na diezelfde 3 seconden weer.
+       #help-knop is zelf al position:relative (via .startscherm-knop), dus
+       deze tip hangt direct aan de knop vast i.p.v. aan een apart element. */
+    #besturing-tip {
+      position:absolute; left:50%; bottom:100%;
+      transform:translate(-50%,0) rotate(-6deg);
+      margin-bottom:2px;
+      max-width:220%;
+      color:#ffd700; font-family:'Baloo 2',sans-serif; font-weight:800;
+      font-size:0.85rem; white-space:nowrap; text-align:center;
+      text-shadow:0 0 8px rgba(255,215,0,0.9), 0 0 20px rgba(255,190,0,0.6), 0 2px 6px rgba(0,0,0,0.6);
+      opacity:0; pointer-events:none;
+      transition:opacity 0.6s ease;
+      z-index:5;
+    }
+    #besturing-tip.zichtbaar { opacity:1; }
     #start-rechts {
       /* Vult op pc/laptop gewoon de resterende 20% naast #start-links'
          vaste 80% (de oude, beproefde verhouding - zie hierboven). */
@@ -1568,7 +1588,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-    <div id="versie-label">V1.1</div>
+    <div id="versie-label">V1.2</div>
   <div id="start-links">
     <img id="start-timbo" src="Timbo.jpg" alt="Timbo"/>
     <div id="prestatie-tip">Trage computer? Kies voor minder detail bij opties</div>
@@ -1597,6 +1617,7 @@
     </div>
     <button id="help-knop" class="startscherm-knop" onclick="speelGeluid('snelleWiew');openHulp()">
       Besturing
+      <div id="besturing-tip">Hoe werkt het?</div>
     </button>
     <div id="startscherm-icoontjes">
       <img id="paspoort-icoon-knop" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="speelGeluidDanNavigeer('boekPaspoort', () => window.location.href='paspoort.html')"/>
@@ -3286,6 +3307,7 @@ function rondNaamAfMet(naam){
   // wordt in de kiezer.
   initialiseerVliegfiguurVoorSpeler();
   toonPrestatieTip();
+  toonBesturingTip();
 }
 // Kort tekstballonnetje op het startscherm dat wijst op de detail-instelling
 // bij Opties - handig voor tragere computers (bijv. op school), waar het
@@ -3293,6 +3315,14 @@ function rondNaamAfMet(naam){
 // meteen helder in beeld en vervaagt na 3 seconden vanzelf weer.
 function toonPrestatieTip(){
   const el = document.getElementById('prestatie-tip');
+  el.classList.add('zichtbaar');
+  setTimeout(()=>{ el.classList.remove('zichtbaar'); }, 3000);
+}
+// Zelfde soort kort tekstballonnetje als toonPrestatieTip() hierboven, maar
+// dan bij de "Besturing"-knop - wijst nieuwe spelers meteen op waar ze de
+// uitleg over de besturing kunnen vinden. Zelfde timing (3 seconden).
+function toonBesturingTip(){
+  const el = document.getElementById('besturing-tip');
   el.classList.add('zichtbaar');
   setTimeout(()=>{ el.classList.remove('zichtbaar'); }, 3000);
 }
