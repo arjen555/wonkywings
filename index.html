@@ -314,7 +314,7 @@
       right:14px;
       bottom:calc(var(--spiek-knop-bottom) + var(--spiek-knop-breedte) + 10px + var(--hoewerkthet-pijl-hoogte) + 10px);
       color:#ffd700; font-family:'Baloo 2',sans-serif; font-weight:800;
-      font-size:clamp(2.2rem, 5.8vmin, 3.7rem); text-align:right;
+      font-size:clamp(1.9rem, 5vmin, 3.2rem); text-align:right;
       max-width:min(85vw, 680px); white-space:normal;
       text-shadow:0 0 10px rgba(255,215,0,0.9), 0 0 28px rgba(255,190,0,0.65), 0 3px 10px rgba(0,0,0,0.65);
       opacity:0;
@@ -333,8 +333,11 @@
          zo'n 19% van de hoogte daarboven (zie -15px/0.191-termen hieronder),
          dus puur op de rand van de knop uitlijnen liet 'm ernaast in het
          niets prikken. */
-      right:calc(22px + var(--spiek-knop-breedte)/2);
-      bottom:calc(var(--spiek-knop-bottom) + var(--spiek-knop-breedte) - var(--hoewerkthet-pijl-hoogte)*0.191 - 15px);
+      /* +14px op right én bottom: kleine nudge naar linksboven, op verzoek
+         van Arjen - de punt komt daardoor iets boven het knopje te zweven
+         i.p.v. er half in, maar wijst er nog steeds duidelijk op. */
+      right:calc(22px + var(--spiek-knop-breedte)/2 + 14px);
+      bottom:calc(var(--spiek-knop-bottom) + var(--spiek-knop-breedte) - var(--hoewerkthet-pijl-hoogte)*0.191 - 15px + 14px);
       width:var(--hoewerkthet-pijl-breedte); height:var(--hoewerkthet-pijl-hoogte);
       opacity:0;
     }
@@ -1164,7 +1167,7 @@
          400x335px) tussen "Hoe werkt het?" en de bedieningsknop. Hoogte
          wordt uit de breedte afgeleid (335/400) zodat de pijl nooit
          uitgerekt/vervormd raakt, welk schermformaat dan ook. */
-      --hoewerkthet-pijl-breedte: clamp(100px,15vmin,180px);
+      --hoewerkthet-pijl-breedte: clamp(80px,12vmin,144px);
       --hoewerkthet-pijl-hoogte: calc(var(--hoewerkthet-pijl-breedte) * 0.8375);
     }
     #bediening-spiek-knop {
@@ -1623,7 +1626,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-    <div id="versie-label">V1.7</div>
+    <div id="versie-label">V1.8</div>
   <div id="start-links">
     <img id="start-timbo" src="Timbo.jpg" alt="Timbo"/>
     <div id="prestatie-tip">Trage computer? Kies voor minder detail bij opties</div>
@@ -3666,7 +3669,7 @@ function vliegtuigIntroSchaal(){
 // Aparte, iets langere tijdsduur dan de landen-glow hierboven: dit is een
 // zin om te lezen, geen kort visueel effect, dus die verdient wat meer tijd.
 let tipActief=false, tipStartTijd=0;
-const TIP_DUUR = 12600; // ms - 3x zo lang als voorheen (was 4200), op verzoek van Arjen
+const TIP_DUUR = 11600; // ms - 1 seconde korter (was 12600), op verzoek van Arjen
 const KNOP_LABELS = ['tip-besturing','tip-hint','tip-joker','tip-hoewerkthet','tip-hoewerkthet-pijl'];
 let huidigLandIdx=0, huidigLand='', score=0, spelerNaam='';
 let levelStartTijd=0, laatsteLevelTijd=0, laatsteLevelTijdPrecies=0;
