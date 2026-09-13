@@ -298,37 +298,38 @@
     }
     /* ── "Hoe werkt het?" boven de bedieningsknop: zelfde soort gloeiende
        gele tekst zonder kadertje als #prestatie-tip op het startscherm,
-       maar groter dan de kleine knop-labeltjes hiernaast. Vast geankerd
-       vanaf de rechterrand (i.p.v. gecentreerd boven de knop) - de knop
-       hangt vlak bij de rechterrand van het scherm, dus gecentreerd zou de
-       tekst deels buiten beeld duwen. Door 'm hier vanaf de rechterkant te
-       laten groeien, blijft hij altijd volledig in beeld, op elk
-       schermformaat. Opacity wordt (net als de knop-labels) elk frame
-       gezet in updateSpel(), dus geen eigen transition nodig. ── */
+       maar groter dan de kleine knop-labeltjes hiernaast (op verzoek van
+       Arjen 2x zo groot als de eerste versie). Vast geankerd vanaf de
+       rechterrand (i.p.v. gecentreerd boven de knop) - de knop hangt vlak
+       bij de rechterrand van het scherm, dus gecentreerd zou de tekst deels
+       buiten beeld duwen. Door 'm hier vanaf de rechterkant te laten
+       groeien, blijft hij altijd volledig in beeld, op elk schermformaat.
+       Bottom-positie staat boven op de pijl hieronder (zie
+       --hoewerkthet-pijl-hoogte), zodat tekst en pijl altijd los van elkaar
+       blijven staan, ongeacht schermformaat/zoom. Opacity wordt (net als de
+       knop-labels) elk frame gezet in updateSpel(), dus geen eigen
+       transition nodig. ── */
     .glow-tip-groot {
       position:fixed; z-index:22; pointer-events:none; user-select:none;
       right:14px;
-      bottom:calc(var(--spiek-knop-bottom) + var(--spiek-knop-breedte) + 64px);
-      transform:rotate(-5deg);
-      transform-origin:right bottom;
+      bottom:calc(var(--spiek-knop-bottom) + var(--spiek-knop-breedte) + 10px + var(--hoewerkthet-pijl-hoogte) + 10px);
       color:#ffd700; font-family:'Baloo 2',sans-serif; font-weight:800;
-      font-size:clamp(1.3rem, 3.4vmin, 2.2rem); text-align:right;
-      max-width:min(58vw, 360px); white-space:normal;
+      font-size:clamp(2.6rem, 6.8vmin, 4.4rem); text-align:right;
+      max-width:min(85vw, 680px); white-space:normal;
       text-shadow:0 0 10px rgba(255,215,0,0.9), 0 0 28px rgba(255,190,0,0.65), 0 3px 10px rgba(0,0,0,0.65);
       opacity:0;
     }
-    /* ── Pijl tussen de tekst en de bedieningsknop: verschijnt/vervaagt
-       gelijk met .glow-tip-groot (zelfde KNOP_LABELS-fade), maar toont
-       niets als de afbeelding (nog) niet bestaat (onerror), zodat een
-       ontbrekend bestand geen kapot-plaatje-icoontje geeft. Positie/maat
-       zijn een eerste inschatting - wordt fijngeslepen zodra de echte
-       pijl-illustratie er is (afmetingen/verhouding kunnen dan verschillen). ── */
+    /* ── Gele gekromde pijl tussen de tekst en de "besturing"-knop: wijst
+       van onder de tekst naar het "besturing"-labeltje (tip-besturing) bij
+       de bedieningsknop. Verschijnt/vervaagt gelijk met .glow-tip-groot
+       (zelfde KNOP_LABELS-fade). Toont niets als de afbeelding onverhoopt
+       ontbreekt (onerror), zodat een ontbrekend bestand geen kapot-plaatje-
+       icoontje geeft. ── */
     #tip-hoewerkthet-pijl {
       position:fixed; z-index:22; pointer-events:none;
-      right:34px;
-      bottom:calc(var(--spiek-knop-bottom) + var(--spiek-knop-breedte) - 6px);
-      width:clamp(60px,9vmin,110px); height:auto;
-      transform:rotate(8deg);
+      right:18px;
+      bottom:calc(var(--spiek-knop-bottom) + var(--spiek-knop-breedte) + 6px);
+      width:var(--hoewerkthet-pijl-breedte); height:var(--hoewerkthet-pijl-hoogte);
       opacity:0;
     }
     /* Trekt kort de aandacht naar de knoppen zelf bij spelstart, zonder het
@@ -1153,6 +1154,12 @@
     :root {
       --spiek-knop-breedte: clamp(52px,8vmin,86px);
       --spiek-knop-bottom: calc(22px + clamp(75px,10.9vmin,135px)/0.7424 + 14px + clamp(52px,8vmin,86px)*2 + 12px + 14px);
+      /* Afmeting van de gele gekromde pijl (images/besturing-pijl.png, bron
+         400x335px) tussen "Hoe werkt het?" en de bedieningsknop. Hoogte
+         wordt uit de breedte afgeleid (335/400) zodat de pijl nooit
+         uitgerekt/vervormd raakt, welk schermformaat dan ook. */
+      --hoewerkthet-pijl-breedte: clamp(100px,15vmin,180px);
+      --hoewerkthet-pijl-hoogte: calc(var(--hoewerkthet-pijl-breedte) * 0.8375);
     }
     #bediening-spiek-knop {
       position:fixed; right:22px;
@@ -1610,7 +1617,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-    <div id="versie-label">V1.5</div>
+    <div id="versie-label">V1.6</div>
   <div id="start-links">
     <img id="start-timbo" src="Timbo.jpg" alt="Timbo"/>
     <div id="prestatie-tip">Trage computer? Kies voor minder detail bij opties</div>
