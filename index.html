@@ -298,16 +298,37 @@
     }
     /* ── "Hoe werkt het?" boven de bedieningsknop: zelfde soort gloeiende
        gele tekst zonder kadertje als #prestatie-tip op het startscherm,
-       maar kleiner - en boven de knop i.p.v. ernaast, zodat hij niet over
-       het "besturing"-labeltje (.knop-label hierboven) heen valt. Opacity
-       wordt (net als de knop-labels) elk frame gezet in updateSpel(), dus
-       geen eigen transition nodig. ── */
+       maar groter dan de kleine knop-labeltjes hiernaast. Vast geankerd
+       vanaf de rechterrand (i.p.v. gecentreerd boven de knop) - de knop
+       hangt vlak bij de rechterrand van het scherm, dus gecentreerd zou de
+       tekst deels buiten beeld duwen. Door 'm hier vanaf de rechterkant te
+       laten groeien, blijft hij altijd volledig in beeld, op elk
+       schermformaat. Opacity wordt (net als de knop-labels) elk frame
+       gezet in updateSpel(), dus geen eigen transition nodig. ── */
     .glow-tip-groot {
       position:fixed; z-index:22; pointer-events:none; user-select:none;
-      transform:translate(-50%,-100%) rotate(-6deg);
+      right:14px;
+      bottom:calc(var(--spiek-knop-bottom) + var(--spiek-knop-breedte) + 64px);
+      transform:rotate(-5deg);
+      transform-origin:right bottom;
       color:#ffd700; font-family:'Baloo 2',sans-serif; font-weight:800;
-      font-size:clamp(0.9rem, 2vmin, 1.35rem); white-space:nowrap; text-align:center;
-      text-shadow:0 0 10px rgba(255,215,0,0.9), 0 0 26px rgba(255,190,0,0.6), 0 2px 8px rgba(0,0,0,0.65);
+      font-size:clamp(1.3rem, 3.4vmin, 2.2rem); text-align:right;
+      max-width:min(58vw, 360px); white-space:normal;
+      text-shadow:0 0 10px rgba(255,215,0,0.9), 0 0 28px rgba(255,190,0,0.65), 0 3px 10px rgba(0,0,0,0.65);
+      opacity:0;
+    }
+    /* ── Pijl tussen de tekst en de bedieningsknop: verschijnt/vervaagt
+       gelijk met .glow-tip-groot (zelfde KNOP_LABELS-fade), maar toont
+       niets als de afbeelding (nog) niet bestaat (onerror), zodat een
+       ontbrekend bestand geen kapot-plaatje-icoontje geeft. Positie/maat
+       zijn een eerste inschatting - wordt fijngeslepen zodra de echte
+       pijl-illustratie er is (afmetingen/verhouding kunnen dan verschillen). ── */
+    #tip-hoewerkthet-pijl {
+      position:fixed; z-index:22; pointer-events:none;
+      right:34px;
+      bottom:calc(var(--spiek-knop-bottom) + var(--spiek-knop-breedte) - 6px);
+      width:clamp(60px,9vmin,110px); height:auto;
+      transform:rotate(8deg);
       opacity:0;
     }
     /* Trekt kort de aandacht naar de knoppen zelf bij spelstart, zonder het
@@ -1126,11 +1147,18 @@
     /* ── JOKER ── */
     /* ── SPIEK-KNOP (bediening tijdens spelen/verkennen) ── */
     /* Zelfde formaat als .richting-knop, en er precies boven gestapeld: */
+    /* Herbruikbare maat/positie van de bedieningsknop - ook gebruikt door
+       .glow-tip-groot en de bijbehorende pijl hieronder, zodat die twee
+       altijd kloppen t.o.v. de knop, ongeacht schermformaat/zoom. */
+    :root {
+      --spiek-knop-breedte: clamp(52px,8vmin,86px);
+      --spiek-knop-bottom: calc(22px + clamp(75px,10.9vmin,135px)/0.7424 + 14px + clamp(52px,8vmin,86px)*2 + 12px + 14px);
+    }
     #bediening-spiek-knop {
       position:fixed; right:22px;
-      bottom:calc(22px + clamp(75px,10.9vmin,135px)/0.7424 + 14px + clamp(52px,8vmin,86px)*2 + 12px + 14px);
+      bottom:var(--spiek-knop-bottom);
       z-index:20;
-      width:clamp(52px,8vmin,86px); height:clamp(52px,8vmin,86px);
+      width:var(--spiek-knop-breedte); height:var(--spiek-knop-breedte);
       cursor:pointer; transition:transform 0.15s;
       filter:drop-shadow(0 3px 8px rgba(0,0,0,0.5));
       background:transparent; border:none; padding:0; margin:0;
@@ -1582,7 +1610,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-    <div id="versie-label">V1.3</div>
+    <div id="versie-label">V1.5</div>
   <div id="start-links">
     <img id="start-timbo" src="Timbo.jpg" alt="Timbo"/>
     <div id="prestatie-tip">Trage computer? Kies voor minder detail bij opties</div>
@@ -1929,6 +1957,10 @@
        vervaagt hier gelijk met de knop-labels hierboven (zie KNOP_LABELS
        en toonKnopLabels() in de JS). -->
   <div id="tip-hoewerkthet" class="glow-tip-groot">Hoe werkt het?</div>
+  <!-- Gele gekromde pijl van de tekst naar de bedieningsknop - bestand
+       moet nog aangeleverd worden (images/besturing-pijl.png); tot die tijd
+       laat onerror 'm gewoon onzichtbaar blijven i.p.v. een kapot icoontje. -->
+  <img id="tip-hoewerkthet-pijl" src="images/besturing-pijl.png" alt="" onerror="this.style.display='none'"/>
   <img id="wonky" src="images/vliegtuigjes/Wonky.png" alt="Wonky"/>
   <img id="wonky-frontaal" src="images/vliegtuigjes/Timbo_frontaal.png" alt="Wonky frontaal" style="position:fixed;width:clamp(83px, 6.77vmin, 148px);pointer-events:none;z-index:11;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));"/>
   <img id="wonky-naar-frontaal" src="images/vliegtuigjes/Timbo_naar_frontaal.png" alt="Wonky naar frontaal" style="position:fixed;width:clamp(86px, 7.03vmin, 154px);pointer-events:none;z-index:11;display:none;filter:drop-shadow(3px 6px 14px rgba(0,0,0,0.7));transform-origin:center center;"/>
@@ -3622,7 +3654,7 @@ function vliegtuigIntroSchaal(){
 // zin om te lezen, geen kort visueel effect, dus die verdient wat meer tijd.
 let tipActief=false, tipStartTijd=0;
 const TIP_DUUR = 12600; // ms - 3x zo lang als voorheen (was 4200), op verzoek van Arjen
-const KNOP_LABELS = ['tip-besturing','tip-hint','tip-joker','tip-hoewerkthet'];
+const KNOP_LABELS = ['tip-besturing','tip-hint','tip-joker','tip-hoewerkthet','tip-hoewerkthet-pijl'];
 let huidigLandIdx=0, huidigLand='', score=0, spelerNaam='';
 let levelStartTijd=0, laatsteLevelTijd=0, laatsteLevelTijdPrecies=0;
 // Vlucht-animatie bij een misser: vliegtuigje volgt automatisch een gloeiende lijn naar het juiste land
@@ -4951,6 +4983,14 @@ const GELUID_EENMALIG_BESTANDEN = {
   toedeledokie5:      'toedeledokie5.mp3',
   toedeledokie6:      'toedeledokie6.mp3',
   toedeledokie7:      'toedeledokie7.mp3',
+  // Evaluatie-geluiden: klinken één keer zodra het trofee-plaatje op het
+  // scorebord/resultaatscherm verschijnt (zie toonTrofee()/kiesEvaluatieGeluid()) -
+  // welke van de vijf, hangt af van dezelfde 0-10-index als het plaatje zelf.
+  mislukt:            'mislukt.mp3',
+  evaluatie345:       'evaluatie345.mp3',
+  evaluatie67:        'evaluatie67.mp3',
+  evaluatie89:        'evaluatie89.mp3',
+  evaluatie10:        'evaluatie10.mp3',
 };
 const TOEDELEDOKIE_GELUIDEN = ['toedeledokie1','toedeledokie2','toedeledokie3','toedeledokie4','toedeledokie5','toedeledokie6','toedeledokie7'];
 function speelToedeledokie(){
@@ -5209,13 +5249,24 @@ function pauzeerSchurkVoorPopup(){
 // door, dus was zijn geplande vluchttijd allang verstreken tegen de tijd dat
 // de popup dichtging). Geluid gaat weer aan, tenzij de schurk inmiddels toch
 // al weg is.
+// Of het level op dit moment nog écht bezig is - in tegenstelling tot de
+// vlag spelActief, die met opzet nog even 'true' blijft staan tijdens de
+// aflopende animaties/het evaluatiescherm (zie de toelichting bij
+// dropVlaggetje()). Nodig omdat een kennisvraag-pop-up of het rad van
+// fortuin soms nog open is (of net op dat moment sluit) op het exacte
+// moment dat een level klaar is - zonder deze check zette hervatMotorNaPopup()/
+// hervatSchurkNaPopup() het motor-/schurkengeluid dan alsnog weer aan,
+// terwijl het scorebord/evaluatiescherm al in beeld stond.
+function levelNogBezig(){
+  return spelActief && huidigLandIdx < spelLanden.length;
+}
 function hervatSchurkNaPopup(){
   if(!schurkPauzeSindsTijd) return;
   const gepauzeerdeDuur = performance.now() - schurkPauzeSindsTijd;
   schurkPauzeSindsTijd = 0;
   if(schurkVliegtuig){
     schurkVliegtuig.spawnTijd += gepauzeerdeDuur;
-    startSchurkGeluid();
+    if(levelNogBezig()) startSchurkGeluid();
   }
 }
 
@@ -5233,7 +5284,7 @@ function pauzeerMotorVoorPopup(){
 function hervatMotorNaPopup(){
   if(!motorGepauzeerdVoorPopup) return;
   motorGepauzeerdVoorPopup = false;
-  if(spelActief) startMotorGeluid();
+  if(levelNogBezig()) startMotorGeluid();
   if(motorPauzeWasTurboActief) updateTurboGeluid(true);
 }
 function startLus(naam){
@@ -5368,10 +5419,13 @@ function zetGeluidAan(aan){
   if(aan) speelGeluid('dierenbrul');
   if(!aan){
     for(const naam in GELUID_LUS) stopLus(naam);
-  } else if(spelActief){
+  } else if(levelNogBezig()){
     // Alleen de lussen die op dit moment eigenlijk aan zouden moeten staan
     // weer starten - niet zomaar alles, anders klinkt bijvoorbeeld het
-    // windgeluid ineens ook buiten een correctie-vlucht.
+    // windgeluid ineens ook buiten een correctie-vlucht. levelNogBezig()
+    // i.p.v. spelActief, anders klinkt het motorgeluid ook weer even op als
+    // je het schakelaartje aan/uit klikt terwijl het evaluatiescherm al in
+    // beeld staat.
     startMotorGeluid();
     if(turboGeluidVorigeFrame){ turboGeluidVorigeFrame=false; updateTurboGeluid(true); }
     if(vluchtActief) startWindGeluid();
@@ -5404,7 +5458,7 @@ document.addEventListener('visibilitychange', () => {
   if(document.hidden){
     for(const naam in GELUID_LUS) stopLus(naam);
     stopVerrekijkerGeluid();
-  } else if(spelActief && !hulpActief && !kennisvraagActief && !radActief){
+  } else if(levelNogBezig() && !hulpActief && !kennisvraagActief && !radActief){
     startMotorGeluid();
   }
 });
@@ -6142,11 +6196,24 @@ function formatTijd(sec){ const m=Math.floor(sec/60), s=sec%60; return m+':'+Str
 // Het "TIJD"- en "KM UIT DE RICHTING"-bordje staan op alle elf plaatjes op
 // exact dezelfde plek (bevestigd door Arjen) - dus één gedeelde positie (in
 // % van de vierkante afbeelding) voor alle plaatjes samen, i.p.v. een aparte
-// regel per plaatje zoals voorheen.
-const TROFEE_TEKST_POSITIE = { tijd:[32.3,79.4], km:[68.3,79.4] };
+// regel per plaatje zoals voorheen. Y-waarde op verzoek van Arjen iets naar
+// beneden geschoven (was 79.4) zodat de tekst bij alle dieren beter past.
+const TROFEE_TEKST_POSITIE = { tijd:[32.3,81.5], km:[68.3,81.5] };
 function kiesTrofeeIndex(goed, totaal){
   if(!totaal || totaal<=0) return 0;
   return Math.max(0, Math.min(10, Math.round((goed/totaal)*10)));
+}
+// Welk evaluatie-geluid bij welke trofee-index hoort (zelfde 0-10-schaal als
+// kiesTrofeeIndex, dus geluid en plaatje horen altijd bij elkaar - ook als
+// een level niet uit precies 10 landen bestaat). Indeling van Arjen: 0-2 =
+// mislukt, 3-5 = evaluatie345, 6-7 = evaluatie67, 8-9 = evaluatie89, 10 =
+// evaluatie10.
+function kiesEvaluatieGeluid(idx){
+  if(idx<=2) return 'mislukt';
+  if(idx<=5) return 'evaluatie345';
+  if(idx<=7) return 'evaluatie67';
+  if(idx<=9) return 'evaluatie89';
+  return 'evaluatie10';
 }
 // Vult een trofee-blok (drie elementen: het blok zelf, de <img>, en de twee
 // tekst-<span>'s voor tijd/km) en toont het. Geeft het trofee-blok-element
@@ -6154,6 +6221,7 @@ function kiesTrofeeIndex(goed, totaal){
 // als ankerpunt voor de net-verdiende-stempels-rij.
 function toonTrofee(blokId, imgId, tijdId, kmId, goed, totaal, tijdSec, km){
   const idx = kiesTrofeeIndex(goed, totaal);
+  speelGeluid(kiesEvaluatieGeluid(idx));
   const pos = TROFEE_TEKST_POSITIE;
   const img = document.getElementById(imgId);
   img.src = 'images/trofee/'+idx+'van10.png';
@@ -10749,21 +10817,13 @@ function toonKnopLabels(){
     label.style.top = (r.top + r.height/2) + 'px';
   }
 
-  // Zelfde soort plaatsing als plaats() hierboven, maar dan BOVEN de knop
-  // i.p.v. ernaast - gebruikt voor #tip-hoewerkthet, zodat die niet over
-  // het "besturing"-labeltje (dat links van de knop staat) heen valt.
-  function plaatsBoven(labelId, targetEl, gap){
-    const label = document.getElementById(labelId);
-    const r = targetEl.getBoundingClientRect();
-    if(r.width===0 && r.height===0) return;
-    label.style.left = (r.left + r.width/2) + 'px';
-    label.style.top = (r.top - gap) + 'px';
-  }
-
   plaats('tip-besturing', document.getElementById('bediening-spiek-knop'));
   plaats('tip-hint', document.getElementById('richting-rij'));
   plaats('tip-joker', document.getElementById('joker-knop'));
-  plaatsBoven('tip-hoewerkthet', document.getElementById('bediening-spiek-knop'), 14);
+  // #tip-hoewerkthet en #tip-hoewerkthet-pijl hebben hun eigen vaste CSS-
+  // positie (rechts geankerd t.o.v. de bedieningsknop, zie .glow-tip-groot
+  // en #tip-hoewerkthet-pijl) - die hoeven hier dus niet per frame/aanroep
+  // herberekend te worden zoals de drie labeltjes hierboven.
 
   tipActief = true;
   tipStartTijd = performance.now();
@@ -10797,7 +10857,7 @@ function sluitHulp(){
   }
   hulpActief = false;
   document.getElementById('help-popup').style.display='none';
-  if(spelActief) startMotorGeluid();
+  if(levelNogBezig()) startMotorGeluid();
 }
 // ── Feedback & punten ─────────────────────────────────
 function zetZoomIndicator(niveau){
