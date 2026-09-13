@@ -314,7 +314,7 @@
       right:14px;
       bottom:calc(var(--spiek-knop-bottom) + var(--spiek-knop-breedte) + 10px + var(--hoewerkthet-pijl-hoogte) + 10px);
       color:#ffd700; font-family:'Baloo 2',sans-serif; font-weight:800;
-      font-size:clamp(2.6rem, 6.8vmin, 4.4rem); text-align:right;
+      font-size:clamp(2.2rem, 5.8vmin, 3.7rem); text-align:right;
       max-width:min(85vw, 680px); white-space:normal;
       text-shadow:0 0 10px rgba(255,215,0,0.9), 0 0 28px rgba(255,190,0,0.65), 0 3px 10px rgba(0,0,0,0.65);
       opacity:0;
@@ -327,8 +327,14 @@
        icoontje geeft. ── */
     #tip-hoewerkthet-pijl {
       position:fixed; z-index:22; pointer-events:none;
-      right:18px;
-      bottom:calc(var(--spiek-knop-bottom) + var(--spiek-knop-breedte) + 6px);
+      /* Rechts uitgelijnd op het MIDDEN van de bedieningsknop (i.p.v. op de
+         rechterrand van de knop) - de punt van de pijl in het plaatje zelf
+         zit namelijk niet in de rechterbenedenhoek van de afbeelding, maar
+         zo'n 19% van de hoogte daarboven (zie -15px/0.191-termen hieronder),
+         dus puur op de rand van de knop uitlijnen liet 'm ernaast in het
+         niets prikken. */
+      right:calc(22px + var(--spiek-knop-breedte)/2);
+      bottom:calc(var(--spiek-knop-bottom) + var(--spiek-knop-breedte) - var(--hoewerkthet-pijl-hoogte)*0.191 - 15px);
       width:var(--hoewerkthet-pijl-breedte); height:var(--hoewerkthet-pijl-hoogte);
       opacity:0;
     }
@@ -1617,7 +1623,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-    <div id="versie-label">V1.6</div>
+    <div id="versie-label">V1.7</div>
   <div id="start-links">
     <img id="start-timbo" src="Timbo.jpg" alt="Timbo"/>
     <div id="prestatie-tip">Trage computer? Kies voor minder detail bij opties</div>
