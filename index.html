@@ -1626,7 +1626,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-    <div id="versie-label">V1.8</div>
+    <div id="versie-label">V1.9</div>
   <div id="start-links">
     <img id="start-timbo" src="Timbo.jpg" alt="Timbo"/>
     <div id="prestatie-tip">Trage computer? Kies voor minder detail bij opties</div>
@@ -4464,6 +4464,26 @@ function stempelsSleutelVoorSpeler(){
 function geefVerdiendeStempels(){
   try{ return JSON.parse(localStorage.getItem(stempelsSleutelVoorSpeler())||'[]'); }catch(e){ return []; }
 }
+// ── Hoofdsteden: "niet blijven grinden"-teller, per werelddeel-level en per
+// speler (zelfde opzet als de verdiende stempels hierboven: één sleutel per
+// speler, dus lokaal op dit apparaat). Houdt per level bij hoeveel foutloze
+// potjes er ACHTER ELKAAR gespeeld zijn en wanneer het laatste foutloze
+// potje was. Wordt gebruikt in toonHoofdstedenResultaat(): vanaf de 3e
+// foutloze ronde op rij op hetzelfde level (en dat gebeurde binnen 2 dagen
+// na de vorige foutloze ronde) valt de stempelbeloning die keer weg. Een
+// niet-foutloze ronde zet de teller weer op nul; blijft het level 2 dagen
+// met rust (of lukt het niet meer foutloos), dan mag het gewoon weer.
+const HOOFDSTEDEN_GRIND_COOLDOWN_MS = 2 * 24 * 60 * 60 * 1000; // 2 dagen
+function hoofdstedenStreakSleutel(){
+  const naam = localStorage.getItem(SPELERNAAM_SLEUTEL) || 'Speler';
+  return 'wonkywings_hoofdsteden_streak::' + naam;
+}
+function geefHoofdstedenStreaks(){
+  try{ return JSON.parse(localStorage.getItem(hoofdstedenStreakSleutel())||'{}'); }catch(e){ return {}; }
+}
+function zetHoofdstedenStreaks(obj){
+  try{ localStorage.setItem(hoofdstedenStreakSleutel(), JSON.stringify(obj)); }catch(e){}
+}
 // Zoekt de paspoort-ingang bij een landnaam zoals die in het spel gebruikt
 // wordt. Eerst op exacte naam (dekt verreweg de meeste landen), dan op
 // bestandsnaam via landNaarBestand (dekt een handjevol landen waar de
@@ -6304,14 +6324,42 @@ function toonHoofdstedenResultaat(goed, totaal){
   // Groten (highscores.html), fire-and-forget zoals overal elders.
   fsOpslaan('scores_hoofdsteden', {levelId:huidigLevel, naam:spelerNaam, goed, totaal, tijd:laatsteLevelTijdPrecies, datum:Date.now()});
   document.getElementById('hoofdsteden-resultaat-score').textContent = goed+' van de '+totaal+' hoofdsteden goed!';
-  // ── Landenpaspoort: 8 of 9 goed = 1 verrassingsstempel, alles goed = 2 ──
+  // ── Landenpaspoort: 6 of 7 goed = 1 verrassingsstempel, 8 of 9 goed = 2, alles goed = 3 ──
   let aantalStempels = 0;
-  if(goed === totaal) aantalStempels = 2;
-  else if(goed >= 8) aantalStempels = 1;
+  if(goed === totaal) aantalStempels = 3;
+  else if(goed >= 8) aantalStempels = 2;
+  else if(goed >= 6) aantalStempels = 1;
+
+  // ── Niet blijven grinden: zie hoofdstedenStreakSleutel() hierboven voor
+  // de volledige toelichting. Alleen bij een foutloze ronde (alles goed)
+  // wordt de teller voor dit level bijgewerkt/gecheckt; bij een niet-
+  // foutloze ronde gaat de teller gewoon terug naar 0.
+  const allesGoed = (goed === totaal);
+  const streaks = geefHoofdstedenStreaks();
+  const entry = streaks[huidigLevel] || {streak:0, laatste:0};
+  let grindGeblokkeerd = false;
+  if(allesGoed){
+    const binnenCooldown = entry.laatste && (Date.now() - entry.laatste) < HOOFDSTEDEN_GRIND_COOLDOWN_MS;
+    if(entry.streak >= 2 && binnenCooldown){
+      grindGeblokkeerd = true;
+    } else if(binnenCooldown){
+      entry.streak = Math.min(entry.streak + 1, 2);
+    } else {
+      entry.streak = 1;
+    }
+    entry.laatste = Date.now();
+  } else {
+    entry.streak = 0;
+  }
+  streaks[huidigLevel] = entry;
+  zetHoofdstedenStreaks(streaks);
+  if(grindGeblokkeerd) aantalStempels = 0;
+
   const drempelBereikt = aantalStempels > 0;
   const gekozenLanden = drempelBereikt ? kiesBonusLanden(aantalStempels) : [];
-  document.getElementById('hoofdsteden-resultaat-stempel').textContent =
-    stempelMeldingTekst(drempelBereikt, gekozenLanden, 'Bijna! Vanaf 8 landen goed krijg je een landenstempel.');
+  document.getElementById('hoofdsteden-resultaat-stempel').textContent = grindGeblokkeerd
+    ? 'Hier heb je al 3x alles goed nu. Kies daarom een ander gebied of spel om stempels mee te verdienen.'
+    : stempelMeldingTekst(drempelBereikt, gekozenLanden, 'Bijna! Vanaf 6 landen goed krijg je een landenstempel.');
   document.getElementById('spelscherm').style.display='none';
   document.getElementById('hoofdsteden-resultaat-scherm').style.display='flex';
   const trofeeBlok = toonTrofee('hoofdsteden-resultaat-trofee','hoofdsteden-resultaat-trofee-img',
