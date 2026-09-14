@@ -166,19 +166,30 @@ body{
 }
 /* Vaste kolombreedtes, gelijk in élke tabel op de pagina - zo staan
    #, Naam, Stempels, Afstand en Tijd altijd recht onder elkaar, ongeacht
-   hoe lang een naam toevallig is. */
+   hoe lang een naam toevallig is. De Stempels-kop is nu een pictogram
+   i.p.v. het woord "Stempels" (zie .th-icoon hieronder), maar de kolom
+   zelf moet nog steeds tot 3 cijfers (999) kunnen tonen zonder af te
+   breken - de breedte blijft daarom op hetzelfde peil als voorheen. */
 .score-tabel th:nth-child(1), .score-tabel td:nth-child(1){ width:9%; text-align:center; }
 .score-tabel th:nth-child(2), .score-tabel td:nth-child(2){ width:32%; }
-.score-tabel th:nth-child(3), .score-tabel td:nth-child(3){ width:12%; }
+.score-tabel th:nth-child(3), .score-tabel td:nth-child(3){ width:12%; text-align:center; }
 .score-tabel th:nth-child(4), .score-tabel td:nth-child(4){ width:24%; }
 .score-tabel th:nth-child(5), .score-tabel td:nth-child(5){ width:23%; }
+/* Kopje-pictogram (het stempel-icoontje i.p.v. het woord "Stempels") -
+   even hoog als de tekst ernaast, verticaal gecentreerd in de kolom. */
+.score-tabel th img.th-icoon{
+  display:block; margin:0 auto;
+  height:1.4em; width:auto;
+}
 /* Schuif je landje heeft geen zinvolle score-kolom (elk potje is altijd
-   9 van de 9 goed) - die tabel heeft dus maar 3 kolommen (#, Naam, Tijd)
-   i.p.v. 4. Eigen kolombreedtes zodat Naam en Tijd de vrijgekomen ruimte
-   van de weggelaten Score-kolom eerlijk verdelen. */
-.score-tabel.geen-score-kolom th:nth-child(1), .score-tabel.geen-score-kolom td:nth-child(1){ width:13%; }
-.score-tabel.geen-score-kolom th:nth-child(2), .score-tabel.geen-score-kolom td:nth-child(2){ width:57%; }
-.score-tabel.geen-score-kolom th:nth-child(3), .score-tabel.geen-score-kolom td:nth-child(3){ width:30%; }
+   9 van de 9 goed) - die tabel heeft dus maar 4 kolommen (#, Naam,
+   Stempels, Tijd) i.p.v. 5. Eigen kolombreedtes zodat Naam en Tijd de
+   vrijgekomen ruimte van de weggelaten Score-kolom eerlijk verdelen,
+   terwijl Stempels ook hier op 12% blijft (zelfde reden als hierboven). */
+.score-tabel.geen-score-kolom th:nth-child(1), .score-tabel.geen-score-kolom td:nth-child(1){ width:9%; }
+.score-tabel.geen-score-kolom th:nth-child(2), .score-tabel.geen-score-kolom td:nth-child(2){ width:46%; }
+.score-tabel.geen-score-kolom th:nth-child(3), .score-tabel.geen-score-kolom td:nth-child(3){ width:12%; text-align:center; }
+.score-tabel.geen-score-kolom th:nth-child(4), .score-tabel.geen-score-kolom td:nth-child(4){ width:33%; }
 .score-tabel td{
   padding:2px 4px; border-bottom:1px solid rgba(201,168,76,.2);
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
@@ -611,10 +622,22 @@ function maakTabel(rijen, startIndex, type){
   var thNr = document.createElement('th'); thNr.textContent = '#';
   var thNaam = document.createElement('th'); thNaam.textContent = 'Naam';
   hr.appendChild(thNr); hr.appendChild(thNaam);
-  if(toonScoreKolom){
-    var thStempels = document.createElement('th'); thStempels.textContent = 'Stempels';
-    hr.appendChild(thStempels);
 
+  // Stempels: voor ALLE spelonderdelen (ook Schuif je landje - dat sloeg
+  // dit eerst niet op, maar doet dat nu ook). Kop is een pictogram i.p.v.
+  // het woord "Stempels" zelf - dat woord was steevast het eerste dat in
+  // de verdrukking kwam bij een smal scherm. alt/title houden de tekst
+  // toegankelijk (schermlezer) en zichtbaar bij hover.
+  var thStempels = document.createElement('th');
+  var stempelIcoon = document.createElement('img');
+  stempelIcoon.src = 'images/stempel-icoon.png';
+  stempelIcoon.alt = 'Stempels';
+  stempelIcoon.title = 'Stempels';
+  stempelIcoon.className = 'th-icoon';
+  thStempels.appendChild(stempelIcoon);
+  hr.appendChild(thStempels);
+
+  if(toonScoreKolom){
     var thScore = document.createElement('th');
     thScore.textContent = type==='raad' ? 'Goed'
       : type==='hoofdsteden' ? 'Goed'
@@ -653,14 +676,15 @@ function maakTabel(rijen, startIndex, type){
 
     tr.appendChild(tdPos); tr.appendChild(tdNaam);
 
-    if(toonScoreKolom){
-      var tdStempels = document.createElement('td');
-      // Oudere scores kennen dit veld nog niet (zie de toelichting bij
-      // fsOpslaan() in index.html/raadspel.html) - toon dan een streepje
-      // in plaats van "undefined".
-      tdStempels.textContent = (run.stempels != null ? run.stempels : '–');
-      tr.appendChild(tdStempels);
+    // Stempels: voor alle types (zie de toelichting bij de kop hierboven).
+    // Oudere scores kennen dit veld nog niet (zie de toelichting bij
+    // fsOpslaan() in index.html/raadspel.html) - toon dan een streepje
+    // in plaats van "undefined".
+    var tdStempels = document.createElement('td');
+    tdStempels.textContent = (run.stempels != null ? run.stempels : '–');
+    tr.appendChild(tdStempels);
 
+    if(toonScoreKolom){
       var tdScore = document.createElement('td');
       if(type==='raad'){
         // Oudere scores (van vóór raadspel.html het totaal zelf opsloeg)

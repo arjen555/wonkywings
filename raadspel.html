@@ -1763,13 +1763,16 @@ function lsCheckAntwoorden(){
     document.getElementById('ls-eind-iconen').classList.add('actief');
     document.getElementById('ls-opnieuw-knop').classList.add('actief');
 
-    lsOpslaanScore(huidigeSpelerNaam(), lsTijdVerstreken);
-
     const aantalStempels =
       lsTijdVerstreken < 60000  ? 3 :
       lsTijdVerstreken < 90000  ? 2 :
       lsTijdVerstreken < 180000 ? 1 : 0;
     lsGekozenBonusLanden = kiesBonusLanden(aantalStempels);
+    // Nu pas opslaan (ná kiesBonusLanden hierboven): zo telt een eventuele
+    // verrassingsstempel van dít potje meteen mee in het aantal dat we
+    // opslaan voor het scorebord, in plaats van er net vóór te lopen.
+    // Zelfde patroon als bij Raad je plaatje en de andere spelonderdelen.
+    lsOpslaanScore(huidigeSpelerNaam(), lsTijdVerstreken, geefVerdiendeStempels().length);
 
     document.getElementById('ls-bordje-tekst').innerHTML =
       huidigeSpelerNaam() + '<br/><span id="ls-bordje-tijd">' + formatTijdMs(lsTijdVerstreken) + '</span>';
@@ -1852,10 +1855,8 @@ function lsUpdateTimer(){
   document.getElementById('ls-timer-vak').textContent = formatTijdMs(lsTijdVerstreken);
 }
 
-// Landje Schuif blijft buiten de scope van deze Stempels-kolom-toevoeging:
-// geen 'stempels'-veld hier, ongewijzigd t.o.v. de vorige versie.
-function lsOpslaanScore(naam, tijdMs){
-  fsOpslaan('scores_landjeschuif', {naam, tijdMs, datum:Date.now()});
+function lsOpslaanScore(naam, tijdMs, stempels){
+  fsOpslaan('scores_landjeschuif', {naam, tijdMs, datum:Date.now(), stempels});
 }
 
 function lsNaarMenu(){
