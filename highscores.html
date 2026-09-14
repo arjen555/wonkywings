@@ -20,6 +20,13 @@ body{
   background-repeat:no-repeat;
   background-attachment:fixed;
 }
+/* Bij het enkele-pagina-formaat (zie de @media hieronder) staat er nog
+   maar 1 bladzijde per keer, midden in beeld - dan past de dubbele
+   boekafbeelding (met een rug in het midden) niet meer, en gebruiken we
+   in plaats daarvan een achtergrond van 1 losse bladzijde. */
+@media(max-width:900px){
+  body{ background-image:url('images/boek-achtergrond-enkel.jpg'); }
+}
 
 /* ── Linkernavigatie: terug-knop bovenaan, daaronder (met wat open
    ruimte ertussen) de 5 tabblad-iconen als verticale rij. Eén vaste
@@ -113,13 +120,25 @@ body{
 .subsectie.dicht .subsectie-kop .pijl{ transform:rotate(-90deg); }
 .subsectie.dicht .subsectie-inhoud{ display:none; }
 
-.subsectie-inhoud{ padding:6px 7px 7px; }
+.subsectie-inhoud{ padding:6px 7px 7px;
+  /* Maakt de eigen breedte hier opvraagbaar voor de @container-regel
+     hieronder - zo kijkt de kolommen-layout naar de ECHTE beschikbare
+     ruimte op dit punt in de pagina (na de boekpagina's, de rand van het
+     kaartje etc.), in plaats van te gokken op basis van de venster-
+     breedte. Dat gokken klopte niet meer zodra er een extra kolom bijkwam. */
+  container-type:inline-size;
+}
 
 /* ── Kolom-layout (All-time / Vandaag) ──────────────── */
 .kolommen{
   display:grid; grid-template-columns:1fr 1fr; gap:8px;
 }
-@media(max-width:700px){
+/* Zodra er voor twee scoretabellen náást elkaar niet meer genoeg ruimte
+   overblijft, komen "All-time" en "Vandaag" vanzelf onder elkaar te staan
+   - dit reageert op de echte breedte van het kaartje zelf (zie
+   container-type hierboven), dus dit blijft ook kloppen als de layout
+   van de boekpagina's ooit verandert. */
+@container (max-width:520px){
   .kolommen{ grid-template-columns:1fr; }
 }
 .kolom-titel{
@@ -137,14 +156,22 @@ body{
   font-weight:700; color:#6b5a2e; text-align:left;
   padding:2px 4px; border-bottom:1px solid #d4c8a0;
   font-size:clamp(.72rem,1.5vw,.85rem);
+  line-height:1.15;
+  /* Koppen als "Stempels" mogen bij weinig ruimte netjes naar een 2de
+     regel afbreken in plaats van afgekapt te worden met "…" - dat
+     voorkomt dat kopjes half verdwijnen of in elkaar over lijken te
+     lopen. overflow-wrap is de vangnet-regel voor als een los woord
+     ook op de allersmalste kolom nog niet past. */
+  white-space:normal; overflow-wrap:break-word; word-break:break-word;
 }
 /* Vaste kolombreedtes, gelijk in élke tabel op de pagina - zo staan
-   #, Naam, Afstand en Tijd altijd recht onder elkaar, ongeacht hoe lang
-   een naam toevallig is. */
-.score-tabel th:nth-child(1), .score-tabel td:nth-child(1){ width:13%; text-align:center; }
-.score-tabel th:nth-child(2), .score-tabel td:nth-child(2){ width:38%; }
-.score-tabel th:nth-child(3), .score-tabel td:nth-child(3){ width:26%; }
-.score-tabel th:nth-child(4), .score-tabel td:nth-child(4){ width:23%; }
+   #, Naam, Stempels, Afstand en Tijd altijd recht onder elkaar, ongeacht
+   hoe lang een naam toevallig is. */
+.score-tabel th:nth-child(1), .score-tabel td:nth-child(1){ width:9%; text-align:center; }
+.score-tabel th:nth-child(2), .score-tabel td:nth-child(2){ width:32%; }
+.score-tabel th:nth-child(3), .score-tabel td:nth-child(3){ width:12%; }
+.score-tabel th:nth-child(4), .score-tabel td:nth-child(4){ width:24%; }
+.score-tabel th:nth-child(5), .score-tabel td:nth-child(5){ width:23%; }
 /* Schuif je landje heeft geen zinvolle score-kolom (elk potje is altijd
    9 van de 9 goed) - die tabel heeft dus maar 3 kolommen (#, Naam, Tijd)
    i.p.v. 4. Eigen kolombreedtes zodat Naam en Tijd de vrijgekomen ruimte
@@ -201,8 +228,13 @@ body{
   padding:20px 8px; opacity:.7; font-style:italic;
 }
 
-/* ── Mobiel: kolommen worden 1 kolom, tabbladen naar onderen ────────── */
-@media(max-width:600px){
+/* ── Enkele pagina: boekpagina's worden 1 kolom, tabbladen naar onderen ──
+   Deze grens stond eerst op 600px; die is nu breder gezet (900px) omdat
+   een tabel met de stempels-kolom er anders al bij vrij gangbare laptop-
+   /tabletbreedtes te krap bij zat wanneer de twee boekpagina's nog naast
+   elkaar stonden - zie ook de @container-regel bij .kolommen hierboven,
+   die hetzelfde principe toepast op "All-time" naast "Vandaag". */
+@media(max-width:900px){
   .boek-paginas{
     grid-template-columns:1fr;
     gap:0;
@@ -580,6 +612,9 @@ function maakTabel(rijen, startIndex, type){
   var thNaam = document.createElement('th'); thNaam.textContent = 'Naam';
   hr.appendChild(thNr); hr.appendChild(thNaam);
   if(toonScoreKolom){
+    var thStempels = document.createElement('th'); thStempels.textContent = 'Stempels';
+    hr.appendChild(thStempels);
+
     var thScore = document.createElement('th');
     thScore.textContent = type==='raad' ? 'Goed'
       : type==='hoofdsteden' ? 'Goed'
@@ -619,6 +654,13 @@ function maakTabel(rijen, startIndex, type){
     tr.appendChild(tdPos); tr.appendChild(tdNaam);
 
     if(toonScoreKolom){
+      var tdStempels = document.createElement('td');
+      // Oudere scores kennen dit veld nog niet (zie de toelichting bij
+      // fsOpslaan() in index.html/raadspel.html) - toon dan een streepje
+      // in plaats van "undefined".
+      tdStempels.textContent = (run.stempels != null ? run.stempels : '–');
+      tr.appendChild(tdStempels);
+
       var tdScore = document.createElement('td');
       if(type==='raad'){
         // Oudere scores (van vóór raadspel.html het totaal zelf opsloeg)
