@@ -1626,7 +1626,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-    <div id="versie-label">V1.9</div>
+    <div id="versie-label">V2.0</div>
   <div id="start-links">
     <img id="start-timbo" src="Timbo.jpg" alt="Timbo"/>
     <div id="prestatie-tip">Trage computer? Kies voor minder detail bij opties</div>
@@ -4097,7 +4097,8 @@ function toonPlekkenEindoverzicht(){
   // sloeg voorheen nergens een score op - vanaf nu telt de eindscore
   // (plekkenScore, al opgeteld tijdens het spelen) mee voor het Boek der
   // Groten.
-  fsOpslaan('scores_plekken', {levelId:huidigLevel, naam:spelerNaam, punten:plekkenScore, tijd:laatsteLevelTijd, datum:Date.now()});
+  // (fsOpslaan() gebeurt verderop in deze functie, ná de verrassings-
+  // stempel-toekenning - zie de toelichting daar.)
   let rijenHtml = '';
   for(const r of plekkenResultaten){
     rijenHtml += '<div class="plekken-eind-rij">'
@@ -4127,6 +4128,10 @@ function toonPlekkenEindoverzicht(){
   else if(goedAantal >= 5) aantalStempels = 1;
   const drempelBereikt = aantalStempels > 0;
   const gekozenLanden = drempelBereikt ? kiesBonusLanden(aantalStempels) : [];
+  // Nu pas opslaan (ná kiesBonusLanden hierboven): zo telt een eventuele
+  // verrassingsstempel van dít potje meteen mee in het aantal dat we
+  // opslaan voor het scorebord, in plaats van er net vóór te lopen.
+  fsOpslaan('scores_plekken', {levelId:huidigLevel, naam:spelerNaam, punten:plekkenScore, tijd:laatsteLevelTijd, datum:Date.now(), stempels:geefVerdiendeStempels().length});
   document.getElementById('plekken-eind-stempel').textContent =
     stempelMeldingTekst(drempelBereikt, gekozenLanden, 'Bijna! Vanaf 5 landen goed krijg je een landenstempel.');
   document.getElementById('plekken-eind-overlay').style.display = 'flex';
@@ -6216,7 +6221,11 @@ let scorebordAanvraagId = 0;
 
 function opslaanScoreOnline(levelId, naam, km, tijdSec){
   const nieuweRun = {naam, km, tijd:tijdSec, datum:Date.now()};
-  fsOpslaan('scores_landen', {levelId, naam:nieuweRun.naam, km:nieuweRun.km, tijd:nieuweRun.tijd, datum:nieuweRun.datum});
+  // Landen kent geen aparte verrassingsstempel-stap achteraf (die stempels
+  // worden al tijdens het spelen verdiend, direct bij een juiste vlaggetje-
+  // drop - zie verdienStempelVoorLand()), dus hier kan het aantal gewoon
+  // meteen worden meegestuurd.
+  fsOpslaan('scores_landen', {levelId, naam:nieuweRun.naam, km:nieuweRun.km, tijd:nieuweRun.tijd, datum:nieuweRun.datum, stempels:geefVerdiendeStempels().length});
   return nieuweRun;
 }
 function formatTijd(sec){ const m=Math.floor(sec/60), s=sec%60; return m+':'+String(s).padStart(2,'0'); }
@@ -6322,7 +6331,8 @@ function toonHoofdstedenResultaat(goed, totaal){
   // scorebord (alleen dit rustige goed/totaal-scherm) en sloegen dus ook
   // nooit iets op - vanaf nu telt elk potje wél mee voor het Boek der
   // Groten (highscores.html), fire-and-forget zoals overal elders.
-  fsOpslaan('scores_hoofdsteden', {levelId:huidigLevel, naam:spelerNaam, goed, totaal, tijd:laatsteLevelTijdPrecies, datum:Date.now()});
+  // (fsOpslaan() gebeurt verderop in deze functie, ná de verrassings-
+  // stempel-toekenning - zie de toelichting daar.)
   document.getElementById('hoofdsteden-resultaat-score').textContent = goed+' van de '+totaal+' hoofdsteden goed!';
   // ── Landenpaspoort: 6 of 7 goed = 1 verrassingsstempel, 8 of 9 goed = 2, alles goed = 3 ──
   let aantalStempels = 0;
@@ -6357,6 +6367,10 @@ function toonHoofdstedenResultaat(goed, totaal){
 
   const drempelBereikt = aantalStempels > 0;
   const gekozenLanden = drempelBereikt ? kiesBonusLanden(aantalStempels) : [];
+  // Nu pas opslaan (ná kiesBonusLanden hierboven): zo telt een eventuele
+  // verrassingsstempel van dít potje meteen mee in het aantal dat we
+  // opslaan voor het scorebord, in plaats van er net vóór te lopen.
+  fsOpslaan('scores_hoofdsteden', {levelId:huidigLevel, naam:spelerNaam, goed, totaal, tijd:laatsteLevelTijdPrecies, datum:Date.now(), stempels:geefVerdiendeStempels().length});
   document.getElementById('hoofdsteden-resultaat-stempel').textContent = grindGeblokkeerd
     ? 'Hier heb je al 3x alles goed nu. Kies daarom een ander gebied of spel om stempels mee te verdienen.'
     : stempelMeldingTekst(drempelBereikt, gekozenLanden, 'Bijna! Vanaf 6 landen goed krijg je een landenstempel.');

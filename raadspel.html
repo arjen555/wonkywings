@@ -13,8 +13,6 @@
     display:flex; align-items:center; justify-content:center;
     background:radial-gradient(ellipse at center, #0a2338 0%, #020d1a 75%);
   }
-  /* Alleen tijdens het kiezen van een werelddeel, het spelen van Raad je
-     Plaatje en het evalueren achteraf: zie toonScherm() in de JS. */
   body.wereldkaart-achtergrond {
     background:#0a2338 url('images/wereldkaart-achtergrond.jpg') center center / cover no-repeat;
   }
@@ -27,11 +25,6 @@
     filter:drop-shadow(0 10px 40px rgba(0,0,0,0.6));
   }
 
-  /* ── Linksboven-groep op het "Klaar!"-scherm: de terug-naar-startmenu-knop
-     (zelfde afbeelding/grootte als #terug-knop in paspoort.html) met daaronder
-     de "nog een ronde"-knop, netjes gestapeld. Staat buiten #kader (zie de
-     notitie bij #klaar-paspoort-icoon hieronder voor waarom - #kader's
-     drop-shadow-filter breekt position:fixed erbinnen). ── */
   #klaar-linksboven-knoppen {
     display:none; position:fixed; left:14px; top:14px; z-index:150;
     flex-direction:column; align-items:flex-start; gap:10px;
@@ -44,15 +37,11 @@
   #klaar-terug-knop img, #klaar-nogeenronde-knop img { width:100%; display:block; }
   #klaar-terug-knop:hover, #klaar-nogeenronde-knop:hover { opacity:1; transform:scale(1.03); }
 
-  /* ── Vaste labels/knoppen bovenin het kader ── */
   #menu-knop {
     position:absolute; left:4%; top:6.5%; width:14%; height:8.5%;
     background:none; border:none; cursor:pointer;
   }
 
-  /* "MENU", "WERELDDEEL:" en "SPELER:" staan al getekend in de achtergrond-
-     afbeelding zelf - hier komt dus alleen de WAARDE overheen, netjes op de
-     onderstrepingslijn/het vakje eronder, zonder de labeltekst te herhalen. */
   #werelddeel-waarde { position:absolute; left:22.7%; top:14.5%; width:20%; text-align:left; font-family:'Baloo 2',sans-serif; font-weight:700; color:#3b2a18; font-size:clamp(0.75rem, 1.55vw, 1.25rem); }
   #speler-waarde { position:absolute; left:65.1%; top:14%; width:20%; text-align:left; font-family:'Baloo 2',sans-serif; font-weight:700; color:#3b2a18; font-size:clamp(0.75rem, 1.55vw, 1.2rem); }
   #goed-waarde {
@@ -62,7 +51,6 @@
     font-size:clamp(0.9rem, 1.9vw, 1.5rem); text-shadow:0 1px 3px rgba(0,0,0,0.6);
   }
 
-  /* ── Timer: bij de globe rechtsonder ── */
   #timer-vak {
     position:absolute; left:79%; top:69%; width:15%; height:14%;
     display:flex; align-items:center; justify-content:center;
@@ -74,7 +62,6 @@
   #pauze-icoon { position:absolute; left:79%; top:62%; width:15%; text-align:center; font-size:clamp(0.7rem,1.4vw,1.1rem); opacity:0; transition:opacity 0.15s; }
   #pauze-icoon.zichtbaar { opacity:1; }
 
-  /* ── Perkament-inhoudsvak (voor naam/kies/klaar-schermen) ── */
   #perkament-vak {
     position:absolute; left:19.6%; top:27.2%; width:59.3%; height:50%;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -82,8 +69,6 @@
     overflow:hidden;
   }
 
-  /* ── Spelscherm: los van het perkament, groter (tot waar voorheen de
-     rode pijl wees) en met een blokkentoren links van de illustratie. ── */
   #scherm-spel {
     position:absolute; left:19.6%; top:24%; width:59.3%; height:60%;
     gap:3%;
@@ -95,7 +80,6 @@
   .scherm { display:none; width:100%; height:100%; flex-direction:column; align-items:center; justify-content:center; }
   .scherm.actief { display:flex; }
 
-  /* — Naam-scherm (allereerste scherm) — */
   .naam-titel {
     font-family:'Baloo 2',sans-serif; font-weight:800; color:#3b2a18;
     font-size:clamp(1rem,2.2vw,1.7rem); text-align:center; margin-bottom:5%;
@@ -106,8 +90,6 @@
     border:2px solid #8a6a3a; border-radius:10px; padding:8px 16px; background:#fffaf0; color:#3b2a18;
     width:60%; max-width:20em; text-align:center; margin-bottom:4%;
   }
-  /* — Geheim-woordje-scherm: voorkomt dat iemand een bestaande naam kan
-     "stelen" door 'm gewoon in te typen. Zelfde opzet als #scherm-naam. — */
   .woord-fout {
     font-family:'Baloo 2',sans-serif; font-weight:700; color:#b03a2a;
     font-size:clamp(0.7rem,1.4vw,0.95rem); text-align:center;
@@ -116,7 +98,6 @@
   .woord-fout.zichtbaar { opacity:1; }
   #scherm-woord .actie-btn.secundair { margin-top:3%; }
 
-  /* — Categorie-kiesscherm — */
   #scherm-kies { justify-content:flex-start; overflow-y:auto; }
   .kies-titel { font-family:'Baloo 2',sans-serif; font-weight:800; color:#3b2a18; font-size:clamp(0.95rem,2vw,1.55rem); margin:0 0 2.5%; text-align:center; }
   .kies-groep-kop { font-family:'Baloo 2',sans-serif; font-weight:800; color:#5a3a1a; font-size:clamp(0.8rem,1.6vw,1.25rem);
@@ -132,7 +113,6 @@
   .kies-aantal { font-size:clamp(0.5rem,0.9vw,0.7rem); color:#7a5a30; margin-left:6px; }
   .kies-scores-btn { background:none; border:none; cursor:pointer; font-size:clamp(0.7rem,1.3vw,1rem); }
 
-  /* — Spelscherm — */
   #land-illustratie-kolom { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:0; min-height:0; height:100%; }
   #plek-naam-label { display:none; font-family:'Baloo 2',sans-serif; font-weight:800; color:#3b2a18; font-size:clamp(0.85rem,1.9vw,1.4rem); text-align:center; margin-top:3%; margin-bottom:1.5%; text-shadow:0 1px 2px rgba(255,255,255,0.4); }
   #land-illustratie-wrap { flex:1; display:flex; align-items:center; justify-content:center; min-width:0; min-height:0; width:100%; }
@@ -150,9 +130,6 @@
     box-shadow:0 0 0 6px #e05353, 0 4px 20px rgba(0,0,0,0.5);
     transition:box-shadow 0.2s;
   }
-  /* Uitvergrote illustratie: los van het perkament, over het hele kader,
-     de kaderrand én de antwoordbalken heen — vult het scherm van boven naar
-     onder. Nogmaals klikken of Escape brengt 'm terug naar normaal. */
   #illustratie-achtergrond {
     display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55);
     z-index:999; cursor:url('images/vergrootglas.png') 32 32, zoom-out;
@@ -165,11 +142,6 @@
     box-shadow:0 10px 50px rgba(0,0,0,0.7); border-radius:0;
   }
 
-  /* ── Antwoordknoppen: los van het perkament, exact over de 4 getekende
-     balken in de achtergrondafbeelding (2 boven, 2 onder, links en rechts
-     van het kompas-ornament). Een zachte, halfdoorzichtige tint (altijd
-     zichtbaar, niet alleen bij hover) laat duidelijker zien dat dit de 4
-     te kiezen opties zijn, zonder de getekende balk te overschreeuwen. ── */
   #antwoorden-grid { position:absolute; inset:0; pointer-events:none; display:none; }
   #antwoorden-grid.actief { display:block; }
   .antwoord-btn {
@@ -191,18 +163,10 @@
   .antwoord-btn.goed { background:rgba(143,199,102,0.55); color:#1e3a0e; box-shadow:inset 0 0 0 1.5px rgba(30,58,14,0.5); }
   .antwoord-btn.fout { background:rgba(217,105,92,0.55); color:#4a0f08; box-shadow:inset 0 0 0 1.5px rgba(74,15,8,0.5); }
 
-  /* — Resultaatscherm — */
-  /* Dit scherm laat de inhoud (i.p.v. de standaard verticale centrering van
-     .scherm) bovenaan beginnen, zodat "Klaar!" en de score meteen zichtbaar
-     zijn - en er onderin ruimte overblijft voor de gewonnen stempels en de
-     scorelijst, zonder dat alles in het midden van de kaart samenklontert. */
   #scherm-klaar { justify-content:flex-start; padding-top:1.5%; }
   #klaar-titel { font-family:'Baloo 2',sans-serif; font-weight:800; color:#3b2a18; font-size:clamp(1.3rem,2.6vw,2rem); margin:0 0 1%; text-align:center; }
   #klaar-resultaat { font-family:'Baloo 2',sans-serif; font-weight:700; color:#5a3a1a; font-size:clamp(1rem,2vw,1.5rem); margin-bottom:2%; text-align:center; }
   #klaar-stempel { font-family:'Baloo 2',sans-serif; font-weight:800; color:#8a4a10; font-size:clamp(0.95rem,1.9vw,1.4rem); margin-bottom:1%; text-align:center; line-height:1.35; min-height:1.3em; white-space:pre-line; }
-  /* Rij met net-gewonnen stempels: staat nu IN de kaart zelf (i.p.v. los
-     bovenaan het hele scherm), zodat je 'm meteen ziet voordat hij na
-     STEMPEL_VLIEG_PAUZE_MS naar het paspoort-icoontje wegvliegt. */
   #klaar-stempel-rij { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; min-height:0; }
   #klaar-stempel-rij:not(:empty) { margin-bottom:2%; }
   #scorebord-lijst { width:100%; max-height:55%; overflow-y:auto; margin-bottom:2%; }
@@ -221,12 +185,6 @@
   .actie-btn:hover { filter:brightness(1.15); }
   .actie-btn.secundair { background:linear-gradient(180deg,#5a4a30,#3a2e1a); }
 
-  /* ── Landenpaspoort-icoontje bij het "Klaar!"-scherm: los van het kader
-     gepositioneerd (position:fixed, rechtsonder in het hele scherm), zelfde
-     opzet en grootte als in index.html, zodat het overal consistent is.
-     Staat nu een treetje BOVEN het Boek der Groten-icoontje hieronder (dat
-     heeft de oorspronkelijke onderste plek overgenomen) - zelfde breedte,
-     gestapeld i.p.v. naast elkaar. ── */
   #klaar-paspoort-icoon {
     display:none; position:fixed; right:clamp(16px, 3vw, 40px);
     bottom:calc(clamp(16px, 3vw, 40px) + min(252px, 24vw) + clamp(10px, 2.5vw, 20px));
@@ -236,9 +194,6 @@
   }
   #klaar-paspoort-icoon:hover { transform:scale(1.06); }
 
-  /* ── Boek der Groten-icoontje: exact de plek die het paspoort hierboven
-     vroeger had (helemaal rechtsonder), zelfde grootte - opent het
-     highscoreboek op het tabblad 'Raad je landje' (?sectie=raadspel). ── */
   #klaar-boek-icoon {
     display:none; position:fixed; right:clamp(16px, 3vw, 40px); bottom:clamp(16px, 3vw, 40px);
     width:min(252px, 24vw); cursor:pointer; z-index:150;
@@ -247,9 +202,6 @@
   }
   #klaar-boek-icoon:hover { transform:scale(1.06); }
 
-  /* ── Landenpaspoort: rijtje met net verdiende stempels, bovenaan het
-     scherm, dat na een korte pauze naar het paspoort-icoontje toe vliegt
-     (zie toonVliegendeStempels()). Zelfde opzet als in index.html. ── */
   .stempel-vlieg-rij {
     position:fixed; top:4vh; left:50%; transform:translateX(-50%);
     z-index:900; display:flex; flex-wrap:wrap; justify-content:center;
@@ -257,10 +209,6 @@
     opacity:0; transition:opacity 0.35s ease;
     pointer-events:none;
   }
-  /* Op het Klaar-scherm van Raad je plaatje staat de rij IN de kaart zelf
-     (zie #klaar-stempel-rij hierboven) i.p.v. los boven het hele scherm -
-     de positionering hierboven wordt dan ongedaan gemaakt. De losse
-     plaatjes worden ook wat kleiner, passend bij de kleinere kaart. */
   .stempel-vlieg-rij.inline {
     position:static; top:auto; left:auto; transform:none; max-width:100%;
   }
@@ -275,8 +223,6 @@
   ::-webkit-scrollbar { width:12px; }
   ::-webkit-scrollbar-thumb { background:rgba(90,58,26,0.55); border-radius:6px; }
 
-  /* ── Spelkeuze-scherm (Raad je Plaatje / Landje Schuif) ── */
-  /* ── Spelkeuze-scherm: fullscreen, buiten #kader ── */
   #spelkeuze-veld {
     display:none; position:fixed; inset:0; z-index:200;
     background:#020d1a;
@@ -298,7 +244,6 @@
   #btn-keuze-raadjeplaatje { left:21%; width:28%; }
   #btn-keuze-landjeschuif  { left:51%; width:28%; }
 
-  /* Menu-knop linksboven op het keuzescherm — zelfde stijl en grootte als #ls-menu-knop */
   #spelkeuze-menu-knop {
     position:absolute; left:3%; top:3%;
     width:clamp(120px, 15%, 220px);
@@ -310,7 +255,6 @@
   #spelkeuze-menu-knop:hover { opacity:1; transform:scale(1.03); }
   #spelkeuze-menu-knop img { width:100%; display:block; }
 
-  /* ── Landje Schuif ── */
   #landjeschuif-veld {
     display:none; position:fixed; inset:0; z-index:200;
     background:#020d1a;
@@ -325,14 +269,8 @@
     overflow:hidden;
     transition:filter 0.6s ease;
   }
-  /* Tijdens het tonen van de start-pijl: de rest van het speelveld (incl.
-     achtergrond) even laag contrast/helderheid, zodat de pijl er extra
-     uitspringt. De pijl zelf compenseert dit met een tegengesteld filter
-     (zie #ls-start-pijl / de ls-pijl-oplichten animatie), zodat híj als
-     enige gewoon normaal blijft ogen. */
   #ls-speelveld.pijl-toont { filter:contrast(0.55) brightness(0.7); }
 
-  /* Cirkels met landnaam — gecentreerd via transform */
   .ls-cirkel {
     position:absolute; border-radius:50%;
     display:flex; align-items:center; justify-content:center;
@@ -343,9 +281,6 @@
     word-break:break-word;
     transform:translate(-50%,-50%);
   }
-  /* Feedback-ringen (goed/fout) — gecentreerd via transform.
-     z-index MOET hoger zijn dan alle .ls-stempel-varianten (max 50),
-     anders zit de ring altijd verstopt ónder het stempel. */
   .ls-ring {
     position:absolute; border-radius:50%; pointer-events:none;
     z-index:55;
@@ -357,7 +292,6 @@
   .ls-ring.goed { border-color:#4caf50; opacity:1; }
   .ls-ring.fout { border-color:#e05353; opacity:1; }
 
-  /* Stempels (sleepbaar) */
   .ls-stempel {
     position:absolute; touch-action:none;
     cursor:grab; z-index:10;
@@ -375,8 +309,6 @@
     box-shadow:0 3px 10px rgba(0,0,0,0.4);
   }
 
-  /* Grote pijl die bij start van het spel even naar de groene knop wijst,
-     en één keer oplicht om extra op te vallen tegen de drukke achtergrond */
   #ls-start-pijl {
     position:absolute;
     right:19%; bottom:5.5%;
@@ -393,24 +325,12 @@
     animation:ls-pijl-oplichten 1.6s ease-out;
     animation-fill-mode:forwards;
   }
-  /* De contrast(1.818)/brightness(1.43)-factoren heffen precies op wat
-     #ls-speelveld.pijl-toont eronder dimt (contrast 0.55 x 1.818 = 1,
-     brightness 0.7 x 1.43 = 1) — zo blijft de pijl zelf normaal ogen
-     terwijl de rest van het speelveld gedimd is. animation-fill-mode:
-     forwards houdt dat vast na de eerste oplicht-flits (0-1,6s), voor de
-     hele periode dat de pijl daarna nog in beeld blijft. */
   @keyframes ls-pijl-oplichten {
     0%   { filter:drop-shadow(0 4px 10px rgba(0,0,0,0.5)) contrast(1.818) brightness(1.43); }
     35%  { filter:drop-shadow(0 0 45px rgba(255,241,150,0.95)) contrast(1.818) brightness(2.43); }
     100% { filter:drop-shadow(0 4px 10px rgba(0,0,0,0.5)) contrast(1.818) brightness(1.43); }
   }
 
-  /* Uitlegkader linksboven de cirkels — zelfde intro-overlay als de pijl:
-     verschijnt bij start, blijft staan tot de eerste klik/tik. Nu een kant-
-     en-klare illustratie (tekst zit in het plaatje gebakken), i.p.v. een
-     los CSS-vlak met een <ul>. Krijgt dezelfde contrast/brightness-
-     compensatie als de pijl, anders wordt het plaatje door
-     #ls-speelveld.pijl-toont zelf ook gedimd en minder leesbaar. */
   #ls-uitleg-kader {
     position:absolute;
     left:6.5%; top:50%;
@@ -425,7 +345,6 @@
   }
   #ls-uitleg-kader.zichtbaar { opacity:1; }
 
-  /* Schelp + timer samen, rechtsonder — timer als platte tekst boven de schelp */
   #ls-schelp-tijd-groep {
     position:absolute; right:3%; bottom:3%;
     width:clamp(180px, 30%, 300px);
@@ -450,13 +369,11 @@
   #ls-schelp-wrap:hover { transform:scale(1.06); }
   #ls-schelp-wrap:active { transform:scale(0.95); }
   #ls-schelp-img { width:100%; display:block; }
-  /* Glow-animatie bij start */
   @keyframes ls-schelp-puls {
     0%, 100% { filter:drop-shadow(0 0 10px rgba(255,220,80,0.5)) drop-shadow(0 4px 12px rgba(0,0,0,0.5)); }
     50% { filter:drop-shadow(0 0 28px rgba(255,220,80,0.95)) drop-shadow(0 0 50px rgba(255,180,0,0.35)) drop-shadow(0 4px 12px rgba(0,0,0,0.5)); }
   }
   #ls-schelp-wrap.gloed { animation:ls-schelp-puls 1.4s ease-in-out infinite; }
-  /* Instructietekst onder de schelp */
   #ls-schelp-tekst {
     position:absolute; top:110%; left:50%;
     transform:translateX(-50%);
@@ -468,7 +385,6 @@
     transition:opacity 0.3s;
   }
 
-  /* Spelernaam rechts op het zand, groot en zwierig */
   #ls-speler-vak {
     position:absolute; right:5%; top:38%;
     transform:rotate(-5deg);
@@ -482,14 +398,8 @@
     word-break:break-word;
   }
 
-  /* Menu-knop linksboven (terug-naar-start-knop) +, pas zichtbaar zodra
-     een potje klaar is, de octopus-knop eronder om meteen opnieuw te
-     spelen (nieuwe 9 landen, geen paginaherlaad) */
   #ls-menu-groep {
     position:absolute; left:3%; top:3%;
-    /* Breedte hier vast zetten (i.p.v. op de knoppen zelf) — anders heeft
-       de 15% hieronder niets om tegenaan te schalen (deze groep zelf had
-       geen breedte), en valt de knop terug op een te kleine maat. */
     width:clamp(120px, 15%, 220px);
     display:flex; flex-direction:column; gap:10px;
     z-index:60;
@@ -506,7 +416,6 @@
   #ls-opnieuw-knop { display:none; }
   #ls-opnieuw-knop.actief { display:block; }
 
-  /* Bordje (valt naar beneden) */
   #ls-bordje-wrap {
     position:absolute; left:50%; top:-100%;
     transform:translateX(-50%);
@@ -516,18 +425,10 @@
   }
   #ls-bordje-wrap.gevallen { top:24%; }
   #ls-bordje-wrap img { width:100%; display:block; }
-  /* Bij het winnen: achtergrond + stempels wat lichter/vlakker maken zodat
-     het bordje en de linkerknoppen opvallen. Zelfde omkeer-truc als bij
-     #ls-speelveld.pijl-toont hierboven (contrast x contrast-omgekeerd = 1,
-     brightness x brightness-omgekeerd = 1) - #ls-menu-groep en
-     #ls-bordje-wrap krijgen de tegengestelde factoren zodat zij zelf gewoon
-     normaal blijven ogen terwijl de rest vervaagt. */
   #ls-speelveld.eind-toont { filter:contrast(0.6) brightness(1.3); }
   #ls-menu-groep, #ls-bordje-wrap { transition:filter 0.6s ease; }
   #ls-speelveld.eind-toont #ls-menu-groep,
   #ls-speelveld.eind-toont #ls-bordje-wrap { filter:contrast(1.667) brightness(0.769); }
-  /* Positie is afgestemd op het plankje in het nieuwe bordje.png (langere
-     touwen, plankje zelf staat rond 70-88% van de hoogte van de afbeelding) */
   #ls-bordje-tekst {
     position:absolute; left:50%; top:79%;
     transform:translate(-50%,-50%) rotate(-3deg);
@@ -536,16 +437,12 @@
     text-align:center; white-space:pre-line;
     width:60%; line-height:1.3;
   }
-  /* Tijd los en veel groter dan de naam erboven */
   #ls-bordje-tijd {
     display:inline-block;
     font-size:clamp(1.8rem, 7.2vw, 4.2rem);
     line-height:1.1;
   }
 
-  /* Paspoort + Boek der Groten naast elkaar, in de plek waar de schelp-
-     knop stond zodra het potje klaar is (zelfde rij als de timer erboven,
-     zie #ls-schelp-tijd-groep) */
   #ls-eind-iconen {
     display:none; width:100%;
     flex-direction:row; justify-content:center; align-items:center;
@@ -559,8 +456,6 @@
   }
   #ls-eind-iconen img:hover { transform:scale(1.06); }
 
-  /* Tekstkopie van de tijd die na een klik vanaf het bordje naar het
-     Boek der Groten-icoon vliegt (zie lsVliegTijdNaarBoek()) */
   .ls-tijd-vlieg {
     position:fixed; z-index:900; pointer-events:none;
     font-family:'Baloo 2',sans-serif; font-weight:800;
@@ -625,24 +520,11 @@
   <div id="antwoorden-grid"></div>
 </div>
 
-<!-- Buiten #kader geplaatst (niet erbinnen): #kader heeft een drop-shadow-
-     filter, en zo'n filter zorgt er in CSS voor dat 'position:fixed'
-     kinderen daar ineens NIET meer relatief aan het hele scherm gepositioneerd
-     worden, maar aan #kader zelf - met een scheefgetrokken/naar-rechts-
-     geschoven uitvergroting tot gevolg. Buiten #kader plaatsen lost dat op. -->
 <div id="illustratie-achtergrond"></div>
 
-<!-- Zelfde reden als hierboven: buiten #kader, anders positioneert de
-     fixed rechtsonder-hoek zich t.o.v. #kader in plaats van t.o.v. het
-     scherm. Zichtbaarheid wordt in toonScherm() geregeld (alleen te zien op
-     het "Klaar!"-scherm), in plaats van via de normale .scherm-cascade. -->
 <img id="klaar-paspoort-icoon" src="images/paspoort-icoon.png" alt="Landenpaspoort" onclick="speelGeluidDanNavigeer('boek.mp3', () => window.location.href='paspoort.html')"/>
 <img id="klaar-boek-icoon" src="images/boek-der-groten-icoon.png" alt="Boek der Groten" onclick="speelGeluidDanNavigeer('boek.mp3', () => window.location.href='highscores.html?sectie=raadspel')"/>
 
-<!-- Zelfde reden als #klaar-paspoort-icoon: buiten #kader, en zichtbaarheid
-     via toonScherm() geregeld (alleen op het "Klaar!"-scherm). De knop "nog
-     een ronde Raad je plaatje" stond eerst als tekstknop onderin de kaart -
-     nu als afbeelding hier, direct onder de terug-knop gestapeld. -->
 <div id="klaar-linksboven-knoppen">
   <button id="klaar-terug-knop" onclick="ganNaarMenu()">
     <img src="images/terug-naar-start-knop.png" alt="Terug naar start"/>
@@ -652,10 +534,6 @@
   </button>
 </div>
 
-<!-- ── Spelkeuze-scherm: fullscreen, buiten #kader, zodat alleen het
-     keuzescherm-plaatje te zien is zonder de Raad je Plaatje-interface
-     eromheen. Twee onzichtbare knoppen liggen over de linker- en
-     rechterhelft van het boek. ── -->
 <div id="spelkeuze-veld">
   <div id="spelkeuze-wrap">
     <button id="spelkeuze-menu-knop" onclick="ganNaarMenu()" aria-label="Menu">
@@ -666,9 +544,6 @@
   </div>
 </div>
 
-<!-- ── Landje Schuif: volledig apart speelveld, buiten #kader, met eigen
-     achtergrond (strand met 9 zandcirkels). Wordt zichtbaar via
-     kiesLandjeSchuif() en verbergt #kader zolang het actief is. ── -->
 <div id="landjeschuif-veld">
   <div id="ls-speelveld">
     <div id="ls-speler-vak">Speler</div>
@@ -701,27 +576,13 @@
 </div>
 
 <script>
-// ── Categorieën: exacte kopie van de landenlijsten uit index.html (MENU).
-// Let op bij toekomstige aanpassingen aan categorieën in index.html: deze
-// lijst hier moet dan handmatig mee worden bijgewerkt (zie ook de notitie
-// in index.html zelf bij de MENU-definitie).
-// Plekken-data voor de categorie 'Iconische plekken': exacte kopie van de
-// PLEKKEN-array in index.html (naam/bestand/land). Bij toekomstige nieuwe
-// iconische plekken moet deze lijst hier handmatig worden bijgewerkt.
 const PLEKKEN_DATA = [{"naam": "Eiffeltoren", "bestand": "Eiffeltoren", "land": "Frankrijk"}, {"naam": "Colosseum", "bestand": "Colosseum", "land": "Italië"}, {"naam": "Stonehenge", "bestand": "Stonehenge", "land": "Verenigd Koninkrijk"}, {"naam": "Akropolis", "bestand": "Akropolis", "land": "Griekenland"}, {"naam": "Sagrada Família", "bestand": "Sagrada_Familia", "land": "Spanje"}, {"naam": "Scheve toren van Pisa", "bestand": "Toren_van_Pisa", "land": "Italië"}, {"naam": "Geysir", "bestand": "Geysir", "land": "IJsland"}, {"naam": "Geirangerfjord", "bestand": "Geirangerfjord", "land": "Noorwegen"}, {"naam": "Pompeii", "bestand": "Pompeii", "land": "Italië"}, {"naam": "Neuschwanstein", "bestand": "Neuschwanstein", "land": "Duitsland"}, {"naam": "Loch Ness", "bestand": "Loch_Ness", "land": "Verenigd Koninkrijk"}, {"naam": "Tower Bridge", "bestand": "Tower_Bridge", "land": "Verenigd Koninkrijk"}, {"naam": "Kinderdijk", "bestand": "Kinderdijk", "land": "Nederland"}, {"naam": "Atomium", "bestand": "Atomium", "land": "België"}, {"naam": "Efteling", "bestand": "Efteling", "land": "Nederland"}, {"naam": "Disneyland Paris", "bestand": "Disneyland_Paris", "land": "Frankrijk"}, {"naam": "Legoland Billund", "bestand": "Legoland_Billund", "land": "Denemarken"}, {"naam": "Walt Disney World", "bestand": "Walt_Disney_World", "land": "Verenigde Staten"}, {"naam": "Piramides van Gizeh", "bestand": "Piramides_van_Gizeh", "land": "Egypte"}, {"naam": "Victoriawatervallen", "bestand": "Victoriawatervallen", "land": "Zimbabwe"}, {"naam": "Kilimanjaro", "bestand": "Kilimanjaro", "land": "Tanzania"}, {"naam": "Tafelberg", "bestand": "Tafelberg", "land": "Zuid-Afrika"}, {"naam": "Taj Mahal", "bestand": "Taj_Mahal", "land": "India"}, {"naam": "Grote Muur van China", "bestand": "Grote_Muur", "land": "China"}, {"naam": "Mount Everest", "bestand": "Mount_Everest", "land": "Nepal"}, {"naam": "Angkor Wat", "bestand": "Angkor_Wat", "land": "Cambodja"}, {"naam": "Petra", "bestand": "Petra", "land": "Jordanië"}, {"naam": "Fuji", "bestand": "Fuji", "land": "Japan"}, {"naam": "Burj Khalifa", "bestand": "Burj_Khalifa", "land": "Verenigde Arabische Emiraten"}, {"naam": "Terracottaleger", "bestand": "Terracottaleger", "land": "China"}, {"naam": "Plein van de Hemelse Vrede", "bestand": "Plein_van_de_Hemelse_Vrede", "land": "China"}, {"naam": "Kremlin", "bestand": "Kremlin", "land": "Rusland"}, {"naam": "Dode Zee", "bestand": "Dode_Zee", "land": "Jordanië"}, {"naam": "Vrijheidsbeeld", "bestand": "Vrijheidsbeeld", "land": "Verenigde Staten"}, {"naam": "Grand Canyon", "bestand": "Grand_Canyon", "land": "Verenigde Staten"}, {"naam": "Chichén Itzá", "bestand": "Chichen_Itza", "land": "Mexico"}, {"naam": "Niagarawatervallen", "bestand": "Niagarawatervallen", "land": "Canada"}, {"naam": "Golden Gate Bridge", "bestand": "Golden_Gate_Bridge", "land": "Verenigde Staten"}, {"naam": "Mount Rushmore", "bestand": "Mount_Rushmore", "land": "Verenigde Staten"}, {"naam": "Machu Picchu", "bestand": "Machu_Picchu", "land": "Peru"}, {"naam": "Christus de Verlosser", "bestand": "Christus_de_Verlosser", "land": "Brazilië"}, {"naam": "Nazca-lijnen", "bestand": "Nazca-lijnen", "land": "Peru"}, {"naam": "Sydney Opera House", "bestand": "Sydney_Opera_House", "land": "Australië"}, {"naam": "Uluru", "bestand": "Uluru", "land": "Australië"}, {"naam": "Moai (Paaseiland)", "bestand": "Moai_Paaseiland", "land": "Chili"}, {"naam": "Great Barrier Reef", "bestand": "Great_Barrier_Reef", "land": "Australië"}];
 const PLEKKEN_BIJ_NAAM = {};
 for(const p of PLEKKEN_DATA) PLEKKEN_BIJ_NAAM[p.naam] = p;
 
-// Testaccounts: scores worden gewoon opgeslagen maar nooit getoond.
 const TEST_NAMEN = ['test1','test2'];
 function isTestNaam(n){ return TEST_NAMEN.includes((n||'').toLowerCase().trim()); }
 
-// ── Online scorebord (Firestore) — gedeelde helpers ─────────────────────
-// Zelfde opzet als in index.html, zie de toelichting daar. fsOpslaan() is
-// "fire-and-forget" (de speler wacht niet op de server); fsTopN() haalt de
-// beste 'aantal' runs op uit één collectie, gefilterd/gesorteerd, en
-// plakt de zojuist gespeelde ronde er lokaal bij als die er nog niet in
-// zit - zo is je eigen resultaat altijd meteen zichtbaar.
 async function fsOpslaan(collectieNaam, data){
   try{
     const fb = await window.wvwFirebaseGereed;
@@ -748,17 +609,8 @@ async function fsTopN(collectieNaam, gelijkVeld, gelijkWaarde, orderVelden, verg
   lijst.sort(vergelijker);
   return lijst;
 }
-// Aanvraag-ID: voorkomt dat een trage/oude scorebord-aanvraag een
-// inmiddels alweer nieuwer geopend scorebord overschrijft.
 let scorebordAanvraagId = 0;
 
-// ── Filter tegen kwetsende/aanstootgevende namen ────────────────────────
-// Geen waterdicht systeem (dat bestaat niet écht), maar houdt het gros
-// tegen. Normaliseert eerst (kleine letters, accenten weg, spaties/
-// leestekens weg, een paar bekende cijfer-voor-letter-trucjes zoals
-// "k4nker") en checkt daarna op een lijst met veelvoorkomende Nederlandse
-// (en een paar Engelse) grove/kwetsende woorden. Arjen kan deze lijst later
-// zelf uitbreiden of inkorten. Zelfde lijst/logica als in index.html.
 const ONGEPASTE_WOORDEN = [
   'kanker','kut','klote','klootzak','lul','hoer','hoertje','slet',
   'trut','tering','teringlijer','tyfus','pleuris','flikker','mongool',
@@ -770,9 +622,9 @@ const ONGEPASTE_WOORDEN = [
 function normaliseerVoorFilter(tekst){
   return (tekst||'')
     .toLowerCase()
-    .normalize('NFD').replace(/[̀-ͯ]/g,'') // accenten weg (bv. ë → e)
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
     .replace(/0/g,'o').replace(/1/g,'i').replace(/3/g,'e').replace(/4/g,'a').replace(/5/g,'s').replace(/7/g,'t')
-    .replace(/[^a-z]/g,''); // spaties, cijfers, leestekens etc. weg
+    .replace(/[^a-z]/g,'');
 }
 function bevatOngepasteTaal(naam){
   const genormaliseerd = normaliseerVoorFilter(naam);
@@ -782,8 +634,6 @@ function bevatOngepasteTaal(naam){
 
 const CATEGORIEEN = [{"id":"eu-noord","naam":"Noord-Europa","groep":"Europa","landen":["IJsland","Noorwegen","Zweden","Finland","Estland","Letland","Litouwen","Wit-Rusland","Polen","Tsjechië","Slowakije","Oekraïne","Nederland","Duitsland","Luxemburg","Verenigd Koninkrijk","Ierland","België","Denemarken","Rusland","Groenland"]},{"id":"eu-zuid","naam":"Zuid-Europa","groep":"Europa","landen":["Frankrijk","Zwitserland","Oostenrijk","Hongarije","Roemenië","Moldavië","Spanje","Portugal","Italië","Griekenland","Bulgarije","Servië","Kroatië","Bosnië-Herzegovina","Slovenië","Albanië","Noord-Macedonië","Montenegro","Kosovo"]},{"id":"eu-alles","naam":"Heel Europa","groep":"Europa","landen":["Frankrijk","Zwitserland","Oostenrijk","Hongarije","Roemenië","Moldavië","Spanje","Portugal","Italië","Griekenland","Bulgarije","Servië","Kroatië","Bosnië-Herzegovina","Slovenië","Albanië","Noord-Macedonië","Montenegro","Kosovo","IJsland","Noorwegen","Zweden","Finland","Estland","Letland","Litouwen","Wit-Rusland","Polen","Tsjechië","Slowakije","Oekraïne","Nederland","Duitsland","Luxemburg","Verenigd Koninkrijk","Ierland","België","Denemarken","Rusland","Groenland"]},{"id":"w-alles","naam":"Alle landen","groep":"Wereld","landen":["Indonesië","Maleisië","Chili","Bolivia","Peru","Argentinië","Cyprus","India","China","Israël","Palestina","Libanon","Ethiopië","Zuid-Soedan","Somalië","Kenia","Malawi","Tanzania","Syrië","Frankrijk","Suriname","Guyana","Zuid-Korea","Noord-Korea","Marokko","Westelijke Sahara","Costa Rica","Nicaragua","Congo-Brazzaville","Congo-Kinshasa","Bhutan","Oekraïne","Wit-Rusland","Namibië","Zuid-Afrika","Oman","Oezbekistan","Kazachstan","Tadzjikistan","Litouwen","Brazilië","Uruguay","Mongolië","Rusland","Tsjechië","Duitsland","Estland","Letland","Noorwegen","Zweden","Finland","Vietnam","Cambodja","Luxemburg","Verenigde Arabische Emiraten","België","Georgië","Noord-Macedonië","Albanië","Azerbeidzjan","Kosovo","Turkije","Spanje","Laos","Kirgizië","Armenië","Denemarken","Libië","Tunesië","Roemenië","Hongarije","Slowakije","Polen","Ierland","Verenigd Koninkrijk","Griekenland","Zambia","Sierra Leone","Guinee","Liberia","Centraal-Afrikaanse Republiek","Soedan","Djibouti","Eritrea","Oostenrijk","Irak","Italië","Zwitserland","Iran","Nederland","Ivoorkust","Servië","Mali","Senegal","Nigeria","Benin","Angola","Kroatië","Slovenië","Qatar","Saoedi-Arabië","Botswana","Zimbabwe","Pakistan","Bulgarije","Thailand","Haïti","Dominicaanse Republiek","Tsjaad","Koeweit","El Salvador","Guatemala","Oost-Timor","Algerije","Mozambique","Burundi","Rwanda","Myanmar","Bangladesh","Afghanistan","Montenegro","Bosnië-Herzegovina","Oeganda","Cuba","Honduras","Ecuador","Colombia","Paraguay","Portugal","Moldavië","Jordanië","Nepal","Lesotho","Kameroen","Gabon","Niger","Burkina Faso","Togo","Ghana","Guinee-Bissau","Gibraltar","Verenigde Staten","Canada","Mexico","Belize","Panama","Venezuela","Papoea-Nieuw-Guinea","Egypte","Jemen","Mauritanië","Equatoriaal-Guinea","Gambia","Antarctica","Australië","Groenland","Fiji","Nieuw-Zeeland","Madagaskar","Filipijnen","Sri Lanka","Taiwan","Japan","IJsland","Jamaica","Singapore","Bahrein"]},{"id":"w-makkelijk","naam":"Makkelijke landen","groep":"Wereld","landen":["Frankrijk","Spanje","Nederland","Italië","Duitsland","Verenigd Koninkrijk","Turkije","Verenigde Staten","Canada","Mexico","Brazilië","China","India","Japan","Indonesië","Australië","Zuid-Afrika","Rusland"]},{"id":"w-amerika","naam":"Amerika","groep":"Wereld","landen":["Canada","Verenigde Staten","Mexico","Guatemala","Belize","Honduras","El Salvador","Nicaragua","Costa Rica","Panama","Cuba","Haïti","Dominicaanse Republiek","Jamaica","Colombia","Venezuela","Guyana","Suriname","Frans Guyana","Brazilië","Ecuador","Peru","Bolivia","Chili","Argentinië","Uruguay","Paraguay"]},{"id":"w-zuid-amerika","naam":"Zuid-Amerika","groep":"Wereld","landen":["Colombia","Venezuela","Guyana","Suriname","Frans Guyana","Brazilië","Ecuador","Peru","Bolivia","Chili","Argentinië","Uruguay","Paraguay"]},{"id":"w-azie","naam":"Azië & Oceanië","groep":"Wereld","landen":["Rusland","China","India","Japan","Zuid-Korea","Noord-Korea","Mongolië","Kazachstan","Oezbekistan","Turkmenistan","Kirgizië","Tadzjikistan","Afghanistan","Pakistan","Iran","Irak","Saoedi-Arabië","Jemen","Oman","Verenigde Arabische Emiraten","Qatar","Koeweit","Jordanië","Israël","Libanon","Syrië","Turkije","Azerbeidzjan","Georgië","Armenië","Nepal","Bhutan","Bangladesh","Myanmar","Thailand","Vietnam","Cambodja","Laos","Maleisië","Indonesië","Filipijnen","Taiwan","Singapore","Sri Lanka","Australië","Nieuw-Zeeland","Papoea-Nieuw-Guinea"]},{"id":"w-afrika","naam":"Afrika","groep":"Wereld","landen":["Marokko","Algerije","Tunesië","Libië","Egypte","Mauritanië","Mali","Niger","Tsjaad","Soedan","Ethiopië","Eritrea","Djibouti","Somalië","Kenia","Tanzania","Mozambique","Zimbabwe","Zuid-Afrika","Namibië","Botswana","Angola","Zambia","Malawi","Madagaskar","Congo-Kinshasa","Congo-Brazzaville","Gabon","Kameroen","Nigeria","Centraal-Afrikaanse Republiek","Zuid-Soedan","Oeganda","Rwanda","Burundi","Ghana","Ivoorkust","Senegal","Gambia","Guinee","Sierra Leone","Liberia","Burkina Faso","Benin","Togo","Equatoriaal-Guinea"]},{"id":"w-kleinmaarfijn","naam":"Klein maar fijn","groep":"Wereld","landen":["Tonga","Samoa","Salomonseilanden","Tuvalu","Nauru","Micronesia","Palau","Vanuatu","Nieuw-Caledonië","Frans-Polynesië","Trinidad en Tobago","Grenada","Barbados","Saint Lucia","Dominica","Antigua en Barbuda","Saint Kitts en Nevis","Seychellen","Comoren","Sao Tomé en Principe","Kaapverdië","Mauritius","Maldiven","San Marino","Vaticaanstad","Monaco","Andorra","Liechtenstein","Malta","Faeröer","Brunei","Falklandeilanden"]},{"id": "iconische-plekken", "naam": "Iconische plekken", "groep": "Iconische plekken", "landen": ["Eiffeltoren", "Colosseum", "Stonehenge", "Akropolis", "Sagrada Família", "Scheve toren van Pisa", "Geysir", "Geirangerfjord", "Pompeii", "Neuschwanstein", "Loch Ness", "Tower Bridge", "Kinderdijk", "Atomium", "Efteling", "Disneyland Paris", "Legoland Billund", "Walt Disney World", "Piramides van Gizeh", "Victoriawatervallen", "Kilimanjaro", "Tafelberg", "Taj Mahal", "Grote Muur van China", "Mount Everest", "Angkor Wat", "Petra", "Fuji", "Burj Khalifa", "Terracottaleger", "Plein van de Hemelse Vrede", "Kremlin", "Dode Zee", "Vrijheidsbeeld", "Grand Canyon", "Chichén Itzá", "Niagarawatervallen", "Golden Gate Bridge", "Mount Rushmore", "Machu Picchu", "Christus de Verlosser", "Nazca-lijnen", "Sydney Opera House", "Uluru", "Moai (Paaseiland)", "Great Barrier Reef"], "plekken": true}];
 
-// Zelfde bestandsnaam-regel als index.html (landNaarBestand): accenten eraf,
-// spaties naar underscore, streepjes blijven staan.
 function landNaarBestand(naam) {
   return naam
     .replace(/ë/g,'e').replace(/é/g,'e').replace(/è/g,'e').replace(/ê/g,'e')
@@ -793,22 +643,9 @@ function landNaarBestand(naam) {
 }
 
 
-// ── Landenpaspoort: stempels verdienen ─────────────────────────────────
-// Lichte kopie van PASPOORT_DATA uit paspoort.html (alleen naam/bestand/
-// continent - de fun-facts zijn hier niet nodig). Dit is de complete lijst
-// van alle landen die een eigen paspoortpagina hebben; bij nieuwe landen in
-// paspoort.html moet deze lijst hier (en in raadspel.html) worden bijgewerkt.
 const PASPOORT_LANDEN = [{"naam": "Albanië", "bestand": "Albanie", "continent": "EU"}, {"naam": "België", "bestand": "Belgie", "continent": "EU"}, {"naam": "Bosnië en Herzegovina", "bestand": "Bosnie-Herzegovina", "continent": "EU"}, {"naam": "Bulgarije", "bestand": "Bulgarije", "continent": "EU"}, {"naam": "Denemarken", "bestand": "Denemarken", "continent": "EU"}, {"naam": "Duitsland", "bestand": "Duitsland", "continent": "EU"}, {"naam": "Estland", "bestand": "Estland", "continent": "EU"}, {"naam": "Finland", "bestand": "Finland", "continent": "EU"}, {"naam": "Frankrijk", "bestand": "Frankrijk", "continent": "EU"}, {"naam": "Griekenland", "bestand": "Griekenland", "continent": "EU"}, {"naam": "Hongarije", "bestand": "Hongarije", "continent": "EU"}, {"naam": "Ierland", "bestand": "Ierland", "continent": "EU"}, {"naam": "IJsland", "bestand": "IJsland", "continent": "EU"}, {"naam": "Italië", "bestand": "Italie", "continent": "EU"}, {"naam": "Kroatië", "bestand": "Kroatie", "continent": "EU"}, {"naam": "Litouwen", "bestand": "Litouwen", "continent": "EU"}, {"naam": "Luxemburg", "bestand": "Luxemburg", "continent": "EU"}, {"naam": "Montenegro", "bestand": "Montenegro", "continent": "EU"}, {"naam": "Nederland", "bestand": "Nederland", "continent": "EU"}, {"naam": "Noord-Macedonië", "bestand": "Noord-Macedonie", "continent": "EU"}, {"naam": "Noorwegen", "bestand": "Noorwegen", "continent": "EU"}, {"naam": "Oekraïne", "bestand": "Oekraine", "continent": "EU"}, {"naam": "Oostenrijk", "bestand": "Oostenrijk", "continent": "EU"}, {"naam": "Polen", "bestand": "Polen", "continent": "EU"}, {"naam": "Portugal", "bestand": "Portugal", "continent": "EU"}, {"naam": "Roemenië", "bestand": "Roemenie", "continent": "EU"}, {"naam": "Rusland", "bestand": "Rusland", "continent": "EU"}, {"naam": "Servië", "bestand": "Servie", "continent": "EU"}, {"naam": "Slovenië", "bestand": "Slovenie", "continent": "EU"}, {"naam": "Slowakije", "bestand": "Slowakije", "continent": "EU"}, {"naam": "Spanje", "bestand": "Spanje", "continent": "EU"}, {"naam": "Tsjechië", "bestand": "Tsjechie", "continent": "EU"}, {"naam": "Verenigd Koninkrijk", "bestand": "Verenigd_Koninkrijk", "continent": "EU"}, {"naam": "Wit-Rusland", "bestand": "Wit-Rusland", "continent": "EU"}, {"naam": "Zweden", "bestand": "Zweden", "continent": "EU"}, {"naam": "Zwitserland", "bestand": "Zwitserland", "continent": "EU"}, {"naam": "Andorra", "bestand": "Andorra", "continent": "EU"}, {"naam": "Cyprus", "bestand": "Cyprus", "continent": "EU"}, {"naam": "Faeröer", "bestand": "Faroer", "continent": "EU"}, {"naam": "Gibraltar", "bestand": "Gibraltar", "continent": "EU"}, {"naam": "Kosovo", "bestand": "Kosovo", "continent": "EU"}, {"naam": "Letland", "bestand": "Letland", "continent": "EU"}, {"naam": "Liechtenstein", "bestand": "Liechtenstein", "continent": "EU"}, {"naam": "Malta", "bestand": "Malta", "continent": "EU"}, {"naam": "Moldavië", "bestand": "Moldavie", "continent": "EU"}, {"naam": "Monaco", "bestand": "Monaco", "continent": "EU"}, {"naam": "San Marino", "bestand": "San_Marino", "continent": "EU"}, {"naam": "Vaticaanstad", "bestand": "Vaticaanstad", "continent": "EU"}, {"naam": "Algerije", "bestand": "Algerije", "continent": "AF"}, {"naam": "Angola", "bestand": "Angola", "continent": "AF"}, {"naam": "Benin", "bestand": "Benin", "continent": "AF"}, {"naam": "Botswana", "bestand": "Botswana", "continent": "AF"}, {"naam": "Burkina Faso", "bestand": "Burkina_Faso", "continent": "AF"}, {"naam": "Centraal-Afrikaanse Republiek", "bestand": "Centraal-Afrikaanse_Republiek", "continent": "AF"}, {"naam": "Congo-Brazzaville", "bestand": "Congo-Brazzaville", "continent": "AF"}, {"naam": "Congo-Kinshasa", "bestand": "Congo-Kinshasa", "continent": "AF"}, {"naam": "Egypte", "bestand": "Egypte", "continent": "AF"}, {"naam": "Ethiopië", "bestand": "Ethiopie", "continent": "AF"}, {"naam": "Gabon", "bestand": "Gabon", "continent": "AF"}, {"naam": "Ghana", "bestand": "Ghana", "continent": "AF"}, {"naam": "Guinee", "bestand": "Guinee", "continent": "AF"}, {"naam": "Ivoorkust", "bestand": "Ivoorkust", "continent": "AF"}, {"naam": "Kameroen", "bestand": "Kameroen", "continent": "AF"}, {"naam": "Kenia", "bestand": "Kenia", "continent": "AF"}, {"naam": "Liberia", "bestand": "Liberia", "continent": "AF"}, {"naam": "Libië", "bestand": "Libie", "continent": "AF"}, {"naam": "Madagaskar", "bestand": "Madagaskar", "continent": "AF"}, {"naam": "Malawi", "bestand": "Malawi", "continent": "AF"}, {"naam": "Mali", "bestand": "Mali", "continent": "AF"}, {"naam": "Marokko", "bestand": "Marokko", "continent": "AF"}, {"naam": "Mauritanië", "bestand": "Mauritanie", "continent": "AF"}, {"naam": "Mozambique", "bestand": "Mozambique", "continent": "AF"}, {"naam": "Namibië", "bestand": "Namibie", "continent": "AF"}, {"naam": "Niger", "bestand": "Niger", "continent": "AF"}, {"naam": "Nigeria", "bestand": "Nigeria", "continent": "AF"}, {"naam": "Oeganda", "bestand": "Oeganda", "continent": "AF"}, {"naam": "Senegal", "bestand": "Senegal", "continent": "AF"}, {"naam": "Sierra Leone", "bestand": "Sierra_Leone", "continent": "AF"}, {"naam": "Soedan", "bestand": "Soedan", "continent": "AF"}, {"naam": "Somalië", "bestand": "Somalie", "continent": "AF"}, {"naam": "Tanzania", "bestand": "Tanzania", "continent": "AF"}, {"naam": "Tsjaad", "bestand": "Tsjaad", "continent": "AF"}, {"naam": "Tunesië", "bestand": "Tunesie", "continent": "AF"}, {"naam": "Zambia", "bestand": "Zambia", "continent": "AF"}, {"naam": "Zimbabwe", "bestand": "Zimbabwe", "continent": "AF"}, {"naam": "Zuid-Afrika", "bestand": "Zuid-Afrika", "continent": "AF"}, {"naam": "Burundi", "bestand": "Burundi", "continent": "AF"}, {"naam": "Comoren", "bestand": "Comoren", "continent": "AF"}, {"naam": "Djibouti", "bestand": "Djibouti", "continent": "AF"}, {"naam": "Equatoriaal-Guinea", "bestand": "Equatoriaal-Guinee", "continent": "AF"}, {"naam": "Eritrea", "bestand": "Eritrea", "continent": "AF"}, {"naam": "Eswatini", "bestand": "Eswatini", "continent": "AF"}, {"naam": "Gambia", "bestand": "Gambia", "continent": "AF"}, {"naam": "Guinee-Bissau", "bestand": "Guinee-Bissau", "continent": "AF"}, {"naam": "Kaapverdië", "bestand": "Kaapverdie", "continent": "AF"}, {"naam": "Lesotho", "bestand": "Lesotho", "continent": "AF"}, {"naam": "Mauritius", "bestand": "Mauritius", "continent": "AF"}, {"naam": "Rwanda", "bestand": "Rwanda", "continent": "AF"}, {"naam": "São Tomé en Príncipe", "bestand": "Sao_Tome_en_Principe", "continent": "AF"}, {"naam": "Seychellen", "bestand": "Seychellen", "continent": "AF"}, {"naam": "Togo", "bestand": "Togo", "continent": "AF"}, {"naam": "Westelijke Sahara", "bestand": "Westelijke_Sahara", "continent": "AF"}, {"naam": "Zuid-Soedan", "bestand": "Zuid-Soedan", "continent": "AF"}, {"naam": "Afghanistan", "bestand": "Afghanistan", "continent": "AS"}, {"naam": "Armenië", "bestand": "Armenie", "continent": "AS"}, {"naam": "Azerbeidzjan", "bestand": "Azerbeidzjan", "continent": "AS"}, {"naam": "Bangladesh", "bestand": "Bangladesh", "continent": "AS"}, {"naam": "Cambodja", "bestand": "Cambodja", "continent": "AS"}, {"naam": "China", "bestand": "China", "continent": "AS"}, {"naam": "Filipijnen", "bestand": "Filipijnen", "continent": "AS"}, {"naam": "Georgië", "bestand": "Georgie", "continent": "AS"}, {"naam": "India", "bestand": "India", "continent": "AS"}, {"naam": "Indonesië", "bestand": "Indonesie", "continent": "AS"}, {"naam": "Irak", "bestand": "Irak", "continent": "AS"}, {"naam": "Iran", "bestand": "Iran", "continent": "AS"}, {"naam": "Japan", "bestand": "Japan", "continent": "AS"}, {"naam": "Jemen", "bestand": "Jemen", "continent": "AS"}, {"naam": "Jordanië", "bestand": "Jordanie", "continent": "AS"}, {"naam": "Kazachstan", "bestand": "Kazachstan", "continent": "AS"}, {"naam": "Laos", "bestand": "Laos", "continent": "AS"}, {"naam": "Maleisië", "bestand": "Maleisie", "continent": "AS"}, {"naam": "Mongolië", "bestand": "Mongolie", "continent": "AS"}, {"naam": "Myanmar", "bestand": "Myanmar", "continent": "AS"}, {"naam": "Nepal", "bestand": "Nepal", "continent": "AS"}, {"naam": "Noord-Korea", "bestand": "Noord-Korea", "continent": "AS"}, {"naam": "Oezbekistan", "bestand": "Oezbekistan", "continent": "AS"}, {"naam": "Oman", "bestand": "Oman", "continent": "AS"}, {"naam": "Pakistan", "bestand": "Pakistan", "continent": "AS"}, {"naam": "Saoedi-Arabië", "bestand": "Saoedi-Arabie", "continent": "AS"}, {"naam": "Sri Lanka", "bestand": "Sri_Lanka", "continent": "AS"}, {"naam": "Syrië", "bestand": "Syrie", "continent": "AS"}, {"naam": "Taiwan", "bestand": "Taiwan", "continent": "AS"}, {"naam": "Thailand", "bestand": "Thailand", "continent": "AS"}, {"naam": "Turkije", "bestand": "Turkije", "continent": "AS"}, {"naam": "Turkmenistan", "bestand": "Turkmenistan", "continent": "AS"}, {"naam": "Verenigde Arabische Emiraten", "bestand": "Verenigde_Arabische_Emiraten", "continent": "AS"}, {"naam": "Vietnam", "bestand": "Vietnam", "continent": "AS"}, {"naam": "Zuid-Korea", "bestand": "Zuid-Korea", "continent": "AS"}, {"naam": "Bahrein", "bestand": "Bahrein", "continent": "AS"}, {"naam": "Bhutan", "bestand": "Bhutan", "continent": "AS"}, {"naam": "Brunei", "bestand": "Brunei", "continent": "AS"}, {"naam": "Kirgistan", "bestand": "Kirgistan", "continent": "AS"}, {"naam": "Koeweit", "bestand": "Koeweit", "continent": "AS"}, {"naam": "Libanon", "bestand": "Libanon", "continent": "AS"}, {"naam": "Maldiven", "bestand": "Maldiven", "continent": "AS"}, {"naam": "Oost-Timor", "bestand": "Oost-Timor", "continent": "AS"}, {"naam": "Palestina", "bestand": "Palestina", "continent": "AS"}, {"naam": "Qatar", "bestand": "Qatar", "continent": "AS"}, {"naam": "Singapore", "bestand": "Singapore", "continent": "AS"}, {"naam": "Tadzjikistan", "bestand": "Tadzjikistan", "continent": "AS"}, {"naam": "Canada", "bestand": "Canada", "continent": "NA"}, {"naam": "Costa Rica", "bestand": "Costa_Rica", "continent": "NA"}, {"naam": "Cuba", "bestand": "Cuba", "continent": "NA"}, {"naam": "Dominicaanse Republiek", "bestand": "Dominicaanse_Republiek", "continent": "NA"}, {"naam": "Groenland", "bestand": "Groenland", "continent": "NA"}, {"naam": "Guatemala", "bestand": "Guatemala", "continent": "NA"}, {"naam": "Haïti", "bestand": "Haiti", "continent": "NA"}, {"naam": "Honduras", "bestand": "Honduras", "continent": "NA"}, {"naam": "Mexico", "bestand": "Mexico", "continent": "NA"}, {"naam": "Nicaragua", "bestand": "Nicaragua", "continent": "NA"}, {"naam": "Panama", "bestand": "Panama", "continent": "NA"}, {"naam": "Verenigde Staten", "bestand": "Verenigde_Staten", "continent": "NA"}, {"naam": "Antigua en Barbuda", "bestand": "Antigua_en_Barbuda", "continent": "NA"}, {"naam": "Bahama's", "bestand": "Bahamas", "continent": "NA"}, {"naam": "Barbados", "bestand": "Barbados", "continent": "NA"}, {"naam": "Belize", "bestand": "Belize", "continent": "NA"}, {"naam": "Dominica", "bestand": "Dominica", "continent": "NA"}, {"naam": "El Salvador", "bestand": "El_Salvador", "continent": "NA"}, {"naam": "Grenada", "bestand": "Grenada", "continent": "NA"}, {"naam": "Jamaica", "bestand": "Jamaica", "continent": "NA"}, {"naam": "Saint Kitts en Nevis", "bestand": "Saint_Kitts_en_Nevis", "continent": "NA"}, {"naam": "Saint Lucia", "bestand": "Saint_Lucia", "continent": "NA"}, {"naam": "Saint Vincent en de Grenadines", "bestand": "Saint_Vincent_en_de_Grenadines", "continent": "NA"}, {"naam": "Trinidad en Tobago", "bestand": "Trinidad_en_Tobago", "continent": "NA"}, {"naam": "Argentinië", "bestand": "Argentinie", "continent": "ZA"}, {"naam": "Bolivia", "bestand": "Bolivia", "continent": "ZA"}, {"naam": "Brazilië", "bestand": "Brazilie", "continent": "ZA"}, {"naam": "Chili", "bestand": "Chili", "continent": "ZA"}, {"naam": "Colombia", "bestand": "Colombia", "continent": "ZA"}, {"naam": "Ecuador", "bestand": "Ecuador", "continent": "ZA"}, {"naam": "Frans-Guyana", "bestand": "Frans_Guyana", "continent": "ZA"}, {"naam": "Guyana", "bestand": "Guyana", "continent": "ZA"}, {"naam": "Paraguay", "bestand": "Paraguay", "continent": "ZA"}, {"naam": "Peru", "bestand": "Peru", "continent": "ZA"}, {"naam": "Suriname", "bestand": "Suriname", "continent": "ZA"}, {"naam": "Uruguay", "bestand": "Uruguay", "continent": "ZA"}, {"naam": "Venezuela", "bestand": "Venezuela", "continent": "ZA"}, {"naam": "Falklandeilanden", "bestand": "Falklandeilanden", "continent": "ZA"}, {"naam": "Australië", "bestand": "Australie", "continent": "OC"}, {"naam": "Nieuw-Zeeland", "bestand": "Nieuw-Zeeland", "continent": "OC"}, {"naam": "Papoea-Nieuw-Guinea", "bestand": "Papoea-Nieuw-Guinea", "continent": "OC"}, {"naam": "Fiji", "bestand": "Fiji", "continent": "OC"}, {"naam": "Frans-Polynesië", "bestand": "Frans-Polynesie", "continent": "OC"}, {"naam": "Micronesia", "bestand": "Micronesia", "continent": "OC"}, {"naam": "Nauru", "bestand": "Nauru", "continent": "OC"}, {"naam": "Nieuw-Caledonië", "bestand": "Nieuw-Caledonie", "continent": "OC"}, {"naam": "Palau", "bestand": "Palau", "continent": "OC"}, {"naam": "Salomonseilanden", "bestand": "Salomonseilanden", "continent": "OC"}, {"naam": "Samoa", "bestand": "Samoa", "continent": "OC"}, {"naam": "Tonga", "bestand": "Tonga", "continent": "OC"}, {"naam": "Tuvalu", "bestand": "Tuvalu", "continent": "OC"}, {"naam": "Vanuatu", "bestand": "Vanuatu", "continent": "OC"}, {"naam": "Antarctica", "bestand": "Antarctica", "continent": "OV"}, {"naam": "Noordpool", "bestand": "Noordpool", "continent": "OV"}];
-// De "klein maar fijn"-landen (unie van de Europa- en Wereld-lijst - de
-// Wereld-lijst bevat toevallig al alle 7 Europese) als bestandsnamen, de
-// prioriteitspool voor verrassingsstempels bij Hoofdsteden/Plekken/Raadspel.
 const KLEIN_MAAR_FIJN_BESTANDEN = ["Tonga", "Samoa", "Salomonseilanden", "Tuvalu", "Nauru", "Micronesia", "Palau", "Vanuatu", "Nieuw-Caledonie", "Frans-Polynesie", "Trinidad_en_Tobago", "Grenada", "Barbados", "Saint_Lucia", "Dominica", "Antigua_en_Barbuda", "Saint_Kitts_en_Nevis", "Seychellen", "Comoren", "Sao_Tome_en_Principe", "Kaapverdie", "Mauritius", "Maldiven", "San_Marino", "Vaticaanstad", "Monaco", "Andorra", "Liechtenstein", "Malta", "Faroer", "Brunei", "Falklandeilanden"];
 
-// Stempels horen bij de speler die nu is ingelogd (de naam uit het
-// naamscherm) - anders deelt iedereen die op dit apparaat speelt hetzelfde
-// paspoort, ongeacht welke naam er is ingevuld. De opslag-sleutel wordt
-// daarom per naam opgebouwd, met dezelfde sleutel als het naamscherm zelf
-// gebruikt (NAAM_SLEUTEL, verderop in dit bestand).
 function stempelsSleutelVoorSpeler(){
   const naam = localStorage.getItem(NAAM_SLEUTEL) || 'Speler';
   return 'wonkywings_verdiende_stempels::' + naam;
@@ -816,21 +653,12 @@ function stempelsSleutelVoorSpeler(){
 function geefVerdiendeStempels(){
   try{ return JSON.parse(localStorage.getItem(stempelsSleutelVoorSpeler())||'[]'); }catch(e){ return []; }
 }
-// Zoekt de paspoort-ingang bij een landnaam zoals die in het spel gebruikt
-// wordt. Eerst op exacte naam (dekt verreweg de meeste landen), dan op
-// bestandsnaam via landNaarBestand (dekt een handjevol landen waar de
-// spelnaam net anders gespeld is dan de paspoort-naam, zoals
-// "Bosnië-Herzegovina" hier tegenover "Bosnië en Herzegovina" in het
-// paspoort). Geeft null als het land nog geen eigen paspoortpagina heeft.
 function paspoortEntryVoorLand(naam){
   let entry = PASPOORT_LANDEN.find(p=>p.naam===naam);
   if(entry) return entry;
   const b = landNaarBestand(naam);
   return PASPOORT_LANDEN.find(p=>p.bestand===b) || null;
 }
-// Registreert een stempel voor het land met deze spelnaam (Europa/Wereld:
-// direct bij een juiste vlaggetje-drop). Bestaat het land niet in het
-// paspoort, of was de stempel al verdiend: geen actie, geeft dan null terug.
 function verdienStempelVoorLand(naam){
   const entry = paspoortEntryVoorLand(naam);
   if(!entry) return null;
@@ -840,12 +668,6 @@ function verdienStempelVoorLand(naam){
   localStorage.setItem(stempelsSleutelVoorSpeler(), JSON.stringify(lijst));
   return entry;
 }
-// Kiest 'aantal' nieuwe verrassingslanden (nog niet verdiend) als beloning
-// bij Hoofdsteden/Plekken/Raadspel: eerst uit de klein-maar-fijn-pool,
-// pas als die leeg is uit de rest van het paspoort, willekeurig binnen elke
-// pool. Voegt ze meteen toe aan de verdiende stempels en geeft de gekozen
-// paspoort-entries terug (minder dan 'aantal', of leeg, als het paspoort al
-// (bijna) helemaal vol zit).
 function kiesBonusLanden(aantal){
   const lijst = geefVerdiendeStempels();
   const nogNiet = (bestanden) => shuffle(bestanden.filter(b=>!lijst.includes(b)));
@@ -856,10 +678,6 @@ function kiesBonusLanden(aantal){
   if(gekozenBestanden.length) localStorage.setItem(stempelsSleutelVoorSpeler(), JSON.stringify(lijst));
   return gekozenBestanden.map(b=>PASPOORT_LANDEN.find(p=>p.bestand===b));
 }
-// Bouwt de tekst voor een eindscherm op basis van de daadwerkelijk gekozen
-// bonuslanden (kan minder zijn dan bedoeld, als het paspoort bijna vol is).
-// 'drempelBereikt' = de speler haalde genoeg goed voor minstens 1 stempel;
-// 'bijnaTekst' is de tekst als de drempel niet gehaald werd.
 function stempelMeldingTekst(drempelBereikt, gekozenLanden, bijnaTekst){
   if(gekozenLanden.length >= 2){
     return 'Wat een score!\nJe wint zelfs 2 landenstempels voor '+gekozenLanden[0].naam+' en '+gekozenLanden[1].naam+'!';
@@ -872,13 +690,8 @@ function stempelMeldingTekst(drempelBereikt, gekozenLanden, bijnaTekst){
   }
   return bijnaTekst;
 }
-// ── Landenpaspoort: verdiende stempels laten "vliegen" naar het paspoort-
-// icoon ── zelfde functie als in index.html, zie de toelichting daar.
 const STEMPEL_VLIEG_PAUZE_MS = 3000;
 const STEMPEL_VLIEG_DUUR_MS = 850;
-// containerEl (optioneel): als gegeven, verschijnt de rij daarin (in de
-// normale tekstflow, bijv. midden in de Klaar-kaart) i.p.v. los boven het
-// hele scherm - alleen het Klaar-scherm van Raad je plaatje gebruikt dit.
 function toonVliegendeStempels(gekozenLanden, paspoortIconEl, containerEl){
   if(!gekozenLanden || !gekozenLanden.length || !paspoortIconEl) return;
   const rij = document.createElement('div');
@@ -891,11 +704,11 @@ function toonVliegendeStempels(gekozenLanden, paspoortIconEl, containerEl){
     rij.appendChild(img);
   });
   (containerEl || document.body).appendChild(rij);
-  void rij.offsetWidth; // forceert reflow, zodat de intro-transitie echt start vanaf onzichtbaar
+  void rij.offsetWidth;
   rij.classList.add('zichtbaar');
 
   setTimeout(()=>{
-    if(!document.body.contains(paspoortIconEl)) return; // scherm inmiddels weg
+    if(!document.body.contains(paspoortIconEl)) return;
     const doelRect = paspoortIconEl.getBoundingClientRect();
     const doelX = doelRect.left + doelRect.width*0.5;
     const doelY = doelRect.top + doelRect.height*0.5;
@@ -925,58 +738,13 @@ function toonVliegendeStempels(gekozenLanden, paspoortIconEl, containerEl){
 }
 
 const AANTAL_VRAGEN_MAX = 10;
-const NAAM_SLEUTEL = 'wonkywings_spelernaam'; // zelfde sleutel als index.html
-// Zelfde sessionStorage-sleutel als index.html gebruikt: laat weten dat we
-// via de MENU-knop terugkomen (dus niet opnieuw het verplichte naamscherm
-// tonen daar - de naam is hier al bekend en actief gebruikt).
+const NAAM_SLEUTEL = 'wonkywings_spelernaam';
 const VAN_MENU_NAVIGATIE_SLEUTEL = 'wonkywings_van_menu_navigatie';
 
-// ── Knopgeluid-vóór-navigatie ─────────────────────────────────────────────
-// raadspel.html had tot nu toe helemaal geen geluidjes - index.html wel,
-// via een uitgebreid Web Audio-systeem (zie daar). Voor de paar knopjes die
-// hier geluid nodig hebben (terug-naar-menu, paspoort-icoon, boek-icoon)
-// volstaat een simpele HTML5 Audio-afspeler; ze hoeven niet vooraf
-// ingeladen te worden zoals in index.html, want het zijn er maar een paar.
-// Zelfde geluiden en dezelfde aan/uit-sleutel als index.html gebruikt
-// (wonkywings_geluid_aan), zodat het overal consistent klinkt en de
-// instelling van het hoofdmenu hier ook geldt.
 const GELUID_AAN_SLEUTEL = 'wonkywings_geluid_aan';
-// Zelfde vertraging als NAVIGATIEGELUID_VERTRAGING_MS in index.html: het
-// afspelen van geluid ZET het geluid alleen in gang, het wacht niet tot het
-// is uitgeklonken voordat de volgende regel code draait. Navigeer je meteen
-// door naar een andere pagina, dan breekt die paginawissel het geluidje af
-// voordat het goed en wel te horen was. Deze korte pauze geeft het
-// geluidje eerst een eerlijke kans.
 const NAVIGATIEGELUID_VERTRAGING_MS = 220;
-// Volumedemping per bestand, alleen waar nodig - bliksemknop.mp3 speelt hier
-// (anders dan de andere geluidjes op deze pagina) niet op volle sterkte,
-// zodat het overal even zacht klinkt als de gedempte versie in index.html
-// (verzoek van Arjen).
 const GELUID_VOLUME = { 'bliksemknop.mp3': 0.6 };
-// ── Willekeurige goed-antwoord-geluiden bij Raad je plaatje: bij een juist
-// antwoord klinkt telkens willekeurig één van deze vijf, bij een fout
-// antwoord altijd fout.mp3 (zie beantwoord() verderop). ──
 const HOERA_BESTANDEN = ['hoera.mp3','hoera2.mp3','hoera3.mp3','hoera4.mp3','hoera5.mp3'];
-// ── Geluidjes vooraf opwarmen (v0.6.1) ────────────────────────────────────
-// speelGeluid()/speelGeluidDanNavigeer() hierboven en hieronder maken bij
-// elke aanroep gewoon een NIEUW Audio-element aan (de eenvoudige aanpak die
-// deze pagina altijd al had, zie de toelichting eerder in dit blok) - prima
-// voor de meeste knopjes, maar een paar geluidjes zijn juist precies op een
-// spannend/tijdkritisch moment nodig: het startsein bij Landje Schuif
-// (schelp-start.mp3, waar de speler een directe reactie op de klik
-// verwacht) en de meteen-hoorbare feedback bij een goed/fout antwoord in
-// Raad je plaatje (fout.mp3, de hoera-varianten). Zonder opwarming moet de
-// browser zo'n bestand bij de EERSTE keer alsnog over het netwerk ophalen
-// en decoderen voordat er iets te horen is - precies de trage-eerste-keer-
-// vertraging die index.html's eigen geluidssysteem indertijd juist heeft
-// laten verdwijnen (zie de toelichting daar, v0.6.44).
-//
-// Deze bestanden hier dus alvast bij het laden van de pagina aanvragen
-// (zonder ze af te spelen): daarna staan ze warm in de cache van de browser,
-// zodat de latere ECHTE speelGeluid()-aanroep alleen nog de reeds-opgehaalde
-// bytes hoeft te decoderen - geen netwerk-wachttijd meer op het moment dat
-// het er echt toe doet. Verandert verder niets aan hoe speelGeluid() zelf
-// werkt.
 const GELUID_VOORAF_OPWARMEN = ['schelp-start.mp3', 'fout.mp3', ...HOERA_BESTANDEN];
 function warmGeluidenOp(){
   const geluidAan = localStorage.getItem(GELUID_AAN_SLEUTEL) !== 'uit';
@@ -989,11 +757,6 @@ function warmGeluidenOp(){
   });
 }
 warmGeluidenOp();
-// ── Geluid zonder aansluitende navigatie: voor gebeurtenissen die niet naar
-// een andere pagina gaan (een categorie kiezen, een antwoord goed/fout) -
-// dezelfde eenvoudige HTML5 Audio-aanpak en dezelfde aan/uit-sleutel als
-// speelGeluidDanNavigeer hieronder, maar zonder de vertraging-vóór-navigatie
-// (die is hier niet nodig, want de pagina wordt niet verlaten).
 function speelGeluid(bestand){
   const geluidAan = localStorage.getItem(GELUID_AAN_SLEUTEL) !== 'uit';
   if(!geluidAan) return;
@@ -1016,13 +779,6 @@ function speelGeluidDanNavigeer(bestand, callback){
   }
   setTimeout(callback, NAVIGATIEGELUID_VERTRAGING_MS);
 }
-// Terug-naar-menu-geluid: kiest willekeurig één van deze zeven fragmenten
-// (i.p.v. altijd bliksemknop.mp3) en wacht - met een noodrem - tot het
-// helemaal is uitgeklonken voordat er wordt weggenavigeerd. Zelfde aanpak
-// als in paspoort.html/highscores.html: een vaste vertraging zou het
-// fragment kunnen afkappen, want niet elk toedeledokie-bestand duurt even
-// lang. Gebruikt door alle drie de "terug naar start"-knoppen op deze
-// pagina: het spelkeuze-scherm, het "Klaar!"-scherm en Landje Schuif.
 const TERUG_GELUIDEN = [
   'toedeledokie.mp3','toedeledokie2.mp3','toedeledokie3.mp3','toedeledokie4.mp3',
   'toedeledokie5.mp3','toedeledokie6.mp3','toedeledokie7.mp3',
@@ -1042,7 +798,7 @@ function speelTerugGeluidDanNavigeer(callback){
     audio.addEventListener('ended', ga);
     audio.play().catch(ga);
   }catch(e){ ga(); return; }
-  setTimeout(ga, 4000); // noodrem: nooit langer dan 4s blijven wachten, ook als afspelen om wat voor reden dan ook mislukt
+  setTimeout(ga, 4000);
 }
 function ganNaarMenu(){
   speelTerugGeluidDanNavigeer(() => {
@@ -1052,34 +808,24 @@ function ganNaarMenu(){
 }
 
 let huidigeCategorie = null;
-let vraagLijst = [];       // de landen die deze ronde gevraagd worden
+let vraagLijst = [];
 let vraagIdx = 0;
 let aantalGoed = 0;
-let tijdVerstreken = 0;    // ms, opgeteld over gepauzeerde stukken
+let tijdVerstreken = 0;
 let tijdRondeStart = null;
 let timerInterval = null;
-let vraagAfgehandeld = false; // voorkomt dubbelklikken tijdens de feedback-pauze
+let vraagAfgehandeld = false;
 
-// ── Naam ──
 function ladenSpelerNaam(){
   const opgeslagen = localStorage.getItem(NAAM_SLEUTEL) || '';
   document.getElementById('naam-input').value = opgeslagen;
 }
-// Let op: hier bewust GEEN live-opslaan-per-toetsaanslag meer (dat was het
-// vroeger wel) - anders zou een halve, onbevestigde naam via het geheime
-// woordje heen kunnen glippen als iemand meteen wegnavigeert. De naam wordt
-// nu pas echt "actief" ná een geslaagde woordje-check, zie rondNaamAfMet().
 document.getElementById('naam-input').addEventListener('keydown', e=>{
   if(e.key==='Enter'){ e.preventDefault(); bevestigNaam(); }
 });
 function huidigeSpelerNaam(){
   return (document.getElementById('naam-input').value || '').trim() || 'Speler';
 }
-// Eerste scherm dat de speler ziet: verplicht (een niet-lege) naam invullen
-// voordat er een categorie gekozen kan worden - dat voorkomt dat spelers
-// vergeten hun naam in te vullen en daardoor niet op het scorebord komen.
-// Rondt zelf nog niet af: eerst moet het geheime woordje van deze naam
-// gecontroleerd (of net gekozen) worden, zie toonGeheimwoordScherm().
 function bevestigNaam(){
   const input = document.getElementById('naam-input');
   const naam = input.value.trim();
@@ -1099,16 +845,12 @@ function bevestigNaam(){
   input.style.borderColor = '';
   toonGeheimwoordScherm(naam);
 }
-// Rondt het inloggen daadwerkelijk af - wordt pas aangeroepen nadat het
-// geheime woordje van 'naam' gecontroleerd (of net gekozen) is.
 function rondNaamAfMet(naam){
   localStorage.setItem(NAAM_SLEUTEL, naam);
   document.getElementById('naam-input').value = naam;
   toonSpelkeuze();
 }
-// Toont het fullscreen spelkeuze-scherm (buiten #kader).
 function toonSpelkeuze(){
-  // Verberg alle normale schermen en #kader
   document.querySelectorAll('.scherm').forEach(el=>el.classList.remove('actief'));
   document.getElementById('antwoorden-grid').classList.remove('actief');
   document.getElementById('klaar-paspoort-icoon').style.display = 'none';
@@ -1120,9 +862,6 @@ function toonSpelkeuze(){
   sluitUitvergroting();
 }
 
-// ── Geheim woordje: voorkomt dat iemand een bestaande naam kan "stelen" ──
-// Zelfde sleutels en logica als index.html (dat heeft een eigen,
-// onafhankelijk naamscherm en moet dus apart even goed beschermd worden).
 const GEHEIMWOORD_PREFIX = 'wonkywings_geheimwoord::';
 function geheimwoordVoorNaam(naam){ return localStorage.getItem(GEHEIMWOORD_PREFIX+naam); }
 function zetGeheimwoordVoorNaam(naam,woord){ localStorage.setItem(GEHEIMWOORD_PREFIX+naam, woord.trim().toLowerCase()); }
@@ -1143,7 +882,6 @@ function toonGeheimwoordScherm(naam){
   toonScherm('scherm-woord');
   input.focus();
 }
-// Eén stapje terug naar het naam-scherm, bijvoorbeeld bij een typefout.
 function terugNaarNaamScherm(){
   toonScherm('scherm-naam');
   document.getElementById('naam-input').focus();
@@ -1177,42 +915,25 @@ document.getElementById('woord-input').addEventListener('keydown', e=>{
   else if(e.key==='Escape'){ e.preventDefault(); terugNaarNaamScherm(); }
 });
 
-// ── Schermwissel ──
 function toonScherm(id){
   document.querySelectorAll('.scherm').forEach(el=>el.classList.remove('actief'));
   document.getElementById(id).classList.add('actief');
   document.getElementById('antwoorden-grid').classList.toggle('actief', id==='scherm-spel');
-  // Wereldkaart-achtergrond alleen bij het kiezen van een werelddeel, tijdens
-  // het spel zelf, en bij het evalueren achteraf — niet bij naam/woordje.
   document.body.classList.toggle('wereldkaart-achtergrond', id==='scherm-kies' || id==='scherm-spel' || id==='scherm-klaar');
-  // #klaar-paspoort-icoon, #klaar-boek-icoon en #klaar-linksboven-knoppen
-  // staan buiten #kader (zie de notitie bij hun HTML) en volgen dus niet
-  // vanzelf de .scherm-cascade - hier expliciet meesturen.
   document.getElementById('klaar-paspoort-icoon').style.display = (id==='scherm-klaar') ? 'block' : 'none';
   document.getElementById('klaar-boek-icoon').style.display = (id==='scherm-klaar') ? 'block' : 'none';
   document.getElementById('klaar-linksboven-knoppen').style.display = (id==='scherm-klaar') ? 'flex' : 'none';
-  // Spelkeuze en Landje Schuif hebben eigen fullscreen containers buiten
-  // #kader; bij elke "normale" schermwissel moeten die dicht en #kader
-  // weer zichtbaar worden.
   document.getElementById('spelkeuze-veld').classList.remove('actief');
   document.getElementById('landjeschuif-veld').classList.remove('actief');
   document.getElementById('kader').style.display = '';
   sluitUitvergroting();
 }
 
-// ── Landillustratie uitvergroten: klik erop om 'm groot over het hele
-// scherm heen te tonen, nogmaals klikken (op de illustratie of de
-// verduisterde achtergrond) of Escape brengt 'm terug naar normaal.
-// De illustratie zelf verhuist tijdelijk naar <body>, buiten #kader: zolang
-// hij binnen #kader bleef, werd 'position:fixed' door #kader's eigen
-// drop-shadow-filter opeens relatief aan #kader in plaats van aan het hele
-// scherm - vandaar dat de uitvergroting eerder scheef/naar rechts geschoven
-// stond in plaats van gecentreerd. ──
 const ILLUSTRATIE_EL = document.getElementById('land-illustratie');
 const ILLUSTRATIE_WRAP_EL = document.getElementById('land-illustratie-wrap');
 const ILLUSTRATIE_ACHTERGROND_EL = document.getElementById('illustratie-achtergrond');
 function toonUitvergroting(){
-  if(!ILLUSTRATIE_EL.src) return; // niets te tonen zolang er nog geen illustratie geladen is
+  if(!ILLUSTRATIE_EL.src) return;
   document.body.appendChild(ILLUSTRATIE_EL);
   ILLUSTRATIE_EL.classList.add('uitvergroot');
   ILLUSTRATIE_ACHTERGROND_EL.classList.add('actief');
@@ -1220,7 +941,7 @@ function toonUitvergroting(){
 function sluitUitvergroting(){
   ILLUSTRATIE_EL.classList.remove('uitvergroot');
   ILLUSTRATIE_ACHTERGROND_EL.classList.remove('actief');
-  ILLUSTRATIE_WRAP_EL.appendChild(ILLUSTRATIE_EL); // terug naar zijn normale plek in het perkament
+  ILLUSTRATIE_WRAP_EL.appendChild(ILLUSTRATIE_EL);
 }
 ILLUSTRATIE_EL.addEventListener('click', () => {
   if(ILLUSTRATIE_EL.classList.contains('uitvergroot')) sluitUitvergroting();
@@ -1231,7 +952,6 @@ document.addEventListener('keydown', e => {
   if(e.key === 'Escape') sluitUitvergroting();
 });
 
-// ── Categorie-kiesscherm opbouwen ──
 function bouwKiesScherm(){
   const wrap = document.getElementById('kies-inhoud');
   wrap.innerHTML = '';
@@ -1254,7 +974,6 @@ function bouwKiesScherm(){
   }
 }
 
-// ── Ronde starten ──
 function startCategorie(catId){
   huidigeCategorie = CATEGORIEEN.find(c=>c.id===catId);
   if(!huidigeCategorie) return;
@@ -1282,7 +1001,6 @@ function shuffle(arr){
   return arr;
 }
 
-// ── Eén vraag tonen ──
 function toonVraag(){
   vraagAfgehandeld = false;
   bouwBlokkentoren();
@@ -1291,15 +1009,11 @@ function toonVraag(){
   const plekLabel = document.getElementById('plek-naam-label');
 
   if(huidigeCategorie.plekken){
-    // Iconische plekken: het plaatje toont een specifieke plek (met naam
-    // erbij als onderschrift), en het antwoord is het LAND waar die plek
-    // ligt - niet de plek zelf. De 3 foute opties zijn andere landen die
-    // ook bij een (andere) iconische plek horen.
     const plek = PLEKKEN_BIJ_NAAM[vraagLijst[vraagIdx]];
     const correct = plek.land;
     plekLabel.textContent = plek.naam;
     plekLabel.style.display = 'block';
-    img.onerror = null; // deze bestanden horen altijd te bestaan; geen vervang-fallback nodig
+    img.onerror = null;
     img.src = 'images/plekken/' + plek.bestand + '.jpg';
     const anderenLanden = [...new Set(PLEKKEN_DATA.map(p=>p.land))].filter(l=>l!==correct);
     const fouteOpties = shuffle(anderenLanden).slice(0, 3);
@@ -1307,7 +1021,6 @@ function toonVraag(){
   } else {
     plekLabel.style.display = 'none';
     const correct = vraagLijst[vraagIdx];
-    // 3 foute opties uit dezelfde categorie, nooit de goede zelf
     const anderen = huidigeCategorie.landen.filter(n=>n!==correct);
     const fouteOpties = shuffle([...anderen]).slice(0, 3);
     laadIllustratieMetFallback(correct, img);
@@ -1315,12 +1028,6 @@ function toonVraag(){
   }
 }
 
-// Bouwt de 4 antwoordknoppen op hun vaste plek (plek-0 t/m plek-3, exact op
-// de 4 getekende balken in de achtergrondafbeelding) en past per knop de
-// tekstgrootte aan: de balken hebben een vaste hoogte (ze moeten precies op
-// de tekening passen), dus lange namen (bijv. 'Equatoriaal-Guinea',
-// 'Centraal-Afrikaanse Republiek') mogen niet omslaan naar 2 regels - dat
-// liep er zonder deze aanpassing gewoon bovenuit, de illustratie in.
 function bouwAntwoordKnoppen(opties, correct){
   const grid = document.getElementById('antwoorden-grid');
   grid.innerHTML = '';
@@ -1336,7 +1043,7 @@ function bouwAntwoordKnoppen(opties, correct){
 function zetWerelddeelLabel(tekst){
   const el = document.getElementById('werelddeel-waarde');
   el.textContent = tekst;
-  const basis = 1.25, minimum = 0.6; // rem - basis is dezelfde max-waarde als in de CSS clamp()
+  const basis = 1.25, minimum = 0.6;
   let grootte = basis;
   el.style.whiteSpace = 'nowrap';
   el.style.fontSize = grootte + 'rem';
@@ -1346,7 +1053,7 @@ function zetWerelddeelLabel(tekst){
   }
 }
 function pasKnopTekstAan(btn){
-  const basis = 1.5, minimum = 0.55; // rem - basis is dezelfde max-waarde als in de CSS clamp()
+  const basis = 1.5, minimum = 0.55;
   let grootte = basis;
   btn.style.whiteSpace = 'nowrap';
   btn.style.fontSize = grootte + 'rem';
@@ -1356,9 +1063,6 @@ function pasKnopTekstAan(btn){
   }
 }
 
-// ── Blokkentoren: 10 bouwblokjes links van de illustratie, van onder naar
-// boven ingevuld naarmate je verder komt (bij vraag 1 is het onderste blok
-// al vol, bij vraag 2 de onderste twee, enz. — vraagIdx is 0-based). ──
 function bouwBlokkentoren(){
   const toren = document.getElementById('blokkentoren');
   toren.innerHTML = '';
@@ -1371,24 +1075,20 @@ function bouwBlokkentoren(){
   }
 }
 
-// Als een illustratie onverhoopt ontbreekt: vervang deze vraag stilletjes
-// door een ander, nog niet gebruikt land uit dezelfde categorie, in plaats
-// van de speler op een kapotte afbeelding te laten stuiten.
 function laadIllustratieMetFallback(naam, imgEl, pogingen){
   pogingen = pogingen || 0;
   imgEl.onerror = () => {
-    if(pogingen >= 5) return; // geef het op, toon liever iets dan oneindig door te proberen
+    if(pogingen >= 5) return;
     const gebruikt = new Set(vraagLijst);
     const alternatieven = huidigeCategorie.landen.filter(n=>!gebruikt.has(n));
     if(alternatieven.length===0) return;
     const nieuw = alternatieven[Math.floor(Math.random()*alternatieven.length)];
     vraagLijst[vraagIdx] = nieuw;
-    toonVraag(); // bouwt ook de antwoordknoppen opnieuw op met het nieuwe land
+    toonVraag();
   };
   imgEl.src = 'images/landen/' + landNaarBestand(naam) + '.png';
 }
 
-// ── Antwoord verwerken ──
 function beantwoord(gekozen, correct, btnEl){
   if(vraagAfgehandeld) return;
   vraagAfgehandeld = true;
@@ -1401,8 +1101,6 @@ function beantwoord(gekozen, correct, btnEl){
     else if(b===btnEl) b.classList.add('fout');
   });
 
-  // Ook een kader om de illustratie zelf, zodat goed/fout ook meteen visueel
-  // gekoppeld is aan de afbeelding, niet alleen aan de antwoordknoppen.
   const img = document.getElementById('land-illustratie');
   img.classList.remove('antwoord-goed', 'antwoord-fout');
   img.classList.add(gekozen===correct ? 'antwoord-goed' : 'antwoord-fout');
@@ -1427,7 +1125,6 @@ function beantwoord(gekozen, correct, btnEl){
   }, 2400);
 }
 
-// ── Timer ──
 function startTimer(){
   tijdRondeStart = performance.now() - tijdVerstreken;
   updateTimerWeergave();
@@ -1455,14 +1152,9 @@ function formatTijdMs(ms){
   return m+':'+s.toFixed(1).padStart(4,'0');
 }
 
-// ── Ronde klaar: opslaan + scorebord ──
-// 'totaal' = het werkelijke aantal vragen van déze ronde (vraagLijst.length),
-// zodat het scorebord (hier én in highscores.html) altijd "x van de y" kan
-// tonen zonder te hoeven gokken - eerder ontbrak dit veld, waardoor oudere
-// scores altijd op een noodgreep-schatting terugvielen.
-function opslaanRaadspelScoreOnline(catId, naam, goed, tijdMs, totaal){
+function opslaanRaadspelScoreOnline(catId, naam, goed, tijdMs, totaal, stempels){
   const nieuweRun = {naam, goed, tijdMs, totaal, datum:Date.now()};
-  fsOpslaan('scores_raadspel', {catId, naam:nieuweRun.naam, goed:nieuweRun.goed, totaal:nieuweRun.totaal, tijdMs:nieuweRun.tijdMs, datum:nieuweRun.datum});
+  fsOpslaan('scores_raadspel', {catId, naam:nieuweRun.naam, goed:nieuweRun.goed, totaal:nieuweRun.totaal, tijdMs:nieuweRun.tijdMs, datum:nieuweRun.datum, stempels});
   return nieuweRun;
 }
 function laadRaadspelScoresOnline(catId, aantal, nieuweRun){
@@ -1472,7 +1164,6 @@ function laadRaadspelScoresOnline(catId, aantal, nieuweRun){
 
 async function rondeKlaar(){
   pauzeTimer();
-  const nieuweRun = opslaanRaadspelScoreOnline(huidigeCategorie.id, huidigeSpelerNaam(), aantalGoed, tijdVerstreken, vraagLijst.length);
   document.getElementById('klaar-titel').textContent = 'Klaar!';
   document.getElementById('klaar-resultaat').textContent =
     huidigeCategorie.naam+': '+aantalGoed+' van de '+vraagLijst.length+' goed, in '+formatTijdMs(tijdVerstreken);
@@ -1483,6 +1174,10 @@ async function rondeKlaar(){
   else if(aantalGoed >= 6) aantalStempels = 1;
   const drempelBereikt = aantalStempels > 0;
   const gekozenLanden = drempelBereikt ? kiesBonusLanden(aantalStempels) : [];
+  // Nu pas opslaan (ná kiesBonusLanden hierboven): zo telt een eventuele
+  // verrassingsstempel van dít potje meteen mee in het aantal dat we
+  // opslaan voor het scorebord, in plaats van er net vóór te lopen.
+  const nieuweRun = opslaanRaadspelScoreOnline(huidigeCategorie.id, huidigeSpelerNaam(), aantalGoed, tijdVerstreken, vraagLijst.length, geefVerdiendeStempels().length);
   document.getElementById('klaar-stempel').textContent =
     stempelMeldingTekst(drempelBereikt, gekozenLanden, 'Bijna! Vanaf 6 landen goed krijg je een landenstempel.');
   document.getElementById('klaar-stempel-rij').innerHTML = '';
@@ -1493,15 +1188,14 @@ async function rondeKlaar(){
 
   const aanvraagId = ++scorebordAanvraagId;
   const lijst = await laadRaadspelScoresOnline(huidigeCategorie.id, 100, nieuweRun);
-  if(aanvraagId !== scorebordAanvraagId) return; // ondertussen een ander scorebord geopend
+  if(aanvraagId !== scorebordAanvraagId) return;
   bouwScorebordLijst(lijst, nieuweRun);
 }
 
-// Scores bekijken vanuit het kies-scherm, zonder een ronde te spelen
 async function toonScorebordAlleen(catId){
   const cat = CATEGORIEEN.find(c=>c.id===catId);
   if(!cat) return;
-  huidigeCategorie = cat; // zodat 'Nog een keer' vanaf hier ook meteen die categorie start
+  huidigeCategorie = cat;
   zetWerelddeelLabel(cat.naam);
   document.getElementById('speler-waarde').textContent = huidigeSpelerNaam();
   document.getElementById('klaar-titel').textContent = 'Scores — '+cat.naam;
@@ -1520,7 +1214,7 @@ async function toonScorebordAlleen(catId){
 function bouwScorebordLijst(lijst, nieuweRun){
   const el = document.getElementById('scorebord-lijst');
   el.innerHTML = '';
-  lijst = lijst.filter(r=>!isTestNaam(r.naam)); // testaccounts uitsluiten
+  lijst = lijst.filter(r=>!isTestNaam(r.naam));
   if(lijst.length===0){
     el.innerHTML = '<div class="score-leeg">Nog geen scores in deze categorie</div>';
     return;
@@ -1529,11 +1223,6 @@ function bouwScorebordLijst(lijst, nieuweRun){
     const isEigen = nieuweRun && run.datum===nieuweRun.datum && run.naam===nieuweRun.naam;
     const rij = document.createElement('div');
     rij.className = 'score-rij' + (isEigen ? ' eigen' : '');
-    // Let op: de spelernaam komt uit de gedeelde database en kan door om het
-    // even wie zijn ingevuld - dus NOOIT via innerHTML/string-plakken in de
-    // pagina zetten (dat zou toelaten dat iemand HTML/JavaScript als "naam"
-    // laat draaien bij iedereen die dit scorebord bekijkt). textContent zet
-    // de naam altijd als platte tekst neer, ongeacht wat erin staat.
     const spanPlek = document.createElement('span');
     spanPlek.className = 'score-plek';
     spanPlek.textContent = i+1;
@@ -1553,8 +1242,6 @@ function bouwScorebordLijst(lijst, nieuweRun){
     el.appendChild(rij);
   });
 }
-// Oudere scores kennen het totaal-aantal-vragen niet expliciet; val terug op
-// het huidige categorie-aantal (nette weergave, geen harde eis).
 function vraagAantalVoorWeergave(run){
   return run.totaal || (huidigeCategorie ? Math.min(AANTAL_VRAGEN_MAX, huidigeCategorie.landen.length) : AANTAL_VRAGEN_MAX);
 }
@@ -1575,10 +1262,8 @@ function terugNaarKiezen(){
 // ██  LANDJE SCHUIF — spellogica                                     ██
 // ══════════════════════════════════════════════════════════════════════
 
-// ── Spelkeuze-scherm: de twee knoppen ──
 function kiesRaadJePlaatje(){
   speelGeluid('raadjelandje.mp3');
-  // Verberg spelkeuze, toon #kader weer, ga naar categorie-keuze
   document.getElementById('spelkeuze-veld').classList.remove('actief');
   document.getElementById('kader').style.display = '';
   toonScherm('scherm-kies');
@@ -1589,67 +1274,27 @@ function kiesLandjeSchuif(){
   startLandjeSchuif();
 }
 
-// ── Constanten ──
 const LS_AANTAL = 9;
-// Cirkelposities als percentage van het speelveld (x=centrum, y=centrum).
-// Rij 1 (boven): y≈19%, Rij 2 (midden): y≈50%, Rij 3 (onder): y≈81%
-// Kolom 1: x≈13%, Kolom 2: x≈33%, Kolom 3: x≈53%
 const LS_CIRKELS = [
   {x:19.0, y:26.0}, {x:35.0, y:26.0}, {x:51.5, y:26.0},
   {x:19.0, y:50.0}, {x:35.0, y:50.0}, {x:51.5, y:50.0},
   {x:19.0, y:74.0}, {x:35.0, y:74.0}, {x:52.0, y:74.0}
 ];
-const LS_CIRKEL_GROOTTE = 17.5;   // diameter als % van speelveld-breedte
-const LS_STEMPEL_GROOTTE = 14;    // stempel als % van speelveld-breedte
-// Stempels worden willekeurig een beetje gedraaid (±15°) neergelegd. Een
-// gedraaid vierkant heeft een grotere bounding box dan het vierkant zelf
-// (bij 15° zo'n 22% hoger) — deze marge zorgt dat de verboden-zone-check
-// ook bij de scheefste stand nog klopt.
+const LS_CIRKEL_GROOTTE = 17.5;
+const LS_STEMPEL_GROOTTE = 14;
 const LS_STEMPEL_ROTATIE_MARGE = 1.25;
-// Snap-drempel = halve stempelgrootte: de stempel moet dus met zijn eigen
-// rand minstens het middelpunt van een cirkel raken voor hij vastklikt.
 const LS_SNAP_DREMPEL = LS_STEMPEL_GROOTTE / 2;
-// Grootte van de goed/fout-controlecirkel: bewust los van LS_CIRKEL_GROOTTE
-// (dat is de onzichtbare tekstbox) en klein genoeg om niet over de
-// buurcirkels heen te vallen, ook bij een krap gekalibreerd rooster.
 const LS_RING_GROOTTE = 14;
 
-// Verboden band onderin: hier staat de schelp-knop + de timer erboven
-// (#ls-schelp-tijd-groep). Stempels mogen nooit op deze hoogte losstaan —
-// ook niet links van de knop — zodat álle losse stempels boven de tijd
-// blijven zweven en de knop nooit "in dezelfde rij" oogt. Vandaar dat dit
-// een volledige horizontale band is (elke x, vanaf yMin) en geen rechthoek
-// die alleen de rechterkant afschermt.
-//
-// yMin wordt LIVE gemeten aan #ls-schelp-tijd-groep (i.p.v. een vast
-// percentage), want die groep heeft zelf ook een clamp() met een
-// pixel-maximum — op een breed scherm valt die groep relatief kleiner uit
-// en zakt hij dus verder omlaag. Een vast yMin klopte dan niet meer met
-// waar de tijd/knop ECHT stonden, en bleef er onnodig veel zandruimte
-// onbenut. Door 'm elke keer opnieuw op te meten, klopt de grens altijd,
-// op elk schermformaat.
 function lsMeetVerbodenYMin(veldRect){
   const groep = document.getElementById('ls-schelp-tijd-groep');
   const groepRect = groep.getBoundingClientRect();
   return (groepRect.top - veldRect.top) / veldRect.height * 100;
 }
-// hoogte is de eigen hoogte van het stempel, in % van de speelveld-hoogte —
-// zonder dit meegewogen zou alleen de bovenkant van het stempel gecheckt
-// worden, terwijl de onderkant (het stempel is zelf best hoog) alsnog ver
-// het verboden gebied in kan steken. Vandaar: bovenkant + hoogte > yMin.
 function lsInVerbodenZone(x, y, hoogte, yMin){
   return (y + (hoogte||0)) > yMin;
 }
 
-// ── Begrenzing: een stempel mag nooit meer dan de helft buiten het
-// speelveld verdwijnen. Zowel het slepen als het 3x uitvergroten (dubbel-
-// klik/-tik) laten een stempel altijd rond zíjn eigen MIDDELPUNT groeien of
-// bewegen — dus zolang dat middelpunt binnen het speelveld (0-100%) blijft,
-// kan er per definitie nooit meer dan de helft van de stempel (ongeacht
-// zijn actuele grootte of scheve stand) buiten beeld vallen. We begrenzen
-// daarom simpelweg het middelpunt van de normale (ongeschaalde) stempel-
-// doos tot het speelveld, en rekenen daarna terug naar de linkerbovenhoek
-// die style.left/top verwachten.
 function lsBegrensStempelPositie(links, boven, veldRect){
   const breedtePct = LS_STEMPEL_GROOTTE;
   const hoogtePct = LS_STEMPEL_GROOTTE * veldRect.width / veldRect.height;
@@ -1660,36 +1305,30 @@ function lsBegrensStempelPositie(links, boven, veldRect){
   return { links: cx - breedtePct/2, boven: cy - hoogtePct/2 };
 }
 
-// ── State ──
-let lsLanden = [];           // 9 gekozen PASPOORT_LANDEN-entries
-let lsKoppeling = [];        // cirkelindex → stempelindex (-1 = leeg)
-let lsStempelOpCirkel = [];  // stempelindex → cirkelindex (-1 = los)
+let lsLanden = [];
+let lsKoppeling = [];
+let lsStempelOpCirkel = [];
 let lsActief = false;
 let lsKlaar = false;
 let lsTijdVerstreken = 0;
 let lsTijdStart = null;
 let lsTimerInterval = null;
-let lsSchelpStatus = 'groen'; // groen | paars | rood
+let lsSchelpStatus = 'groen';
 let lsSleepIdx = -1;
 let lsSleepOffset = {x:0, y:0};
-let lsGekozenBonusLanden = [];   // bonus-landen, meteen bij winst bepaald en bijgeschreven
-let lsEindAnimatieGestart = false; // voorkomt dat de klik-ergens-animatie 2x start
+let lsGekozenBonusLanden = [];
+let lsEindAnimatieGestart = false;
 
-// ── Vergroten van stempels via dubbeltik/dubbelklik ──
-let lsLaatsteTik = {};              // stempelindex → tijdstip laatste tik (ms)
-let lsVergroteStempels = new Set(); // stempelindex-en die momenteel 3x vergroot zijn
+let lsLaatsteTik = {};
+let lsVergroteStempels = new Set();
 const LS_DUBBELTIK_MS = 350;
 
-// Zet de transform (rotatie + evt. 3x-schaal) van één stempel-element.
-// Alle plekken die de rotatie van een stempel zetten gaan via deze functie,
-// zodat een vergroot stempel zijn grootte houdt tijdens slepen/terugspringen.
 function lsStempelTransform(stempelEl, idx, graden){
   if(!stempelEl) return;
   const schaal = lsVergroteStempels.has(idx) ? ' scale(3)' : '';
   stempelEl.style.transform = 'rotate('+graden+'deg)'+schaal;
 }
 
-// Wissel een stempel tussen normaal en 3x vergroot formaat (dubbeltik/-klik)
 function lsToggleStempelVergroting(idx){
   const stempel = document.getElementById('ls-stempel-'+idx);
   if(!stempel) return;
@@ -1707,19 +1346,13 @@ function lsToggleStempelVergroting(idx){
   lsStempelTransform(stempel, idx, graden);
 }
 
-// ── Continent-gebalanceerde landenselectie ──
-// Verdeling: EU 2-3, AF 1-3, AS 1-3, AM(NA+ZA) 1-3, OC/OV 0-1
-// Altijd precies 1 klein-maar-fijn land, nooit meer.
 function kiesLsLanden(){
-  // 1. Kies 1 klein-maar-fijn land
   const kmfPool = PASPOORT_LANDEN.filter(p => KLEIN_MAAR_FIJN_BESTANDEN.includes(p.bestand));
   const kmf = kmfPool[Math.floor(Math.random() * kmfPool.length)];
 
-  // Welk continent telt het kmf-land voor?
   const contVan = c => (c==='NA'||c==='ZA') ? 'AM' : (c==='OC'||c==='OV') ? 'OC' : c;
   const kmfCont = contVan(kmf.continent);
 
-  // 2. Verdeling: start met minimum (som=5), verdeel 4 extra willekeurig
   const doel = {EU:2, AF:1, AS:1, AM:1, OC:0};
   const maxTotaal = {EU:3, AF:3, AS:3, AM:3, OC:1};
   let rest = 4;
@@ -1729,10 +1362,8 @@ function kiesLsLanden(){
     if(doel[c] < maxTotaal[c]){ doel[c]++; rest--; }
   }
 
-  // 3. Het kmf-land telt mee voor zijn continent
   doel[kmfCont] = Math.max(0, doel[kmfCont] - 1);
 
-  // 4. Vul per continent aan (geen klein-maar-fijn, geen dubbelingen)
   const gekozen = [kmf];
   const gekozenBestanden = new Set([kmf.bestand]);
 
@@ -1753,11 +1384,9 @@ function kiesLsLanden(){
   return gekozen.slice(0, LS_AANTAL);
 }
 
-// ── Start een nieuw potje ──
 function startLandjeSchuif(){
   lsLanden = kiesLsLanden();
 
-  // Reset state
   lsKoppeling = new Array(LS_AANTAL).fill(-1);
   lsStempelOpCirkel = new Array(LS_AANTAL).fill(-1);
   lsActief = false;
@@ -1771,16 +1400,13 @@ function startLandjeSchuif(){
   lsVergroteStempels.clear();
   lsLaatsteTik = {};
 
-  // Verberg #kader, toon landjeschuif-veld
   document.getElementById('kader').style.display = 'none';
   const veld = document.getElementById('landjeschuif-veld');
   veld.classList.add('actief');
 
-  // Speler-info
   document.getElementById('ls-speler-vak').textContent = huidigeSpelerNaam();
   document.getElementById('ls-timer-vak').textContent = '0:00.0';
 
-  // Reset schelp — groot, gloeiend, met instructietekst
   document.getElementById('ls-schelp-img').src = 'images/schelp-groen.png';
   const schelpWrap = document.getElementById('ls-schelp-wrap');
   schelpWrap.style.display = '';
@@ -1788,29 +1414,21 @@ function startLandjeSchuif(){
   const schelpTekst = document.getElementById('ls-schelp-tekst');
   if(schelpTekst) schelpTekst.style.opacity = '1';
 
-  // Reset bordje
   const bordjeWrap = document.getElementById('ls-bordje-wrap');
   bordjeWrap.classList.remove('gevallen');
   bordjeWrap.style.top = '';
   document.getElementById('ls-bordje-tekst').textContent = '';
   document.getElementById('ls-speelveld').classList.remove('eind-toont');
 
-  // Reset de paspoort/boek-iconen en de octopus-herstartknop
   document.getElementById('ls-eind-iconen').classList.remove('actief');
   document.getElementById('ls-opnieuw-knop').classList.remove('actief');
 
-  // Bouw cirkels en stempels
   bouwLsCirkels();
   bouwLsStempels();
 
-  // Pijl + uitlegkader tonen — blijven nu staan tot de speler ergens
-  // klikt/tikt (geen vaste tijd meer)
   lsToonIntroOverlay();
 }
 
-// ── Intro-overlay: pijl + uitlegkader bij start van het potje ──
-// Blijven allebei zichtbaar (met de dim eronder) totdat de speler ergens
-// op het speelveld klikt of tikt — niet meer na een vaste tijd.
 function lsVerbergIntroOverlay(){
   const pijl = document.getElementById('ls-start-pijl');
   const veld = document.getElementById('ls-speelveld');
@@ -1828,30 +1446,22 @@ function lsToonIntroOverlay(){
   pijl.classList.remove('zichtbaar');
   veld.classList.remove('pijl-toont');
   if(uitleg) uitleg.classList.remove('zichtbaar');
-  // Force reflow, zodat de fade-in/dim ook opnieuw start als een en ander
-  // van een vorig potje nog (deels) zichtbaar was
   void pijl.offsetWidth;
   pijl.classList.add('zichtbaar');
   veld.classList.add('pijl-toont');
   if(uitleg) uitleg.classList.add('zichtbaar');
 
-  // Capture + once: dit vuurt altijd bij de allereerste klik/tik ergens
-  // op het speelveld — ook als het doelelement (bv. een stempel of de
-  // schelp-knop) de klik daarna zelf nog verder afhandelt.
   veld.addEventListener('mousedown', lsVerbergIntroOverlay, { capture:true, once:true });
   veld.addEventListener('touchstart', lsVerbergIntroOverlay, { capture:true, once:true, passive:true });
 }
 
-// ── Bouw de 9 cirkels met landnaam ──
 function bouwLsCirkels(){
-  // Verwijder bestaande cirkels en ringen
   const veld = document.getElementById('ls-speelveld');
   veld.querySelectorAll('.ls-cirkel, .ls-ring').forEach(el=>el.remove());
 
   lsLanden.forEach((land, i)=>{
     const pos = LS_CIRKELS[i];
 
-    // Feedback-ring (achter de cirkel)
     const ring = document.createElement('div');
     ring.className = 'ls-ring';
     ring.id = 'ls-ring-'+i;
@@ -1862,7 +1472,6 @@ function bouwLsCirkels(){
     ring.style.top = pos.y+'%';
     veld.appendChild(ring);
 
-    // Cirkel met naam — left/top = middelpunt, CSS transform centreert
     const cirkel = document.createElement('div');
     cirkel.className = 'ls-cirkel';
     cirkel.id = 'ls-cirkel-'+i;
@@ -1877,19 +1486,14 @@ function bouwLsCirkels(){
   });
 }
 
-// ── Bouw de 9 stempels, willekeurig in het rechter zandgebied ──
 function bouwLsStempels(){
   const veld = document.getElementById('ls-speelveld');
   veld.querySelectorAll('.ls-stempel').forEach(el=>el.remove());
 
-  // Stempel-hoogte in % van de speelveld-hoogte (stempels zijn zelf
-  // vierkant, dus breedte-% omrekenen naar hoogte-% via de veld-aspectratio)
   const veldRect = veld.getBoundingClientRect();
   const lsStempelHoogtePct = LS_STEMPEL_GROOTTE * veldRect.width / veldRect.height * LS_STEMPEL_ROTATIE_MARGE;
   const lsYMin = lsMeetVerbodenYMin(veldRect);
 
-  // Schud de volgorde zodat de stempels niet in dezelfde volgorde als de
-  // cirkels liggen (maakt het lastiger om de koppeling te raden)
   const indices = shuffle([...Array(LS_AANTAL).keys()]);
 
   indices.forEach((landIdx, i)=>{
@@ -1901,8 +1505,6 @@ function bouwLsStempels(){
     stempel.style.width = LS_STEMPEL_GROOTTE+'%';
     stempel.style.height = 'auto';
 
-    // Willekeurige positie rechts (65-83% x, verspreid over de hoogte)
-    // Vermijd het schelp+tijd-gebied rechtsonder
     let rx, ry;
     do {
       rx = 65 + Math.random()*18;
@@ -1918,20 +1520,12 @@ function bouwLsStempels(){
     img.draggable = false;
     stempel.appendChild(img);
 
-    // Events
     stempel.addEventListener('mousedown', lsStartSleep);
     stempel.addEventListener('touchstart', lsStartSleep, {passive:false});
 
     veld.appendChild(stempel);
   });
 
-  // lsMeetVerbodenYMin() hierboven leunt op de ECHTE, actuele afmeting van
-  // #ls-schelp-tijd-groep. Vlak bij de allereerste ronde (net na het laden
-  // van de pagina) kan het zijn dat de schelp-afbeelding of het lettertype
-  // nog niet klaar is — dan oogt die groep tijdelijk kleiner dan straks, en
-  // schat lsYMin de grens te ruim in. Zodra alles écht geladen is,
-  // controleren we daarom nog één keer of alle stempels boven de
-  // (dan pas definitieve) grens staan, en schuiven we de uitzonderingen bij.
   lsHerstelStempelsNaLaden(veld);
 }
 
@@ -1946,14 +1540,11 @@ function lsHerstelStempelsNaLaden(veld){
   const fontsKlaar = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
 
   Promise.all([imgKlaar, fontsKlaar]).then(() => {
-    // Nog één frame wachten: direct na het load/ready-event is de layout
-    // soms nog niet helemaal bijgewerkt.
     requestAnimationFrame(() => {
       const veldRect = veld.getBoundingClientRect();
       const hoogte = LS_STEMPEL_GROOTTE * veldRect.width / veldRect.height * LS_STEMPEL_ROTATIE_MARGE;
       const yMin = lsMeetVerbodenYMin(veldRect);
       veld.querySelectorAll('.ls-stempel').forEach(st => {
-        // Niet aankomen als de speler 'm al beet heeft of al heeft neergelegd
         if(st.classList.contains('gesnapt') || st.classList.contains('slepen')) return;
         const curLeft = parseFloat(st.style.left);
         const curTop = parseFloat(st.style.top);
@@ -1971,16 +1562,11 @@ function lsHerstelStempelsNaLaden(veld){
   });
 }
 
-// ── Drag & drop ──
 function lsGetPointerPos(e){
   const t = e.touches ? e.touches[0] : e;
   return {clientX:t.clientX, clientY:t.clientY};
 }
 
-// Breekt een sleepactie die nog "aan staat" netjes af, zonder de stempel
-// te verplaatsen — nodig wanneer een dubbelklik/-tik de sleepactie van
-// zijn eigen eerste klik moet overrulen (zie de toelichting in
-// lsStartSleep hieronder).
 function lsAnnuleerSleep(){
   document.removeEventListener('mousemove', lsBeweegSleep);
   document.removeEventListener('mouseup', lsStopSleep);
@@ -1992,26 +1578,16 @@ function lsAnnuleerSleep(){
 }
 function lsStartSleep(e){
   if(lsKlaar) return;
-  // Alleen slepen als het spel actief is (paars/rood status) of als de
-  // speler al een keer op de schelp heeft gedrukt
   if(!lsActief) return;
 
   e.preventDefault();
   const idx = parseInt(e.currentTarget.dataset.idx);
 
-  // Dubbeltik/dubbelklik op een stempel: 3x vergroten, of weer terug naar
-  // normaal formaat. Vervangt dan het slepen voor deze aanraking/klik.
   const nu = Date.now();
   const vorigeTik = lsLaatsteTik[idx] || 0;
   lsLaatsteTik[idx] = nu;
   if(nu - vorigeTik < LS_DUBBELTIK_MS){
     lsLaatsteTik[idx] = 0;
-    // De EERSTE klik van deze dubbelklik werd hieronder, vóórdat bekend was
-    // dat het een dubbelklik zou worden, al als gewone sleepactie gestart.
-    // Die maken we nu eerst netjes ongedaan — anders bleef er een sleep-
-    // actie "hangen" met een muis-/vingeroffset die nog van vóór het
-    // vergroten/verkleinen stamde, en kon de stempel bij de eerstvolgende
-    // beweging in één klap ver wegspringen.
     if(lsSleepIdx === idx) lsAnnuleerSleep();
     lsToggleStempelVergroting(idx);
     return;
@@ -2024,14 +1600,12 @@ function lsStartSleep(e){
   const veldRect = veld.getBoundingClientRect();
   const pos = lsGetPointerPos(e);
 
-  // Als dit stempel op een cirkel lag, maak die cirkel vrij
   const oudeCirckel = lsStempelOpCirkel[idx];
   if(oudeCirckel >= 0){
     lsKoppeling[oudeCirckel] = -1;
     lsStempelOpCirkel[idx] = -1;
   }
 
-  // Bereken offset t.o.v. stempel-linkerbovenhoek
   const stempelRect = stempel.getBoundingClientRect();
   lsSleepOffset.x = pos.clientX - stempelRect.left;
   lsSleepOffset.y = pos.clientY - stempelRect.top;
@@ -2039,7 +1613,6 @@ function lsStartSleep(e){
   stempel.classList.add('slepen');
   stempel.classList.remove('gesnapt');
 
-  // Globale listeners
   document.addEventListener('mousemove', lsBeweegSleep);
   document.addEventListener('mouseup', lsStopSleep);
   document.addEventListener('touchmove', lsBeweegSleep, {passive:false});
@@ -2076,14 +1649,11 @@ function lsStopSleep(e){
   const stempel = document.getElementById('ls-stempel-'+idx);
   stempel.classList.remove('slepen');
 
-  // Check of we dicht genoeg bij een cirkel zijn om te snappen
   const veld = document.getElementById('ls-speelveld');
   const veldRect = veld.getBoundingClientRect();
   const stempelRect = stempel.getBoundingClientRect();
   const stempelCX = ((stempelRect.left + stempelRect.width/2 - veldRect.left) / veldRect.width) * 100;
   const stempelCY = ((stempelRect.top + stempelRect.height/2 - veldRect.top) / veldRect.height) * 100;
-  // Eigen hoogte van een (normaal formaat) stempel in % van de speelveld-hoogte,
-  // voor de verboden-zone-check hieronder (zie lsInVerbodenZone)
   const lsStempelHoogtePct = LS_STEMPEL_GROOTTE * veldRect.width / veldRect.height * LS_STEMPEL_ROTATIE_MARGE;
   const lsYMin = lsMeetVerbodenYMin(veldRect);
 
@@ -2092,19 +1662,13 @@ function lsStopSleep(e){
 
   for(let ci = 0; ci < LS_AANTAL; ci++){
     const cp = LS_CIRKELS[ci];
-    // Y-positie corrigeren: cirkelposities zijn in % van breedte-equivalent,
-    // maar het speelveld heeft aspect-ratio 3:2, dus y in % hoogte =
-    // y_breedte% * (breedte/hoogte) = y * 1.5... maar we vergelijken hier
-    // al in viewport-%, dus laten we gewoon het centrum van de cirkel-div pakken
     const cirkelEl = document.getElementById('ls-cirkel-'+ci);
     const cirkelRect = cirkelEl.getBoundingClientRect();
     const cirkelCX = ((cirkelRect.left + cirkelRect.width/2 - veldRect.left) / veldRect.width) * 100;
     const cirkelCY = ((cirkelRect.top + cirkelRect.height/2 - veldRect.top) / veldRect.height) * 100;
 
-    // Afstand in pixels (nauwkeurig, ongeacht aspect-ratio)
     const dxPx = (stempelRect.left + stempelRect.width/2) - (cirkelRect.left + cirkelRect.width/2);
     const dyPx = (stempelRect.top + stempelRect.height/2) - (cirkelRect.top + cirkelRect.height/2);
-    // Omrekenen naar % van speelveld-breedte voor vergelijking met snap-drempel
     const afst = Math.sqrt(dxPx*dxPx + dyPx*dyPx) / veldRect.width * 100;
 
     if(afst < dichtstbijAfst){
@@ -2114,14 +1678,10 @@ function lsStopSleep(e){
   }
 
   if(dichtstbijIdx >= 0 && dichtstbijAfst < LS_SNAP_DREMPEL){
-    // Snap naar deze cirkel
-    // Als er al een ander stempel op deze cirkel lag, duw dat terug
     const bestaand = lsKoppeling[dichtstbijIdx];
     if(bestaand >= 0 && bestaand !== idx){
-      // Duw bestaand stempel terug naar een willekeurige plek rechts
       const oudeStempel = document.getElementById('ls-stempel-'+bestaand);
       oudeStempel.classList.remove('gesnapt');
-      // Vermijd het schelp+tijd-gebied bij terugplaatsen
       let terugX, terugY;
       do { terugX = 65+Math.random()*18; terugY = 8+Math.random()*72; } while(lsInVerbodenZone(terugX, terugY, lsStempelHoogtePct, lsYMin));
       oudeStempel.style.left = terugX+'%';
@@ -2130,11 +1690,9 @@ function lsStopSleep(e){
       lsStempelOpCirkel[bestaand] = -1;
     }
 
-    // Plaats dit stempel op de cirkel
     lsKoppeling[dichtstbijIdx] = idx;
     lsStempelOpCirkel[idx] = dichtstbijIdx;
 
-    // Positioneer gecentreerd op de cirkel
     const cirkelEl = document.getElementById('ls-cirkel-'+dichtstbijIdx);
     const cirkelRect = cirkelEl.getBoundingClientRect();
     const snapLeft = ((cirkelRect.left + cirkelRect.width/2 - veldRect.left) / veldRect.width * 100) - LS_STEMPEL_GROOTTE/2;
@@ -2145,11 +1703,9 @@ function lsStopSleep(e){
     stempel.classList.add('gesnapt');
     speelGeluid('stempel-klik.mp3');
   } else {
-    // Niet gesnapt — check of stempel in het schelp+tijd-gebied terecht is gekomen
     const dropLeft = parseFloat(stempel.style.left);
     const dropTop = parseFloat(stempel.style.top);
     if(lsInVerbodenZone(dropLeft, dropTop, lsStempelHoogtePct, lsYMin)){
-      // Duw terug naar veilige zone
       let rx2, ry2;
       do { rx2=65+Math.random()*18; ry2=8+Math.random()*72; } while(lsInVerbodenZone(rx2, ry2, lsStempelHoogtePct, lsYMin));
       stempel.style.left = rx2+'%';
@@ -2159,19 +1715,14 @@ function lsStopSleep(e){
   }
 }
 
-// ── Schelp-knop: statusmachine ──
 function lsSchelpKlik(){
   if(lsKlaar) return;
 
   if(lsSchelpStatus === 'groen'){
-    // Groen → kort ingedrukt → paars (start spel)
     document.getElementById('ls-schelp-img').src = 'images/schelp-groen-ingedrukt.png';
-    // Glow en instructietekst uitzetten
     document.getElementById('ls-schelp-wrap').classList.remove('gloed');
     const schelpTekst = document.getElementById('ls-schelp-tekst');
     if(schelpTekst) schelpTekst.style.opacity = '0';
-    // Pijl/uitlegkader/dim zijn al weggevaagd door de mousedown-capture-
-    // listener in lsToonIntroOverlay() (die vuurt eerder dan deze klik)
     setTimeout(()=>{
       lsSchelpStatus = 'paars';
       document.getElementById('ls-schelp-img').src = 'images/schelp-paars.png';
@@ -2183,15 +1734,11 @@ function lsSchelpKlik(){
   }
 
   if(lsSchelpStatus === 'paars'){
-    // Paars → check antwoorden
     lsCheckAntwoorden();
     return;
   }
-
-  // Rood: klik wordt genegeerd (2 seconden wachttijd loopt)
 }
 
-// ── Antwoorden checken ──
 function lsCheckAntwoorden(){
   let alleGoed = true;
 
@@ -2208,32 +1755,22 @@ function lsCheckAntwoorden(){
   }
 
   if(alleGoed){
-    // Gewonnen!
     lsKlaar = true;
     lsStopTimer();
     speelGeluid(HOERA_BESTANDEN[Math.floor(Math.random()*HOERA_BESTANDEN.length)]);
     lsSchelpStatus = 'groen';
     document.getElementById('ls-schelp-wrap').style.display = 'none';
-    // Paspoort + Boek der Groten nemen meteen de plek van de schelp-knop in
-    // (zelfde vak in #ls-schelp-tijd-groep), zodat de timer erboven niet
-    // verspringt.
     document.getElementById('ls-eind-iconen').classList.add('actief');
     document.getElementById('ls-opnieuw-knop').classList.add('actief');
 
-    // Score opslaan
     lsOpslaanScore(huidigeSpelerNaam(), lsTijdVerstreken);
 
-    // Bonus-landenstempels: hoe sneller, hoe meer. Ze worden nu al écht
-    // toegekend (aan het paspoort toegevoegd) - alleen het "vliegen" ernaartoe
-    // wachten we uit, tot de speler ergens klikt (zie lsStartEindAnimatie()).
     const aantalStempels =
       lsTijdVerstreken < 60000  ? 3 :
       lsTijdVerstreken < 90000  ? 2 :
       lsTijdVerstreken < 180000 ? 1 : 0;
     lsGekozenBonusLanden = kiesBonusLanden(aantalStempels);
 
-    // Bordje laten vallen, met de tijd in een eigen <span> zodat die er
-    // straks precies vanaf kan "wegvliegen" (zie lsVliegTijdNaarBoek())
     document.getElementById('ls-bordje-tekst').innerHTML =
       huidigeSpelerNaam() + '<br/><span id="ls-bordje-tijd">' + formatTijdMs(lsTijdVerstreken) + '</span>';
     setTimeout(()=>{
@@ -2241,7 +1778,6 @@ function lsCheckAntwoorden(){
       document.getElementById('ls-speelveld').classList.add('eind-toont');
     }, 100);
 
-    // Ringen na 4 sec verbergen
     setTimeout(()=>{
       for(let i=0;i<LS_AANTAL;i++){
         document.getElementById('ls-ring-'+i).className = 'ls-ring';
@@ -2249,26 +1785,20 @@ function lsCheckAntwoorden(){
     }, 4000);
 
   } else {
-    // Fout: schelp wordt rood, na 2 seconden weer paars
     lsSchelpStatus = 'rood';
     document.getElementById('ls-schelp-img').src = 'images/schelp-rood.png';
     speelGeluid('rood.mp3');
 
     setTimeout(()=>{
-      // Ringen weghalen
       for(let i=0;i<LS_AANTAL;i++){
         document.getElementById('ls-ring-'+i).className = 'ls-ring';
       }
-      // Terug naar paars
       lsSchelpStatus = 'paars';
       document.getElementById('ls-schelp-img').src = 'images/schelp-paars.png';
     }, 2000);
   }
 }
 
-// ── Klik-ergens-na-afloop: de tijd vliegt van het bordje naar het Boek
-// der Groten-icoon, en (als er bonus-landenstempels gewonnen zijn) die
-// vliegen daarna naar het paspoort-icoon. Precies 1x per potje. ──
 function lsStartEindAnimatie(){
   if(!lsKlaar || lsEindAnimatieGestart) return;
   lsEindAnimatieGestart = true;
@@ -2284,9 +1814,6 @@ function lsStartEindAnimatie(){
 }
 document.getElementById('ls-speelveld').addEventListener('click', lsStartEindAnimatie);
 
-// Laat een kopie van de tijd wegvliegen vanaf het bordje naar het Boek der
-// Groten-icoon toe, kleiner wordend en vervagend - zelfde soort vlucht als
-// toonVliegendeStempels() hierboven, maar dan voor tekst i.p.v. een plaatje.
 function lsVliegTijdNaarBoek(startEl, doelEl){
   if(!startEl || !doelEl) return;
   const startRect = startEl.getBoundingClientRect();
@@ -2297,7 +1824,7 @@ function lsVliegTijdNaarBoek(startEl, doelEl){
   vlieg.style.top = startRect.top+'px';
   vlieg.style.width = startRect.width+'px';
   document.body.appendChild(vlieg);
-  void vlieg.offsetWidth; // forceert reflow, zodat de transitie echt vanaf hier start
+  void vlieg.offsetWidth;
 
   const doelRect = doelEl.getBoundingClientRect();
   const doelX = doelRect.left + doelRect.width*0.5;
@@ -2311,7 +1838,6 @@ function lsVliegTijdNaarBoek(startEl, doelEl){
   setTimeout(()=>{ vlieg.remove(); }, 960);
 }
 
-// ── Timer ──
 function lsStartTimer(){
   lsTijdStart = performance.now() - lsTijdVerstreken;
   lsTimerInterval = setInterval(lsUpdateTimer, 100);
@@ -2326,12 +1852,12 @@ function lsUpdateTimer(){
   document.getElementById('ls-timer-vak').textContent = formatTijdMs(lsTijdVerstreken);
 }
 
-// ── Score opslaan ──
+// Landje Schuif blijft buiten de scope van deze Stempels-kolom-toevoeging:
+// geen 'stempels'-veld hier, ongewijzigd t.o.v. de vorige versie.
 function lsOpslaanScore(naam, tijdMs){
   fsOpslaan('scores_landjeschuif', {naam, tijdMs, datum:Date.now()});
 }
 
-// ── Navigatie ──
 function lsNaarMenu(){
   lsStopTimer();
   document.getElementById('landjeschuif-veld').classList.remove('actief');
@@ -2347,11 +1873,6 @@ function lsNaarSpelkeuze(){
   toonSpelkeuze();
 }
 
-// ── Init ──
-// Zelfde naam-sleutel als index.html: als de speler daar al een naam heeft
-// ingevuld (het normale pad), slaan we dit eigen naam-scherm gewoon over.
-// Alleen wie via een directe link hier terechtkomt zonder ooit index.html
-// bezocht te hebben, ziet dit scherm nog als vangnet.
 ladenSpelerNaam();
 document.getElementById('speler-waarde').textContent = huidigeSpelerNaam();
 bouwKiesScherm();
@@ -2367,14 +1888,6 @@ if((localStorage.getItem(NAAM_SLEUTEL)||'').trim()){
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
   import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-  // ── Online scorebord (Firestore) ───────────────────────────────────────
-  // Alle vijf spelonderdelen bewaren hun scores niet meer per apparaat
-  // (localStorage), maar in één gedeelde, wereldwijde database - zodat
-  // spelers overal in Nederland (of daarbuiten) met en tegen elkaar kunnen
-  // spelen. Deze waarden komen uit Arjens eigen Firebase-project
-  // ("wereld-van-wonderen") en zijn niet geheim: de beveiliging zit in de
-  // Firestore Security Rules (ingesteld in de Firebase Console), niet in
-  // het verbergen van deze configuratie.
   const firebaseConfig = {
     apiKey: "AIzaSyCEnvURTGjQ7_JAeQ69Zx7wZsPSxf2gQeg",
     authDomain: "wereld-van-wonderen.firebaseapp.com",
@@ -2386,13 +1899,6 @@ if((localStorage.getItem(NAAM_SLEUTEL)||'').trim()){
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // De rest van dit bestand gebruikt gewone (niet-module) scripts, die niet
-  // rechtstreeks 'import' kunnen gebruiken. Die wachten daarom via
-  // window.wvwFirebaseGereed op dit object - zie fsOpslaan()/fsTopN()
-  // verderop in het grote scriptblok. Dit module-scriptje is (net als
-  // 'defer') pas klaar ná het inladen van de pagina, maar ruim voordat een
-  // speler een level uitspeelt, dus in de praktijk is er geen merkbare
-  // wachttijd.
   window._wvwFirebaseResolve({ db, collection, addDoc, getDocs, query, where, orderBy, limit });
 </script>
 </body>
