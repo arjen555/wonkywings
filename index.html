@@ -1626,7 +1626,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-    <div id="versie-label">V1.10</div>
+    <div id="versie-label">V1.11</div>
   <div id="start-links">
     <img id="start-timbo" src="Timbo.jpg" alt="Timbo"/>
     <div id="prestatie-tip">Trage computer? Kies voor minder detail bij opties</div>
@@ -10928,10 +10928,15 @@ function openHulp(){
   stopTurboGeluid();
 }
 function sluitHulp(){
-  if(hulpActief && levelStartTijd){
+  if(hulpActief){
+    const spiekDuur = performance.now() - hulpOpenTijd;
     // Verschuif de starttijd met precies de duur van het spieken, zodat die
     // tijd niet meetelt in de zichtbare speeltijd.
-    levelStartTijd += (performance.now() - hulpOpenTijd);
+    if(levelStartTijd) levelStartTijd += spiekDuur;
+    // Zelfde truc voor de foto-onthulling bij Iconische plekken: anders kun
+    // je het besturingsschermpje openhouden en zo gratis laten uitzoomen
+    // zonder dat je zichtbare tijd verstrijkt (cheat die Arjen meldde).
+    if(plekOnthullingActief) plekOnthullingStart += spiekDuur;
   }
   hulpActief = false;
   document.getElementById('help-popup').style.display='none';
