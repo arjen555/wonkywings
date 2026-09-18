@@ -1626,7 +1626,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-    <div id="versie-label">V1.11</div>
+    <div id="versie-label">V1.12</div>
   <div id="start-links">
     <img id="start-timbo" src="Timbo.jpg" alt="Timbo"/>
     <div id="prestatie-tip">Trage computer? Kies voor minder detail bij opties</div>
@@ -11194,7 +11194,12 @@ function loop(){
   const __loopStart = performance.now();
   toetsWaakhond(); pollGamepad(); updateSpel(); drawGlobe();
   checkNoodstop(performance.now() - __loopStart);
-  if(plekOnthullingActief) tekenPlekOnthulling();
+  // Niet hertekenen zolang Besturing openstaat - anders blijft de foto op de
+  // achtergrond gewoon in real time verder uitzoomen terwijl de tijd
+  // "stilstaat" (de cheat die Arjen meldde). sluitHulp() schuift
+  // plekOnthullingStart met precies de spiek-duur op, dus na het sluiten
+  // gaat het verder vanaf hetzelfde punt, zonder sprong.
+  if(plekOnthullingActief && !hulpActief) tekenPlekOnthulling();
   requestAnimationFrame(loop);
 }
 </script>
