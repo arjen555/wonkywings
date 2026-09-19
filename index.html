@@ -1626,7 +1626,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-    <div id="versie-label">V1.13</div>
+    <div id="versie-label">V1.14</div>
   <div id="start-links">
     <img id="start-timbo" src="Timbo.jpg" alt="Timbo"/>
     <div id="prestatie-tip">Trage computer? Kies voor minder detail bij opties</div>
@@ -3787,12 +3787,16 @@ let schurkBliksem100Img = null, schurkBliksem200Img = null;
 // Arjens verzoek: in Verkennen-modus vliegt af en toe, op de achtergrond, een
 // ANDER vliegfiguur voorbij dan waarmee de speler zelf vliegt - gewoon ergens
 // vandaan, in een willekeurige richting. Geen score, geen vangst, puur sfeer.
-// Werkt verder net als de muntjes hierboven: de positie zit vast aan een
-// lengte-/breedtegraad op de bol (niet aan het scherm), dus blijft het
-// vliegtuigje gewoon zichtbaar zolang de speler het volgt, en verdwijnt het
-// vanzelf uit beeld zodra de speler een andere kant op stuurt - daar is geen
-// aparte "verberg"-logica voor nodig, dat volgt gewoon uit dezelfde projectie
-// die de muntjes ook al gebruiken.
+// De positie zit vast aan een lengte-/breedtegraad op de bol (niet aan het
+// scherm) - net als de muntjes hierboven.
+//
+// Belangrijk, na Arjens feedback op de eerste versie: zodra het vliegtuigje
+// uit beeld gaat, is de visite DEFINITIEF voorbij (niet: onhoorbaar
+// doorvliegen tot het toevallig weer in zicht komt als de speler terugstuurt).
+// Dat maakt "uit beeld = weg" een harde regel i.p.v. alleen een geluids-aan/
+// uit-schakelaar, en betekent ook dat er geen aparte "nog zichtbaar geweest"-
+// boekhouding nodig is: de eerstvolgende keer dat het niet meer zichtbaar is,
+// verdwijnt het meteen (zie updatePassantVliegtuig).
 //
 // Timing: de klok voor "wanneer komt de volgende" telt gewoon door in echte
 // tijd, ook als het spel even niet bijgewerkt wordt (bijv. het besturings-
@@ -3803,9 +3807,18 @@ const PASSANT_EERSTE_MAX_MS = 75000;    // laatst mogelijke eerste verschijning 
 const PASSANT_PAUZE_MIN_MS  = 100000;   // kortste wachttijd na een vorige
 const PASSANT_PAUZE_MAX_MS  = 140000;   // langste wachttijd na een vorige ("ongeveer twee minuten")
 const PASSANT_MAX_VLUCHT_MS = 90000;    // veiligheidsgrens: na deze tijd is de visite sowieso voorbij, ook al kijkt de speler nog toe
-const PASSANT_SNELHEID_GRADEN = 1.6;    // graden per seconde over de bol - rustig tempo, later eventueel bij te stellen
+// Vliegsnelheid: Arjen meldde dat het eerste, vaste tempo veel te langzaam
+// oogde t.o.v. Wonky zelf. In plaats van een losstaand getal te verzinnen,
+// hergebruiken we daarom de kruissnelheid waar Wonky's EIGEN besturing
+// vanzelf naar toe groeit als je een richting vol ingedrukt houdt zonder
+// turbo (zie s=0,7/zoomFactor, versnelling ×0,15 en wrijving VERTRAGING=0,88
+// per frame verderop bij de hoofdbesturing): die reeks convergeert naar
+// 1,1 × 0,7/zoomFactor graden per frame, op 60fps dus ≈ 46/zoomFactor
+// graden/seconde. Zo vliegt het passerende vliegtuigje, op elke zoom,
+// precies even hard als Wonky zelf zou doen.
+const PASSANT_SNELHEID_FACTOR = 46;     // graden/seconde bij zoomFactor=1 (zie toelichting hierboven)
 const PASSANT_SCHERM_PX = 100;          // weergavegrootte op het canvas
-let passantVliegtuig = null;            // actieve toestand {figId, lon, lat, richtingLon, richtingLat, spawnTijd, img, zichtbaarVorigeFrame, gespiegeldLaatst}, of null
+let passantVliegtuig = null;            // actieve toestand {figId, lon, lat, hoek, spawnTijd, img, gespiegeldLaatst}, of null
 let passantVolgendeSpawnTijd = null;    // performance.now()-tijdstip waarop de volgende mag verschijnen; null = geen Verkennen-ronde bezig
 let passantMotorAudio = null;           // eigen <audio>-element, los van GELUID_LUS (zie startPassantGeluid)
 
@@ -5478,8 +5491,11 @@ function stopWindGeluid(){ stopLusMetFade('wind', 250); }
 // motor/turbo van de SPELER zelf en wisselt van personage via het
 // personage-keuzescherm - dat systeem hier niet bij betrekken voorkomt elke
 // kans op samenloop. Klinkt op de helft van het normale volume (verzoek
-// Arjen: niet te druk naast het eigen motorgeluid), en alleen zolang het
-// vliegtuigje ook echt in beeld is (zie updatePassantVliegtuig).
+// Arjen: niet te druk naast het eigen motorgeluid). Start één keer bij het
+// spawnen en stopt definitief zodra het vliegtuigje uit beeld gaat (zie
+// updatePassantVliegtuig) - tussendoor alleen kort onderbroken/hervat rond
+// een tab-wissel, het geluid-uit-schakelaartje of het besturingsschermpje
+// (zie stopPassantGeluid/hervatPassantGeluid hieronder).
 function startPassantGeluid(figId){
   if(!geluidAan) return;
   const prefix = GELUID_PERSONAGE_PREFIX[figId];
@@ -5495,13 +5511,11 @@ function stopPassantGeluid(){
   passantMotorAudio.pause();
   passantMotorAudio.currentTime = 0;
 }
-// Forceert het geluid stil (tab verborgen, geluid uitgezet, besturings-
-// schermpje open) én zet de zichtbaarheids-vlag terug - zonder die reset zou
-// updatePassantVliegtuig() bij terugkeer denken dat er niets veranderd is
-// (nog steeds "zichtbaar") en dus nooit opnieuw starten.
-function dwingPassantGeluidStil(){
-  stopPassantGeluid();
-  if(passantVliegtuig) passantVliegtuig.zichtbaarVorigeFrame = false;
+// Hervat het geluid van een nog actief passerend vliegtuigje na een korte
+// onderbreking (tab kwam terug in beeld, geluid weer aangezet, besturings-
+// schermpje gesloten) - doet niets als er op dit moment geen vliegtuigje is.
+function hervatPassantGeluid(){
+  if(passantVliegtuig) startPassantGeluid(passantVliegtuig.figId);
 }
 
 // Aan/uit-schakelaar (opties-scherm) - zet meteen alle lopende lussen stil
@@ -5517,7 +5531,7 @@ function zetGeluidAan(aan){
   if(aan) speelGeluid('dierenbrul');
   if(!aan){
     for(const naam in GELUID_LUS) stopLus(naam);
-    dwingPassantGeluidStil();
+    stopPassantGeluid();
   } else if(levelNogBezig()){
     // Alleen de lussen die op dit moment eigenlijk aan zouden moeten staan
     // weer starten - niet zomaar alles, anders klinkt bijvoorbeeld het
@@ -5529,6 +5543,7 @@ function zetGeluidAan(aan){
     if(turboGeluidVorigeFrame){ turboGeluidVorigeFrame=false; updateTurboGeluid(true); }
     if(vluchtActief) startWindGeluid();
     if(schurkVliegtuig) startSchurkGeluid();
+    hervatPassantGeluid();
   }
   const schakelaar = document.getElementById('geluid-schakelaar');
   if(schakelaar) schakelaar.classList.toggle('aan', aan);
@@ -5557,9 +5572,10 @@ document.addEventListener('visibilitychange', () => {
   if(document.hidden){
     for(const naam in GELUID_LUS) stopLus(naam);
     stopVerrekijkerGeluid();
-    dwingPassantGeluidStil();
+    stopPassantGeluid();
   } else if(levelNogBezig() && !hulpActief && !kennisvraagActief && !radActief){
     startMotorGeluid();
+    hervatPassantGeluid();
   }
 });
 
@@ -9669,31 +9685,33 @@ function kiesPassantFiguur(){
 
 // spawnPassantVliegtuig(): plaatst het vliegtuigje op een willekeurig,
 // gegarandeerd zichtbaar punt (zelfde hulpfunctie als de muntjes hierboven)
-// en geeft het een willekeurige, vaste vliegrichting over de bol.
+// en geeft het een willekeurige, vaste vlieghoek over de bol. De snelheid
+// zelf wordt NIET hier vastgelegd, maar elke frame opnieuw berekend uit de
+// dan geldende zoomFactor (zie updatePassantVliegtuig) - zo blijft het tempo
+// kloppen ook als de speler tijdens de vlucht in-/uitzoomt.
 function spawnPassantVliegtuig(){
   const fig = kiesPassantFiguur();
   if(!fig) return;
   const [lon, lat] = willekeurigZichtbaarPunt();
-  const hoek = Math.random() * Math.PI * 2;
   const img = new Image();
   img.src = VLIEGFIGUUR_MAP + fig.basisBestand + '.png';
   passantVliegtuig = {
     figId: fig.id,
     lon: lon, lat: lat,
-    richtingLon: Math.cos(hoek) * PASSANT_SNELHEID_GRADEN,
-    richtingLat: Math.sin(hoek) * PASSANT_SNELHEID_GRADEN,
+    hoek: Math.random() * Math.PI * 2,
     spawnTijd: performance.now(),
     img: img,
-    zichtbaarVorigeFrame: false,
     gespiegeldLaatst: false
   };
+  startPassantGeluid(fig.id);
 }
 
 // updatePassantVliegtuig(): wordt elke frame aangeroepen vanuit updateSpel(),
-// maar doet alleen iets tijdens Verkennen. Beweegt het vliegtuigje (zelfde
-// vaste-dt-aanpak als updateMuntjes hierboven), ruimt het op na
-// PASSANT_MAX_VLUCHT_MS (en plant dan meteen de volgende), en start/stopt
-// het motorgeluid zodra het in/uit beeld gaat.
+// maar doet alleen iets tijdens Verkennen. Beweegt het vliegtuigje en ruimt
+// het METEEN op zodra het niet meer zichtbaar is (op Arjens verzoek: eenmaal
+// uit beeld is de visite definitief voorbij, niet onhoorbaar doorvliegen tot
+// het toevallig weer in zicht komt) - of na PASSANT_MAX_VLUCHT_MS, als de
+// speler het toch heel lang blijft volgen.
 function updatePassantVliegtuig(){
   if(huidigModus !== 'verkennen'){
     if(passantVliegtuig){ passantVliegtuig = null; stopPassantGeluid(); }
@@ -9706,41 +9724,41 @@ function updatePassantVliegtuig(){
     return;
   }
   const dt = 1/60;
-  passantVliegtuig.lon += passantVliegtuig.richtingLon * dt;
-  passantVliegtuig.lat += passantVliegtuig.richtingLat * dt;
+  const snelheidGraden = PASSANT_SNELHEID_FACTOR / Math.max(zoomFactor, 0.05);
+  passantVliegtuig.lon += Math.cos(passantVliegtuig.hoek) * snelheidGraden * dt;
+  passantVliegtuig.lat += Math.sin(passantVliegtuig.hoek) * snelheidGraden * dt;
   if(passantVliegtuig.lon > 180) passantVliegtuig.lon -= 360;
   if(passantVliegtuig.lon < -180) passantVliegtuig.lon += 360;
   passantVliegtuig.lat = Math.max(-85, Math.min(85, passantVliegtuig.lat));
 
-  if(nu - passantVliegtuig.spawnTijd >= PASSANT_MAX_VLUCHT_MS){
-    stopPassantGeluid();
-    passantVliegtuig = null;
-    passantVolgendeSpawnTijd = nu + PASSANT_PAUZE_MIN_MS + Math.random()*(PASSANT_PAUZE_MAX_MS - PASSANT_PAUZE_MIN_MS);
-    return;
-  }
-
-  // Geluid alleen laten klinken zolang het vliegtuigje ook echt in beeld is
-  // (ruim rond het canvas meegerekend als "niet zichtbaar", niet pas op de
-  // onzichtbare achterkant van de bol).
+  // Ruim rond het canvas meegerekend als "niet zichtbaar", niet pas op de
+  // onzichtbare achterkant van de bol.
   const scherm = lonLatNaarScherm(passantVliegtuig.lon, passantVliegtuig.lat);
   const marge = PASSANT_SCHERM_PX;
   const zichtbaar = !!scherm && scherm[0] > -marge && scherm[0] < W+marge && scherm[1] > -marge && scherm[1] < H+marge;
-  if(zichtbaar !== passantVliegtuig.zichtbaarVorigeFrame){
-    passantVliegtuig.zichtbaarVorigeFrame = zichtbaar;
-    if(zichtbaar) startPassantGeluid(passantVliegtuig.figId); else stopPassantGeluid();
+  const verlopen = (nu - passantVliegtuig.spawnTijd) >= PASSANT_MAX_VLUCHT_MS;
+
+  if(!zichtbaar || verlopen){
+    stopPassantGeluid();
+    passantVliegtuig = null;
+    passantVolgendeSpawnTijd = nu + PASSANT_PAUZE_MIN_MS + Math.random()*(PASSANT_PAUZE_MAX_MS - PASSANT_PAUZE_MIN_MS);
   }
 }
 
 // tekenPassantVliegtuig(): tekent het vliegtuigje op het canvas, net als de
 // muntjes - alleen als het op de zichtbare kant van de bol staat. Spiegelt
 // het plaatje op basis van de ECHTE schermrichting (niet de lengtegraad-
-// richting: de camera kan gedraaid staan t.o.v. de vliegrichting).
+// richting: de camera kan gedraaid staan t.o.v. de vliegrichting). Zelfde
+// spiegel-conventie als Wonky zelf verderop: het basisplaatje kijkt van
+// nature naar links (scaleX=1 = onveranderd = naar links, zie scaleX=
+// richting<0?1:-1 bij de hoofdbesturing), dus wordt hier alleen gespiegeld
+// als het vliegtuigje naar RECHTS beweegt.
 function tekenPassantVliegtuig(){
   if(!passantVliegtuig || !passantVliegtuig.img || !passantVliegtuig.img.complete) return;
   const scherm = lonLatNaarScherm(passantVliegtuig.lon, passantVliegtuig.lat);
   if(!scherm) return;
-  const vooruit = lonLatNaarScherm(passantVliegtuig.lon + passantVliegtuig.richtingLon*0.1, passantVliegtuig.lat + passantVliegtuig.richtingLat*0.1);
-  if(vooruit) passantVliegtuig.gespiegeldLaatst = vooruit[0] < scherm[0];
+  const vooruit = lonLatNaarScherm(passantVliegtuig.lon + Math.cos(passantVliegtuig.hoek)*0.1, passantVliegtuig.lat + Math.sin(passantVliegtuig.hoek)*0.1);
+  if(vooruit) passantVliegtuig.gespiegeldLaatst = vooruit[0] > scherm[0];
   const half = PASSANT_SCHERM_PX / 2;
   ctx.save();
   ctx.shadowColor = 'rgba(0,0,0,0.5)';
@@ -11091,7 +11109,7 @@ function openHulp(){
   // die via hulpOpenTijd hieronder ook niet meetelt.
   stopMotorGeluid();
   stopTurboGeluid();
-  dwingPassantGeluidStil();
+  stopPassantGeluid();
 }
 function sluitHulp(){
   if(hulpActief){
@@ -11107,6 +11125,7 @@ function sluitHulp(){
   hulpActief = false;
   document.getElementById('help-popup').style.display='none';
   if(levelNogBezig()) startMotorGeluid();
+  hervatPassantGeluid();
 }
 // ── Feedback & punten ─────────────────────────────────
 function zetZoomIndicator(niveau){
