@@ -462,12 +462,19 @@ function speelBladGeluid(){
 // ── Kikker-knop: opent de uitleg "Zo werkt het stempelpaspoort!" over het
 // hele boek heen, met een geluidje (het vierde stukje van kikker.mp3,
 // vooraf geknipt tot geluid/kikker4.mp3). Sluiten kan met het kruisje in de
-// afbeelding (onzichtbaar klikvlak erbovenop) of door naast de afbeelding
-// op de achtergrond te klikken - zie de listener verderop. ──
+// afbeelding (onzichtbaar klikvlak erbovenop), door naast de afbeelding
+// op de achtergrond te klikken, of met de Esc-toets - zie de listeners
+// verderop. Bij het sluiten klinkt een tweede geluidje (het vierde stukje
+// van "Frog Tired", vooraf geknipt tot geluid/kikker-moe4.mp3). ──
 function speelKikkerGeluid(){
   const geluidAan = localStorage.getItem(GELUID_AAN_SLEUTEL) !== 'uit';
   if(!geluidAan) return;
   try{ new Audio('geluid/kikker4.mp3').play().catch(()=>{}); }catch(e){}
+}
+function speelKikkerMoeGeluid(){
+  const geluidAan = localStorage.getItem(GELUID_AAN_SLEUTEL) !== 'uit';
+  if(!geluidAan) return;
+  try{ new Audio('geluid/kikker-moe4.mp3').play().catch(()=>{}); }catch(e){}
 }
 const PASPOORT_UITLEG_EL = document.getElementById('paspoort-uitleg-overlay');
 function toonPaspoortUitleg(){
@@ -475,10 +482,17 @@ function toonPaspoortUitleg(){
   PASPOORT_UITLEG_EL.classList.add('actief');
 }
 function sluitPaspoortUitleg(){
+  // Alleen geluid (en sluiten) als de uitleg ook echt open stond, zodat
+  // een losse Esc-druk elders in het paspoort niets afspeelt.
+  if(!PASPOORT_UITLEG_EL.classList.contains('actief')) return;
+  speelKikkerMoeGeluid();
   PASPOORT_UITLEG_EL.classList.remove('actief');
 }
 PASPOORT_UITLEG_EL.addEventListener('click', (e)=>{
   if(e.target === PASPOORT_UITLEG_EL) sluitPaspoortUitleg();
+});
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Escape') sluitPaspoortUitleg();
 });
 
 // Simpele, stabiele tekst-hash: zelfde land geeft altijd hetzelfde getal,
