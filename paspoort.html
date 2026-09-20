@@ -911,11 +911,33 @@ const UITVERGROOT_VOLGENDE_EL = document.getElementById('uitvergroot-volgende');
 let huidigeLijst = [];
 let huidigeIndex = -1;
 
+// ── Geluid bij het openen en sluiten van de uitvergroting: een papiergeluid
+// (geluid/stempel-open.mp3) als een stempel groot opent, en een ander
+// papiergeluid (geluid/stempel-dicht.mp3) als het scherm weer sluit - via
+// het plaatje, de donkere achtergrond of Esc. Bladeren met de pijltjes
+// binnen de uitvergroting houdt het gewone bladergeluid en krijgt dit
+// dus niet. De geluidjes worden vooraf ingeladen, zodat er bij de eerste
+// klik geen kleine vertraging is. Zelfde geluid-aan/uit-sleutel als de rest. ──
+const STEMPEL_OPEN_AUDIO = new Audio('geluid/stempel-open.mp3');
+const STEMPEL_DICHT_AUDIO = new Audio('geluid/stempel-dicht.mp3');
+STEMPEL_OPEN_AUDIO.preload = 'auto';
+STEMPEL_DICHT_AUDIO.preload = 'auto';
+function speelStempelGeluid(audio, ander){
+  const geluidAan = localStorage.getItem(GELUID_AAN_SLEUTEL) !== 'uit';
+  if(!geluidAan) return;
+  try{
+    ander.pause();          // bij snel open/dicht klikken niet door elkaar
+    audio.currentTime = 0;
+    audio.play().catch(()=>{});
+  }catch(e){}
+}
+
 function toonUitvergroting(land, lijst, index){
   huidigeLijst = lijst;
   huidigeIndex = index;
   vulUitvergroting(land);
   ACHTERGROND_EL.classList.add('actief');
+  speelStempelGeluid(STEMPEL_OPEN_AUDIO, STEMPEL_DICHT_AUDIO);
 }
 // Zoekt vanaf 'vanaf' het eerstvolgende (richting +1) of vorige (richting -1)
 // land in huidigeLijst dat al verdiend is - niet-verdiende landen worden
@@ -951,7 +973,10 @@ function naarVerzameldeStempel(richting){
   }
 }
 function sluitUitvergroting(){
+  // Alleen geluid (en sluiten) als de uitvergroting ook echt open stond.
+  if(!ACHTERGROND_EL.classList.contains('actief')) return;
   ACHTERGROND_EL.classList.remove('actief');
+  speelStempelGeluid(STEMPEL_DICHT_AUDIO, STEMPEL_OPEN_AUDIO);
 }
 ACHTERGROND_EL.addEventListener('click', (e)=>{
   if(e.target === ACHTERGROND_EL) sluitUitvergroting();
