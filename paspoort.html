@@ -37,6 +37,29 @@
   #kikker-knop img { width:100%; display:block; }
   #kikker-knop:hover { opacity:1; transform:scale(1.03); }
 
+  /* ── Olifant linksonder in de hoek: klik = toeterend olifantgeluid, en in
+     het lege vakje staat het totaal aantal verdiende stempels. Zelfde
+     breedte als de terug-knop linksboven. Het getal schaalt mee met die
+     breedte (--olifant-breedte), zodat het altijd netjes in het vakje past.
+     Vakje in de afbeelding (in % van de afbeelding): links 30.5, boven
+     55.3, breedte 39.4, hoogte 19.0. ── */
+  #olifant-knop {
+    --olifant-breedte:clamp(150px, 15vw, 260px);
+    position:fixed; left:14px; bottom:14px; z-index:50;
+    width:var(--olifant-breedte); border:none; background:none; padding:0;
+    cursor:pointer; opacity:0.92; transition:opacity 0.15s, transform 0.15s;
+    filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5));
+  }
+  #olifant-knop img { width:100%; display:block; }
+  #olifant-knop:hover { opacity:1; transform:scale(1.03); }
+  #olifant-totaal {
+    position:absolute; left:30.5%; top:55.3%; width:39.4%; height:19%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Baloo 2',sans-serif; font-weight:800; line-height:1;
+    color:#3b2a18; font-size:calc(var(--olifant-breedte) * 0.125);
+    pointer-events:none;
+  }
+
   /* ── Verdiende werelddeel-emblemen: onder de terug-knop, zie
      positioneerEmblemenStapel(). Klik: tijdelijk 4x uitvergroot. ── */
   #embleem-stapel {
@@ -321,6 +344,13 @@
   <img src="images/kikker-knop.png" alt="Zo werkt het stempelpaspoort"/>
 </button>
 
+<!-- Olifant linksonder: toeterend geluid bij een klik, en in het vakje het
+     totaal aantal verdiende stempels (zie updateOlifantTotaal()). -->
+<button id="olifant-knop" onclick="speelOlifantGeluid()" aria-label="Je hebt al 0 stempels behaald">
+  <img src="images/olifant-knop.png" alt=""/>
+  <span id="olifant-totaal">0</span>
+</button>
+
 <!-- Verdiende werelddeel-emblemen: onder de terug-knop - zie
      bouwEmblemenStapel()/positioneerEmblemenStapel(). -->
 <div id="embleem-stapel"></div>
@@ -491,6 +521,32 @@ function sluitPaspoortUitleg(){
 PASPOORT_UITLEG_EL.addEventListener('click', (e)=>{
   if(e.target === PASPOORT_UITLEG_EL) sluitPaspoortUitleg();
 });
+
+// ── Olifant linksonder: het eerste stukje van het olifantbestand (de
+// toeter, vooraf geknipt tot geluid/olifant1.mp3). Klikt iemand snel
+// meerdere keren, dan begint het geluid opnieuw in plaats van dat er
+// meerdere olifanten door elkaar gaan toeteren. ──
+let olifantAudio = null;
+function speelOlifantGeluid(){
+  const geluidAan = localStorage.getItem(GELUID_AAN_SLEUTEL) !== 'uit';
+  if(!geluidAan) return;
+  try{
+    if(!olifantAudio) olifantAudio = new Audio('geluid/olifant1.mp3');
+    olifantAudio.currentTime = 0;
+    olifantAudio.play().catch(()=>{});
+  }catch(e){}
+}
+// Totaal aantal verdiende stempels in het vakje van de olifant: telt precies
+// de stempels die in het boek als verdiend te zien zijn (isVerzameld).
+function updateOlifantTotaal(){
+  const verdiend = new Set(geefVerdiendeStempels());
+  const totaal = PASPOORT_DATA.filter(p => verdiend.has(p.bestand)).length;
+  const totaalEl = document.getElementById('olifant-totaal');
+  if(totaalEl) totaalEl.textContent = totaal;
+  const knop = document.getElementById('olifant-knop');
+  if(knop) knop.setAttribute('aria-label', 'Je hebt al ' + totaal + (totaal === 1 ? ' stempel' : ' stempels') + ' behaald');
+}
+window.addEventListener('pageshow', updateOlifantTotaal);
 document.addEventListener('keydown', (e)=>{
   if(e.key === 'Escape') sluitPaspoortUitleg();
 });
@@ -921,6 +977,7 @@ bouwStempels();
 toonLeegPaspoortMeldingAlsNodig();
 bouwEmblemenStapel();
 bouwNieuwLabels();
+updateOlifantTotaal();
 </script>
 
 </body>
