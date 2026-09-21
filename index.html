@@ -970,16 +970,21 @@
        flex-start + overflow-y:auto begint het gewoon bovenaan (net onder de
        rand) en kun je bij een laag venster altijd naar beneden scrollen om
        de rest te zien. */
+    /* v1.15: het scherm moet zo veel mogelijk in één keer in beeld passen (dus
+       zonder losse schuifbalk voor de hele pagina): iets minder lucht boven en
+       onder, en de trofee wordt kleiner naarmate het venster lager is (zie
+       --trofee-max hieronder). overflow-y:auto blijft staan als vangnet voor
+       heel lage vensters (bijv. een telefoon op z'n kant). */
     #scorebord-scherm {
       position:fixed; inset:0; z-index:110; display:none;
-      flex-direction:column; align-items:center; justify-content:flex-start; gap:14px;
-      overflow-y:auto; padding:4vh 0 24px;
+      flex-direction:column; align-items:center; justify-content:flex-start; gap:10px;
+      overflow-y:auto; padding:3vh 0 2vh;
       background:rgba(2,13,26,0.92);
     }
     #hoofdsteden-resultaat-scherm {
       position:fixed; inset:0; z-index:110; display:none;
-      flex-direction:column; align-items:center; justify-content:flex-start; gap:14px;
-      overflow-y:auto; padding:4vh 0 24px;
+      flex-direction:column; align-items:center; justify-content:flex-start; gap:10px;
+      overflow-y:auto; padding:3vh 0 2vh;
       background:rgba(2,13,26,0.92);
     }
     /* ── Trofee-plaatje bij de evaluatieschermen (Europa/Wereld, Hoofdsteden,
@@ -991,21 +996,35 @@
        kaart, net als op een breed scherm). Standaard verborgen: alleen tonen
        na een net gespeeld potje, niet als iemand de scores bekijkt vanuit
        het menu zonder te spelen. ── */
-    .trofee-blok { position:relative; display:none; }
+    /* v1.15: de maximale trofee-afmeting hangt nu van de HOOGTE van het
+       venster af, in een paar stappen (hoe lager het venster, hoe kleiner de
+       trofee) - zodat de kaart eronder (met de lijst en de stempel-tekst)
+       er altijd helemaal onder in beeld past. Let op: dit is de hoogte van
+       het browservenster, niet van de monitor zelf (de browserbalken gaan
+       er nog af). De stappen zijn zo gekozen dat de scorebordlijst altijd minstens zo'n 9 rijen toont; onder 500px hoogte blijft het vangnet-scrollen over. */
+    :root { --trofee-max:440px; }
+    @media (max-height:1000px) { :root { --trofee-max:380px; } }
+    @media (max-height:900px)  { :root { --trofee-max:300px; } }
+    @media (max-height:800px)  { :root { --trofee-max:270px; } }
+    @media (max-height:700px)  { :root { --trofee-max:180px; } }
+    @media (max-height:600px)  { :root { --trofee-max:120px; } }
+    @media (max-height:500px)  { :root { --trofee-max:100px; } }
+    /* --trofee-size: de werkelijke afmeting (begrensd door de hoogte-stappen
+       hierboven én door de breedte van het scherm). De tijd/km-teksten op de
+       sokkel schalen er nu mee mee (4% van de trofee = de oude 17,6px bij
+       de grootste trofee), anders zouden ze bij een kleine trofee buiten de
+       bordjes vallen. flex:none: de trofee mag nooit platgedrukt worden. */
+    .trofee-blok { position:relative; display:none; flex:none; --trofee-size:min(var(--trofee-max, 440px), 38vw); }
     .trofee-blok.zichtbaar { display:block; }
     .trofee-img {
-      /* Groter dan eerst: maakt gebruik van de lege ruimte die anders boven
-         de score-kaart overblijft. Begrensd door zowel de breedte (vw) als
-         de hoogte (vh) van het scherm, zodat de trofee op een laag/breed
-         scherm niet groter wordt dan er verticaal ruimte voor is. */
-      display:block; width:min(440px, 38vw, 50vh); aspect-ratio:1/1;
+      display:block; width:var(--trofee-size); aspect-ratio:1/1;
       filter:drop-shadow(0 10px 26px rgba(0,0,0,0.5));
     }
     .trofee-tekst {
       position:absolute; transform:translate(-50%,-50%);
       font-family:'Baloo 2',sans-serif; font-weight:800;
       color:#3b2411; text-align:center; white-space:nowrap;
-      font-size:clamp(0.75rem, 2.1vw, 1.1rem);
+      font-size:max(9px, calc(var(--trofee-size) * 0.04));
     }
     #hoofdsteden-resultaat-kaart {
       background:linear-gradient(135deg, #0a2a4a 0%, #051e30 100%);
@@ -1103,19 +1122,24 @@
       background:linear-gradient(135deg, #0a2a4a 0%, #051e30 100%);
       border:1px solid rgba(255,215,0,0.25);
       border-radius:18px; padding:28px 30px;
-      width:min(880px, 94vw); max-height:82vh;
+      width:min(880px, 94vw);
+      /* v1.15: geen vaste 82vh meer, maar precies de ruimte die overblijft
+         onder de trofee (flex:0 1 auto + min-height:0 = mag krimpen). Alleen
+         de lijsten scrollen dan nog; titel en stempel-tekst blijven in beeld.
+         De min-height is het vangnet voor extreem lage vensters. */
+      flex:0 1 auto; min-height:330px;
       display:flex; flex-direction:column; gap:14px;
       box-shadow:0 20px 60px rgba(0,0,0,0.6);
     }
     #scorebord-titel { color:#ffd700; font-size:1.3rem; font-weight:900; text-align:center; }
     #scorebord-nieuwe-run { color:#9fd8ff; font-size:0.85rem; text-align:center; font-weight:600; min-height:1.1em; }
     #scorebord-kolommen { display:flex; gap:20px; overflow:hidden; min-height:0; }
-    .scorebord-kolom { flex:1; min-width:0; display:flex; flex-direction:column; gap:8px; }
+    .scorebord-kolom { flex:1; min-width:0; min-height:0; display:flex; flex-direction:column; gap:8px; }
     .scorebord-kolom-titel {
       color:#ffd700; font-size:0.95rem; font-weight:800; text-align:center;
       letter-spacing:0.02em; border-bottom:1px solid rgba(255,215,0,0.25); padding-bottom:6px;
     }
-    .scorebord-kolom-lijst { display:flex; flex-direction:column; gap:6px; overflow-y:auto; }
+    .scorebord-kolom-lijst { display:flex; flex-direction:column; gap:6px; overflow-y:auto; min-height:0; }
     .scorebord-rij {
       display:flex; align-items:center; gap:10px;
       background:rgba(255,255,255,0.06); border-radius:10px; padding:8px 12px;
@@ -1130,6 +1154,18 @@
     .scorebord-leeg-klein { color:rgba(255,255,255,0.45); font-size:0.78rem; text-align:center; padding:10px 0; }
     @media (max-width:640px) {
       #scorebord-kolommen { flex-direction:column; overflow-y:auto; }
+    }
+    /* v1.15: bij lage vensters (tot 800px hoog) de drie eindkaarten iets
+       compacter maken - minder binnenmarge en kleinere lettertjes - zodat er
+       meer ruimte voor de lijst/tabel overblijft. */
+    @media (max-height:800px) {
+      #scorebord-kaart { padding:14px 22px; gap:8px; }
+      #scorebord-titel { font-size:1.1rem; }
+      #scorebord-scherm .stempel-melding, #hoofdsteden-resultaat-scherm .stempel-melding,
+      #plekken-eind-overlay .stempel-melding { font-size:0.9rem; margin-top:4px; }
+      #hoofdsteden-resultaat-kaart { padding:20px 30px; gap:10px; }
+      #hoofdsteden-resultaat-titel { font-size:1.2rem; }
+      #hoofdsteden-resultaat-score { font-size:1.5rem; }
     }
     /* ── RICHTINGAANWIJZERS ── */
     #richting-rij {
@@ -1584,12 +1620,18 @@
     /* ── Eindoverzicht na de 10de plek ── */
     #plekken-eind-overlay {
       position:fixed; inset:0; z-index:71; display:none;
-      flex-direction:column; align-items:center; justify-content:flex-start; gap:14px;
-      overflow-y:auto; padding:4vh 0 24px;
+      flex-direction:column; align-items:center; justify-content:flex-start; gap:10px;
+      overflow-y:auto; padding:3vh 0 2vh;
       background:rgba(5,10,16,0.82);
     }
     #plekken-eind-kaart {
-      width:min(620px,92vw); max-height:86vh; overflow-y:auto;
+      width:min(620px,92vw);
+      /* v1.15: zelfde aanpak als de scorebordkaart: de kaart krijgt de ruimte
+         die onder de trofee overblijft, en alleen de tabel scrolt (zie
+         #plekken-eind-tabel) - de titel, de eindscore en de stempel-tekst
+         blijven altijd zichtbaar. */
+      flex:0 1 auto; min-height:300px; overflow:hidden;
+      display:flex; flex-direction:column;
       background:rgba(20,28,20,0.96);
       border:3px solid rgba(198,143,70,0.9); border-radius:16px;
       box-shadow:0 14px 50px rgba(0,0,0,0.7);
@@ -1606,13 +1648,25 @@
     }
     .plekken-eind-koprij {
       font-weight:800; color:#ffe9a8; border-bottom:2px solid rgba(198,143,70,0.7);
+      position:sticky; top:0; background:rgba(20,28,20,0.96);
     }
+    #plekken-eind-tabel { flex:1 1 auto; min-height:0; overflow-y:auto; }
+    #plekken-eind-titel, #plekken-eind-totaal, #plekken-eind-stempel { flex:none; }
     .pe-naam { text-align:left; }
     .pe-deel, .pe-totaal { text-align:right; font-weight:700; }
     .pe-totaal { color:#ffd700; }
     #plekken-eind-totaal {
       margin-top:16px; text-align:center; font-size:1.35rem; font-weight:800;
       color:#ffd700; text-shadow:0 2px 6px rgba(0,0,0,0.6);
+    }
+    /* v1.15: compacter bij lage vensters - staat bewust HIER (na de gewone
+       regels van het eindoverzicht) en niet bij de andere lage-venster-regels
+       bij het scorebord: bij gelijke specificiteit wint de laatste regel. */
+    @media (max-height:800px) {
+      #plekken-eind-kaart { padding:14px 22px; }
+      #plekken-eind-titel { font-size:1.2rem; margin-bottom:8px; }
+      .plekken-eind-rij { padding:3px 4px; font-size:0.82rem; }
+      #plekken-eind-totaal { margin-top:8px; font-size:1.15rem; }
     }
   </style>
 </head>
@@ -1626,7 +1680,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-    <div id="versie-label">V1.14</div>
+    <div id="versie-label">V1.15</div>
   <div id="start-links">
     <img id="start-timbo" src="Timbo.jpg" alt="Timbo"/>
     <div id="prestatie-tip">Trage computer? Kies voor minder detail bij opties</div>
