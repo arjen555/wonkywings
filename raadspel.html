@@ -1333,10 +1333,10 @@ function zetLsGrindState(obj){
 
 // Groot geel bericht (#ls-grind-melding) kort over het speelveld heen, zie de
 // toelichting bij die CSS-regel hierboven. Zelfde beeldtaal als de bestaande
-// #feedback-meldingen in index.html: 4 seconden in beeld, dan vanzelf weer
+// #feedback-meldingen in index.html: 5 seconden in beeld, dan vanzelf weer
 // weg. lsGrindMeldingTimer zorgt dat een eerdere, nog lopende meldtijd niet
 // een nieuwe melding te vroeg wegveegt.
-const LS_GRIND_MELDING_DUUR_MS = 4000;
+const LS_GRIND_MELDING_DUUR_MS = 5000;
 let lsGrindMeldingTimer = null;
 function toonLsGrindMelding(tekst){
   const el = document.getElementById('ls-grind-melding');
