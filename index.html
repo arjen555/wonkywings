@@ -1362,6 +1362,7 @@
     .scorebord-km-cijfer { font-size:var(--km-size); }
     .scorebord-tijd-cijfer { font-size:var(--tijd-size); }
     #zoom-indicator {
+      position:relative;
       display:flex; align-items:center; gap:8px;
       pointer-events:none;
     }
@@ -1407,6 +1408,25 @@
       color:#ffe9a8; font-size:0.95rem; font-weight:900;
       letter-spacing:0.02em; text-shadow:0 1px 3px rgba(0,0,0,0.65);
     }
+    /* ── Melding "geen landenafbeeldingen in dit spelonderdeel": verschijnt bij het
+       starten van een Hoofdsteden- of Iconische-plekken-potje, recht onder de
+       verrekijker (dus onder #zoom-indicator, dat daarvoor position:relative heeft
+       gekregen), horizontaal gecentreerd. Zelfde gloeiende gele stijl als
+       .glow-tip-groot ("Hoe werkt het?"), maar duidelijk kleiner en met een eigen
+       fade i.p.v. de KNOP_LABELS-fade (die is gekoppeld aan de intro-fase van een
+       gewoon landen-level, niet aan hoofdsteden/plekken). Verschijnt eenmalig, 2
+       seconden, via toonIllustratieMelding() in startSpel(). ── */
+    #illustratie-melding {
+      position:absolute; top:100%; left:50%;
+      margin-top:8px; transform:translateX(-50%);
+      z-index:22; pointer-events:none; user-select:none;
+      color:#ffd700; font-family:'Baloo 2',sans-serif; font-weight:800;
+      font-size:clamp(0.8rem, 2vmin, 1.15rem); text-align:center;
+      max-width:min(70vw, 380px); white-space:normal;
+      text-shadow:0 0 8px rgba(255,215,0,0.9), 0 0 20px rgba(255,190,0,0.6), 0 2px 8px rgba(0,0,0,0.65);
+      opacity:0; transition:opacity 0.4s ease;
+    }
+    #illustratie-melding.tonen { opacity:1; }
     /* ── Zoekbalk (verkenningsmodus), bovenaan gecentreerd, zelfde steampunk-stijl als de zoom-indicator ── */
     #zoek-balk {
       position:fixed; top:14px; left:50%; transform:translateX(-50%); z-index:25;
@@ -1680,7 +1700,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-    <div id="versie-label">V1.15</div>
+    <div id="versie-label">V1.18</div>
   <div id="start-links">
     <img id="start-timbo" src="Timbo.jpg" alt="Timbo"/>
     <div id="prestatie-tip">Trage computer? Kies voor minder detail bij opties</div>
@@ -2098,6 +2118,7 @@
         <span id="zoom-cijfer-eenheden" class="zoom-lens-cijfer zoom-lens-cijfer-rechts">0</span>
       </div>
       <span id="zoom-procent-teken">%</span>
+      <div id="illustratie-melding">In dit spelonderdeel zie je geen afbeeldingen van de landen</div>
     </div>
     <div id="zoek-balk">
       <input type="text" id="zoek-input" placeholder="Zoek land of hoofdstad..." autocomplete="off" />
@@ -6083,6 +6104,12 @@ function startSpel(levelId, modus) {
   // hoort alleen op de startpagina, niet tijdens het spelen (zie naarStart()
   // voor het weer terugzetten).
   document.getElementById('top-tip-knop').style.display='none';
+  // Hoofdsteden/Plekken: meteen bij het starten van het potje laten weten dat
+  // er in dit spelonderdeel geen landenafbeeldingen te zien zijn (zie
+  // toonIllustratieMelding() en #illustratie-melding hierboven/in de CSS).
+  if(isHoofdsteden || isPlekken){
+    toonIllustratieMelding();
+  }
   if(isPlekken){
     // Pas nú het scherm echt zichtbaar is (en de badge dus zijn echte
     // afmetingen heeft) de scorebord-positie opnieuw berekenen - eerder
@@ -11200,6 +11227,19 @@ function zetZoomIndicator(niveau){
   el.classList.remove('zoom-puls');
   void el.offsetWidth; // forceer reflow zodat de animatie elke keer opnieuw start
   el.classList.add('zoom-puls');
+}
+// Melding "geen landenafbeeldingen in dit spelonderdeel": zie CSS-comment bij
+// #illustratie-melding. Wordt aangeroepen vanuit startSpel() bij het starten
+// van een Hoofdsteden- of Iconische-plekken-potje, en blijft 2 seconden in
+// beeld. illustratieMeldingTimer voorkomt dat een eerdere (nog lopende)
+// wegvaag-timer de melding weghaalt vlak nadat een nieuw potje 'm net weer
+// heeft laten verschijnen.
+let illustratieMeldingTimer = null;
+function toonIllustratieMelding(){
+  const el = document.getElementById('illustratie-melding');
+  if(illustratieMeldingTimer) clearTimeout(illustratieMeldingTimer);
+  el.classList.add('tonen');
+  illustratieMeldingTimer = setTimeout(()=>{ el.classList.remove('tonen'); illustratieMeldingTimer=null; }, 2000);
 }
 function toonFeedback(t,k){
   const el=document.getElementById('feedback');

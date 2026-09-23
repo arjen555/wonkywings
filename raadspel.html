@@ -451,6 +451,31 @@
   }
   #ls-eind-iconen img:hover { transform:scale(1.06); }
 
+  /* ── Grind-melding: verschijnt als groot geel bericht over het hele
+     speelveld heen, op het moment dat een speler de daglimiet van Landje
+     Schuif heeft geraakt (zie LS_GRIND_* hieronder in het script) en toch
+     weer een foutloos potje aflevert. Zelfde beeldtaal als de bestaande
+     #feedback-meldingen in index.html: groot, goudgeel, vetgedrukt, met een
+     gloed + slagschaduw voor leesbaarheid boven op het speelveld, kort in
+     beeld en dan weer weg. Positie is absolute t.o.v. #ls-speelveld (dat al
+     position:relative heeft), zodat het altijd gecentreerd zit op het
+     speelveld zelf, ongeacht schermbreedte. white-space:pre-line laat de \n
+     in de tekst als een echte regelafbreking zien. ── */
+  #ls-grind-melding {
+    position:absolute; left:50%; top:50%;
+    transform:translate(-50%,-50%);
+    z-index:90; pointer-events:none;
+    max-width:min(85%, 640px);
+    font-family:'Baloo 2',sans-serif; font-weight:900;
+    color:#ffd700; font-size:clamp(1.1rem, 3.2vw, 2.1rem);
+    text-align:center; white-space:pre-line; line-height:1.35;
+    text-shadow:
+      0 0 10px rgba(255,215,0,0.9), 0 0 26px rgba(255,180,0,0.55),
+      0 4px 18px rgba(0,0,0,0.85);
+    opacity:0; transition:opacity 0.4s ease;
+  }
+  #ls-grind-melding.zichtbaar { opacity:1; }
+
   .ls-tijd-vlieg {
     position:fixed; z-index:900; pointer-events:none;
     font-family:'Baloo 2',sans-serif; font-weight:800;
@@ -566,6 +591,7 @@
       <img src="images/bordje.png" alt=""/>
       <div id="ls-bordje-tekst"></div>
     </div>
+    <div id="ls-grind-melding"></div>
   </div>
 </div>
 
@@ -1284,6 +1310,51 @@ const LS_STEMPEL_ROTATIE_MARGE = 1.25;
 const LS_SNAP_DREMPEL = LS_STEMPEL_GROOTTE / 2;
 const LS_RING_GROOTTE = 14;
 
+// ── Landje Schuif: "niet blijven grinden"-rem (op verzoek van Arjen). Anders
+// dan bij Hoofdsteden (streak van foutloze potjes) telt hier simpelweg hoe
+// vaak er op één dag stempels zijn binnengehaald, of daar tussendoor een
+// stempelloos potje zat maakt niets uit. Bij het 4e stempel-potje op een dag
+// stopt de aanvoer voor 48 uur; daarna begint de teller weer vers. Zelfde
+// opslag-aanpak (één sleutel per speler, lokaal op dit apparaat) als de
+// stempels en de Hoofdsteden-streak hierboven/in index.html.
+const LS_GRIND_MAX_PER_DAG = 4;
+const LS_GRIND_DAG_MS = 24*60*60*1000;
+const LS_GRIND_COOLDOWN_MS = 48*60*60*1000;
+function lsGrindSleutel(){
+  const naam = localStorage.getItem(NAAM_SLEUTEL) || 'Speler';
+  return 'wonkywings_landjeschuif_grind::' + naam;
+}
+function geefLsGrindState(){
+  try{ return JSON.parse(localStorage.getItem(lsGrindSleutel())||'{}'); }catch(e){ return {}; }
+}
+function zetLsGrindState(obj){
+  try{ localStorage.setItem(lsGrindSleutel(), JSON.stringify(obj)); }catch(e){}
+}
+
+// Groot geel bericht (#ls-grind-melding) kort over het speelveld heen, zie de
+// toelichting bij die CSS-regel hierboven. Zelfde beeldtaal als de bestaande
+// #feedback-meldingen in index.html: 4 seconden in beeld, dan vanzelf weer
+// weg. lsGrindMeldingTimer zorgt dat een eerdere, nog lopende meldtijd niet
+// een nieuwe melding te vroeg wegveegt.
+const LS_GRIND_MELDING_DUUR_MS = 4000;
+let lsGrindMeldingTimer = null;
+function toonLsGrindMelding(tekst){
+  const el = document.getElementById('ls-grind-melding');
+  if(!el) return;
+  if(lsGrindMeldingTimer){ clearTimeout(lsGrindMeldingTimer); lsGrindMeldingTimer = null; }
+  el.textContent = tekst;
+  el.classList.add('zichtbaar');
+  lsGrindMeldingTimer = setTimeout(()=>{
+    el.classList.remove('zichtbaar');
+    lsGrindMeldingTimer = null;
+  }, LS_GRIND_MELDING_DUUR_MS);
+}
+function verbergLsGrindMelding(){
+  if(lsGrindMeldingTimer){ clearTimeout(lsGrindMeldingTimer); lsGrindMeldingTimer = null; }
+  const el = document.getElementById('ls-grind-melding');
+  if(el){ el.textContent = ''; el.classList.remove('zichtbaar'); }
+}
+
 function lsMeetVerbodenYMin(veldRect){
   const groep = document.getElementById('ls-schelp-tijd-groep');
   const groepRect = groep.getBoundingClientRect();
@@ -1421,6 +1492,7 @@ function startLandjeSchuif(){
 
   document.getElementById('ls-eind-iconen').classList.remove('actief');
   document.getElementById('ls-opnieuw-knop').classList.remove('actief');
+  verbergLsGrindMelding();
 
   bouwLsCirkels();
   bouwLsStempels();
@@ -1762,16 +1834,45 @@ function lsCheckAntwoorden(){
     document.getElementById('ls-eind-iconen').classList.add('actief');
     document.getElementById('ls-opnieuw-knop').classList.add('actief');
 
-    const aantalStempels =
-      lsTijdVerstreken < 60000  ? 3 :
-      lsTijdVerstreken < 90000  ? 2 :
-      lsTijdVerstreken < 180000 ? 1 : 0;
-    lsGekozenBonusLanden = kiesBonusLanden(aantalStempels);
+    // ── Tijdsdrempels (op verzoek van Arjen: was oorspronkelijk 60/90/180
+    // sec, toen even 20/35/70, nu iets soepeler op 25/50/100 sec — ook
+    // langzamere kinderen moeten een kans op stempels houden, en de
+    // "niet blijven grinden"-rem hieronder is nu toch de echte begrenzer.
+    // Zit de speler nog in de cooldown, dan levert dit potje sowieso 0
+    // stempels op, wat het tijdresultaat ook was.
+    const tijdAantal =
+      lsTijdVerstreken < 25000  ? 3 :
+      lsTijdVerstreken < 50000  ? 2 :
+      lsTijdVerstreken < 100000 ? 1 : 0;
+
+    const lsNu = Date.now();
+    let lsGrind = geefLsGrindState();
+    if(lsGrind.geblokkeerdTot && lsNu >= lsGrind.geblokkeerdTot){
+      lsGrind = {}; // cooldown voorbij: helemaal vers beginnen
+    } else if(!lsGrind.geblokkeerdTot && lsGrind.eersteVandaag && (lsNu - lsGrind.eersteVandaag) >= LS_GRIND_DAG_MS){
+      lsGrind = {}; // meer dan 24 uur geleden dat de teller begon: nieuwe dag
+    }
+    const lsNogInCooldown = !!(lsGrind.geblokkeerdTot && lsNu < lsGrind.geblokkeerdTot);
+    const aantalStempels = lsNogInCooldown ? 0 : tijdAantal;
+    if(!lsNogInCooldown && aantalStempels > 0){
+      if(!lsGrind.eersteVandaag) lsGrind.eersteVandaag = lsNu;
+      lsGrind.aantalVandaag = (lsGrind.aantalVandaag||0) + 1;
+      if(lsGrind.aantalVandaag >= LS_GRIND_MAX_PER_DAG){
+        lsGrind.geblokkeerdTot = lsNu + LS_GRIND_COOLDOWN_MS;
+      }
+    }
+    zetLsGrindState(lsGrind);
+
+    lsGekozenBonusLanden = aantalStempels > 0 ? kiesBonusLanden(aantalStempels) : [];
     // Nu pas opslaan (ná kiesBonusLanden hierboven): zo telt een eventuele
     // verrassingsstempel van dít potje meteen mee in het aantal dat we
     // opslaan voor het scorebord, in plaats van er net vóór te lopen.
     // Zelfde patroon als bij Raad je plaatje en de andere spelonderdelen.
     lsOpslaanScore(huidigeSpelerNaam(), lsTijdVerstreken, geefVerdiendeStempels().length);
+
+    if(lsNogInCooldown){
+      toonLsGrindMelding('Als je stempels wilt verdienen... over 48 uur kan dat weer hier.\nMaar er zijn meer spelletjes om te verdienen!');
+    }
 
     document.getElementById('ls-bordje-tekst').innerHTML =
       huidigeSpelerNaam() + '<br/><span id="ls-bordje-tijd">' + formatTijdMs(lsTijdVerstreken) + '</span>';
