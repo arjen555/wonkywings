@@ -949,7 +949,7 @@
       max-height:0; opacity:0; overflow:hidden;
       transition:max-height 0.3s ease, opacity 0.25s ease;
     }
-    .menu-sub-lijst.open { max-height:600px; opacity:1; }
+    .menu-sub-lijst.open { max-height:800px; opacity:1; }
     .menu-sub-rij {
       display:flex; align-items:center; gap:6px;
       background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.09);
@@ -961,6 +961,78 @@
     .menu-sub-naam { flex:1; font-size:0.7rem; font-weight:700; color:#fff; }
     .menu-sub-binnenkort-tekst { font-size:0.65rem; color:rgba(255,255,255,0.4); font-style:italic; }
     .menu-sub-btns { display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end; }
+
+    /* ── Zelf gekozen landen/hoofdsteden (v1.20) ── Extra regel onderaan
+       Europa, Wereld en Hoofdsteden. Gestippelde rand zolang er nog niets
+       gekozen is; daarna een gewone rand, met Spelen/Verkennen en een kruisje
+       op de plek waar bij de andere regels het 🏆-knopje staat. */
+    .menu-sub-rij.eigen-keuze-rij { cursor:pointer; border-style:dashed; border-color:rgba(255,215,0,0.35); }
+    .menu-sub-rij.eigen-keuze-rij.heeft-keuze { border-style:solid; }
+    .menu-sub-rij.eigen-keuze-rij .menu-sub-naam { color:#ffe9a8; }
+    /* Onzichtbaar 🏆-knopje: houdt precies dezelfde breedte vrij als bij de
+       andere regels, zodat het icoontje-vak "leeg" oogt. */
+    .btn-scores.eigen-keuze-leeg { visibility:hidden; pointer-events:none; }
+    .btn-scores.btn-eigen-wis { background:rgba(255,120,90,0.15); border-color:rgba(255,140,110,0.5); color:#ffb39c; }
+    .btn-scores.btn-eigen-wis:hover { background:rgba(255,120,90,0.3); }
+
+    #eigen-keuze-popup, #eigen-wis-popup {
+      display:none; position:fixed; inset:0; z-index:997;
+      background:rgba(0,0,0,0.72); backdrop-filter:blur(4px);
+      align-items:center; justify-content:center;
+    }
+    #eigen-keuze-popup.tonen, #eigen-wis-popup.tonen { display:flex; }
+    .eigen-kaart {
+      background:linear-gradient(145deg,#3a2408,#1c1204);
+      border:2px solid rgba(255,215,0,0.55);
+      border-radius:24px; padding:24px 28px; width:min(620px,92vw); max-height:88vh;
+      box-shadow:0 20px 70px rgba(0,0,0,0.8), inset 0 0 30px rgba(255,215,0,0.06);
+      display:flex; flex-direction:column; gap:12px; align-items:stretch;
+      box-sizing:border-box;
+    }
+    .eigen-kaart.eigen-kaart-klein { width:min(460px,90vw); padding:30px 34px; gap:20px; }
+    .eigen-titel {
+      font-family:'Baloo 2',sans-serif; font-size:1.3rem; font-weight:800;
+      color:#ffe9a8; text-align:center; line-height:1.35;
+      text-shadow:0 2px 8px rgba(0,0,0,0.5);
+    }
+    #eigen-keuze-zoek {
+      font-family:'Baloo 2',sans-serif; font-weight:600; font-size:1rem;
+      border:2px solid rgba(255,215,0,0.4); border-radius:10px; padding:8px 14px;
+      background:#fffaf0; color:#3b2a18;
+    }
+    #eigen-keuze-zoek::placeholder { color:#9c8460; }
+    #eigen-keuze-lijst {
+      flex:1 1 auto; min-height:120px; overflow-y:auto;
+      background:rgba(0,0,0,0.28); border:1px solid rgba(255,215,0,0.2);
+      border-radius:12px; padding:0 12px 10px;
+    }
+    .eigen-keuze-kop {
+      position:sticky; top:0; z-index:1;
+      font-family:'Baloo 2',sans-serif; font-weight:800; font-size:1rem; color:#ffd700;
+      background:#24170a; padding:8px 0 4px; margin-top:4px;
+      border-bottom:1px solid rgba(255,215,0,0.25);
+    }
+    .eigen-keuze-items {
+      display:grid; grid-template-columns:repeat(auto-fill, minmax(170px, 1fr));
+      gap:0 12px; padding-top:6px;
+    }
+    .eigen-keuze-item {
+      display:flex; align-items:center; gap:8px; cursor:pointer;
+      font-family:'Baloo 2',sans-serif; font-weight:600; font-size:0.95rem; color:#fff6c8;
+      padding:3px 4px; border-radius:6px; line-height:1.2;
+    }
+    .eigen-keuze-item:hover { background:rgba(255,255,255,0.08); }
+    .eigen-keuze-item input { width:18px; height:18px; flex:none; accent-color:#f5c518; cursor:pointer; margin:0; }
+    .eigen-keuze-geen {
+      font-family:'Baloo 2',sans-serif; color:#cdb98f; font-style:italic; padding:14px 2px; text-align:center;
+    }
+    #eigen-keuze-teller {
+      font-family:'Baloo 2',sans-serif; font-weight:700; text-align:center;
+      font-size:0.95rem; color:#ffcf80;
+    }
+    #eigen-keuze-teller.genoeg { color:#ffe9a8; }
+    .eigen-knoppen { display:flex; gap:12px; justify-content:center; }
+    .eigen-knoppen .geheimwoord-knop:disabled { opacity:0.35; cursor:default; background:rgba(255,255,255,0.1); }
 
     /* ── SCOREBORD ── */
     /* justify-content:flex-start i.p.v. center, met wat lucht bovenaan via
@@ -1427,6 +1499,20 @@
       opacity:0; transition:opacity 0.4s ease;
     }
     #illustratie-melding.tonen { opacity:1; }
+    /* ── Oefenronde-melding (v1.20): zelfde gloeiende gele letters als
+       #illustratie-melding hierboven, op dezelfde plek. Blijft de hele
+       oefenronde staan (zie zetOefenrondeMelding()). */
+    #oefenronde-melding {
+      position:absolute; top:100%; left:50%;
+      margin-top:8px; transform:translateX(-50%);
+      z-index:22; pointer-events:none; user-select:none;
+      color:#ffd700; font-family:'Baloo 2',sans-serif; font-weight:800;
+      font-size:clamp(0.8rem, 2vmin, 1.15rem); text-align:center;
+      max-width:min(70vw, 380px); width:max-content; white-space:normal;
+      text-shadow:0 0 8px rgba(255,215,0,0.9), 0 0 20px rgba(255,190,0,0.6), 0 2px 8px rgba(0,0,0,0.65);
+      opacity:0; transition:opacity 0.4s ease;
+    }
+    #oefenronde-melding.tonen { opacity:1; }
     /* ── Zoekbalk (verkenningsmodus), bovenaan gecentreerd, zelfde steampunk-stijl als de zoom-indicator ── */
     #zoek-balk {
       position:fixed; top:14px; left:50%; transform:translateX(-50%); z-index:25;
@@ -1700,7 +1786,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-    <div id="versie-label">V1.19</div>
+    <div id="versie-label">V1.20</div>
   <div id="start-links">
     <img id="start-timbo" src="Timbo.jpg" alt="Timbo"/>
     <div id="prestatie-tip">Trage computer? Kies voor minder detail bij opties</div>
@@ -1799,6 +1885,28 @@
 
 <!-- Tip/suggestie-popup: zie openTopTip()/sluitTopTip()/verstuurTopTip()
      verderop. Stuurt het formuliertje via Formspree naar Arjens mailbox. -->
+<!-- Zelf gekozen landen/hoofdsteden (v1.20) - zie openEigenKeuze() e.v. -->
+<div id="eigen-keuze-popup" onclick="if(event.target===this)sluitEigenKeuze()">
+  <div class="eigen-kaart" role="dialog" aria-labelledby="eigen-keuze-titel">
+    <div class="eigen-titel" id="eigen-keuze-titel"></div>
+    <input type="text" id="eigen-keuze-zoek" autocomplete="off" spellcheck="false" oninput="filterEigenKeuze()"/>
+    <div id="eigen-keuze-lijst"></div>
+    <div id="eigen-keuze-teller"></div>
+    <div class="eigen-knoppen">
+      <button class="geheimwoord-knop secundair" onclick="sluitEigenKeuze()">Annuleren</button>
+      <button class="geheimwoord-knop" id="eigen-keuze-opslaan" onclick="slaEigenKeuzeOp()">Opslaan</button>
+    </div>
+  </div>
+</div>
+<div id="eigen-wis-popup" onclick="if(event.target===this)sluitEigenWis()">
+  <div class="eigen-kaart eigen-kaart-klein" role="dialog">
+    <div class="eigen-titel">Weet je zeker dat je heel je selectie wilt verwijderen?</div>
+    <div class="eigen-knoppen">
+      <button class="geheimwoord-knop secundair" onclick="sluitEigenWis()">Annuleren</button>
+      <button class="geheimwoord-knop" onclick="bevestigEigenWis()">Verwijderen</button>
+    </div>
+  </div>
+</div>
 <div id="top-tip-popup" onclick="if(event.target===this)sluitTopTip()">
   <div id="top-tip-kaart">
     <div id="top-tip-titel">Heb je een tip of suggestie?<br/>We horen het graag!</div>
@@ -2119,6 +2227,7 @@
       </div>
       <span id="zoom-procent-teken">%</span>
       <div id="illustratie-melding">In dit spelonderdeel zie je geen afbeeldingen van de landen</div>
+      <div id="oefenronde-melding">Oefenronde – telt niet mee voor de highscores en stempels</div>
     </div>
     <div id="zoek-balk">
       <input type="text" id="zoek-input" placeholder="Zoek land of hoofdstad..." autocomplete="off" />
@@ -3239,6 +3348,8 @@ function bouwStartscherm() {
       }
       subLijst.appendChild(rij);
     }
+    // Zelf gekozen landen/hoofdsteden: altijd als laatste regel (v1.20)
+    if(EIGEN_KEUZE_GROEPEN[groep.id]) subLijst.appendChild(maakEigenKeuzeRij(groep.id));
 
     groepEl.appendChild(kop);
     groepEl.appendChild(subLijst);
@@ -3259,6 +3370,343 @@ function bouwStartscherm() {
   raadspelEl.querySelector('.menu-groep-kop').onclick = () => { speelGeluidDanNavigeer('landenmenuknop', () => window.location.href = 'raadspel.html', 700); };
   lijst.appendChild(raadspelEl);
 }
+// ── Zelf gekozen landen/hoofdsteden (v1.20) ──────────────────────────────
+// Tip van een leerling: zelf landen kunnen kiezen om te oefenen (bijv. het
+// rijtje dat op school geleerd moet worden). Onderaan Europa, Wereld en
+// Hoofdsteden staat een extra regel. Minimaal 10 kiezen; per ronde kiest het
+// spel er willekeurig 10 uit (gewone startSpel()-logica). De keuze wordt per
+// speler bewaard (zelfde opzet als de verdiende stempels). Een oefenronde
+// telt NIET mee voor highscores en stempels: geen fsOpslaan(), geen
+// verdienStempelVoorLand(), en het bijzondere muntje (kennisvraag → rad →
+// stempel) wordt een gewoon muntje (zie planMuntjesVoorRonde()). Omdat
+// vliegfiguren en emblemen op het aantal stempels drijven, tellen die
+// daarmee vanzelf ook niet mee.
+const EIGEN_KEUZE_MINIMUM = 10;
+const EIGEN_KEUZE_GROEPEN = {
+  europa:      { levelId:'eu-eigen', kiesTekst:'Kies zélf je landen uit',  mijnTekst:'Mijn zelf gekozen landen',      start:{lon:20, lat:52} },
+  wereld:      { levelId:'w-eigen',  kiesTekst:'Kies zélf je landen uit',  mijnTekst:'Mijn zelf gekozen landen',      start:{lon:0,  lat:20} },
+  hoofdsteden: { levelId:'hs-eigen', kiesTekst:'Kies zélf je hoofdsteden', mijnTekst:'Mijn zelf gekozen hoofdsteden', start:{lon:20, lat:30}, hoofdsteden:true },
+};
+// Wereld-lijst indelen per werelddeel: Europa = alle Europa-levels, daarna de
+// werelddeel-levels van Wereld. Landen die alleen in "Klein maar fijn" of
+// "Alle landen wereld" staan, krijgen hier hun werelddeel. Komt er later een
+// land bij dat nergens onder valt, dan verschijnt het onder "Overig".
+const EIGEN_KEUZE_WERELD_REGIOS = ['w-amerika','w-zuid-amerika','w-afrika','w-azie','w-oceanie'];
+const EIGEN_KEUZE_EXTRA_WERELDDEEL = {
+  'Europa':        ['Cyprus','Gibraltar'],
+  'Noord-Amerika': ['Trinidad en Tobago','Grenada','Barbados','Saint Lucia','Dominica','Antigua en Barbuda','Saint Kitts en Nevis'],
+  'Zuid-Amerika':  ['Falklandeilanden'],
+  'Afrika':        ['Seychellen','Comoren','Sao Tomé en Principe','Kaapverdië','Mauritius','Westelijke Sahara','Lesotho','Guinee-Bissau'],
+  'Azië':          ['Maldiven','Brunei','Palestina','Oost-Timor','Bahrein'],
+  'Antarctica':    ['Antarctica'],
+};
+function normaliseerEigenZoek(t){
+  return String(t||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
+}
+function eigenKeuzeSleutel(){
+  return 'wonkywings_eigen_keuze::' + (localStorage.getItem(SPELERNAAM_SLEUTEL) || 'Speler');
+}
+function geefEigenKeuzes(){
+  try{
+    const o = JSON.parse(localStorage.getItem(eigenKeuzeSleutel()) || '{}');
+    return (o && typeof o === 'object') ? o : {};
+  }catch(e){ return {}; }
+}
+function zetEigenKeuze(groepId, lijst){
+  const o = geefEigenKeuzes();
+  if(lijst && lijst.length) o[groepId] = lijst; else delete o[groepId];
+  try{ localStorage.setItem(eigenKeuzeSleutel(), JSON.stringify(o)); }catch(e){}
+}
+// Alle kiesbare landen/hoofdsteden voor een groep, als lijst van
+// {titel, items:[{waarde, label, zoek}]} - titel is null als er geen
+// werelddeel-kopjes nodig zijn.
+const eigenKeuzePoolCache = {};
+function eigenKeuzePool(groepId){
+  if(eigenKeuzePoolCache[groepId]) return eigenKeuzePoolCache[groepId];
+  const sorteer = (a,b)=>a.label.localeCompare(b.label, 'nl');
+  const landItem = n=>({waarde:n, label:n, zoek:normaliseerEigenZoek(n)});
+  const landenVan = id=>{
+    const set = new Set();
+    for(const lv of MENU.find(g=>g.id===id).levels) for(const n of lv.landen) set.add(n);
+    return set;
+  };
+  let groepen;
+  if(groepId === 'hoofdsteden'){
+    const items = Object.keys(HOOFDSTEDEN).map(land=>{
+      const stad = HOOFDSTEDEN[land].naam;
+      return {waarde:land, label:stad+' ('+land+')', zoek:normaliseerEigenZoek(stad+' '+land)};
+    });
+    groepen = [{titel:null, items:items.sort(sorteer)}];
+  } else {
+    const wereld = landenVan('wereld');
+    const europa = landenVan('europa');
+    for(const n of EIGEN_KEUZE_EXTRA_WERELDDEEL['Europa']) if(wereld.has(n)) europa.add(n);
+    if(groepId === 'europa'){
+      groepen = [{titel:null, items:[...europa].map(landItem).sort(sorteer)}];
+    } else {
+      const gehad = new Set();
+      const indeling = [{titel:'Europa', namen:[...europa]}];
+      europa.forEach(n=>gehad.add(n));
+      const wereldGroep = MENU.find(g=>g.id==='wereld');
+      for(const regioId of EIGEN_KEUZE_WERELD_REGIOS){
+        const lv = wereldGroep.levels.find(l=>l.id===regioId);
+        if(!lv) continue;
+        const namen = lv.landen.filter(n=>!gehad.has(n));
+        namen.forEach(n=>gehad.add(n));
+        indeling.push({titel:lv.naam, namen});
+      }
+      for(const [titel, extra] of Object.entries(EIGEN_KEUZE_EXTRA_WERELDDEEL)){
+        let g = indeling.find(x=>x.titel===titel);
+        if(!g){ g = {titel, namen:[]}; indeling.push(g); }
+        for(const n of extra) if(wereld.has(n) && !gehad.has(n)){ g.namen.push(n); gehad.add(n); }
+      }
+      const overig = [...wereld].filter(n=>!gehad.has(n));
+      if(overig.length) indeling.push({titel:'Overig', namen:overig});
+      groepen = indeling.filter(g=>g.namen.length)
+        .map(g=>({titel:g.titel, items:g.namen.map(landItem).sort(sorteer)}));
+    }
+  }
+  eigenKeuzePoolCache[groepId] = groepen;
+  return groepen;
+}
+// De bewaarde keuze voor deze groep (alleen namen die nog bestaan), of null
+// als er (nog) geen geldige keuze van minimaal 10 is.
+function geefEigenKeuze(groepId){
+  const lijst = geefEigenKeuzes()[groepId];
+  if(!Array.isArray(lijst)) return null;
+  const pool = new Set();
+  for(const g of eigenKeuzePool(groepId)) for(const it of g.items) pool.add(it.waarde);
+  const geldig = [...new Set(lijst)].filter(n=>pool.has(n));
+  return geldig.length >= EIGEN_KEUZE_MINIMUM ? geldig : null;
+}
+
+// ── Menu-regel ──
+function maakEigenKeuzeRij(groepId){
+  const rij = document.createElement('div');
+  rij.className = 'menu-sub-rij eigen-keuze-rij';
+  rij.dataset.eigenGroep = groepId;
+  vulEigenKeuzeRij(rij);
+  return rij;
+}
+function vulEigenKeuzeRij(rij){
+  const groepId = rij.dataset.eigenGroep;
+  const cfg = EIGEN_KEUZE_GROEPEN[groepId];
+  const keuze = geefEigenKeuze(groepId);
+  rij.classList.toggle('heeft-keuze', !!keuze);
+  rij.innerHTML = '';
+  const naamEl = document.createElement('span');
+  naamEl.className = 'menu-sub-naam';
+  naamEl.textContent = keuze ? cfg.mijnTekst : cfg.kiesTekst;
+  const btns = document.createElement('span');
+  btns.className = 'menu-sub-btns';
+  if(keuze){
+    btns.innerHTML = '<button class="btn-speel">▶ Spelen</button>'
+      + '<button class="btn-verken">🔍 Verkennen</button>'
+      + '<button class="btn-scores btn-eigen-wis" aria-label="Selectie verwijderen" title="Selectie verwijderen">✕</button>';
+    const [speel, verken, wis] = btns.querySelectorAll('button');
+    speel.onclick  = ()=>{ speelGeluid('landenmenuknop'); startEigenKeuze(groepId, 'spelen'); };
+    verken.onclick = ()=>{ speelGeluid('landenmenuknop'); startEigenKeuze(groepId, 'verkennen'); };
+    wis.onclick    = ()=>{ speelGeluid('landenmenuknop'); openEigenWis(groepId); };
+  } else {
+    btns.innerHTML = '<button class="btn-scores eigen-keuze-leeg" tabindex="-1" aria-hidden="true">🏆</button>';
+  }
+  rij.appendChild(naamEl);
+  rij.appendChild(btns);
+  // Klik op de regel zelf (niet op een knop): keuzescherm openen - leeg of
+  // met de huidige keuze al aangevinkt, om aan te passen.
+  rij.onclick = e=>{
+    if(e.target.closest('button')) return;
+    speelGeluid('landenmenuknop');
+    openEigenKeuze(groepId);
+  };
+}
+function verversEigenKeuzeRijen(){
+  document.querySelectorAll('.eigen-keuze-rij').forEach(vulEigenKeuzeRij);
+}
+
+// ── Spelen/verkennen: tijdelijk level aanmaken en gewoon startSpel() gebruiken ──
+function berekenEigenStart(groepId, namen, standaard){
+  let x=0, y=0, z=0, n=0;
+  for(const naam of namen){
+    let lon, lat;
+    if(groepId === 'hoofdsteden' && HOOFDSTEDEN[naam]){
+      lon = HOOFDSTEDEN[naam].lon; lat = HOOFDSTEDEN[naam].lat;
+    } else {
+      const info = alleLandenFeatureMap[naam];
+      if(!info || info.kruistDatumgrens) continue;
+      lon = (info.minLon+info.maxLon)/2; lat = (info.minLat+info.maxLat)/2;
+    }
+    if(!isFinite(lon) || !isFinite(lat)) continue;
+    const la = lat*Math.PI/180, lo = lon*Math.PI/180;
+    x += Math.cos(la)*Math.cos(lo); y += Math.cos(la)*Math.sin(lo); z += Math.sin(la); n++;
+  }
+  const lengte = Math.hypot(x, y, z);
+  // Liggen de landen over de hele bol verspreid, dan is een "midden" zinloos.
+  if(!n || lengte < 0.2*n) return {lon:standaard.lon, lat:standaard.lat};
+  return {lon:Math.atan2(y, x)*180/Math.PI, lat:Math.asin(z/lengte)*180/Math.PI};
+}
+function startEigenKeuze(groepId, modus){
+  const keuze = geefEigenKeuze(groepId);
+  if(!keuze) return;
+  const cfg = EIGEN_KEUZE_GROEPEN[groepId];
+  LEVELS[cfg.levelId] = {
+    id:cfg.levelId, naam:cfg.mijnTekst, kort:'Eigen keuze',
+    start:berekenEigenStart(groepId, keuze, cfg.start),
+    landen:[...keuze], altijd_alle:false, beschikbaar:true,
+    hoofdsteden:!!cfg.hoofdsteden, oefen:true,
+  };
+  startSpel(cfg.levelId, modus);
+}
+function isOefenLevel(){
+  return !!(LEVELS[huidigLevel] && LEVELS[huidigLevel].oefen);
+}
+
+// ── Keuzescherm ──
+let eigenKeuzeGroepOpen = null;
+function openEigenKeuze(groepId){
+  eigenKeuzeGroepOpen = groepId;
+  const cfg = EIGEN_KEUZE_GROEPEN[groepId];
+  document.getElementById('eigen-keuze-titel').textContent = cfg.kiesTekst;
+  const zoek = document.getElementById('eigen-keuze-zoek');
+  zoek.value = '';
+  zoek.placeholder = groepId === 'hoofdsteden' ? 'Zoek een hoofdstad of land...' : 'Zoek een land...';
+  const gekozen = new Set(geefEigenKeuzes()[groepId] || []);
+  const lijstEl = document.getElementById('eigen-keuze-lijst');
+  lijstEl.innerHTML = '';
+  for(const g of eigenKeuzePool(groepId)){
+    const blok = document.createElement('div');
+    blok.className = 'eigen-keuze-groep';
+    if(g.titel){
+      const kop = document.createElement('div');
+      kop.className = 'eigen-keuze-kop';
+      kop.textContent = g.titel;
+      blok.appendChild(kop);
+    }
+    const items = document.createElement('div');
+    items.className = 'eigen-keuze-items';
+    for(const it of g.items){
+      const label = document.createElement('label');
+      label.className = 'eigen-keuze-item';
+      label.dataset.zoek = it.zoek;
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.value = it.waarde;
+      cb.checked = gekozen.has(it.waarde);
+      cb.onchange = werkEigenTellerBij;
+      const tekst = document.createElement('span');
+      tekst.textContent = it.label;
+      label.appendChild(cb);
+      label.appendChild(tekst);
+      items.appendChild(label);
+    }
+    blok.appendChild(items);
+    lijstEl.appendChild(blok);
+  }
+  const geen = document.createElement('div');
+  geen.className = 'eigen-keuze-geen';
+  geen.id = 'eigen-keuze-geen';
+  geen.textContent = 'Niets gevonden';
+  geen.style.display = 'none';
+  lijstEl.appendChild(geen);
+  lijstEl.scrollTop = 0;
+  werkEigenTellerBij();
+  document.getElementById('eigen-keuze-popup').classList.add('tonen');
+}
+function sluitEigenKeuze(){
+  document.getElementById('eigen-keuze-popup').classList.remove('tonen');
+  eigenKeuzeGroepOpen = null;
+}
+function gekozenInEigenScherm(){
+  return [...document.querySelectorAll('#eigen-keuze-lijst input[type=checkbox]:checked')].map(cb=>cb.value);
+}
+function werkEigenTellerBij(){
+  const aantal = gekozenInEigenScherm().length;
+  const teller = document.getElementById('eigen-keuze-teller');
+  const genoeg = aantal >= EIGEN_KEUZE_MINIMUM;
+  teller.textContent = genoeg ? aantal+' gekozen' : aantal+' gekozen – kies er minimaal '+EIGEN_KEUZE_MINIMUM;
+  teller.classList.toggle('genoeg', genoeg);
+  document.getElementById('eigen-keuze-opslaan').disabled = !genoeg;
+}
+function filterEigenKeuze(){
+  const zoek = normaliseerEigenZoek(document.getElementById('eigen-keuze-zoek').value);
+  let iets = false;
+  document.querySelectorAll('#eigen-keuze-lijst .eigen-keuze-groep').forEach(blok=>{
+    let zichtbaar = 0;
+    blok.querySelectorAll('.eigen-keuze-item').forEach(item=>{
+      const past = !zoek || item.dataset.zoek.includes(zoek);
+      item.style.display = past ? '' : 'none';
+      if(past) zichtbaar++;
+    });
+    blok.style.display = zichtbaar ? '' : 'none';
+    if(zichtbaar) iets = true;
+  });
+  document.getElementById('eigen-keuze-geen').style.display = iets ? 'none' : '';
+}
+function slaEigenKeuzeOp(){
+  if(!eigenKeuzeGroepOpen) return;
+  const gekozen = gekozenInEigenScherm();
+  if(gekozen.length < EIGEN_KEUZE_MINIMUM) return;
+  zetEigenKeuze(eigenKeuzeGroepOpen, gekozen);
+  speelGeluid('landenmenuknop');
+  sluitEigenKeuze();
+  verversEigenKeuzeRijen();
+}
+
+// ── Kruisje: eerst bevestigen ──
+let eigenWisGroep = null;
+function openEigenWis(groepId){
+  eigenWisGroep = groepId;
+  document.getElementById('eigen-wis-popup').classList.add('tonen');
+}
+function sluitEigenWis(){
+  document.getElementById('eigen-wis-popup').classList.remove('tonen');
+  eigenWisGroep = null;
+}
+function bevestigEigenWis(){
+  if(eigenWisGroep) zetEigenKeuze(eigenWisGroep, null);
+  sluitEigenWis();
+  verversEigenKeuzeRijen();
+}
+
+// ── Tijdens het spelen: oefenronde-melding ──
+let oefenrondeMeldingTimer = null;
+function zetOefenrondeMelding(aan, naIllustratieMelding){
+  const el = document.getElementById('oefenronde-melding');
+  if(oefenrondeMeldingTimer){ clearTimeout(oefenrondeMeldingTimer); oefenrondeMeldingTimer = null; }
+  if(!aan){ el.classList.remove('tonen'); return; }
+  if(naIllustratieMelding){
+    // Bij hoofdsteden staat eerst 2 sec de "geen afbeeldingen"-melding op
+    // precies deze plek - pas daarna verschijnt de oefenronde-melding.
+    el.classList.remove('tonen');
+    oefenrondeMeldingTimer = setTimeout(()=>{ el.classList.add('tonen'); oefenrondeMeldingTimer = null; }, 2500);
+  } else {
+    el.classList.add('tonen');
+  }
+}
+
+// ── Eindscherm van een oefenronde: trofee met aantal goed en tijd, zonder
+// highscorelijst en zonder stempels. Hergebruikt het Hoofdsteden-
+// resultaatscherm (ook voor landen), met Boek der Groten/paspoort verborgen.
+function toonOefenResultaat(){
+  const lv = LEVELS[huidigLevel];
+  const isHs = !!(lv && lv.hoofdsteden);
+  const goed   = isHs ? hoofdstedenGoed : dezeRondeGoedAantal;
+  const totaal = isHs ? hoofdstedenTotaal : spelLanden.length;
+  const km     = isHs ? hoofdstedenKmTotaal : score;
+  zetOefenrondeMelding(false);
+  document.getElementById('hoofdsteden-resultaat-score').textContent =
+    goed+' van de '+totaal+(isHs ? ' hoofdsteden' : ' landen')+' goed!';
+  document.getElementById('hoofdsteden-resultaat-stempel').textContent =
+    'Oefenronde – telt niet mee voor de highscores en stempels';
+  document.getElementById('hoofdsteden-resultaat-boek-icoon').style.display = 'none';
+  document.getElementById('hoofdsteden-resultaat-paspoort-icoon').style.display = 'none';
+  document.getElementById('spelscherm').style.display = 'none';
+  document.getElementById('hoofdsteden-resultaat-scherm').style.display = 'flex';
+  toonTrofee('hoofdsteden-resultaat-trofee','hoofdsteden-resultaat-trofee-img',
+    'hoofdsteden-resultaat-trofee-tijd','hoofdsteden-resultaat-trofee-km',
+    goed, totaal, laatsteLevelTijd, km);
+}
+
 // ── Eilandengroepen: illustratie blijft staan zolang Wonky binnen het hele
 // gebied van het land vliegt, ook boven zee tussen de eilandjes door.
 // Nieuwe landen toevoegen kan gewoon door de naam hieronder toe te voegen.
@@ -3427,6 +3875,8 @@ function rondNaamAfMet(naam){
   // meteen bijwerken, in plaats van pas zodra er toevallig doorgebladerd
   // wordt in de kiezer.
   initialiseerVliegfiguurVoorSpeler();
+  // Zelf gekozen landen horen bij deze speler (v1.20)
+  verversEigenKeuzeRijen();
   toonPrestatieTip();
 }
 // Kort tekstballonnetje op het startscherm dat wijst op de detail-instelling
@@ -6110,6 +6560,9 @@ function startSpel(levelId, modus) {
   if(isHoofdsteden || isPlekken){
     toonIllustratieMelding();
   }
+  // Oefenronde (zelf gekozen landen/hoofdsteden): melding blijft de hele
+  // ronde staan - alleen bij spelen, verkennen telt toch nooit mee.
+  zetOefenrondeMelding(!!lv.oefen && modus==='spelen', isHoofdsteden);
   if(isPlekken){
     // Pas nú het scherm echt zichtbaar is (en de badge dus zijn echte
     // afmetingen heeft) de scorebord-positie opnieuw berekenen - eerder
@@ -6201,6 +6654,11 @@ function startSpel(levelId, modus) {
 
 function naarStart(){
   spelActief=false;
+  // Oefenronde (v1.20): melding weg, en de iconen die toonOefenResultaat()
+  // verborg weer terugzetten voor een gewone Hoofdsteden-ronde.
+  zetOefenrondeMelding(false);
+  document.getElementById('hoofdsteden-resultaat-boek-icoon').style.display = '';
+  document.getElementById('hoofdsteden-resultaat-paspoort-icoon').style.display = '';
   stopMotorGeluid(); stopTurboGeluid(); stopWindGeluid(); stopVerrekijkerGeluid();
   passantVliegtuig = null; passantVolgendeSpawnTijd = null; stopPassantGeluid();
   tipActief = false;
@@ -6624,9 +7082,13 @@ function vervangHuidigLand(){
   const lv=LEVELS[huidigLevel];
   const gebruikt=new Set(spelLanden);
   const kandidaten=lv.landen.filter(n=>!gebruikt.has(n));
+  // Noodgeval (geen reserve meer, bijv. precies 10 zelf gekozen landen):
+  // dan in elk geval een ánder land dan het huidige (v1.20).
+  const anders = lv.landen.filter(n=>n!==huidigLand);
+  const nood = anders.length ? anders : lv.landen;
   const nieuw = kandidaten.length>0
     ? kandidaten[Math.floor(Math.random()*kandidaten.length)]
-    : lv.landen[Math.floor(Math.random()*lv.landen.length)]; // noodgeval: geen reserve meer
+    : nood[Math.floor(Math.random()*nood.length)];
   spelLanden[huidigLandIdx]=nieuw;
   huidigLand=nieuw;
   zetOpdrachtTekst();
@@ -6809,7 +7271,11 @@ function nieuwLand(){
     // (naarStart()), en bleef dus de hele tijd dat het evaluatiescherm in
     // beeld stond onterecht doorlopen. Hier alvast stoppen, net als naarStart().
     stopMotorGeluid(); stopTurboGeluid(); stopWindGeluid(); stopVerrekijkerGeluid();
-    if(LEVELS[huidigLevel] && LEVELS[huidigLevel].hoofdsteden){
+    if(isOefenLevel()){
+      // Oefenronde: niets opslaan, geen stempels - eigen eindscherm (v1.20)
+      if(huidigModus==='spelen') toonOefenResultaat();
+      else { toonFeedback('🏆 Klaar!','#ffd700'); setTimeout(naarStart,2500); }
+    } else if(LEVELS[huidigLevel] && LEVELS[huidigLevel].hoofdsteden){
       // Hoofdsteden-modus: geen km-highscore, gewoon een rustig goed/totaal-scherm
       toonHoofdstedenResultaat(hoofdstedenGoed, hoofdstedenTotaal);
     } else if(LEVELS[huidigLevel] && LEVELS[huidigLevel].plekken){
@@ -9632,6 +10098,9 @@ function planMuntjesVoorRonde(){
     { landIdx: indices[2], type: 'gewoon' },
     { landIdx: indices[3], type: 'gewoon' },
   ];
+  // Oefenronde: het bijzondere muntje (kennisvraag → rad → stempel) wordt
+  // een gewoon muntje - dus 4 gewone (v1.20).
+  if(lv.oefen) muntjesPlanning.forEach(m=>{ m.type = 'gewoon'; });
 }
 
 // inverseRoteerPunt(v, lon, lat): de inverse van roteerPunt()+maakRotMatrix().
@@ -11375,7 +11844,7 @@ function dropVlaggetje(){
       dezeRondeGoedAantal++;
       document.getElementById('score').textContent=score;
       zetKmCijfers(score);
-      const nieuweStempel = verdienStempelVoorLand(huidigLand);
+      const nieuweStempel = isOefenLevel() ? null : verdienStempelVoorLand(huidigLand); // oefenronde: geen stempels
       if(nieuweStempel) dezeRondeVerdiendeLanden.push(nieuweStempel);
       const goedTekst = GOED_TEKSTEN[Math.floor(Math.random()*GOED_TEKSTEN.length)];
       toonFeedback(goedTekst,'#ffd700');
