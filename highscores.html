@@ -141,6 +141,9 @@ body{
 @container (max-width:520px){
   .kolommen{ grid-template-columns:1fr; }
 }
+/* Zolang TOON_VANDAAG op false staat (zie het script), is er maar één
+   tabel per kaartje ("All-time") - die krijgt dan de volle breedte. */
+.kolommen.enkel{ grid-template-columns:1fr; }
 .kolom-titel{
   font-size:.85rem; font-weight:700; color:#6b5a2e;
   text-align:center; padding:3px 0 2px;
@@ -261,6 +264,10 @@ body{
   .nav-btn{ width:clamp(44px, 13vw, 60px); }
 }
 </style>
+<!-- Bezoekersteller (GoatCounter): telt bezoeken zonder cookies en zonder
+     persoonsgegevens. Overzicht: https://wonderlijkewereld.goatcounter.com -->
+<script data-goatcounter="https://wonderlijkewereld.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
 </head>
 <body>
 
@@ -297,6 +304,13 @@ body{
    ║  Boek der Groten — high-score-overzicht                ║
    ║  Leest de online scores uit Firestore (Cloud Firestore) ║
    ╚═══════════════════════════════════════════════════════╝ */
+
+// ── Schakelaar "Vandaag"-lijsten ──────────────────────
+// Tijdelijk uit gezet: met nog weinig bezoekers zag een (bijna) lege
+// "Vandaag"-lijst er wat treurig uit. Op true zetten om de lijsten weer
+// terug te halen - verder hoeft er dan niets aangepast te worden, alle
+// code ervoor staat er nog gewoon.
+var TOON_VANDAAG = false;
 
 // ── Testfilter ────────────────────────────────────────
 var TEST_NAMEN = ['test1','test2'];
@@ -754,7 +768,11 @@ async function bouwSubsectie(naam, sleutel, type, altijdTonen){
   kolommen.className = 'kolommen';
 
   kolommen.appendChild(bouwScoreTabel(alltime, type, '🏆 All-time'));
-  kolommen.appendChild(bouwScoreTabel(vandaag, type, '📅 Vandaag'));
+  if(TOON_VANDAAG){
+    kolommen.appendChild(bouwScoreTabel(vandaag, type, '📅 Vandaag'));
+  } else {
+    kolommen.classList.add('enkel');
+  }
 
   inhoud.appendChild(kolommen);
   wrap.appendChild(inhoud);

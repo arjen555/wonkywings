@@ -1775,6 +1775,10 @@
       #plekken-eind-totaal { margin-top:8px; font-size:1.15rem; }
     }
   </style>
+<!-- Bezoekersteller (GoatCounter): telt bezoeken zonder cookies en zonder
+     persoonsgegevens. Overzicht: https://wonderlijkewereld.goatcounter.com -->
+<script data-goatcounter="https://wonderlijkewereld.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
 </head>
 <body>
 
@@ -1786,7 +1790,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-    <div id="versie-label">V1.20</div>
+    <div id="versie-label">V1.22</div>
   <div id="start-links">
     <img id="start-timbo" src="Timbo.jpg" alt="Timbo"/>
     <div id="prestatie-tip">Trage computer? Kies voor minder detail bij opties</div>
@@ -6906,6 +6910,12 @@ function toonTrofee(blokId, imgId, tijdId, kmId, goed, totaal, tijdSec, km){
   blok.classList.add('zichtbaar');
   return blok;
 }
+// Schakelaar voor de "Vandaag"-kolom op het scorebord na een potje Landen.
+// Tijdelijk uit gezet: met nog weinig bezoekers zag een (bijna) lege
+// "Vandaag"-lijst er wat treurig uit. Op true zetten om de kolom terug te
+// halen - verder hoeft er dan niets aangepast te worden. (Zelfde soort
+// schakelaar als TOON_VANDAAG in highscores.html.)
+const TOON_VANDAAG_SCOREBORD = false;
 // Vergelijkt alleen de kalenderdag (niet het exacte tijdstip), zodat "vandaag"
 // klopt ongeacht hoe laat een run precies gespeeld is.
 function isVandaag(timestampMs){
@@ -7016,6 +7026,10 @@ async function toonScorebord(levelId, nieuweRun){
   // i.p.v. de vorige (verkeerde) lijst te laten staan.
   document.getElementById('scorebord-lijst-alltime').innerHTML = '<div class="scorebord-leeg-klein">Scores laden…</div>';
   document.getElementById('scorebord-lijst-vandaag').innerHTML = '<div class="scorebord-leeg-klein">Scores laden…</div>';
+  // Hele "Vandaag"-kolom (kop + lijst) verbergen zolang de schakelaar uit
+  // staat - de All-time-kolom krijgt dan vanzelf de volle breedte.
+  document.getElementById('scorebord-lijst-vandaag').parentElement.style.display =
+    TOON_VANDAAG_SCOREBORD ? '' : 'none';
 
   // ── Landenpaspoort: alleen tonen/laten vliegen als dit scorebord het
   // resultaat van een zojuist gespeeld potje toont (nieuweRun) - niet als
