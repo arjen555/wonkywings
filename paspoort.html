@@ -49,9 +49,31 @@
     width:var(--olifant-breedte); border:none; background:none; padding:0;
     cursor:pointer; opacity:0.92; transition:opacity 0.15s, transform 0.15s;
     filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5));
+    transform-origin:bottom left; /* groeien (hover én klik-animatie) vanuit de hoek */
   }
   #olifant-knop img { width:100%; display:block; }
   #olifant-knop:hover { opacity:1; transform:scale(1.03); }
+
+  /* ── Olifant-animatie bij een klik: in precies 2 seconden vanuit de hoek
+     linksonder (transform-origin) uitvergroten naar 2x, even blijven staan,
+     en weer terugkrimpen. Opbouw van de 2 seconden:
+       0    - 0,20s  snel groeien, een tikje voorbij 2x (2,12x)
+       0,20 - 0,28s  terugveren naar precies 2x
+       0,28 - 1,44s  blijven staan op 2x
+       1,44 - 2,00s  rustig terugkrimpen naar normaal
+     De klasse 'olifant-groeit' wordt in speelOlifantGeluid() aangezet en
+     na afloop (animationend) weer weggehaald. ── */
+  @keyframes olifantGroei {
+    0%   { transform:scale(1);    animation-timing-function:cubic-bezier(0.2,0.7,0.3,1); }
+    10%  { transform:scale(2.12); animation-timing-function:ease-in-out; }
+    14%  { transform:scale(2);    animation-timing-function:linear; }
+    72%  { transform:scale(2);    animation-timing-function:ease-in-out; }
+    100% { transform:scale(1); }
+  }
+  #olifant-knop.olifant-groeit {
+    animation:olifantGroei 2s both;
+    opacity:1;
+  }
   #olifant-totaal {
     position:absolute; left:30.5%; top:55.3%; width:39.4%; height:19%;
     display:flex; align-items:center; justify-content:center;
@@ -529,9 +551,25 @@ PASPOORT_UITLEG_EL.addEventListener('click', (e)=>{
 // ── Olifant linksonder: het eerste stukje van het olifantbestand (de
 // toeter, vooraf geknipt tot geluid/olifant1.mp3). Klikt iemand snel
 // meerdere keren, dan begint het geluid opnieuw in plaats van dat er
-// meerdere olifanten door elkaar gaan toeteren. ──
+// meerdere olifanten door elkaar gaan toeteren. Tegelijk met het geluid
+// groeit de olifant 2 seconden lang op (zie @keyframes olifantGroei) - ook
+// als het geluid uit staat, zodat een klik altijd iets zichtbaars doet. ──
 let olifantAudio = null;
+function speelOlifantAnimatie(){
+  const knop = document.getElementById('olifant-knop');
+  if(!knop) return;
+  // Snel opnieuw klikken: animatie netjes vanaf het begin herstarten.
+  // Klasse weghalen, de browser even laten 'herrekenen' (offsetWidth
+  // opvragen), en de klasse er weer op zetten.
+  knop.classList.remove('olifant-groeit');
+  void knop.offsetWidth;
+  knop.classList.add('olifant-groeit');
+}
+document.getElementById('olifant-knop').addEventListener('animationend', (e)=>{
+  if(e.animationName === 'olifantGroei') e.currentTarget.classList.remove('olifant-groeit');
+});
 function speelOlifantGeluid(){
+  speelOlifantAnimatie();
   const geluidAan = localStorage.getItem(GELUID_AAN_SLEUTEL) !== 'uit';
   if(!geluidAan) return;
   try{
