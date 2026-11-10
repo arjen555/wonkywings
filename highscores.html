@@ -316,6 +316,26 @@ var TOON_VANDAAG = false;
 var TEST_NAMEN = ['test1','test2'];
 function isTestNaam(n){ return TEST_NAMEN.includes((n||'').toLowerCase().trim()); }
 
+// ── Eén regel per speler ──────────────────────────────
+// Een enthousiaste speler die vaak speelt, kreeg eerder voor elk potje een
+// eigen regel - dan stond de lijst vol met dezelfde naam. Nu tonen we per
+// naam alleen de BESTE score. De lijst is op dat moment al gesorteerd van
+// best naar slechtst, dus de eerste keer dat een naam langskomt is meteen
+// zijn beste resultaat; latere regels met dezelfde naam vallen weg.
+// Hoofdletters en spaties aan begin/eind tellen niet mee ("Maksym" en
+// "maksym " zijn dezelfde speler). In de database blijft alles bewaard -
+// dit gaat puur over wat er getoond wordt.
+function naamSleutel(n){ return (n||'').trim().toLowerCase(); }
+function uniekPerNaam(lijst){
+  var gezien = new Set();
+  return lijst.filter(function(r){
+    var k = naamSleutel(r.naam);
+    if(gezien.has(k)) return false;
+    gezien.add(k);
+    return true;
+  });
+}
+
 // Zelfde waarde als AANTAL_VRAGEN_MAX in raadspel.html - gebruikt als
 // terugvalwaarde bij "Raad je plaatje"-scores die nog geen totaal-veld
 // hebben (zie de toelichting verderop bij het tonen van de score).
@@ -749,8 +769,8 @@ async function bouwSubsectie(naam, sleutel, type, altijdTonen){
 
   if(gefilterd.length === 0 && !altijdTonen) return null;
 
-  var alltime = gefilterd.slice(0,50);
-  var vandaag = gefilterd.filter(function(r){ return isVandaag(r.datum); }).slice(0,50);
+  var alltime = uniekPerNaam(gefilterd).slice(0,50);
+  var vandaag = uniekPerNaam(gefilterd.filter(function(r){ return isVandaag(r.datum); })).slice(0,50);
 
   var wrap = document.createElement('div');
   wrap.className = 'subsectie';
@@ -892,6 +912,19 @@ async function bouwPagina(){
     links.appendChild(titelL2);
     links.appendChild(leeg);
     return;
+  }
+
+  // Staat er op dit tabblad maar één lijst (bijv. Iconische plekken of
+  // Schuif je landje), dan meteen helemaal uitgeklapt tonen - er is dan
+  // niets anders om tussen te kiezen, dus geen reden om eerst op
+  // "Toon meer" te laten klikken.
+  if(subsecties.length === 1){
+    var wraps = subsecties[0].querySelectorAll('.scroll-wrap');
+    for(var w=0; w<wraps.length; w++){
+      wraps[w].classList.add('open');
+      var knopNa = wraps[w].nextElementSibling;
+      if(knopNa && knopNa.classList.contains('meer-knop')) knopNa.textContent = '▴ Inklappen';
+    }
   }
 
   // Verdeel subsecties over linkerpagina en rechterpagina

@@ -607,6 +607,26 @@ for(const p of PLEKKEN_DATA) PLEKKEN_BIJ_NAAM[p.naam] = p;
 const TEST_NAMEN = ['test1','test2'];
 function isTestNaam(n){ return TEST_NAMEN.includes((n||'').toLowerCase().trim()); }
 
+// ── Eén regel per speler ──────────────────────────────
+// Een enthousiaste speler die vaak speelt, kreeg eerder voor elk potje een
+// eigen regel - dan stond de lijst vol met dezelfde naam. Nu tonen we per
+// naam alleen de BESTE score. De lijst is op dat moment al gesorteerd van
+// best naar slechtst, dus de eerste keer dat een naam langskomt is meteen
+// zijn beste resultaat; latere regels met dezelfde naam vallen weg.
+// Hoofdletters en spaties aan begin/eind tellen niet mee ("Maksym" en
+// "maksym " zijn dezelfde speler). In de database blijft alles bewaard -
+// dit gaat puur over wat er getoond wordt.
+function naamSleutel(n){ return (n||'').trim().toLowerCase(); }
+function uniekPerNaam(lijst){
+  const gezien = new Set();
+  return lijst.filter(r=>{
+    const k = naamSleutel(r.naam);
+    if(gezien.has(k)) return false;
+    gezien.add(k);
+    return true;
+  });
+}
+
 async function fsOpslaan(collectieNaam, data){
   try{
     const fb = await window.wvwFirebaseGereed;
@@ -1242,13 +1262,15 @@ async function toonScorebordAlleen(catId){
 function bouwScorebordLijst(lijst, nieuweRun){
   const el = document.getElementById('scorebord-lijst');
   el.innerHTML = '';
-  lijst = lijst.filter(r=>!isTestNaam(r.naam));
+  lijst = uniekPerNaam(lijst.filter(r=>!isTestNaam(r.naam)));
   if(lijst.length===0){
     el.innerHTML = '<div class="score-leeg">Nog geen scores in deze categorie</div>';
     return;
   }
   lijst.slice(0,20).forEach((run, i)=>{
-    const isEigen = nieuweRun && run.datum===nieuweRun.datum && run.naam===nieuweRun.naam;
+    // Eén regel per naam (zie uniekPerNaam) - de regel met de naam van de
+    // speler is dus altijd de zijne, ook als dit potje niet zijn record was.
+    const isEigen = nieuweRun && naamSleutel(run.naam)===naamSleutel(nieuweRun.naam);
     const rij = document.createElement('div');
     rij.className = 'score-rij' + (isEigen ? ' eigen' : '');
     const spanPlek = document.createElement('span');

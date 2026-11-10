@@ -1790,7 +1790,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-    <div id="versie-label">V1.22</div>
+    <div id="versie-label">V1.23</div>
   <div id="start-links">
     <img id="start-timbo" src="Timbo.jpg" alt="Timbo"/>
     <div id="prestatie-tip">Trage computer? Kies voor minder detail bij opties</div>
@@ -3281,6 +3281,26 @@ function zetMenuUitgeklapt(open){
 const TEST_NAMEN = ['test','test1','test2'];
 function isTestNaam(n){ return TEST_NAMEN.includes((n||'').toLowerCase().trim()); }
 
+// ── Eén regel per speler ──────────────────────────────
+// Een enthousiaste speler die vaak speelt, kreeg eerder voor elk potje een
+// eigen regel - dan stond de lijst vol met dezelfde naam. Nu tonen we per
+// naam alleen de BESTE score. De lijst is op dat moment al gesorteerd van
+// best naar slechtst, dus de eerste keer dat een naam langskomt is meteen
+// zijn beste resultaat; latere regels met dezelfde naam vallen weg.
+// Hoofdletters en spaties aan begin/eind tellen niet mee ("Maksym" en
+// "maksym " zijn dezelfde speler). In de database blijft alles bewaard -
+// dit gaat puur over wat er getoond wordt.
+function naamSleutel(n){ return (n||'').trim().toLowerCase(); }
+function uniekPerNaam(lijst){
+  const gezien = new Set();
+  return lijst.filter(r=>{
+    const k = naamSleutel(r.naam);
+    if(gezien.has(k)) return false;
+    gezien.add(k);
+    return true;
+  });
+}
+
 function bouwStartscherm() {
   const lijst = document.getElementById('level-lijst');
   lijst.innerHTML = '';
@@ -4129,8 +4149,8 @@ async function bouwTickerKaarten(groep){
     lijst = lijst.filter(r=>!isTestNaam(r.naam)); // testaccounts uitsluiten
     if(lijst.length===0) continue;
     const naam = lv.kort || lv.naam;
-    const vandaag = lijst.filter(r=>isVandaag(r.datum)).slice(0,3);
-    const alltime = lijst.slice(0,3);
+    const vandaag = uniekPerNaam(lijst.filter(r=>isVandaag(r.datum))).slice(0,3);
+    const alltime = uniekPerNaam(lijst).slice(0,3);
     if(vandaag.length>0) kaarten.push({titel:naam+' · Vandaag', runs:vandaag});
     if(alltime.length>0) kaarten.push({titel:naam+' · All-time', runs:alltime});
   }
@@ -6930,7 +6950,10 @@ function bouwScorebordKolom(elId, runs, nieuweRun){
     return;
   }
   runs.forEach((run,i)=>{
-    const isEigen = nieuweRun && run.datum===nieuweRun.datum && run.naam===nieuweRun.naam;
+    // Per naam staat er nog maar één regel (zie uniekPerNaam) - dus de regel
+    // met de naam van de speler is altijd "zijn" regel, ook als dit potje
+    // minder goed ging dan zijn eerdere record.
+    const isEigen = nieuweRun && naamSleutel(run.naam)===naamSleutel(nieuweRun.naam);
     const rij=document.createElement('div');
     rij.className='scorebord-rij'+(isEigen?' is-eigen':'');
     // Let op: de spelernaam komt uit de gedeelde database en kan door om het
@@ -7058,8 +7081,8 @@ async function toonScorebord(levelId, nieuweRun){
   if(aanvraagId !== scorebordAanvraagId) return; // ondertussen een ander scorebord geopend
 
   const zichtbaar = lijst.filter(r=>!isTestNaam(r.naam));
-  const alltime = zichtbaar.slice(0,20);
-  const vandaag = zichtbaar.filter(r=>isVandaag(r.datum)).slice(0,20);
+  const alltime = uniekPerNaam(zichtbaar).slice(0,20);
+  const vandaag = uniekPerNaam(zichtbaar.filter(r=>isVandaag(r.datum))).slice(0,20);
   bouwScorebordKolom('scorebord-lijst-alltime', alltime, nieuweRun);
   bouwScorebordKolom('scorebord-lijst-vandaag', vandaag, nieuweRun);
 }
