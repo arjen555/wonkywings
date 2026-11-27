@@ -8,7 +8,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32x32.png"/>
   <link rel="icon" type="image/png" sizes="16x16" href="images/favicon-16x16.png"/>
   <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png"/>
-  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Berkshire+Swash&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="fonts/lettertypes.css"/>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
     html { font-size: clamp(12px, 1.45vmin, 18px); }
@@ -1790,7 +1790,7 @@
   <div id="score-ticker-onder" class="score-ticker score-ticker-onder">
     <div id="score-ticker-onder-track" class="score-ticker-track"></div>
   </div>
-    <div id="versie-label">V1.23</div>
+    <div id="versie-label">V1.24</div>
   <div id="start-links">
     <img id="start-timbo" src="Timbo.jpg" alt="Timbo"/>
     <div id="prestatie-tip">Trage computer? Kies voor minder detail bij opties</div>
@@ -4156,24 +4156,39 @@ async function bouwTickerKaarten(groep){
   }
   return kaarten;
 }
-function tickerKaartHtml(kaarten){
-  return kaarten.map(k => {
-    const namen = k.runs.map((r,i)=>`${i+1}. ${r.naam} (${r.km}km)`).join('  ');
-    return `<span class="score-ticker-kaart"><span class="score-ticker-kop">🏆 ${k.titel}:</span><span class="score-ticker-namen">${namen}</span></span>`;
-  }).join('');
+// Bouwt de ticker-kaartjes als echte elementen. Namen (en km) komen uit de
+// online database en zijn dus door iedereen in te vullen - daarom altijd via
+// textContent, nooit als HTML-tekst (zelfde aanpak als bij de scoreborden).
+// Zo blijft een "naam" met <, > of andere code-tekens gewoon zichtbare tekst.
+function tickerKaartElementen(kaarten){
+  const frag = document.createDocumentFragment();
+  for(const k of kaarten){
+    const kaart = document.createElement('span');
+    kaart.className = 'score-ticker-kaart';
+    const kop = document.createElement('span');
+    kop.className = 'score-ticker-kop';
+    kop.textContent = '🏆 ' + k.titel + ':';
+    const namen = document.createElement('span');
+    namen.className = 'score-ticker-namen';
+    namen.textContent = k.runs.map((r,i)=>`${i+1}. ${r.naam} (${r.km}km)`).join('  ');
+    kaart.appendChild(kop);
+    kaart.appendChild(namen);
+    frag.appendChild(kaart);
+  }
+  return frag;
 }
 function vulTickerTrack(wrapperId, trackId, kaarten){
   const wrapper = document.getElementById(wrapperId);
   const track = document.getElementById(trackId);
+  track.textContent = '';
   if(kaarten.length===0){
     wrapper.style.display='none';
-    track.innerHTML='';
     return;
   }
   wrapper.style.display='block';
-  const html = tickerKaartHtml(kaarten);
   // Inhoud verdubbelen zodat de scroll-animatie (0% naar -50%) naadloos in een lus loopt.
-  track.innerHTML = html + html;
+  track.appendChild(tickerKaartElementen(kaarten));
+  track.appendChild(tickerKaartElementen(kaarten));
 }
 async function bouwScoreTickers(){
   const europaGroep = MENU.find(g=>g.id==='europa');
